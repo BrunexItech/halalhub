@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: halalhub_db
+    environment:
+      POSTGRES_USER: halalhub_user
+      POSTGRES_PASSWORD: '@halalhub@#'
+      POSTGRES_DB: halalhub
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - halalhub_network
+
+  backend:
+    build: ./backend
+    container_name: halalhub_backend
+    environment:
+      - PORT=5000
+      - JWT_SECRET=halalhub_sharia_secure_2025
+      - NODE_ENV=production
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+    networks:
+      - halalhub_network
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+
+  frontend:
+    build: ./frontend
+    container_name: halalhub_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - halalhub_network
+
+networks:
+  halalhub_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
