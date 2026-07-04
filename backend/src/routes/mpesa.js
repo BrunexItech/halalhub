@@ -42,7 +42,8 @@ router.post('/stk-push', async (req, res) => {
     const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14);
     const password = Buffer.from(SHORTCODE + PASSKEY + timestamp).toString('base64');
 
-    const callbackUrl = process.env.MPESA_CALLBACK_URL || 'https://ed90-102-176-180-218.ngrok-free.app/api/mpesa/callback';
+    // Use the ngrok URL from your server
+    const callbackUrl = 'https://b4e4-2a02-c207-2298-5677-00-1.ngrok-free.app/api/mpesa/callback';
 
     const payload = {
       BusinessShortCode: SHORTCODE,
@@ -57,6 +58,8 @@ router.post('/stk-push', async (req, res) => {
       AccountReference: 'HalalHub',
       TransactionDesc: 'Payment'
     };
+
+    console.log('📤 Sending STK Push for:', phone, 'Amount:', amount);
 
     const response = await axios.post(
       'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest',
@@ -73,6 +76,7 @@ router.post('/stk-push', async (req, res) => {
       [ref, userId, 'topup', amount, 'pending', checkoutId, phone, ref]
     );
 
+    console.log('✅ STK Push sent successfully');
     res.json({ 
       success: true, 
       data: response.data,
