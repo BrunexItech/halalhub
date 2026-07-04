@@ -3,8 +3,8 @@ import { authService } from '../services/api';
 
 const AuthScreen = ({ onLogin }) => {
   const [isLogin, setIsLogin] = useState(true);
-  const [phone, setPhone] = useState('+254712345678');
-  const [pin, setPin] = useState('1234');
+  const [phone, setPhone] = useState('');
+  const [pin, setPin] = useState('');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -226,7 +226,7 @@ const AuthScreen = ({ onLogin }) => {
                 }}
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="+254 7XX XXX XXX"
+                placeholder="Enter your phone number"
                 required
               />
             </div>
@@ -240,7 +240,7 @@ const AuthScreen = ({ onLogin }) => {
                 textTransform: 'uppercase',
                 color: 'rgba(255,255,255,0.5)',
                 marginBottom: '6px'
-              }}>PIN / Password</label>
+              }}>PIN</label>
               <input
                 type="password"
                 style={{
@@ -381,7 +381,7 @@ const AuthScreen = ({ onLogin }) => {
                 }}
                 value={regData.phone}
                 onChange={(e) => setRegData({ ...regData, phone: e.target.value })}
-                placeholder="+254 7XX XXX XXX"
+                placeholder="Enter your phone number"
                 required
               />
             </div>

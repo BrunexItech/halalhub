@@ -27,14 +27,8 @@ const MobileNavbar = ({ user, onLogout }) => {
     { path: '/admin', icon: '🛡️', label: 'Admin Panel' }
   ];
 
-  const toggleMenu = () => {
-    setIsOpen(!isOpen);
-  };
-
-  const handleNavigate = (path) => {
-    navigate(path);
-    setIsOpen(false);
-  };
+  const toggleMenu = () => setIsOpen(!isOpen);
+  const handleNavigate = (path) => { navigate(path); setIsOpen(false); };
 
   return (
     <>

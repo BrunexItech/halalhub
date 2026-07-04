@@ -5,6 +5,7 @@ import './App.css';
 // Components
 import AuthScreen from './components/AuthScreen';
 import Sidebar from './components/Sidebar';
+import MobileNavbar from './components/MobileNavbar';
 import Dashboard from './components/Dashboard';
 import Wallet from './components/Wallet';
 import Zakat from './components/Zakat';
@@ -86,6 +87,7 @@ function App() {
     <Router>
       <div className="app">
         <Sidebar user={user} onLogout={handleLogout} />
+        <MobileNavbar user={user} onLogout={handleLogout} />
         <div className="main-content">
           <Routes>
             <Route path="/" element={<Dashboard user={user} />} />

@@ -4,7 +4,7 @@ import { walletService, mpesaService } from '../services/api';
 const Wallet = () => {
   const [balance, setBalance] = useState(0);
   const [amount, setAmount] = useState('');
-  const [phone, setPhone] = useState('254712345678');
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [checkoutId, setCheckoutId] = useState(null);
@@ -50,6 +50,10 @@ const Wallet = () => {
   };
 
   const handleTopup = async () => {
+    if (!phone) {
+      setMessage('❌ Please enter your phone number');
+      return;
+    }
     if (!amount || amount < 10) {
       setMessage('❌ Enter amount (min KES 10)');
       return;
@@ -91,12 +95,7 @@ const Wallet = () => {
         marginBottom: '24px'
       }}>
         <div style={{ fontSize: '0.72rem', opacity: 0.6 }}>Total Balance</div>
-        <div style={{ 
-          fontFamily: "'Cormorant Garamond', serif", 
-          fontSize: '2.8rem', 
-          fontWeight: 700,
-          wordBreak: 'break-word'
-        }}>
+        <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '2.8rem', fontWeight: 700, wordBreak: 'break-word' }}>
           KES {balance.toLocaleString()}
         </div>
         <div style={{ fontSize: '0.85rem', opacity: 0.6 }}>Sharia-Compliant · No Riba</div>
@@ -115,7 +114,7 @@ const Wallet = () => {
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="254712345678"
+              placeholder="Enter your M-Pesa number"
             />
             <div style={{ fontSize: '0.72rem', color: '#6B5C3E', marginTop: '4px' }}>
               Enter the M-Pesa number you want to pay from
