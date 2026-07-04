@@ -36,17 +36,22 @@ const MobileNavbar = ({ user, onLogout }) => {
 
   return (
     <>
-      {/* Top Navbar - visible on tablet & mobile only */}
+      {/* Top Navbar - Logo on LEFT, Hamburger on RIGHT */}
       <nav className="mobile-navbar">
-        <button className="hamburger-btn" onClick={toggleMenu} aria-label="Menu">
-          ☰
-        </button>
+        {/* Logo - Left */}
         <div className="mobile-logo" onClick={() => navigate('/dashboard')}>
           <img src="/HalalHub_Logo.png" alt="HalalHub" className="mobile-logo-img" />
           <span className="logo-en-mobile">HalalHub</span>
         </div>
-        <div className="mobile-user-badge" onClick={() => navigate('/profile')}>
-          <span>{user?.fullName?.charAt(0) || 'U'}</span>
+        
+        {/* Right side - User badge + Hamburger */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div className="mobile-user-badge" onClick={() => navigate('/profile')}>
+            <span>{user?.fullName?.charAt(0) || 'U'}</span>
+          </div>
+          <button className="hamburger-btn" onClick={toggleMenu} aria-label="Menu">
+            {isOpen ? '✕' : '☰'}
+          </button>
         </div>
       </nav>
 

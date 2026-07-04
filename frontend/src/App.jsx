@@ -86,36 +86,44 @@ function App() {
   return (
     <Router>
       <div className="app">
+        {/* Sidebar - Desktop only */}
         <Sidebar user={user} onLogout={handleLogout} />
-        <MobileNavbar user={user} onLogout={handleLogout} />
-        <div className="main-content">
-          <Routes>
-            <Route path="/" element={<Dashboard user={user} />} />
-            <Route path="/dashboard" element={<Dashboard user={user} />} />
-            <Route path="/wallet" element={<Wallet />} />
-            <Route path="/zakat" element={<Zakat />} />
-            <Route path="/sadaqa" element={<Sadaqa />} />
-            <Route path="/p2p" element={<P2P />} />
-            <Route path="/takaful" element={<Takaful />} />
-            <Route path="/pension" element={<Pension />} />
-            <Route path="/utilities" element={<Utilities />} />
-            <Route path="/halalstay" element={<HalalStay />} />
-            <Route path="/hajj" element={<Hajj />} />
-            <Route path="/hearse" element={<Hearse />} />
-            <Route path="/ecommerce" element={<Ecommerce />} />
-            <Route path="/restaurants" element={<Restaurants />} />
-            <Route path="/mosque" element={<MosqueFinder />} />
-            <Route path="/wills" element={<Wills />} />
-            <Route path="/kadhis" element={<Kadhis />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/kyc-status" element={<KYCStatus />} />
-            <Route path="/devcode" element={<DevCode />} />
-            <Route path="/admin" element={<AdminPanel />} />
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-          <ChatBot />
-          <Cart />
-          <PaymentModal />
+        
+        {/* Mobile Content Wrapper - stacks navbar on top of content */}
+        <div className="mobile-wrapper">
+          {/* MobileNavbar - Visible only on mobile/tablet */}
+          <MobileNavbar user={user} onLogout={handleLogout} />
+          
+          {/* Main Content */}
+          <div className="main-content">
+            <Routes>
+              <Route path="/" element={<Dashboard user={user} />} />
+              <Route path="/dashboard" element={<Dashboard user={user} />} />
+              <Route path="/wallet" element={<Wallet />} />
+              <Route path="/zakat" element={<Zakat />} />
+              <Route path="/sadaqa" element={<Sadaqa />} />
+              <Route path="/p2p" element={<P2P />} />
+              <Route path="/takaful" element={<Takaful />} />
+              <Route path="/pension" element={<Pension />} />
+              <Route path="/utilities" element={<Utilities />} />
+              <Route path="/halalstay" element={<HalalStay />} />
+              <Route path="/hajj" element={<Hajj />} />
+              <Route path="/hearse" element={<Hearse />} />
+              <Route path="/ecommerce" element={<Ecommerce />} />
+              <Route path="/restaurants" element={<Restaurants />} />
+              <Route path="/mosque" element={<MosqueFinder />} />
+              <Route path="/wills" element={<Wills />} />
+              <Route path="/kadhis" element={<Kadhis />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/kyc-status" element={<KYCStatus />} />
+              <Route path="/devcode" element={<DevCode />} />
+              <Route path="/admin" element={<AdminPanel />} />
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+            <ChatBot />
+            <Cart />
+            <PaymentModal />
+          </div>
         </div>
       </div>
     </Router>
