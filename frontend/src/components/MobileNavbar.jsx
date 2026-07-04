@@ -28,7 +28,11 @@ const MobileNavbar = ({ user, onLogout }) => {
   ];
 
   const toggleMenu = () => setIsOpen(!isOpen);
-  const handleNavigate = (path) => { navigate(path); setIsOpen(false); };
+  
+  const handleNavigate = (path) => { 
+    navigate(path); 
+    setIsOpen(false); 
+  };
 
   return (
     <>
