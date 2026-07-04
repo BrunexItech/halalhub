@@ -3,11 +3,11 @@ const axios = require('axios');
 const { Client } = require('pg');
 
 const client = new Client({
-  user: 'halalhub_user',
-  password: '@halalhub@#',
-  host: 'localhost',
-  port: 5432,
-  database: 'halalhub'
+  user: process.env.DB_USER || 'halalhub_user',
+  password: process.env.DB_PASSWORD || '@halalhub@#',
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT) || 5432,
+  database: process.env.DB_NAME || 'halalhub'
 });
 client.connect();
 
@@ -34,7 +34,7 @@ router.post('/stk-push', async (req, res) => {
     const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14);
     const password = Buffer.from(SHORTCODE + PASSKEY + timestamp).toString('base64');
 
-    const callbackUrl = 'https://ed90-102-176-180-218.ngrok-free.app/api/mpesa/callback';
+    const callbackUrl = process.env.MPESA_CALLBACK_URL || 'https://ed90-102-176-180-218.ngrok-free.app/api/mpesa/callback';
 
     const payload = {
       BusinessShortCode: SHORTCODE,
@@ -119,7 +119,19 @@ router.post('/callback', async (req, res) => {
   }
 });
 
-// MANUAL TOPUP - For testing without M-Pesa
+router.get('/status/:checkoutId', async (req, res) => {
+  try {
+    const result = await client.query(
+      `SELECT * FROM transactions WHERE checkout_request_id = $1`,
+      [req.params.checkoutId]
+    );
+    res.json(result.rows[0] || { status: 'not_found' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Manual topup for testing
 router.post('/manual-topup', async (req, res) => {
   try {
     const { phone, amount } = req.body;
@@ -140,18 +152,6 @@ router.post('/manual-topup', async (req, res) => {
       success: true, 
       message: `KES ${amount} added to ${phone}` 
     });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.get('/status/:checkoutId', async (req, res) => {
-  try {
-    const result = await client.query(
-      `SELECT * FROM transactions WHERE checkout_request_id = $1`,
-      [req.params.checkoutId]
-    );
-    res.json(result.rows[0] || { status: 'not_found' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

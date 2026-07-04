@@ -2,11 +2,11 @@ const router = require('express').Router();
 const { Client } = require('pg');
 
 const client = new Client({
-  user: 'halalhub_user',
-  password: '@halalhub@#',
-  host: 'localhost',
-  port: 5432,
-  database: 'halalhub'
+  user: process.env.DB_USER || 'halalhub_user',
+  password: process.env.DB_PASSWORD || '@halalhub@#',
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT) || 5432,
+  database: process.env.DB_NAME || 'halalhub'
 });
 client.connect();
 
@@ -15,7 +15,6 @@ router.get('/balance', async (req, res) => {
   
   try {
     let phone = req.headers['phone'] || '254794913318';
-    // Ensure phone has + prefix for database lookup
     if (!phone.startsWith('+')) {
       phone = '+' + phone;
     }

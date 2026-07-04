@@ -14,11 +14,11 @@ const transporter = nodemailer.createTransport({
 });
 
 const client = new Client({
-  user: 'halalhub_user',
-  password: '@halalhub@#',
-  host: 'localhost',
-  port: 5432,
-  database: 'halalhub'
+  user: process.env.DB_USER || 'halalhub_user',
+  password: process.env.DB_PASSWORD || '@halalhub@#',
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT) || 5432,
+  database: process.env.DB_NAME || 'halalhub'
 });
 client.connect();
 
