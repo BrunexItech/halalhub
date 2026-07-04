@@ -33,39 +33,30 @@ const MobileNavbar = ({ user, onLogout }) => {
   return (
     <>
       {/* Top Navbar - visible on tablet & mobile only */}
-      <div className="mobile-navbar">
+      <nav className="mobile-navbar">
         <button className="hamburger-btn" onClick={toggleMenu} aria-label="Menu">
           ☰
         </button>
-        <div className="mobile-logo">
-          <span className="logo-arabic-mobile">هَلَال هَبْ</span>
+        <div className="mobile-logo" onClick={() => navigate('/dashboard')}>
+          <img src="/HalalHub_Logo.png" alt="HalalHub" className="mobile-logo-img" />
           <span className="logo-en-mobile">HalalHub</span>
         </div>
-        <div className="mobile-user-badge">
+        <div className="mobile-user-badge" onClick={() => navigate('/profile')}>
           <span>{user?.fullName?.charAt(0) || 'U'}</span>
         </div>
-      </div>
+      </nav>
 
-      {/* Overlay */}
-      {isOpen && <div className="mobile-overlay" onClick={toggleMenu}></div>}
-
-      {/* Sidebar Menu */}
-      <div className={`mobile-sidebar ${isOpen ? 'open' : ''}`}>
-        <div className="mobile-sidebar-header">
-          <div className="mobile-sidebar-logo">
-            <span className="logo-arabic">هَلَال هَبْ</span>
-            <span className="logo-en">HalalHub</span>
-          </div>
-          <button className="close-btn" onClick={toggleMenu}>✕</button>
-        </div>
-
-        <div className="mobile-sidebar-user">
-          <div className="mobile-avatar">
-            {user?.fullName?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2) || 'AU'}
-          </div>
-          <div className="mobile-user-info">
-            <div className="mobile-user-name">{user?.fullName || 'User'}</div>
-            <div className="mobile-user-role">Verified Member ✓</div>
+      {/* Dropdown Menu */}
+      <div className={`mobile-dropdown ${isOpen ? 'open' : ''}`}>
+        <div className="mobile-dropdown-header">
+          <div className="mobile-dropdown-user">
+            <div className="mobile-avatar">
+              {user?.fullName?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2) || 'AU'}
+            </div>
+            <div className="mobile-user-info">
+              <div className="mobile-user-name">{user?.fullName || 'User'}</div>
+              <div className="mobile-user-role">Verified Member ✓</div>
+            </div>
           </div>
         </div>
 
@@ -82,12 +73,15 @@ const MobileNavbar = ({ user, onLogout }) => {
           ))}
         </div>
 
-        <div className="mobile-sidebar-footer">
+        <div className="mobile-dropdown-footer">
           <button className="mobile-logout-btn" onClick={onLogout}>
             ⏻ Logout
           </button>
         </div>
       </div>
+
+      {/* Overlay */}
+      {isOpen && <div className="mobile-overlay" onClick={toggleMenu}></div>}
     </>
   );
 };
