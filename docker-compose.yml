@@ -6,7 +6,7 @@ services:
     container_name: halalhub_db
     environment:
       POSTGRES_USER: halalhub_user
-      POSTGRES_PASSWORD: '@halalhub@#'
+      POSTGRES_PASSWORD: halalhub123
       POSTGRES_DB: halalhub
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -22,6 +22,11 @@ services:
       - PORT=5000
       - JWT_SECRET=halalhub_sharia_secure_2025
       - NODE_ENV=production
+      - DB_USER=halalhub_user
+      - DB_PASSWORD=halalhub123
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=halalhub
     ports:
       - "5000:5000"
     depends_on:
