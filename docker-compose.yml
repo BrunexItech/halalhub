@@ -28,7 +28,7 @@ services:
       - DB_PORT=5432
       - DB_NAME=halalhub
       - EMAIL_USER=quantivo.itech@gmail.com
-      - EMAIL_PASS=ivulhamkhlhxzgnp
+      - EMAIL_PASS=ivulhamkhihxzgnp
       - MPESA_CONSUMER_KEY=${MPESA_CONSUMER_KEY}
       - MPESA_CONSUMER_SECRET=${MPESA_CONSUMER_SECRET}
       - MPESA_SHORTCODE=${MPESA_SHORTCODE}
