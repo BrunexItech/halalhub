@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const AdminPanel = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -14,8 +16,8 @@ const AdminPanel = () => {
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
       const [usersRes, statsRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/admin/users', config),
-        axios.get('http://localhost:5000/api/admin/stats', config)
+        axios.get(`${API_BASE}/admin/users`, config),
+        axios.get(`${API_BASE}/admin/stats`, config)
       ]);
       setUsers(usersRes.data.users || []);
       setStats(statsRes.data || {});
@@ -34,7 +36,7 @@ const AdminPanel = () => {
     setError('');
 
     try {
-      const response = await axios.post('http://localhost:5000/api/admin/login', {
+      const response = await axios.post(`${API_BASE}/admin/login`, {
         email,
         password
       });
@@ -55,7 +57,7 @@ const AdminPanel = () => {
   const deleteUser = async (userId) => {
     if (!confirm('Delete this user?')) return;
     try {
-      await axios.delete(`http://localhost:5000/api/admin/users/${userId}`, {
+      await axios.delete(`${API_BASE}/admin/users/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUsers(users.filter(u => u.id !== userId));
