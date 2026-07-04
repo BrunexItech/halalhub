@@ -36,7 +36,7 @@ services:
     build: ./frontend
     container_name: halalhub_frontend
     ports:
-      - "80:80"
+      - "9999:80"
     depends_on:
       - backend
     networks:
