@@ -51,7 +51,7 @@ const AuthScreen = ({ onLogin }) => {
       await authService.register(regData);
       setSuccess('✅ Account created! Please login.');
       setRegData({ fullName: '', phone: '', email: '', nationalId: '', pin: '', county: '', subCounty: '' });
-      setIsLogin(true); // Switch to login tab
+      setIsLogin(true);
       setLoading(false);
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed');
@@ -68,7 +68,10 @@ const AuthScreen = ({ onLogin }) => {
       alignItems: 'center',
       justifyContent: 'center',
       background: '#0B3D2E',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      width: '100%',
+      height: '100vh',
+      padding: '20px'
     }}>
       <div style={{
         position: 'absolute',
@@ -83,15 +86,18 @@ const AuthScreen = ({ onLogin }) => {
         background: 'rgba(255,255,255,0.04)',
         border: '1px solid rgba(201,168,76,0.25)',
         borderRadius: '22px',
-        padding: '48px 40px',
-        width: 'min(440px, 94vw)',
+        padding: '32px 28px',
+        width: 'min(440px, 92vw)',
+        maxWidth: '440px',
+        maxHeight: '96vh',
+        overflowY: 'auto',
         backdropFilter: 'blur(20px)',
         boxShadow: '0 24px 80px rgba(0,0,0,0.4)'
       }}>
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
           <div style={{
             fontFamily: "'Amiri', serif",
-            fontSize: '2.4rem',
+            fontSize: 'min(2.4rem, 8vw)',
             background: 'linear-gradient(135deg, #C9A84C, #E8C96A)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
@@ -101,19 +107,19 @@ const AuthScreen = ({ onLogin }) => {
           }}>هَلَال هَبْ</div>
           <div style={{
             fontFamily: "'Cormorant Garamond', serif",
-            fontSize: '1.7rem',
+            fontSize: 'min(1.7rem, 6vw)',
             fontWeight: 600,
             color: '#FFFFFF',
             letterSpacing: '0.08em',
             display: 'block',
-            marginTop: '4px'
+            marginTop: '2px'
           }}>HalalHub</div>
           <div style={{
-            fontSize: '0.78rem',
+            fontSize: 'min(0.7rem, 2.5vw)',
             color: 'rgba(255,255,255,0.5)',
             letterSpacing: '0.12em',
             textTransform: 'uppercase',
-            marginTop: '6px',
+            marginTop: '4px',
             display: 'block'
           }}>Sharia-Compliant Fintech &amp; Lifestyle</div>
         </div>
@@ -121,7 +127,7 @@ const AuthScreen = ({ onLogin }) => {
         <div style={{
           display: 'flex',
           gap: '8px',
-          marginBottom: '28px',
+          marginBottom: '20px',
           background: 'rgba(0,0,0,0.2)',
           borderRadius: '8px',
           padding: '4px'
@@ -171,7 +177,7 @@ const AuthScreen = ({ onLogin }) => {
             color: '#C0392B',
             padding: '10px',
             borderRadius: '8px',
-            marginBottom: '16px',
+            marginBottom: '14px',
             fontSize: '0.85rem'
           }}>
             {error}
@@ -185,7 +191,7 @@ const AuthScreen = ({ onLogin }) => {
             color: '#27AE60',
             padding: '10px',
             borderRadius: '8px',
-            marginBottom: '16px',
+            marginBottom: '14px',
             fontSize: '0.85rem'
           }}>
             {success}
@@ -194,27 +200,27 @@ const AuthScreen = ({ onLogin }) => {
 
         {isLogin ? (
           <form onSubmit={handleLogin}>
-            <div style={{ marginBottom: '18px' }}>
+            <div style={{ marginBottom: '14px' }}>
               <label style={{
                 display: 'block',
-                fontSize: '0.78rem',
+                fontSize: '0.7rem',
                 fontWeight: 600,
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
                 color: 'rgba(255,255,255,0.5)',
-                marginBottom: '8px'
+                marginBottom: '6px'
               }}>Phone Number</label>
               <input
                 type="tel"
                 style={{
                   width: '100%',
-                  padding: '14px 16px',
+                  padding: '12px 14px',
                   background: 'rgba(255,255,255,0.06)',
                   border: '1px solid rgba(201,168,76,0.2)',
                   borderRadius: '8px',
                   color: '#FFFFFF',
                   fontFamily: "'Outfit', sans-serif",
-                  fontSize: '0.95rem',
+                  fontSize: '0.9rem',
                   outline: 'none',
                   transition: 'all 0.28s ease'
                 }}
@@ -225,27 +231,27 @@ const AuthScreen = ({ onLogin }) => {
               />
             </div>
 
-            <div style={{ marginBottom: '18px' }}>
+            <div style={{ marginBottom: '14px' }}>
               <label style={{
                 display: 'block',
-                fontSize: '0.78rem',
+                fontSize: '0.7rem',
                 fontWeight: 600,
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
                 color: 'rgba(255,255,255,0.5)',
-                marginBottom: '8px'
+                marginBottom: '6px'
               }}>PIN / Password</label>
               <input
                 type="password"
                 style={{
                   width: '100%',
-                  padding: '14px 16px',
+                  padding: '12px 14px',
                   background: 'rgba(255,255,255,0.06)',
                   border: '1px solid rgba(201,168,76,0.2)',
                   borderRadius: '8px',
                   color: '#FFFFFF',
                   fontFamily: "'Outfit', sans-serif",
-                  fontSize: '0.95rem',
+                  fontSize: '0.9rem',
                   outline: 'none',
                   transition: 'all 0.28s ease'
                 }}
@@ -257,32 +263,32 @@ const AuthScreen = ({ onLogin }) => {
             </div>
 
             {otpSent && (
-              <div style={{ marginBottom: '18px' }}>
+              <div style={{ marginBottom: '14px' }}>
                 <label style={{
                   display: 'block',
-                  fontSize: '0.78rem',
+                  fontSize: '0.7rem',
                   fontWeight: 600,
                   letterSpacing: '0.08em',
                   textTransform: 'uppercase',
                   color: 'rgba(255,255,255,0.5)',
-                  marginBottom: '8px'
+                  marginBottom: '6px'
                 }}>OTP Verification</label>
                 <input
                   type="text"
                   style={{
                     width: '100%',
-                    padding: '14px 16px',
+                    padding: '12px 14px',
                     background: 'rgba(255,255,255,0.06)',
                     border: '1px solid rgba(201,168,76,0.2)',
                     borderRadius: '8px',
                     color: '#FFFFFF',
                     fontFamily: "'Outfit', sans-serif",
-                    fontSize: '0.95rem',
+                    fontSize: '0.9rem',
                     outline: 'none',
                     transition: 'all 0.28s ease',
                     textAlign: 'center',
                     letterSpacing: '8px',
-                    fontSize: '1.2rem'
+                    fontSize: '1.1rem'
                   }}
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
@@ -297,7 +303,7 @@ const AuthScreen = ({ onLogin }) => {
               type="submit"
               style={{
                 width: '100%',
-                padding: '15px',
+                padding: '14px',
                 background: 'linear-gradient(135deg, #C9A84C, #E8C96A)',
                 border: 'none',
                 borderRadius: '8px',
@@ -309,7 +315,7 @@ const AuthScreen = ({ onLogin }) => {
                 transition: 'all 0.28s ease',
                 letterSpacing: '0.04em',
                 boxShadow: '0 4px 20px rgba(201,168,76,0.35)',
-                marginTop: '8px'
+                marginTop: '6px'
               }}
               disabled={loading}
             >
@@ -318,27 +324,27 @@ const AuthScreen = ({ onLogin }) => {
           </form>
         ) : (
           <form onSubmit={handleRegister}>
-            <div style={{ marginBottom: '18px' }}>
+            <div style={{ marginBottom: '12px' }}>
               <label style={{
                 display: 'block',
-                fontSize: '0.78rem',
+                fontSize: '0.7rem',
                 fontWeight: 600,
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
                 color: 'rgba(255,255,255,0.5)',
-                marginBottom: '8px'
+                marginBottom: '4px'
               }}>Full Name</label>
               <input
                 type="text"
                 style={{
                   width: '100%',
-                  padding: '14px 16px',
+                  padding: '10px 12px',
                   background: 'rgba(255,255,255,0.06)',
                   border: '1px solid rgba(201,168,76,0.2)',
                   borderRadius: '8px',
                   color: '#FFFFFF',
                   fontFamily: "'Outfit', sans-serif",
-                  fontSize: '0.95rem',
+                  fontSize: '0.9rem',
                   outline: 'none',
                   transition: 'all 0.28s ease'
                 }}
@@ -349,27 +355,27 @@ const AuthScreen = ({ onLogin }) => {
               />
             </div>
 
-            <div style={{ marginBottom: '18px' }}>
+            <div style={{ marginBottom: '12px' }}>
               <label style={{
                 display: 'block',
-                fontSize: '0.78rem',
+                fontSize: '0.7rem',
                 fontWeight: 600,
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
                 color: 'rgba(255,255,255,0.5)',
-                marginBottom: '8px'
+                marginBottom: '4px'
               }}>Phone Number</label>
               <input
                 type="tel"
                 style={{
                   width: '100%',
-                  padding: '14px 16px',
+                  padding: '10px 12px',
                   background: 'rgba(255,255,255,0.06)',
                   border: '1px solid rgba(201,168,76,0.2)',
                   borderRadius: '8px',
                   color: '#FFFFFF',
                   fontFamily: "'Outfit', sans-serif",
-                  fontSize: '0.95rem',
+                  fontSize: '0.9rem',
                   outline: 'none',
                   transition: 'all 0.28s ease'
                 }}
@@ -380,27 +386,27 @@ const AuthScreen = ({ onLogin }) => {
               />
             </div>
 
-            <div style={{ marginBottom: '18px' }}>
+            <div style={{ marginBottom: '12px' }}>
               <label style={{
                 display: 'block',
-                fontSize: '0.78rem',
+                fontSize: '0.7rem',
                 fontWeight: 600,
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
                 color: 'rgba(255,255,255,0.5)',
-                marginBottom: '8px'
+                marginBottom: '4px'
               }}>Email</label>
               <input
                 type="email"
                 style={{
                   width: '100%',
-                  padding: '14px 16px',
+                  padding: '10px 12px',
                   background: 'rgba(255,255,255,0.06)',
                   border: '1px solid rgba(201,168,76,0.2)',
                   borderRadius: '8px',
                   color: '#FFFFFF',
                   fontFamily: "'Outfit', sans-serif",
-                  fontSize: '0.95rem',
+                  fontSize: '0.9rem',
                   outline: 'none',
                   transition: 'all 0.28s ease'
                 }}
@@ -411,27 +417,27 @@ const AuthScreen = ({ onLogin }) => {
               />
             </div>
 
-            <div style={{ marginBottom: '18px' }}>
+            <div style={{ marginBottom: '12px' }}>
               <label style={{
                 display: 'block',
-                fontSize: '0.78rem',
+                fontSize: '0.7rem',
                 fontWeight: 600,
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
                 color: 'rgba(255,255,255,0.5)',
-                marginBottom: '8px'
+                marginBottom: '4px'
               }}>National ID</label>
               <input
                 type="text"
                 style={{
                   width: '100%',
-                  padding: '14px 16px',
+                  padding: '10px 12px',
                   background: 'rgba(255,255,255,0.06)',
                   border: '1px solid rgba(201,168,76,0.2)',
                   borderRadius: '8px',
                   color: '#FFFFFF',
                   fontFamily: "'Outfit', sans-serif",
-                  fontSize: '0.95rem',
+                  fontSize: '0.9rem',
                   outline: 'none',
                   transition: 'all 0.28s ease'
                 }}
@@ -442,27 +448,27 @@ const AuthScreen = ({ onLogin }) => {
               />
             </div>
 
-            <div style={{ marginBottom: '18px' }}>
+            <div style={{ marginBottom: '12px' }}>
               <label style={{
                 display: 'block',
-                fontSize: '0.78rem',
+                fontSize: '0.7rem',
                 fontWeight: 600,
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
                 color: 'rgba(255,255,255,0.5)',
-                marginBottom: '8px'
+                marginBottom: '4px'
               }}>Create PIN</label>
               <input
                 type="password"
                 style={{
                   width: '100%',
-                  padding: '14px 16px',
+                  padding: '10px 12px',
                   background: 'rgba(255,255,255,0.06)',
                   border: '1px solid rgba(201,168,76,0.2)',
                   borderRadius: '8px',
                   color: '#FFFFFF',
                   fontFamily: "'Outfit', sans-serif",
-                  fontSize: '0.95rem',
+                  fontSize: '0.9rem',
                   outline: 'none',
                   transition: 'all 0.28s ease'
                 }}
@@ -478,7 +484,7 @@ const AuthScreen = ({ onLogin }) => {
               type="submit"
               style={{
                 width: '100%',
-                padding: '15px',
+                padding: '14px',
                 background: 'linear-gradient(135deg, #C9A84C, #E8C96A)',
                 border: 'none',
                 borderRadius: '8px',
@@ -490,7 +496,7 @@ const AuthScreen = ({ onLogin }) => {
                 transition: 'all 0.28s ease',
                 letterSpacing: '0.04em',
                 boxShadow: '0 4px 20px rgba(201,168,76,0.35)',
-                marginTop: '8px'
+                marginTop: '6px'
               }}
               disabled={loading}
             >
@@ -502,8 +508,8 @@ const AuthScreen = ({ onLogin }) => {
         <div style={{
           textAlign: 'center',
           color: 'rgba(255,255,255,0.35)',
-          fontSize: '0.75rem',
-          marginTop: '14px',
+          fontSize: '0.7rem',
+          marginTop: '12px',
           lineHeight: '1.5'
         }}>
           🔒 Kenya DPA 2019 compliant · End-to-end encrypted · No riba
