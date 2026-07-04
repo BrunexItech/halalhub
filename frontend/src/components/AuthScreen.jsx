@@ -226,7 +226,7 @@ const AuthScreen = ({ onLogin }) => {
                 }}
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="Enter your phone number"
+                placeholder="+2547XXXXXXXX"
                 required
               />
             </div>
@@ -381,7 +381,7 @@ const AuthScreen = ({ onLogin }) => {
                 }}
                 value={regData.phone}
                 onChange={(e) => setRegData({ ...regData, phone: e.target.value })}
-                placeholder="Enter your phone number"
+                placeholder="+2547XXXXXXXX"
                 required
               />
             </div>

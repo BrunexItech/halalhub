@@ -4,7 +4,7 @@ import { walletService, mpesaService } from '../services/api';
 const Wallet = () => {
   const [balance, setBalance] = useState(0);
   const [amount, setAmount] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState('+254');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [checkoutId, setCheckoutId] = useState(null);
@@ -50,8 +50,11 @@ const Wallet = () => {
   };
 
   const handleTopup = async () => {
-    if (!phone) {
-      setMessage('❌ Please enter your phone number');
+    // Clean phone number: remove + and spaces
+    let cleanPhone = phone.replace(/\+/g, '').replace(/\s/g, '');
+    
+    if (!cleanPhone || cleanPhone.length < 10) {
+      setMessage('❌ Please enter a valid phone number');
       return;
     }
     if (!amount || amount < 10) {
@@ -63,7 +66,7 @@ const Wallet = () => {
 
     try {
       const res = await mpesaService.stkPush({
-        phone: phone,
+        phone: cleanPhone,
         amount: parseInt(amount)
       });
 
@@ -114,10 +117,10 @@ const Wallet = () => {
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="Enter your M-Pesa number"
+              placeholder="+2547XXXXXXXX"
             />
             <div style={{ fontSize: '0.72rem', color: '#6B5C3E', marginTop: '4px' }}>
-              Enter the M-Pesa number you want to pay from
+              Enter your M-Pesa number (e.g., +2547XXXXXXXX)
             </div>
           </div>
 
