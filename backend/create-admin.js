@@ -1,16 +1,15 @@
 const { Client } = require('pg');
 const bcrypt = require('bcryptjs');
-require('dotenv').config();
-
-const client = new Client({
-  user: process.env.DB_USER || 'halalhub_user',
-  password: process.env.DB_PASSWORD || '@halalhub@#',
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT) || 5432,
-  database: process.env.DB_NAME || 'halalhub'
-});
 
 async function createAdmin() {
+  const client = new Client({
+    user: process.env.DB_USER || 'halalhub_user',
+    password: process.env.DB_PASSWORD || '@halalhub@#',
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT) || 5432,
+    database: process.env.DB_NAME || 'halalhub'
+  });
+
   try {
     await client.connect();
     console.log('✅ Connected to database');

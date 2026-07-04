@@ -13,14 +13,21 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-const client = new Client({
-  user: process.env.DB_USER || 'halalhub_user',
-  password: process.env.DB_PASSWORD || '@halalhub@#',
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT) || 5432,
-  database: process.env.DB_NAME || 'halalhub'
-});
-client.connect();
+let client;
+
+async function getClient() {
+  if (!client) {
+    client = new Client({
+      user: process.env.DB_USER || 'halalhub_user',
+      password: process.env.DB_PASSWORD || '@halalhub@#',
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT) || 5432,
+      database: process.env.DB_NAME || 'halalhub'
+    });
+    await client.connect();
+  }
+  return client;
+}
 
 const otpStore = new Map();
 
@@ -33,10 +40,11 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'All fields are required' });
     }
     
+    const db = await getClient();
     const pinHash = await bcrypt.hash(pin, 12);
     const userId = 'user-' + Date.now();
     
-    await client.query(
+    await db.query(
       `INSERT INTO users (id, fullname, phone, email, nationalid, pinhash, role)
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [userId, fullName, phone, email, nationalId, pinHash, 'user']
@@ -67,7 +75,8 @@ router.post('/login-step1', async (req, res) => {
   const { phone } = req.body;
   
   try {
-    const result = await client.query(
+    const db = await getClient();
+    const result = await db.query(
       'SELECT * FROM users WHERE phone = $1',
       [phone]
     );
@@ -81,7 +90,6 @@ router.post('/login-step1', async (req, res) => {
     
     otpStore.set(phone, { otp, expiresAt: Date.now() + 300000 });
     
-    // Send email with OTP
     await transporter.sendMail({
       from: `"HalalHub" <${process.env.EMAIL_USER}>`,
       to: user.email,
@@ -119,7 +127,8 @@ router.post('/login-step2', async (req, res) => {
       return res.status(400).json({ error: 'Invalid or expired OTP' });
     }
     
-    const result = await client.query(
+    const db = await getClient();
+    const result = await db.query(
       'SELECT * FROM users WHERE phone = $1',
       [phone]
     );

@@ -3,22 +3,29 @@ const jwt = require('jsonwebtoken');
 const { Client } = require('pg');
 const bcrypt = require('bcryptjs');
 
-const client = new Client({
-  user: 'halalhub_user',
-  password: '@halalhub@#',
-  host: 'localhost',
-  port: 5432,
-  database: 'halalhub'
-});
+let client;
 
-client.connect();
+async function getClient() {
+  if (!client) {
+    client = new Client({
+      user: process.env.DB_USER || 'halalhub_user',
+      password: process.env.DB_PASSWORD || '@halalhub@#',
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT) || 5432,
+      database: process.env.DB_NAME || 'halalhub'
+    });
+    await client.connect();
+  }
+  return client;
+}
 
 // Admin login
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   
   try {
-    const result = await client.query(
+    const db = await getClient();
+    const result = await db.query(
       'SELECT * FROM users WHERE email = $1 AND isadmin = true',
       [email]
     );
@@ -59,8 +66,9 @@ router.post('/login', async (req, res) => {
 // Admin stats
 router.get('/stats', async (req, res) => {
   try {
-    const usersCount = await client.query('SELECT COUNT(*) FROM users');
-    const adminCount = await client.query("SELECT COUNT(*) FROM users WHERE isadmin = true");
+    const db = await getClient();
+    const usersCount = await db.query('SELECT COUNT(*) FROM users');
+    const adminCount = await db.query("SELECT COUNT(*) FROM users WHERE isadmin = true");
     
     res.json({
       totalUsers: parseInt(usersCount.rows[0].count),
@@ -77,12 +85,11 @@ router.get('/stats', async (req, res) => {
   }
 });
 
-module.exports = router;
-
 // Get all users
 router.get('/users', async (req, res) => {
   try {
-    const result = await client.query('SELECT * FROM users ORDER BY createdat DESC');
+    const db = await getClient();
+    const result = await db.query('SELECT * FROM users ORDER BY createdat DESC');
     res.json({ users: result.rows });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -92,9 +99,12 @@ router.get('/users', async (req, res) => {
 // Delete user
 router.delete('/users/:id', async (req, res) => {
   try {
-    await client.query('DELETE FROM users WHERE id = $1', [req.params.id]);
+    const db = await getClient();
+    await db.query('DELETE FROM users WHERE id = $1', [req.params.id]);
     res.json({ message: 'User deleted' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
+module.exports = router;

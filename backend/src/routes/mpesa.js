@@ -2,14 +2,21 @@ const router = require('express').Router();
 const axios = require('axios');
 const { Client } = require('pg');
 
-const client = new Client({
-  user: process.env.DB_USER || 'halalhub_user',
-  password: process.env.DB_PASSWORD || '@halalhub@#',
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT) || 5432,
-  database: process.env.DB_NAME || 'halalhub'
-});
-client.connect();
+let client;
+
+async function getClient() {
+  if (!client) {
+    client = new Client({
+      user: process.env.DB_USER || 'halalhub_user',
+      password: process.env.DB_PASSWORD || '@halalhub@#',
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT) || 5432,
+      database: process.env.DB_NAME || 'halalhub'
+    });
+    await client.connect();
+  }
+  return client;
+}
 
 const CONSUMER_KEY = process.env.MPESA_CONSUMER_KEY;
 const CONSUMER_SECRET = process.env.MPESA_CONSUMER_SECRET;
@@ -29,6 +36,7 @@ router.post('/stk-push', async (req, res) => {
   try {
     const { phone, amount } = req.body;
     const userId = req.headers['user-id'] || 'user-001';
+    const db = await getClient();
     
     const token = await getToken();
     const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14);
@@ -59,7 +67,7 @@ router.post('/stk-push', async (req, res) => {
     const checkoutId = response.data.CheckoutRequestID;
     const ref = 'HH-TXN-' + Date.now();
     
-    await client.query(
+    await db.query(
       `INSERT INTO transactions (id, user_id, type, amount, status, checkout_request_id, phone, reference)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [ref, userId, 'topup', amount, 'pending', checkoutId, phone, ref]
@@ -84,6 +92,7 @@ router.post('/callback', async (req, res) => {
   console.log('📞 Callback received');
   
   try {
+    const db = await getClient();
     const { Body } = req.body;
     const result = Body?.stkCallback;
     const checkoutId = result?.CheckoutRequestID;
@@ -93,19 +102,19 @@ router.post('/callback', async (req, res) => {
       const amount = items.find(i => i.Name === 'Amount')?.Value || 0;
       const phone = items.find(i => i.Name === 'PhoneNumber')?.Value || '';
       
-      await client.query(
+      await db.query(
         `UPDATE transactions SET status = 'success', amount = $1 WHERE checkout_request_id = $2`,
         [amount, checkoutId]
       );
       
-      await client.query(
+      await db.query(
         `UPDATE users SET walletbalance = walletbalance + $1 WHERE phone = $2`,
         [amount, phone]
       );
       
       console.log(`✅ Payment confirmed: KES ${amount} added to ${phone}`);
     } else {
-      await client.query(
+      await db.query(
         `UPDATE transactions SET status = 'failed' WHERE checkout_request_id = $1`,
         [checkoutId]
       );
@@ -121,7 +130,8 @@ router.post('/callback', async (req, res) => {
 
 router.get('/status/:checkoutId', async (req, res) => {
   try {
-    const result = await client.query(
+    const db = await getClient();
+    const result = await db.query(
       `SELECT * FROM transactions WHERE checkout_request_id = $1`,
       [req.params.checkoutId]
     );
@@ -135,14 +145,15 @@ router.get('/status/:checkoutId', async (req, res) => {
 router.post('/manual-topup', async (req, res) => {
   try {
     const { phone, amount } = req.body;
+    const db = await getClient();
     
-    await client.query(
+    await db.query(
       `UPDATE users SET walletbalance = walletbalance + $1 WHERE phone = $2`,
       [amount, phone]
     );
     
     const ref = 'HH-MAN-' + Date.now();
-    await client.query(
+    await db.query(
       `INSERT INTO transactions (id, user_id, type, amount, status, phone, reference)
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [ref, 'user-001', 'manual_topup', amount, 'success', phone, ref]
