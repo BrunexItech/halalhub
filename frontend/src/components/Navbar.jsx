@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const Navbar = ({ user, onLogout }) => {
@@ -9,8 +9,10 @@ const Navbar = ({ user, onLogout }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const dropdownRefs = useRef({});
   const userMenuRef = useRef(null);
+  const mobileMenuRef = useRef(null);
+  const navbarRef = useRef(null);
 
-  const getInitials = () => {
+  const getInitials = useCallback(() => {
     if (user?.fullName) {
       return user.fullName
         .split(' ')
@@ -20,30 +22,9 @@ const Navbar = ({ user, onLogout }) => {
         .slice(0, 2);
     }
     return 'GU';
-  };
+  }, [user?.fullName]);
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (openDropdown) {
-        const dropdownElement = dropdownRefs.current[openDropdown];
-        if (dropdownElement && !dropdownElement.contains(event.target)) {
-          setOpenDropdown(null);
-        }
-      }
-      if (isUserMenuOpen && userMenuRef.current && !userMenuRef.current.contains(event.target)) {
-        setIsUserMenuOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [openDropdown, isUserMenuOpen]);
-
-  useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [location.pathname]);
-
-  const navItems = [
+  const navItems = useMemo(() => [
     { 
       path: '/dashboard', 
       label: 'Dashboard',
@@ -125,47 +106,132 @@ const Navbar = ({ user, onLogout }) => {
         </svg>
       )
     },
-  ];
+  ], []);
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = useCallback((path) => {
+    if (!path) return false;
+    return location.pathname === path || location.pathname.startsWith(path + '/');
+  }, [location.pathname]);
 
-  // FIXED: Close everything FIRST, then navigate
-  const handleNavigation = (path) => {
+  const hasActiveChild = useCallback((dropdown) => {
+    return dropdown?.some(item => isActive(item.path));
+  }, [isActive]);
+
+  const closeAllMenus = useCallback(() => {
     setOpenDropdown(null);
     setIsMobileMenuOpen(false);
     setIsUserMenuOpen(false);
-    navigate(path);
-  };
+  }, []);
 
-  const toggleDropdown = (label) => {
-    setOpenDropdown(openDropdown === label ? null : label);
+  const handleNavigation = useCallback((path) => {
+    if (!path) return;
+    
+    // Close all menus first
+    closeAllMenus();
+    
+    // Use requestAnimationFrame for smooth UI update before navigation
+    requestAnimationFrame(() => {
+      navigate(path);
+    });
+  }, [navigate, closeAllMenus]);
+
+  const toggleDropdown = useCallback((label) => {
+    setOpenDropdown(prev => prev === label ? null : label);
     setIsUserMenuOpen(false);
-  };
+  }, []);
 
-  const toggleUserMenu = () => {
-    setIsUserMenuOpen(!isUserMenuOpen);
+  const toggleUserMenu = useCallback(() => {
+    setIsUserMenuOpen(prev => !prev);
     setOpenDropdown(null);
-  };
+  }, []);
 
-  const handleLogout = () => {
-    setIsUserMenuOpen(false);
-    onLogout();
-  };
+  const handleLogout = useCallback(() => {
+    closeAllMenus();
+    // Small delay to ensure menu closes before logout
+    setTimeout(() => {
+      onLogout();
+    }, 100);
+  }, [onLogout, closeAllMenus]);
 
-  const hasActiveChild = (dropdown) => {
-    return dropdown?.some(item => location.pathname === item.path);
-  };
+  // Handle click outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Check if click is inside navbar
+      if (navbarRef.current && navbarRef.current.contains(event.target)) {
+        return;
+      }
+
+      // Close dropdowns
+      if (openDropdown) {
+        const dropdownElement = dropdownRefs.current[openDropdown];
+        if (dropdownElement && !dropdownElement.contains(event.target)) {
+          setOpenDropdown(null);
+        }
+      }
+
+      // Close user menu
+      if (isUserMenuOpen && userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setIsUserMenuOpen(false);
+      }
+
+      // Close mobile menu
+      if (isMobileMenuOpen && mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+        // Check if click is on the hamburger button
+        const hamburgerButton = document.querySelector('[aria-label="Toggle menu"]');
+        if (hamburgerButton && !hamburgerButton.contains(event.target)) {
+          setIsMobileMenuOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [openDropdown, isUserMenuOpen, isMobileMenuOpen]);
+
+  // Handle escape key
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        closeAllMenus();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [closeAllMenus]);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMobileMenuOpen]);
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-[#E8EEF4] shadow-sm">
+      <nav 
+        ref={navbarRef}
+        className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-[#E8EEF4] shadow-sm"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 lg:h-[72px]">
 
             {/* Logo */}
             <div 
               className="flex items-center gap-3 cursor-pointer flex-shrink-0 group mr-8 lg:mr-12"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => handleNavigation('/dashboard')}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && handleNavigation('/dashboard')}
             >
               <div className="relative">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1769AA] to-[#2F80C0] flex items-center justify-center shadow-md shadow-[#1769AA]/20 group-hover:shadow-lg group-hover:shadow-[#1769AA]/30 transition-all duration-300">
@@ -185,12 +251,18 @@ const Navbar = ({ user, onLogout }) => {
                 <div 
                   key={index} 
                   className="relative"
-                  ref={(el) => dropdownRefs.current[item.label] = el}
+                  ref={(el) => {
+                    if (item.dropdown) {
+                      dropdownRefs.current[item.label] = el;
+                    }
+                  }}
                 >
                   {item.dropdown ? (
                     <>
                       <button
                         onClick={() => toggleDropdown(item.label)}
+                        aria-expanded={openDropdown === item.label}
+                        aria-haspopup="true"
                         className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                           openDropdown === item.label || hasActiveChild(item.dropdown)
                             ? 'bg-[#1769AA]/10 text-[#1769AA]' 
@@ -204,14 +276,17 @@ const Navbar = ({ user, onLogout }) => {
                         </svg>
                       </button>
                       {openDropdown === item.label && (
-                        <div className="absolute top-full left-0 mt-1.5 min-w-[200px] bg-white rounded-2xl shadow-xl border border-[#E8EEF4] py-2 z-50 animate-slideDown">
+                        <div 
+                          className="absolute top-full left-0 mt-1.5 min-w-[200px] bg-white rounded-2xl shadow-xl border border-[#E8EEF4] py-2 z-50 animate-slideDown"
+                          role="menu"
+                        >
                           <div className="absolute -top-1 left-6 w-3 h-3 bg-white border-t border-l border-[#E8EEF4] rotate-45" />
                           {item.dropdown.map((sub, idx) => (
                             <button
                               key={idx}
-                              // FIXED: Use onMouseDown with stopPropagation
-                              onMouseDown={(event) => {
-                                event.stopPropagation();
+                              onClick={() => {
+                                // Close dropdown first, then navigate
+                                setOpenDropdown(null);
                                 handleNavigation(sub.path);
                               }}
                               className={`w-full text-left px-5 py-2.5 text-sm transition-all duration-150 ${
@@ -219,6 +294,7 @@ const Navbar = ({ user, onLogout }) => {
                                   ? 'bg-[#1769AA]/5 text-[#1769AA] font-medium border-r-2 border-[#1769AA]' 
                                   : 'text-[#5A6A7A] hover:bg-[#F1F7FC] hover:text-[#1A2A3A]'
                               }`}
+                              role="menuitem"
                             >
                               {sub.label}
                             </button>
@@ -248,6 +324,8 @@ const Navbar = ({ user, onLogout }) => {
               <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={toggleUserMenu}
+                  aria-expanded={isUserMenuOpen}
+                  aria-haspopup="true"
                   className="flex items-center gap-3 px-3 py-1.5 rounded-xl hover:bg-[#F1F7FC] transition-all duration-200"
                 >
                   <div className="relative">
@@ -266,7 +344,10 @@ const Navbar = ({ user, onLogout }) => {
                 </button>
 
                 {isUserMenuOpen && (
-                  <div className="hidden lg:block absolute right-0 mt-2 min-w-[200px] bg-white rounded-2xl shadow-xl border border-[#E8EEF4] py-2 z-50 animate-slideDown">
+                  <div 
+                    className="hidden lg:block absolute right-0 mt-2 min-w-[200px] bg-white rounded-2xl shadow-xl border border-[#E8EEF4] py-2 z-50 animate-slideDown"
+                    role="menu"
+                  >
                     <div className="absolute -top-1 right-6 w-3 h-3 bg-white border-t border-l border-[#E8EEF4] rotate-45" />
                     
                     <div className="px-4 py-3 border-b border-[#F1F7FC]">
@@ -279,8 +360,12 @@ const Navbar = ({ user, onLogout }) => {
                     </div>
 
                     <button
-                      onClick={() => handleNavigation('/profile')}
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        handleNavigation('/profile');
+                      }}
                       className="w-full text-left px-4 py-2.5 text-sm text-[#5A6A7A] hover:bg-[#F1F7FC] hover:text-[#1A2A3A] transition-all duration-150"
+                      role="menuitem"
                     >
                       Profile Settings
                     </button>
@@ -288,6 +373,7 @@ const Navbar = ({ user, onLogout }) => {
                     <button
                       onClick={handleLogout}
                       className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-all duration-150 border-t border-[#F1F7FC] mt-1 pt-2"
+                      role="menuitem"
                     >
                       <span className="flex items-center gap-2">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -304,6 +390,7 @@ const Navbar = ({ user, onLogout }) => {
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="lg:hidden relative w-10 h-10 rounded-xl hover:bg-[#F1F7FC] transition-colors flex items-center justify-center"
                 aria-label="Toggle menu"
+                aria-expanded={isMobileMenuOpen}
               >
                 <div className="flex flex-col gap-1.5">
                   <span className={`block w-5 h-0.5 bg-[#1A2A3A] rounded-full transition-all duration-300 ${isMobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`} />
@@ -317,7 +404,10 @@ const Navbar = ({ user, onLogout }) => {
         </div>
 
         {/* Mobile Menu */}
-        <div className={`lg:hidden overflow-hidden transition-all duration-300 ease-in-out ${isMobileMenuOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div 
+          ref={mobileMenuRef}
+          className={`lg:hidden overflow-hidden transition-all duration-300 ease-in-out ${isMobileMenuOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'}`}
+        >
           <div className="px-4 py-4 space-y-1 bg-white border-t border-[#E8EEF4] max-h-[calc(100vh-64px)] overflow-y-auto">
             <div className="flex items-center gap-3 px-3 py-4 mb-3 bg-[#F1F7FC] rounded-xl">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1769AA] to-[#2F80C0] flex items-center justify-center text-white font-bold text-sm">
@@ -334,6 +424,7 @@ const Navbar = ({ user, onLogout }) => {
                   <>
                     <button
                       onClick={() => toggleDropdown(item.label)}
+                      aria-expanded={openDropdown === item.label}
                       className="flex items-center justify-between w-full px-3 py-3.5 rounded-xl text-[#5A6A7A] hover:bg-[#F1F7FC] hover:text-[#1A2A3A] transition-colors"
                     >
                       <div className="flex items-center gap-3">
@@ -349,7 +440,12 @@ const Navbar = ({ user, onLogout }) => {
                         {item.dropdown.map((sub, idx) => (
                           <button
                             key={idx}
-                            onClick={() => handleNavigation(sub.path)}
+                            onClick={() => {
+                              // Close dropdown and mobile menu, then navigate
+                              setOpenDropdown(null);
+                              setIsMobileMenuOpen(false);
+                              handleNavigation(sub.path);
+                            }}
                             className={`block w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
                               isActive(sub.path) 
                                 ? 'bg-[#1769AA]/5 text-[#1769AA] font-medium' 
@@ -364,7 +460,10 @@ const Navbar = ({ user, onLogout }) => {
                   </>
                 ) : (
                   <button
-                    onClick={() => handleNavigation(item.path)}
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      handleNavigation(item.path);
+                    }}
                     className={`flex items-center gap-3 w-full px-3 py-3.5 rounded-xl transition-colors ${
                       isActive(item.path) 
                         ? 'bg-[#1769AA] text-white shadow-md shadow-[#1769AA]/20' 
@@ -379,7 +478,10 @@ const Navbar = ({ user, onLogout }) => {
             ))}
 
             <button
-              onClick={() => { onLogout(); setIsMobileMenuOpen(false); }}
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                handleLogout();
+              }}
               className="flex items-center gap-3 w-full px-3 py-3.5 rounded-xl text-red-600 hover:bg-red-50 transition-colors mt-2 border-t border-[#E8EEF4] pt-4"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
