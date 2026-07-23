@@ -1,34 +1,50 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import './App.css';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 // Components
 import AuthScreen from './components/AuthScreen';
-import Sidebar from './components/Sidebar';
-import MobileNavbar from './components/MobileNavbar';
+import Navbar from './components/Navbar';
 import Dashboard from './components/Dashboard';
+import VendorDashboard from './components/VendorDashboard';
 import Wallet from './components/Wallet';
 import Zakat from './components/Zakat';
 import Sadaqa from './components/Sadaqa';
 import P2P from './components/P2P';
 import Takaful from './components/Takaful';
 import Pension from './components/Pension';
+import SelectMosque from './components/SelectMosque';
+import MosqueDetails from './components/MosqueDetails';
+import ImamProfile from './components/ImamProfile';
+import MosqueFinder from './components/MosqueFinder';
 import Utilities from './components/Utilities';
 import HalalStay from './components/HalalStay';
 import Hajj from './components/Hajj';
 import Hearse from './components/Hearse';
 import Ecommerce from './components/Ecommerce';
 import Restaurants from './components/Restaurants';
-import MosqueFinder from './components/MosqueFinder';
 import Wills from './components/Wills';
 import Kadhis from './components/Kadhis';
 import About from './components/About';
 import KYCStatus from './components/KYCStatus';
-import DevCode from './components/DevCode';
 import AdminPanel from './components/AdminPanel';
 import ChatBot from './components/ChatBot';
-import Cart from './components/Cart';
 import PaymentModal from './components/PaymentModal';
+
+// Registration Components
+import RegisterRole from './components/RegisterRole';
+import ClientRegister from './components/ClientRegister';
+import VendorRegister from './components/VendorRegister';
+
+// Scroll to top component
+const ScrollToTop = ({ children }) => {
+  const location = useLocation();
+  
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [location]);
+  
+  return children;
+};
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -59,73 +75,91 @@ function App() {
     setUser(null);
   };
 
+  const getDashboard = () => {
+    if (user?.role === 'vendor') {
+      return <VendorDashboard user={user} />;
+    }
+    return <Dashboard user={user} />;
+  };
+
   if (loading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        background: '#0B3D2E',
-        color: '#C9A84C'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🕋</div>
-          <div style={{ fontFamily: "'Amiri', serif", fontSize: '2rem' }}>هَلَال هَبْ</div>
-          <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '1.5rem' }}>HalalHub</div>
-          <div style={{ marginTop: '1rem', fontSize: '0.9rem', opacity: 0.6 }}>Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#1769AA] to-[#2F80C0]">
+        <div className="text-center animate-pulse">
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+              <span className="text-3xl font-bold text-white">H</span>
+            </div>
+          </div>
+          <div className="font-arabic text-4xl text-white/90">هَلَال هَبْ</div>
+          <div className="font-heading text-2xl text-white/80 mt-1">HalalHub</div>
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-white/60 animate-bounce" style={{ animationDelay: '0ms' }} />
+            <div className="w-2 h-2 rounded-full bg-white/60 animate-bounce" style={{ animationDelay: '150ms' }} />
+            <div className="w-2 h-2 rounded-full bg-white/60 animate-bounce" style={{ animationDelay: '300ms' }} />
+          </div>
+          <div className="mt-4 text-sm text-white/50 tracking-widest uppercase">Loading...</div>
         </div>
       </div>
     );
   }
 
   if (!isAuthenticated) {
-    return <AuthScreen onLogin={handleLogin} />;
+    return (
+      <Router>
+        <Routes>
+          <Route path="/" element={<AuthScreen onLogin={handleLogin} />} />
+          <Route path="/register/role" element={<RegisterRole />} />
+          <Route path="/register/client" element={<ClientRegister />} />
+          <Route path="/register/vendor" element={<VendorRegister />} />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </Router>
+    );
   }
 
   return (
     <Router>
-      <div className="app">
-        {/* Sidebar - Desktop only */}
-        <Sidebar user={user} onLogout={handleLogout} />
-        
-        {/* Mobile Content Wrapper - stacks navbar on top of content */}
-        <div className="mobile-wrapper">
-          {/* MobileNavbar - Visible only on mobile/tablet */}
-          <MobileNavbar user={user} onLogout={handleLogout} />
-          
-          {/* Main Content */}
-          <div className="main-content">
+      <ScrollToTop>
+        <div className="min-h-screen bg-[#F1F7FC]">
+          <Navbar user={user} onLogout={handleLogout} />
+          <main className="pt-20 px-0 md:px-0 lg:px-0 max-w-full mx-auto pb-12">
             <Routes>
-              <Route path="/" element={<Dashboard user={user} />} />
-              <Route path="/dashboard" element={<Dashboard user={user} />} />
+              <Route path="/" element={getDashboard()} />
+              <Route path="/dashboard" element={getDashboard()} />
               <Route path="/wallet" element={<Wallet />} />
               <Route path="/zakat" element={<Zakat />} />
               <Route path="/sadaqa" element={<Sadaqa />} />
               <Route path="/p2p" element={<P2P />} />
               <Route path="/takaful" element={<Takaful />} />
+              
+              {/* Imam Support Routes */}
               <Route path="/pension" element={<Pension />} />
+              <Route path="/select-mosque" element={<SelectMosque />} />
+              <Route path="/mosque/:id" element={<MosqueDetails />} />
+              <Route path="/imam/:id" element={<ImamProfile />} />
+              
+              {/* Independent Mosque Finder */}
+              <Route path="/mosque-finder" element={<MosqueFinder />} />
+              
               <Route path="/utilities" element={<Utilities />} />
               <Route path="/halalstay" element={<HalalStay />} />
               <Route path="/hajj" element={<Hajj />} />
               <Route path="/hearse" element={<Hearse />} />
               <Route path="/ecommerce" element={<Ecommerce />} />
               <Route path="/restaurants" element={<Restaurants />} />
-              <Route path="/mosque" element={<MosqueFinder />} />
               <Route path="/wills" element={<Wills />} />
               <Route path="/kadhis" element={<Kadhis />} />
               <Route path="/about" element={<About />} />
               <Route path="/kyc-status" element={<KYCStatus />} />
-              <Route path="/devcode" element={<DevCode />} />
               <Route path="/admin" element={<AdminPanel />} />
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
-            <ChatBot />
-            <Cart />
-            <PaymentModal />
-          </div>
+          </main>
+          <ChatBot />
+          <PaymentModal />
         </div>
-      </div>
+      </ScrollToTop>
     </Router>
   );
 }

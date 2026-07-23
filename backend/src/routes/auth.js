@@ -2,16 +2,6 @@ const router = require('express').Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { Client } = require('pg');
-const nodemailer = require('nodemailer');
-
-// Email transporter
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
 
 let client;
 
@@ -31,10 +21,10 @@ async function getClient() {
 
 const otpStore = new Map();
 
-// Register
+// Client Registration
 router.post('/register', async (req, res) => {
   try {
-    const { fullName, phone, email, nationalId, pin } = req.body;
+    const { fullName, phone, email, nationalId, pin, region, subCounty, role } = req.body;
     
     if (!fullName || !phone || !email || !nationalId || !pin) {
       return res.status(400).json({ error: 'All fields are required' });
@@ -45,13 +35,13 @@ router.post('/register', async (req, res) => {
     const userId = 'user-' + Date.now();
     
     await db.query(
-      `INSERT INTO users (id, fullname, phone, email, nationalid, pinhash, role)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [userId, fullName, phone, email, nationalId, pinHash, 'user']
+      `INSERT INTO users (id, fullname, phone, email, nationalid, pinhash, role, region, sub_county)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [userId, fullName, phone, email, nationalId, pinHash, role || 'client', region || '', subCounty || '']
     );
     
     const token = jwt.sign(
-      { id: userId, email, role: 'user' },
+      { id: userId, email, role: role || 'client' },
       process.env.JWT_SECRET || 'halalhub_sharia_2025',
       { expiresIn: '7d' }
     );
@@ -59,7 +49,7 @@ router.post('/register', async (req, res) => {
     res.status(201).json({
       message: 'Account created successfully!',
       token,
-      user: { id: userId, fullName, phone, email, role: 'user' }
+      user: { id: userId, fullName, phone, email, role: role || 'client' }
     });
   } catch (err) {
     if (err.code === '23505') {
@@ -70,7 +60,69 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Login Step 1 - Send OTP via Email ONLY
+// Vendor Registration
+router.post('/register-vendor', async (req, res) => {
+  try {
+    const { 
+      businessName, region, subCounty, phone, email, nationalId, kraPin, businessRegNo, pin, 
+      halalDeclared, termsAccepted 
+    } = req.body;
+    
+    if (!businessName || !phone || !email || !nationalId || !kraPin || !businessRegNo || !pin) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+    
+    if (!halalDeclared || !termsAccepted) {
+      return res.status(400).json({ error: 'Please accept all declarations' });
+    }
+    
+    const db = await getClient();
+    const pinHash = await bcrypt.hash(pin, 12);
+    const vendorId = 'vendor-' + Date.now();
+    
+    const existing = await db.query('SELECT * FROM users WHERE phone = $1 OR email = $2', [phone, email]);
+    if (existing.rows.length > 0) {
+      return res.status(409).json({ error: 'Phone or email already registered' });
+    }
+    
+    await db.query(
+      `INSERT INTO users (id, fullname, phone, email, nationalid, pinhash, role, region, sub_county,
+        business_name, kra_pin, business_reg_no, halal_declared, terms_accepted, vendor_status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+      [
+        vendorId, 
+        businessName, 
+        phone, 
+        email, 
+        nationalId, 
+        pinHash, 
+        'vendor', 
+        region || '',
+        subCounty || '',
+        businessName,
+        kraPin,
+        businessRegNo,
+        halalDeclared,
+        termsAccepted,
+        'pending'
+      ]
+    );
+    
+    res.status(201).json({
+      message: 'Vendor application submitted successfully! Awaiting admin approval.',
+      vendorId: vendorId,
+      status: 'pending'
+    });
+  } catch (err) {
+    if (err.code === '23505') {
+      res.status(409).json({ error: 'Phone or email already registered' });
+    } else {
+      res.status(500).json({ error: err.message });
+    }
+  }
+});
+
+// Login Step 1 - OTP shown in console only
 router.post('/login-step1', async (req, res) => {
   const { phone } = req.body;
   
@@ -90,30 +142,16 @@ router.post('/login-step1', async (req, res) => {
     
     otpStore.set(phone, { otp, expiresAt: Date.now() + 300000 });
     
-    await transporter.sendMail({
-      from: `"HalalHub" <${process.env.EMAIL_USER}>`,
-      to: user.email,
-      subject: 'Your HalalHub OTP Code',
-      html: `
-        <h2>🔐 Your HalalHub OTP</h2>
-        <p>Use the following code to complete your login:</p>
-        <h1 style="font-size: 2rem; color: #0B3D2E;">${otp}</h1>
-        <p>This code is valid for <strong>5 minutes</strong>.</p>
-        <p>If you didn't request this, please ignore this email.</p>
-        <br>
-        <p>🌙 HalalHub — Sharia-Compliant Fintech</p>
-      `
-    });
-    
-    console.log(`✅ OTP sent via Email to ${user.email}`);
+    console.log(`📧 OTP for ${user.email}: ${otp}`);
+    console.log(`📱 Phone: ${phone}`);
     
     res.json({
-      message: 'OTP sent to your email',
+      message: 'OTP sent. Check console for code.',
       phone: phone.replace(/(\+254)(\d{3})\d+(\d{3})/, '$1$2***$3')
     });
   } catch (err) {
-    console.error('Email error:', err.message);
-    res.status(500).json({ error: 'Failed to send OTP. Check email config.' });
+    console.error('Error:', err.message);
+    res.status(500).json({ error: 'Failed to send OTP' });
   }
 });
 
@@ -161,7 +199,7 @@ router.post('/login-step2', async (req, res) => {
         fullName: user.fullname,
         phone: user.phone,
         email: user.email,
-        role: user.role
+        role: user.role  // <-- This returns role to frontend
       }
     });
   } catch (err) {
