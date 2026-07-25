@@ -7,3 +7,4 @@ build/
 *.pid
 .DS_Store
 .git/
+backend/uploads/
