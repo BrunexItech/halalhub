@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { takafulService, walletService } from '../services/api';
+import { takafulService } from '../services/api';
 
 const Takaful = () => {
   const navigate = useNavigate();
@@ -55,109 +55,56 @@ const Takaful = () => {
 
   // Fetch data on mount
   useEffect(() => {
-    fetchPlans();
-    fetchMyPolicy();
-    fetchPoolStats();
-    fetchClaims();
+    fetchAllData();
   }, []);
 
-  const fetchPlans = async () => {
+  const fetchAllData = async () => {
     setLoading(true);
     setError('');
     try {
-      const mockPlans = [
-        { 
-          id: 1, 
-          name: 'Basic Cover', 
-          description: 'Essential protection for individuals',
-          coverage: 'Medical + Accidental Death',
-          monthlyCost: 500,
-          annualCost: 6000,
-          maxCoverage: 500000,
-          benefits: ['Emergency Medical', 'Accidental Death', 'Funeral Expenses'],
-          type: 'individual'
-        },
-        { 
-          id: 2, 
-          name: 'Family Shield', 
-          description: 'Comprehensive coverage for your entire family',
-          coverage: 'Full family coverage',
-          monthlyCost: 1500,
-          annualCost: 18000,
-          maxCoverage: 2000000,
-          benefits: ['Medical for all members', 'Accidental Death', 'Critical Illness', 'Hospitalization'],
-          type: 'family'
-        },
-        { 
-          id: 3, 
-          name: 'Business Protection', 
-          description: 'Protect your business and employees',
-          coverage: 'Business continuity',
-          monthlyCost: 5000,
-          annualCost: 60000,
-          maxCoverage: 5000000,
-          benefits: ['Key Person Insurance', 'Business Interruption', 'Employee Medical', 'Liability Cover'],
-          type: 'business'
-        },
-        { 
-          id: 4, 
-          name: 'Senior Care', 
-          description: 'Specialized coverage for seniors',
-          coverage: 'Elderly care and medical',
-          monthlyCost: 2500,
-          annualCost: 30000,
-          maxCoverage: 1000000,
-          benefits: ['Chronic Illness', 'Elderly Medical', 'Home Care', 'Hospice'],
-          type: 'individual'
-        }
-      ];
-      
-      setPlans(mockPlans);
-      if (mockPlans.length > 0) {
-        setSelectedPlan(mockPlans[0]);
-      }
+      await Promise.all([
+        fetchPlans(),
+        fetchMyPolicy(),
+        fetchPoolStats(),
+        fetchClaims()
+      ]);
     } catch (err) {
-      setError('Failed to load Takaful plans. Please refresh.');
-      console.error('Plans error:', err);
+      console.error('Error fetching data:', err);
+      setError('Failed to load Takaful data. Please refresh.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPlans = async () => {
+    try {
+      const response = await takafulService.getPlans();
+      const planData = response.data.plans || [];
+      setPlans(planData);
+      if (planData.length > 0 && !selectedPlan) {
+        setSelectedPlan(planData[0]);
+      }
+    } catch (err) {
+      console.error('Plans error:', err);
+      setPlans([]);
     }
   };
 
   const fetchMyPolicy = async () => {
     setLoadingPolicy(true);
     try {
-      setMyPolicy({
-        id: 1,
-        planName: 'Family Shield',
-        planId: 2,
-        status: 'active',
-        startDate: '2024-04-01',
-        expiryDate: '2027-04-01',
-        monthlyContribution: 1500,
-        totalCoverage: 2000000,
-        members: 4,
-        familyMembers: [
-          { name: 'Ahmed Mohamed', relation: 'Self', age: 35 },
-          { name: 'Fatima Ahmed', relation: 'Spouse', age: 32 },
-          { name: 'Ali Ahmed', relation: 'Child', age: 8 },
-          { name: 'Zainab Ahmed', relation: 'Child', age: 5 }
-        ],
-        contributions: [
-          { date: '2024-04-01', amount: 1500, status: 'paid' },
-          { date: '2024-03-01', amount: 1500, status: 'paid' },
-          { date: '2024-02-01', amount: 1500, status: 'paid' }
-        ]
-      });
-      
-      setFamilyMembers([
-        { name: 'Ahmed Mohamed', relation: 'Self', age: 35 },
-        { name: 'Fatima Ahmed', relation: 'Spouse', age: 32 },
-        { name: 'Ali Ahmed', relation: 'Child', age: 8 },
-        { name: 'Zainab Ahmed', relation: 'Child', age: 5 }
-      ]);
+      const response = await takafulService.getPolicy();
+      const policy = response.data.policy;
+      setMyPolicy(policy);
+      if (policy) {
+        setFamilyMembers(policy.familyMembers || []);
+      } else {
+        setFamilyMembers([]);
+      }
     } catch (err) {
       console.error('Policy error:', err);
+      setMyPolicy(null);
+      setFamilyMembers([]);
     } finally {
       setLoadingPolicy(false);
     }
@@ -165,11 +112,12 @@ const Takaful = () => {
 
   const fetchPoolStats = async () => {
     try {
-      setPoolStats({
-        members: 2847,
-        balance: 14200000,
-        claimsPaid: 98.2,
-        surplus: 250000
+      const response = await takafulService.getPoolStats();
+      setPoolStats(response.data.stats || {
+        members: 0,
+        balance: 0,
+        claimsPaid: 0,
+        surplus: 0
       });
     } catch (err) {
       console.error('Pool stats error:', err);
@@ -178,12 +126,11 @@ const Takaful = () => {
 
   const fetchClaims = async () => {
     try {
-      setClaims([
-        { id: 1, type: 'Medical', amount: 25000, date: '2024-03-15', status: 'approved', description: 'Hospitalization due to accident' },
-        { id: 2, type: 'Medical', amount: 5000, date: '2024-02-10', status: 'pending', description: 'Outpatient treatment' }
-      ]);
+      const response = await takafulService.getClaims();
+      setClaims(response.data.claims || []);
     } catch (err) {
       console.error('Claims error:', err);
+      setClaims([]);
     }
   };
 
@@ -196,20 +143,24 @@ const Takaful = () => {
     setProcessing(true);
     setError('');
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      const response = await takafulService.enroll({
+        plan_id: selectedPlan.id
+      });
+
       setModalData({
-        planName: selectedPlan.name,
-        monthlyCost: selectedPlan.monthlyCost,
-        coverage: selectedPlan.maxCoverage,
-        transactionId: `TKF-${Date.now()}`
+        planName: response.data.planName || selectedPlan.name,
+        monthlyCost: response.data.monthlyCost || selectedPlan.monthlyCost,
+        coverage: response.data.coverage || selectedPlan.maxCoverage,
+        transactionId: response.data.policyId || `TKF-${Date.now()}`
       });
       
       setShowConfirmModal(false);
       setShowSuccessModal(true);
       
-      await fetchMyPolicy();
-      await fetchPoolStats();
+      await Promise.all([
+        fetchMyPolicy(),
+        fetchPoolStats()
+      ]);
       
       setSuccess(`Enrolled in ${selectedPlan.name} successfully!`);
       setTimeout(() => setSuccess(''), 5000);
@@ -228,15 +179,35 @@ const Takaful = () => {
     
     setProcessing(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await takafulService.addFamilyMember({
+        name: newMember.name,
+        relation: newMember.relation,
+        age: parseInt(newMember.age)
+      });
       
-      setFamilyMembers([...familyMembers, { ...newMember, age: parseInt(newMember.age) }]);
+      await fetchMyPolicy();
       setShowAddMember(false);
       setNewMember({ name: '', relation: '', age: '' });
       setSuccess('Family member added successfully!');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError('Failed to add family member');
+      setError(err.response?.data?.error || 'Failed to add family member');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleRemoveMember = async (memberId) => {
+    if (!window.confirm('Are you sure you want to remove this family member?')) return;
+    
+    setProcessing(true);
+    try {
+      await takafulService.removeFamilyMember(memberId);
+      await fetchMyPolicy();
+      setSuccess('Family member removed successfully!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to remove family member');
     } finally {
       setProcessing(false);
     }
@@ -250,7 +221,11 @@ const Takaful = () => {
     
     setProcessing(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await takafulService.submitClaim({
+        type: claimData.type,
+        amount: parseInt(claimData.amount),
+        description: claimData.description
+      });
       
       setShowClaimForm(false);
       setClaimData({ type: '', amount: '', description: '', date: '' });
@@ -259,7 +234,7 @@ const Takaful = () => {
       setSuccess('Claim submitted successfully! You will be contacted within 24 hours.');
       setTimeout(() => setSuccess(''), 5000);
     } catch (err) {
-      setError('Failed to submit claim. Please try again.');
+      setError(err.response?.data?.error || 'Failed to submit claim. Please try again.');
     } finally {
       setProcessing(false);
     }
@@ -271,10 +246,11 @@ const Takaful = () => {
       currency: 'KES',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
-    }).format(amount);
+    }).format(amount || 0);
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-KE', {
       year: 'numeric',
       month: 'short',
@@ -313,6 +289,43 @@ const Takaful = () => {
     return labels[type] || type;
   };
 
+  // SVG Icons
+  const CloseIcon = () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  );
+
+  const CheckIcon = () => (
+    <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+    </svg>
+  );
+
+  const UserIcon = () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+    </svg>
+  );
+
+  const WalletIcon = () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+    </svg>
+  );
+
+  const ShieldIcon = () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+    </svg>
+  );
+
+  const FileIcon = () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+  );
+
   // Loading state
   if (loading) {
     return (
@@ -340,16 +353,14 @@ const Takaful = () => {
     <div className="min-h-screen bg-[#F1F7FC] p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         
-        {/* ===== PREMIUM TAKAFUL HERO SECTION ===== */}
+        {/* ===== HERO SECTION ===== */}
         <div className="relative overflow-hidden bg-gradient-to-br from-[#1769AA] via-[#2F80C0] to-[#4A9AD9] rounded-2xl p-6 md:p-8 lg:p-10 mb-8 shadow-lg shadow-[#1769AA]/20">
-          {/* Decorative geometric elements */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-2xl" />
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-2xl" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] border border-white/5 rounded-full" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] border border-white/5 rounded-full" />
           
           <div className="relative z-10">
-            {/* Top row: Label and status */}
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-3">
                 <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Takaful</span>
@@ -363,7 +374,6 @@ const Takaful = () => {
               )}
             </div>
 
-            {/* Main content: Message and action */}
             <div className="flex flex-col lg:flex-row lg:items-center gap-6">
               <div className="flex-1">
                 <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white leading-tight">
@@ -401,7 +411,6 @@ const Takaful = () => {
               </div>
             </div>
 
-            {/* Stats row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-white/10">
               <div>
                 <div className="text-2xl font-bold text-white">{poolStats.members.toLocaleString()}</div>
@@ -429,7 +438,7 @@ const Takaful = () => {
             <span className="text-sm text-[#DC2626]">{error}</span>
             <button 
               className="px-4 py-1.5 bg-[#DC2626] text-white text-xs font-semibold rounded-lg hover:bg-[#B91C1C] transition-colors"
-              onClick={() => { setError(''); fetchPlans(); }}
+              onClick={() => { setError(''); fetchAllData(); }}
             >
               Retry
             </button>
@@ -476,7 +485,7 @@ const Takaful = () => {
                   </div>
 
                   <div className="flex flex-wrap gap-2 mt-3">
-                    {plan.benefits.map((benefit, index) => (
+                    {plan.benefits && plan.benefits.map((benefit, index) => (
                       <span key={index} className="text-xs text-[#1A2A3A] bg-[#F1F7FC] px-3 py-1 rounded-full">
                         {benefit}
                       </span>
@@ -507,7 +516,7 @@ const Takaful = () => {
             <div className="bg-[#F1F7FC] rounded-xl p-5 border border-[#E8EEF4]">
               <div className="flex gap-4">
                 <div className="w-12 h-12 rounded-xl bg-[#1769AA]/10 flex items-center justify-center flex-shrink-0">
-                  <span className="text-xl font-bold text-[#1769AA]">T</span>
+                  <ShieldIcon />
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-[#1A2A3A]">What is Tabarru'?</h4>
@@ -572,32 +581,43 @@ const Takaful = () => {
                       </button>
                     </div>
                     <div className="space-y-1.5">
-                      {familyMembers.map((member, index) => (
-                        <div key={index} className="flex items-center justify-between text-sm border-b border-[#F1F7FC] pb-1.5">
+                      {familyMembers.map((member) => (
+                        <div key={member.id} className="flex items-center justify-between text-sm border-b border-[#F1F7FC] pb-1.5">
                           <span className="font-medium text-[#1A2A3A]">{member.name}</span>
                           <div className="flex items-center gap-2 text-xs text-[#94A3B8]">
                             <span>{member.relation}</span>
                             <span className="w-1 h-1 rounded-full bg-[#E2E8F0]" />
                             <span>{member.age} yrs</span>
                           </div>
+                          <button 
+                            className="text-xs text-red-500 hover:text-red-700 transition-colors"
+                            onClick={() => handleRemoveMember(member.id)}
+                          >
+                            Remove
+                          </button>
                         </div>
                       ))}
+                      {familyMembers.length === 0 && (
+                        <p className="text-xs text-[#94A3B8] text-center py-2">No family members added</p>
+                      )}
                     </div>
                   </div>
 
                   {/* Contributions */}
-                  <div>
-                    <span className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-2">Recent Contributions</span>
-                    <div className="space-y-1.5">
-                      {myPolicy.contributions.map((contribution, index) => (
-                        <div key={index} className="flex items-center justify-between text-sm border-b border-[#F1F7FC] pb-1.5">
-                          <span className="text-[#94A3B8]">{formatDate(contribution.date)}</span>
-                          <span className="font-semibold text-[#1A2A3A]">{formatCurrency(contribution.amount)}</span>
-                          <span className="text-xs text-emerald-600">Paid</span>
-                        </div>
-                      ))}
+                  {myPolicy.contributions && myPolicy.contributions.length > 0 && (
+                    <div>
+                      <span className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-2">Recent Contributions</span>
+                      <div className="space-y-1.5">
+                        {myPolicy.contributions.map((contribution, index) => (
+                          <div key={index} className="flex items-center justify-between text-sm border-b border-[#F1F7FC] pb-1.5">
+                            <span className="text-[#94A3B8]">{formatDate(contribution.date)}</span>
+                            <span className="font-semibold text-[#1A2A3A]">{formatCurrency(contribution.amount)}</span>
+                            <span className="text-xs text-emerald-600">Paid</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <button 
                     className="w-full py-2.5 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200"
@@ -683,7 +703,7 @@ const Takaful = () => {
               <div className="p-6 border-b border-[#F1F7FC] flex justify-between items-center">
                 <h3 className="text-lg font-bold text-[#1A2A3A]">Confirm Enrollment</h3>
                 <button className="text-[#94A3B8] hover:text-[#1A2A3A] transition-colors" onClick={() => setShowConfirmModal(false)}>
-                  ✕
+                  <CloseIcon />
                 </button>
               </div>
               
@@ -750,16 +770,14 @@ const Takaful = () => {
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-bold text-white">Enrollment Successful!</h3>
                   <button className="text-white/60 hover:text-white transition-colors" onClick={() => setShowSuccessModal(false)}>
-                    ✕
+                    <CloseIcon />
                   </button>
                 </div>
               </div>
               
               <div className="p-6 space-y-4 text-center">
                 <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mx-auto border-4 border-emerald-200">
-                  <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
-                  </svg>
+                  <CheckIcon />
                 </div>
                 
                 <div>
@@ -808,7 +826,7 @@ const Takaful = () => {
               <div className="p-6 border-b border-[#F1F7FC] flex justify-between items-center">
                 <h3 className="text-lg font-bold text-[#1A2A3A]">Add Family Member</h3>
                 <button className="text-[#94A3B8] hover:text-[#1A2A3A] transition-colors" onClick={() => setShowAddMember(false)}>
-                  ✕
+                  <CloseIcon />
                 </button>
               </div>
               
@@ -887,7 +905,7 @@ const Takaful = () => {
               <div className="p-6 border-b border-[#F1F7FC] flex justify-between items-center">
                 <h3 className="text-lg font-bold text-[#1A2A3A]">File a Claim</h3>
                 <button className="text-[#94A3B8] hover:text-[#1A2A3A] transition-colors" onClick={() => setShowClaimForm(false)}>
-                  ✕
+                  <CloseIcon />
                 </button>
               </div>
               
@@ -969,7 +987,7 @@ const Takaful = () => {
               className="text-white/60 hover:text-white transition ml-2"
               onClick={() => setSuccess('')}
             >
-              ✕
+              <CloseIcon />
             </button>
           </div>
         )}

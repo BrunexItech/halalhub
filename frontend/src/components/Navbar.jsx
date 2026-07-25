@@ -24,8 +24,12 @@ const Navbar = ({ user, onLogout }) => {
     return 'GU';
   }, [user?.fullName]);
 
-  const navItems = useMemo(() => [
-    { 
+  // Role-based navigation items
+  const navItems = useMemo(() => {
+    const role = user?.role || 'client';
+    
+    // Dashboard - same for all roles
+    const dashboardItem = { 
       path: '/dashboard', 
       label: 'Dashboard',
       icon: (
@@ -33,8 +37,10 @@ const Navbar = ({ user, onLogout }) => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
         </svg>
       )
-    },
-    {
+    };
+
+    // Finance dropdown - Clients and Imams
+    const financeDropdown = {
       label: 'Finance',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -46,8 +52,10 @@ const Navbar = ({ user, onLogout }) => {
         { path: '/takaful', label: 'Takaful' },
         { path: '/pension', label: 'Imam Pension' },
       ]
-    },
-    {
+    };
+
+    // Charity dropdown - Clients and Imams
+    const charityDropdown = {
       label: 'Charity',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,8 +66,10 @@ const Navbar = ({ user, onLogout }) => {
         { path: '/zakat', label: 'Zakat' },
         { path: '/sadaqa', label: 'Sadaqa' },
       ]
-    },
-    {
+    };
+
+    // Ecommerce dropdown - Clients and Vendors
+    const ecommerceDropdown = {
       label: 'Ecommerce',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -70,8 +80,10 @@ const Navbar = ({ user, onLogout }) => {
         { path: '/ecommerce', label: 'HalalMarket' },
         { path: '/restaurants', label: 'Restaurants' },
       ]
-    },
-    { 
+    };
+
+    // HalalStay - Clients and Vendors
+    const halalStayItem = {
       path: '/halalstay', 
       label: 'HalalStay',
       icon: (
@@ -79,8 +91,10 @@ const Navbar = ({ user, onLogout }) => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
         </svg>
       )
-    },
-    {
+    };
+
+    // Services - All roles (platform services)
+    const servicesDropdown = {
       label: 'Services',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -95,8 +109,10 @@ const Navbar = ({ user, onLogout }) => {
         { path: '/kadhis', label: 'Scholars' },
         { path: '/about', label: 'About' },
       ]
-    },
-    { 
+    };
+
+    // Utilities - All roles
+    const utilitiesItem = {
       path: '/utilities', 
       label: 'Utilities',
       icon: (
@@ -105,8 +121,44 @@ const Navbar = ({ user, onLogout }) => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       )
-    },
-  ], []);
+    };
+
+    // KYC - Vendor only
+    const kycItem = {
+      path: '/kyc-status',
+      label: 'KYC Status',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+      )
+    };
+
+    // Build items based on role
+    let items = [dashboardItem];
+
+    if (role === 'client') {
+      items.push(financeDropdown);
+      items.push(charityDropdown);
+      items.push(ecommerceDropdown);
+      items.push(halalStayItem);
+      items.push(servicesDropdown);
+      items.push(utilitiesItem);
+    } else if (role === 'vendor') {
+      items.push(ecommerceDropdown);
+      items.push(halalStayItem);
+      items.push(servicesDropdown);
+      items.push(utilitiesItem);
+      items.push(kycItem);
+    } else if (role === 'imam') {
+      items.push(financeDropdown);
+      items.push(charityDropdown);
+      items.push(servicesDropdown);
+      items.push(utilitiesItem);
+    }
+
+    return items;
+  }, [user?.role]);
 
   const isActive = useCallback((path) => {
     if (!path) return false;
@@ -125,11 +177,7 @@ const Navbar = ({ user, onLogout }) => {
 
   const handleNavigation = useCallback((path) => {
     if (!path) return;
-    
-    // Close all menus first
     closeAllMenus();
-    
-    // Use requestAnimationFrame for smooth UI update before navigation
     requestAnimationFrame(() => {
       navigate(path);
     });
@@ -147,7 +195,6 @@ const Navbar = ({ user, onLogout }) => {
 
   const handleLogout = useCallback(() => {
     closeAllMenus();
-    // Small delay to ensure menu closes before logout
     setTimeout(() => {
       onLogout();
     }, 100);
@@ -156,12 +203,10 @@ const Navbar = ({ user, onLogout }) => {
   // Handle click outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // Check if click is inside navbar
       if (navbarRef.current && navbarRef.current.contains(event.target)) {
         return;
       }
 
-      // Close dropdowns
       if (openDropdown) {
         const dropdownElement = dropdownRefs.current[openDropdown];
         if (dropdownElement && !dropdownElement.contains(event.target)) {
@@ -169,14 +214,11 @@ const Navbar = ({ user, onLogout }) => {
         }
       }
 
-      // Close user menu
       if (isUserMenuOpen && userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setIsUserMenuOpen(false);
       }
 
-      // Close mobile menu
       if (isMobileMenuOpen && mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
-        // Check if click is on the hamburger button
         const hamburgerButton = document.querySelector('[aria-label="Toggle menu"]');
         if (hamburgerButton && !hamburgerButton.contains(event.target)) {
           setIsMobileMenuOpen(false);
@@ -285,7 +327,6 @@ const Navbar = ({ user, onLogout }) => {
                             <button
                               key={idx}
                               onClick={() => {
-                                // Close dropdown first, then navigate
                                 setOpenDropdown(null);
                                 handleNavigation(sub.path);
                               }}
@@ -329,7 +370,7 @@ const Navbar = ({ user, onLogout }) => {
                   className="flex items-center gap-3 px-3 py-1.5 rounded-xl hover:bg-[#F1F7FC] transition-all duration-200"
                 >
                   <div className="relative">
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1769AA] to-[#2F80C0] flex items-center justify-center text-white font-bold text-sm shadow-md shadow-[#1769AA]/20 group-hover:shadow-lg group-hover:shadow-[#1769AA]/30 transition-all duration-300">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1769AA] to-[#2F80C0] flex items-center justify-center text-white font-bold text-sm shadow-md shadow-[#1769AA]/20 transition-all duration-300">
                       {getInitials()}
                     </div>
                   </div>
@@ -441,7 +482,6 @@ const Navbar = ({ user, onLogout }) => {
                           <button
                             key={idx}
                             onClick={() => {
-                              // Close dropdown and mobile menu, then navigate
                               setOpenDropdown(null);
                               setIsMobileMenuOpen(false);
                               handleNavigation(sub.path);

@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const P2P = () => {
   const navigate = useNavigate();
+  const token = localStorage.getItem('halalhub_token');
   
   // ===== STEP MANAGEMENT =====
   const [currentStep, setCurrentStep] = useState(1);
@@ -17,54 +21,68 @@ const P2P = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [transferComplete, setTransferComplete] = useState(false);
   const [transactionRef, setTransactionRef] = useState(null);
+  const [availableBalance, setAvailableBalance] = useState(0);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(true);
   
   // ===== VALIDATION =====
   const [errors, setErrors] = useState({});
   const [showSearch, setShowSearch] = useState(false);
-  
-  // ===== SINGLE MOCK USER =====
-  const mockUser = {
-    id: 1,
-    name: 'Sharif Kahindi',
-    phone: '+254 794 913 318',
-    username: '@sharif_k',
-    initials: 'SK'
+  const [isSearching, setIsSearching] = useState(false);
+
+  // ===== FETCH BALANCE =====
+  const fetchBalance = async () => {
+    setIsLoadingBalance(true);
+    try {
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const response = await axios.get(`${API_BASE}/p2p/balance`, config);
+      setAvailableBalance(response.data.balance || 0);
+    } catch (err) {
+      console.error('Error fetching balance:', err);
+      setAvailableBalance(0);
+    } finally {
+      setIsLoadingBalance(false);
+    }
   };
 
-  // ===== AVAILABLE BALANCE =====
-  const availableBalance = 150000;
+  // ===== SEARCH USERS =====
+  const searchUsers = async (query) => {
+    if (!query || query.length < 2) {
+      setSearchResults([]);
+      setShowSearch(false);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const response = await axios.get(`${API_BASE}/p2p/users?q=${encodeURIComponent(query)}`, config);
+      setSearchResults(response.data.users || []);
+      setShowSearch(true);
+    } catch (err) {
+      console.error('Error searching users:', err);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   // ===== EFFECTS =====
   useEffect(() => {
-    // Auto-select the user immediately
-    setRecipient(mockUser);
-    setSearchQuery(mockUser.name);
-    setSearchResults([mockUser]);
-    
-    // Auto-advance to step 2 after a brief moment
-    const timer = setTimeout(() => {
-      if (currentStep === 1) {
-        goToStep(2);
-      }
-    }, 800);
-    
-    return () => clearTimeout(timer);
+    fetchBalance();
   }, []);
 
-  // Search effect - still functional but now with only one user
+  // Search effect with debounce
   useEffect(() => {
-    if (searchQuery.length >= 2) {
-      const filtered = [mockUser].filter(user =>
-        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.phone.includes(searchQuery) ||
-        user.username.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setSearchResults(filtered);
-      setShowSearch(true);
-    } else {
-      setSearchResults([]);
-      setShowSearch(false);
-    }
+    const timer = setTimeout(() => {
+      if (searchQuery.length >= 2) {
+        searchUsers(searchQuery);
+      } else {
+        setSearchResults([]);
+        setShowSearch(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
   }, [searchQuery]);
 
   // ===== HANDLERS =====
@@ -142,29 +160,45 @@ const P2P = () => {
     }
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     setIsProcessing(true);
-    
-    setTimeout(() => {
-      const ref = 'P2P-' + Date.now().toString().slice(-8);
-      setTransactionRef(ref);
+    setErrors({});
+
+    try {
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const response = await axios.post(`${API_BASE}/p2p/transfer`, {
+        recipient_id: recipient.id,
+        amount: parseFloat(amount),
+        note: note || ''
+      }, config);
+
+      if (response.data.success) {
+        setTransactionRef(response.data.reference);
+        setAvailableBalance(response.data.new_balance);
+        setTransferComplete(true);
+        goToStep(5);
+      } else {
+        setErrors({ confirm: response.data.error || 'Transfer failed. Please try again.' });
+      }
+    } catch (err) {
+      setErrors({ confirm: err.response?.data?.error || 'Transfer failed. Please try again.' });
+    } finally {
       setIsProcessing(false);
-      setTransferComplete(true);
-      goToStep(5);
-    }, 2000);
+    }
   };
 
   const resetTransfer = () => {
-    setRecipient(mockUser);
+    setRecipient(null);
     setAmount('');
     setNote('');
-    setSearchQuery(mockUser.name);
-    setSearchResults([mockUser]);
+    setSearchQuery('');
+    setSearchResults([]);
     setTransferComplete(false);
     setTransactionRef(null);
     setErrors({});
     setStepHistory([]);
-    setCurrentStep(2); // Skip to step 2 since user is pre-selected
+    setCurrentStep(1);
+    fetchBalance();
   };
 
   const formatCurrency = (amount) => {
@@ -173,7 +207,12 @@ const P2P = () => {
       currency: 'KES',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
-    }).format(amount);
+    }).format(amount || 0);
+  };
+
+  const getInitials = (name) => {
+    if (!name) return '??';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
   const getStepLabel = () => {
@@ -187,43 +226,92 @@ const P2P = () => {
     return labels[currentStep] || '';
   };
 
+  // SVG Icons
+  const CloseIcon = () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  );
+
+  const CheckIcon = () => (
+    <svg className="w-10 h-10 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+    </svg>
+  );
+
+  const BackIcon = () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+    </svg>
+  );
+
+  const SearchIcon = () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    </svg>
+  );
+
+  const UserIcon = () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+    </svg>
+  );
+
+  const WalletIcon = () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+    </svg>
+  );
+
   // ===== RENDER STEPS =====
   const renderStep1 = () => (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fadeIn">
       <div>
         <h2 className="text-xl font-bold text-[#1A2A3A] mb-1">Select Recipient</h2>
-        <p className="text-sm text-[#94A3B8]">Search by name, phone number, or username</p>
+        <p className="text-sm text-[#94A3B8]">Search by name, phone number, or email</p>
       </div>
 
       <div className="relative">
         <div className="relative">
           <input
             type="text"
-            className="w-full px-4 py-3.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+            className="w-full px-4 py-3.5 pl-11 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
             placeholder="Search for a user..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             autoFocus
           />
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#94A3B8]">
+            <SearchIcon />
+          </span>
+          {isSearching && (
+            <span className="absolute right-4 top-1/2 -translate-y-1/2">
+              <div className="w-5 h-5 border-2 border-[#1769AA]/20 border-t-[#1769AA] rounded-full animate-spin" />
+            </span>
+          )}
         </div>
 
         {showSearch && searchResults.length > 0 && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-[#E8EEF4] rounded-xl shadow-xl max-h-64 overflow-y-auto z-20">
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-[#E8EEF4] rounded-xl shadow-xl max-h-64 overflow-y-auto z-20 animate-slideDown">
             {searchResults.map((user) => (
               <button
                 key={user.id}
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#F1F7FC] transition-colors text-left border-b border-[#F1F7FC] last:border-0"
                 onClick={() => handleSearchSelect(user)}
               >
-                <div className="w-10 h-10 rounded-xl bg-[#1769AA] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                  {user.initials}
-                </div>
+                {user.profile_image ? (
+                  <img src={user.profile_image} alt={user.name} className="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
+                ) : (
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1769AA] to-[#2F80C0] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                    {getInitials(user.name)}
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-[#1A2A3A] text-sm">{user.name}</div>
                   <div className="flex items-center gap-2 text-xs text-[#94A3B8]">
                     <span>{user.phone}</span>
                     <span className="w-1 h-1 rounded-full bg-[#E2E8F0]" />
-                    <span>{user.username}</span>
+                    <span>{user.email}</span>
                   </div>
                 </div>
               </button>
@@ -231,7 +319,7 @@ const P2P = () => {
           </div>
         )}
 
-        {showSearch && searchResults.length === 0 && searchQuery.length >= 2 && (
+        {showSearch && searchResults.length === 0 && searchQuery.length >= 2 && !isSearching && (
           <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-[#E8EEF4] rounded-xl shadow-xl p-4 text-center z-20">
             <p className="text-sm text-[#94A3B8]">No users found</p>
           </div>
@@ -239,11 +327,15 @@ const P2P = () => {
       </div>
 
       {recipient && (
-        <div className="bg-[#F1F7FC] rounded-xl p-4 border border-[#E8EEF4]">
+        <div className="bg-[#F1F7FC] rounded-xl p-4 border border-[#E8EEF4] animate-fadeIn">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-[#1769AA] flex items-center justify-center text-white font-bold text-lg">
-              {recipient.initials}
-            </div>
+            {recipient.profile_image ? (
+              <img src={recipient.profile_image} alt={recipient.name} className="w-12 h-12 rounded-xl object-cover" />
+            ) : (
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#1769AA] to-[#2F80C0] flex items-center justify-center text-white font-bold text-lg">
+                {getInitials(recipient.name)}
+              </div>
+            )}
             <div>
               <div className="font-semibold text-[#1A2A3A]">{recipient.name}</div>
               <div className="text-sm text-[#94A3B8]">{recipient.phone}</div>
@@ -265,16 +357,24 @@ const P2P = () => {
   );
 
   const renderStep2 = () => (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fadeIn">
       <div>
         <h2 className="text-xl font-bold text-[#1A2A3A] mb-1">Enter Amount</h2>
         <p className="text-sm text-[#94A3B8]">Sending to {recipient?.name}</p>
       </div>
 
       <div className="bg-[#F1F7FC] rounded-xl p-4 border border-[#E8EEF4]">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm text-[#94A3B8]">Available balance</span>
-          <span className="text-sm font-semibold text-[#1A2A3A]">{formatCurrency(availableBalance)}</span>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-[#94A3B8] flex items-center gap-2">
+            <WalletIcon /> Available balance
+          </span>
+          <span className="text-sm font-semibold text-[#1A2A3A]">
+            {isLoadingBalance ? (
+              <span className="inline-block w-16 h-4 bg-[#E2E8F0] rounded animate-pulse" />
+            ) : (
+              formatCurrency(availableBalance)
+            )}
+          </span>
         </div>
       </div>
 
@@ -312,9 +412,13 @@ const P2P = () => {
       </div>
 
       <div className="flex items-center gap-3 pt-2 border-t border-[#F1F7FC]">
-        <div className="w-10 h-10 rounded-xl bg-[#1769AA] flex items-center justify-center text-white font-bold text-sm">
-          {recipient?.initials}
-        </div>
+        {recipient?.profile_image ? (
+          <img src={recipient.profile_image} alt={recipient.name} className="w-10 h-10 rounded-xl object-cover" />
+        ) : (
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1769AA] to-[#2F80C0] flex items-center justify-center text-white font-bold text-sm">
+            {recipient ? getInitials(recipient.name) : '??'}
+          </div>
+        )}
         <div>
           <div className="text-sm font-semibold text-[#1A2A3A]">{recipient?.name}</div>
           <div className="text-xs text-[#94A3B8]">{recipient?.phone}</div>
@@ -324,7 +428,7 @@ const P2P = () => {
   );
 
   const renderStep3 = () => (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fadeIn">
       <div>
         <h2 className="text-xl font-bold text-[#1A2A3A] mb-1">Add a Note</h2>
         <p className="text-sm text-[#94A3B8]">Optional · This will be visible to the recipient</p>
@@ -346,9 +450,13 @@ const P2P = () => {
 
       <div className="bg-[#F1F7FC] rounded-xl p-4 border border-[#E8EEF4]">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#1769AA] flex items-center justify-center text-white font-bold text-sm">
-            {recipient?.initials}
-          </div>
+          {recipient?.profile_image ? (
+            <img src={recipient.profile_image} alt={recipient.name} className="w-10 h-10 rounded-xl object-cover" />
+          ) : (
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1769AA] to-[#2F80C0] flex items-center justify-center text-white font-bold text-sm">
+              {recipient ? getInitials(recipient.name) : '??'}
+            </div>
+          )}
           <div>
             <div className="text-sm font-semibold text-[#1A2A3A]">{recipient?.name}</div>
             <div className="text-xs text-[#94A3B8]">{recipient?.phone}</div>
@@ -362,7 +470,7 @@ const P2P = () => {
   );
 
   const renderStep4 = () => (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fadeIn">
       <div>
         <h2 className="text-xl font-bold text-[#1A2A3A] mb-1">Review Transfer</h2>
         <p className="text-sm text-[#94A3B8]">Please verify the details before confirming</p>
@@ -370,9 +478,13 @@ const P2P = () => {
 
       <div className="bg-[#F1F7FC] rounded-xl p-5 border border-[#E8EEF4] space-y-4">
         <div className="flex items-center gap-3 pb-3 border-b border-[#E8EEF4]">
-          <div className="w-12 h-12 rounded-xl bg-[#1769AA] flex items-center justify-center text-white font-bold text-lg">
-            {recipient?.initials}
-          </div>
+          {recipient?.profile_image ? (
+            <img src={recipient.profile_image} alt={recipient.name} className="w-12 h-12 rounded-xl object-cover" />
+          ) : (
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#1769AA] to-[#2F80C0] flex items-center justify-center text-white font-bold text-lg">
+              {recipient ? getInitials(recipient.name) : '??'}
+            </div>
+          )}
           <div>
             <div className="font-semibold text-[#1A2A3A]">{recipient?.name}</div>
             <div className="text-sm text-[#94A3B8]">{recipient?.phone}</div>
@@ -407,15 +519,17 @@ const P2P = () => {
           This is a Qard Hasan transfer — 0% interest, no riba. Your reward is with Allah.
         </p>
       </div>
+
+      {errors.confirm && (
+        <p className="text-sm text-[#DC2626] text-center">{errors.confirm}</p>
+      )}
     </div>
   );
 
   const renderStep5 = () => (
-    <div className="text-center py-6 space-y-6">
+    <div className="text-center py-6 space-y-6 animate-fadeIn">
       <div className="w-20 h-20 rounded-full bg-emerald-50 flex items-center justify-center mx-auto border-4 border-emerald-200">
-        <svg className="w-10 h-10 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
-        </svg>
+        <CheckIcon />
       </div>
 
       <div>
@@ -447,6 +561,10 @@ const P2P = () => {
         <div className="flex justify-between pt-2 border-t border-[#E8EEF4]">
           <span className="text-sm text-[#94A3B8]">Date</span>
           <span className="text-sm text-[#1A2A3A]">{new Date().toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-sm text-[#94A3B8]">New Balance</span>
+          <span className="text-sm font-semibold text-emerald-600">{formatCurrency(availableBalance)}</span>
         </div>
       </div>
 
@@ -480,9 +598,7 @@ const P2P = () => {
                 className="p-2 hover:bg-[#E8EEF4] rounded-xl transition-colors"
                 onClick={goBack}
               >
-                <svg className="w-5 h-5 text-[#5A6A7A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                </svg>
+                <BackIcon />
               </button>
             )}
             <div>
@@ -506,7 +622,7 @@ const P2P = () => {
               {[1, 2, 3, 4].map((step) => (
                 <div
                   key={step}
-                  className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+                  className={`h-1 flex-1 rounded-full transition-all duration-500 ${
                     step < currentStep
                       ? 'bg-[#1769AA]'
                       : step === currentStep
@@ -520,12 +636,16 @@ const P2P = () => {
         )}
 
         {/* ===== RECIPIENT INDICATOR ===== */}
-        {currentStep > 1 && !transferComplete && (
-          <div className="mb-4 p-3 bg-white rounded-xl border border-[#E8EEF4] shadow-sm">
+        {currentStep > 1 && !transferComplete && recipient && (
+          <div className="mb-4 p-3 bg-white rounded-xl border border-[#E8EEF4] shadow-sm animate-fadeIn">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#1769AA] flex items-center justify-center text-white font-bold text-xs">
-                {recipient?.initials}
-              </div>
+              {recipient?.profile_image ? (
+                <img src={recipient.profile_image} alt={recipient.name} className="w-8 h-8 rounded-lg object-cover" />
+              ) : (
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1769AA] to-[#2F80C0] flex items-center justify-center text-white font-bold text-xs">
+                  {getInitials(recipient?.name)}
+                </div>
+              )}
               <div>
                 <div className="text-sm font-semibold text-[#1A2A3A]">{recipient?.name}</div>
                 <div className="text-xs text-[#94A3B8]">{recipient?.phone}</div>
@@ -549,10 +669,12 @@ const P2P = () => {
             renderStep5()
           ) : (
             <>
-              {currentStep === 1 && renderStep1()}
-              {currentStep === 2 && renderStep2()}
-              {currentStep === 3 && renderStep3()}
-              {currentStep === 4 && renderStep4()}
+              <div className="transition-all duration-300">
+                {currentStep === 1 && renderStep1()}
+                {currentStep === 2 && renderStep2()}
+                {currentStep === 3 && renderStep3()}
+                {currentStep === 4 && renderStep4()}
+              </div>
 
               {/* ===== ACTIONS ===== */}
               <div className="flex gap-3 mt-8 pt-6 border-t border-[#F1F7FC]">
@@ -605,6 +727,36 @@ const P2P = () => {
           </p>
         </div>
       </div>
+
+      {/* ===== CSS ANIMATIONS ===== */}
+      <style>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out forwards;
+        }
+        .animate-slideDown {
+          animation: slideDown 0.25s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 };

@@ -12,9 +12,13 @@ const ClientRegister = () => {
   
   // OTP state
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [generatedOtp, setGeneratedOtp] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
   const [otpStep, setOtpStep] = useState(false);
+  const [otpExpirySeconds, setOtpExpirySeconds] = useState(0);
+  const [resendTimer, setResendTimer] = useState(0);
   const inputRefs = useRef([]);
+  const otpTimerRef = useRef(null);
   
   // Location data
   const [counties, setCounties] = useState([]);
@@ -106,6 +110,15 @@ const ClientRegister = () => {
     }
   }, [formData.countyName, formData.subCountyName]);
 
+  // Cleanup OTP timer
+  useEffect(() => {
+    return () => {
+      if (otpTimerRef.current) {
+        clearInterval(otpTimerRef.current);
+      }
+    };
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -164,6 +177,101 @@ const ClientRegister = () => {
     }
   };
 
+  const startOtpCountdown = () => {
+    setOtpExpirySeconds(30);
+    
+    if (otpTimerRef.current) {
+      clearInterval(otpTimerRef.current);
+    }
+    
+    otpTimerRef.current = setInterval(() => {
+      setOtpExpirySeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(otpTimerRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleSendOtp = async () => {
+    if (!formData.phone) {
+      setError('Please enter your phone number first');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    try {
+      const response = await authService.sendRegistrationOtp({ 
+        phone: formData.phone,
+        email: formData.email 
+      });
+      
+      console.log('OTP Response:', response.data); // Debug log
+      
+      // Handle different response structures
+      const otp = response.data?.otp || response.data?.data?.otp;
+      
+      if (otp) {
+        setOtpCode(otp);
+        setOtpSent(true);
+        setOtpStep(true);
+        setResendTimer(60);
+        startOtpCountdown();
+        setSuccess('Verification code sent');
+        setTimeout(() => setSuccess(''), 3000);
+        
+        // Focus on first OTP input
+        setTimeout(() => {
+          if (inputRefs.current[0]) {
+            inputRefs.current[0].focus();
+          }
+        }, 300);
+      } else {
+        setError('Failed to get OTP. Please try again.');
+      }
+      
+    } catch (err) {
+      console.error('Send OTP error:', err);
+      setError(err.response?.data?.error || 'Failed to send OTP. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (resendTimer > 0) return;
+    
+    setLoading(true);
+    setError('');
+    try {
+      const response = await authService.sendRegistrationOtp({ 
+        phone: formData.phone,
+        email: formData.email 
+      });
+      
+      const otp = response.data?.otp || response.data?.data?.otp;
+      
+      if (otp) {
+        setOtpCode(otp);
+        setResendTimer(60);
+        startOtpCountdown();
+        setSuccess('Code resent');
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        setError('Failed to resend OTP. Please try again.');
+      }
+      
+    } catch (err) {
+      console.error('Resend OTP error:', err);
+      setError(err.response?.data?.error || 'Failed to resend OTP');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleNext = () => {
     setError('');
     setSuccess('');
@@ -189,26 +297,29 @@ const ClientRegister = () => {
     setError('');
   };
 
-  const sendOtp = () => {
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedOtp(otpCode);
-    setOtpStep(true);
-    alert(`Your OTP is: ${otpCode}`);
-  };
-
   const handleVerifyOtp = async () => {
     const otpString = otp.join('');
     if (otpString.length < 6) {
       setError('Please enter all 6 digits of the OTP');
       return;
     }
-    if (otpString !== generatedOtp) {
-      setError('Invalid OTP. Please try again.');
-      return;
-    }
     
     setLoading(true);
+    setError('');
     try {
+      // Verify OTP with backend
+      const verifyResponse = await authService.verifyRegistrationOtp({
+        phone: formData.phone,
+        otp: otpString
+      });
+      
+      if (!verifyResponse.data.success) {
+        setError('Invalid OTP. Please try again.');
+        setLoading(false);
+        return;
+      }
+      
+      // OTP verified, proceed with registration
       await authService.register({
         fullName: formData.fullName,
         phone: formData.phone,
@@ -220,9 +331,11 @@ const ClientRegister = () => {
         ward: formData.wardName,
         role: 'client'
       });
+      
       setStep(5);
       setSuccess('Registration complete!');
     } catch (err) {
+      console.error('Registration error:', err);
       setError(err.response?.data?.error || 'Registration failed');
     }
     setLoading(false);
@@ -425,9 +538,43 @@ const ClientRegister = () => {
           <div className="space-y-4 animate-fadeIn">
             <div className="mb-2">
               <h3 className="text-lg font-bold text-[#1A2A3A]">Verify Your Identity</h3>
-              <p className="text-sm text-[#94A3B8]">Enter the 6-digit code sent to your phone</p>
+              <p className="text-sm text-[#94A3B8]">Enter the 6-digit code</p>
             </div>
 
+            {/* OTP Display Box - Shows only after OTP is sent */}
+            {otpSent && (
+              <div className="bg-[#F1F7FC] rounded-xl p-4 border border-[#E8EEF4]">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">🔐</span>
+                    <div>
+                      <span className="text-sm font-medium text-[#5A6A7A]">Your OTP Code</span>
+                      <div className="text-2xl font-mono font-bold text-[#1769AA] tracking-widest mt-0.5">
+                        {otpCode || '••••••'}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className={`text-sm font-semibold ${otpExpirySeconds <= 10 ? 'text-red-600' : 'text-[#5A6A7A]'}`}>
+                      {otpExpirySeconds > 0 ? `${otpExpirySeconds}s` : 'Expired'}
+                    </div>
+                    <div className="w-20 h-1 bg-[#E8EEF4] rounded-full mt-1 overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-1000 ${
+                          otpExpirySeconds <= 10 ? 'bg-red-600' : 'bg-[#1769AA]'
+                        }`}
+                        style={{ width: `${(otpExpirySeconds / 30) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+                {otpExpirySeconds === 0 && (
+                  <p className="text-xs text-red-600 mt-2">OTP expired. Click "Resend Code" below.</p>
+                )}
+              </div>
+            )}
+
+            {/* OTP Input Fields */}
             <div className="flex gap-3 justify-center py-2">
               {otp.map((digit, index) => (
                 <input
@@ -445,16 +592,24 @@ const ClientRegister = () => {
               ))}
             </div>
 
+            {/* Send / Resend OTP Controls */}
             <div className="flex justify-between items-center">
               <span className="text-xs text-[#94A3B8]">
-                {otpStep ? 'Code sent to your phone' : 'Click "Send OTP" below'}
+                {otpSent ? 'Enter the code above' : 'Click "Send Code" to receive OTP'}
               </span>
               <button
                 type="button"
-                className="text-xs font-semibold text-[#1769AA] hover:text-[#2F80C0] transition"
-                onClick={sendOtp}
+                className={`text-xs font-semibold transition ${
+                  otpSent 
+                    ? `text-[#1769AA] hover:text-[#2F80C0]`
+                    : 'text-[#1769AA] hover:text-[#2F80C0]'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                onClick={otpSent ? handleResendOtp : handleSendOtp}
+                disabled={(otpSent && resendTimer > 0) || loading}
               >
-                Send OTP
+                {otpSent 
+                  ? (resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend Code')
+                  : 'Send Code'}
               </button>
             </div>
           </div>

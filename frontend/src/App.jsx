@@ -6,6 +6,7 @@ import AuthScreen from './components/AuthScreen';
 import Navbar from './components/Navbar';
 import Dashboard from './components/Dashboard';
 import VendorDashboard from './components/VendorDashboard';
+import ImamDashboard from './components/ImamDashboard';
 import Wallet from './components/Wallet';
 import Zakat from './components/Zakat';
 import Sadaqa from './components/Sadaqa';
@@ -34,6 +35,7 @@ import PaymentModal from './components/PaymentModal';
 import RegisterRole from './components/RegisterRole';
 import ClientRegister from './components/ClientRegister';
 import VendorRegister from './components/VendorRegister';
+import ImamRegister from './components/ImamRegister';
 
 // Scroll to top component
 const ScrollToTop = ({ children }) => {
@@ -79,6 +81,9 @@ function App() {
     if (user?.role === 'vendor') {
       return <VendorDashboard user={user} />;
     }
+    if (user?.role === 'imam') {
+      return <ImamDashboard />;
+    }
     return <Dashboard user={user} />;
   };
 
@@ -109,9 +114,11 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<AuthScreen onLogin={handleLogin} />} />
+          <Route path="/admin" element={<AdminPanel />} />
           <Route path="/register/role" element={<RegisterRole />} />
           <Route path="/register/client" element={<ClientRegister />} />
           <Route path="/register/vendor" element={<VendorRegister />} />
+          <Route path="/register/imam" element={<ImamRegister />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Router>
@@ -138,6 +145,7 @@ function App() {
               <Route path="/select-mosque" element={<SelectMosque />} />
               <Route path="/mosque/:id" element={<MosqueDetails />} />
               <Route path="/imam/:id" element={<ImamProfile />} />
+              <Route path="/imam-dashboard" element={<ImamDashboard />} />
               
               {/* Independent Mosque Finder */}
               <Route path="/mosque-finder" element={<MosqueFinder />} />

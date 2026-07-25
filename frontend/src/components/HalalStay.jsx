@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const HalalStay = () => {
   const navigate = useNavigate();
+  const token = localStorage.getItem('halalhub_token');
   
   // ===== STATE =====
   const [loading, setLoading] = useState(true);
@@ -26,6 +30,7 @@ const HalalStay = () => {
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [guests, setGuests] = useState(2);
+  const [rooms, setRooms] = useState(1);
   const [locations, setLocations] = useState(['All']);
   const [propertyTypes, setPropertyTypes] = useState(['All']);
   
@@ -39,7 +44,6 @@ const HalalStay = () => {
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsScrollComplete, setTermsScrollComplete] = useState(false);
-  const [agreementVersion, setAgreementVersion] = useState('v1.0');
   const termsContentRef = useRef(null);
   
   // Wishlist
@@ -59,6 +63,42 @@ const HalalStay = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
   const [bookingData, setBookingData] = useState(null);
+
+  // ===== DYNAMIC CALCULATION =====
+  const calculateNights = () => {
+    if (!checkIn || !checkOut) return 0;
+    return Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24));
+  };
+
+  const calculateTotal = () => {
+    if (!selectedProperty) return 0;
+    const nights = calculateNights();
+    return selectedProperty.price_per_night * rooms * nights;
+  };
+
+  const getTotalPrice = () => {
+    return calculateTotal();
+  };
+
+  const getNights = () => {
+    return calculateNights();
+  };
+
+  const isFullyBooked = (property) => {
+    return property.available_rooms !== undefined && property.available_rooms <= 0;
+  };
+
+  const getAvailableRooms = (property) => {
+    return property.available_rooms !== undefined ? property.available_rooms : property.total_rooms || 1;
+  };
+
+  const getMaxGuestsPerRoom = (property) => {
+    return property.max_guests_per_room || 2;
+  };
+
+  const getMaxAllowedGuests = (property) => {
+    return rooms * getMaxGuestsPerRoom(property);
+  };
 
   // ===== AUTHENTICATION =====
   useEffect(() => {
@@ -87,119 +127,20 @@ const HalalStay = () => {
     setLoading(true);
     setError('');
     try {
-      const mockProperties = [
-        {
-          id: 1,
-          name: 'Al-Firdaus Apartment',
-          location: 'Nairobi',
-          type: 'Apartment',
-          price: 4500,
-          rating: 4.8,
-          reviews: 234,
-          amenities: ['WiFi', 'Kitchen', 'Parking', 'Halal Food'],
-          description: 'Luxury apartment with halal kitchen facilities',
-          available: true,
-          host: 'Ahmed Mohammed',
-          bedrooms: 2,
-          bathrooms: 2,
-          maxGuests: 4,
-          halalFeatures: ['Qibla direction', 'Prayer mat available', 'Nearby mosque'],
-          checkInTime: '2:00 PM',
-          checkOutTime: '11:00 AM',
-          cancellationPolicy: 'Free cancellation up to 7 days before check-in. 50% refund up to 3 days before.'
-        },
-        {
-          id: 2,
-          name: 'Zam-Zam Guest House',
-          location: 'Mombasa',
-          type: 'Guest House',
-          price: 2800,
-          rating: 4.6,
-          reviews: 189,
-          amenities: ['WiFi', 'Breakfast', 'Airport Transfer'],
-          description: 'Cozy guest house near the beach with halal meals',
-          available: true,
-          host: 'Fatima Hassan',
-          bedrooms: 1,
-          bathrooms: 1,
-          maxGuests: 2,
-          halalFeatures: ['Halal breakfast', 'Alcohol-free', 'Family-friendly'],
-          checkInTime: '1:00 PM',
-          checkOutTime: '10:00 AM',
-          cancellationPolicy: 'Free cancellation up to 3 days before check-in.'
-        },
-        {
-          id: 3,
-          name: 'Madinah Suites',
-          location: 'Nairobi',
-          type: 'Serviced Suite',
-          price: 7200,
-          rating: 4.9,
-          reviews: 312,
-          amenities: ['WiFi', 'Kitchen', 'Gym', 'Pool', 'Halal Food'],
-          description: 'Premium suites with 5-star amenities and halal dining',
-          available: true,
-          host: 'Abdullah Omar',
-          bedrooms: 3,
-          bathrooms: 2,
-          maxGuests: 6,
-          halalFeatures: ['Qibla direction', 'Prayer area', 'Halal restaurant'],
-          checkInTime: '3:00 PM',
-          checkOutTime: '12:00 PM',
-          cancellationPolicy: 'Free cancellation up to 14 days before check-in.'
-        },
-        {
-          id: 4,
-          name: 'Kakamega Halal Lodge',
-          location: 'Kakamega',
-          type: 'Lodge',
-          price: 3200,
-          rating: 4.5,
-          reviews: 156,
-          amenities: ['WiFi', 'Fireplace', 'Nature Trails'],
-          description: 'Rustic lodge in the heart of Kakamega Forest',
-          available: true,
-          host: 'Khadija Osman',
-          bedrooms: 2,
-          bathrooms: 1,
-          maxGuests: 4,
-          halalFeatures: ['Privacy', 'Halal meals available', 'Peaceful environment'],
-          checkInTime: '2:00 PM',
-          checkOutTime: '10:30 AM',
-          cancellationPolicy: 'Free cancellation up to 5 days before check-in.'
-        },
-        {
-          id: 5,
-          name: 'Diani Beach Resort',
-          location: 'Mombasa',
-          type: 'Resort',
-          price: 8500,
-          rating: 4.9,
-          reviews: 423,
-          amenities: ['WiFi', 'Pool', 'Spa', 'Halal Food', 'Beach Access'],
-          description: 'Luxury beachfront resort with halal dining and spa',
-          available: true,
-          host: 'Rashid Juma',
-          bedrooms: 4,
-          bathrooms: 3,
-          maxGuests: 8,
-          halalFeatures: ['Halal dining', 'Prayer area', 'Alcohol-free', 'Qibla direction'],
-          checkInTime: '2:00 PM',
-          checkOutTime: '11:00 AM',
-          cancellationPolicy: 'Free cancellation up to 14 days before check-in.'
-        }
-      ];
+      const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+      const response = await axios.get(`${API_BASE}/client/listings`, config);
       
-      setProperties(mockProperties);
+      const propertyData = response.data.listings || [];
+      setProperties(propertyData);
       
-      const uniqueLocations = ['All', ...new Set(mockProperties.map(p => p.location))];
-      const uniqueTypes = ['All', ...new Set(mockProperties.map(p => p.type))];
+      const uniqueLocations = ['All', ...new Set(propertyData.map(p => p.county || p.location).filter(Boolean))];
+      const uniqueTypes = ['All', ...new Set(propertyData.map(p => p.type).filter(Boolean))];
       setLocations(uniqueLocations);
       setPropertyTypes(uniqueTypes);
       
     } catch (err) {
+      console.error('Error fetching properties:', err);
       setError('Failed to load properties. Please refresh.');
-      console.error('Properties error:', err);
     } finally {
       setLoading(false);
     }
@@ -208,32 +149,9 @@ const HalalStay = () => {
   const fetchBookings = async () => {
     setLoadingBookings(true);
     try {
-      setBookings([
-        { 
-          id: 1, 
-          property: 'Al-Firdaus Apartment', 
-          checkIn: '2024-05-15', 
-          checkOut: '2024-05-18', 
-          guests: 2, 
-          total: 13500, 
-          status: 'confirmed',
-          bookingRef: 'HS-20240515-001',
-          agreementAccepted: true,
-          agreementVersion: 'v1.0'
-        },
-        { 
-          id: 2, 
-          property: 'Diani Beach Resort', 
-          checkIn: '2024-06-01', 
-          checkOut: '2024-06-05', 
-          guests: 4, 
-          total: 34000, 
-          status: 'confirmed',
-          bookingRef: 'HS-20240601-002',
-          agreementAccepted: true,
-          agreementVersion: 'v1.0'
-        }
-      ]);
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const response = await axios.get(`${API_BASE}/client/bookings`, config);
+      setBookings(response.data.bookings || []);
     } catch (err) {
       console.error('Bookings error:', err);
     } finally {
@@ -243,7 +161,7 @@ const HalalStay = () => {
 
   const fetchWishlist = async () => {
     try {
-      setWishlist([1, 3, 5]);
+      setWishlist([]);
     } catch (err) {
       console.error('Wishlist error:', err);
     }
@@ -251,10 +169,7 @@ const HalalStay = () => {
 
   const fetchNotifications = async () => {
     try {
-      setNotifications([
-        { id: 1, message: 'Welcome to HalalStay! Book your first halal-friendly stay today.', type: 'info', read: false },
-        { id: 2, message: 'Diani Beach Resort is now available for booking.', type: 'info', read: false }
-      ]);
+      setNotifications([]);
     } catch (err) {
       console.error('Notifications error:', err);
     }
@@ -262,13 +177,13 @@ const HalalStay = () => {
 
   // ===== FILTER FUNCTIONS =====
   const filteredProperties = properties.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesLocation = selectedLocation === 'All' || p.location === selectedLocation;
+    const matchesSearch = (p.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.location || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.description || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesLocation = selectedLocation === 'All' || p.county === selectedLocation || p.location === selectedLocation;
     const matchesType = selectedType === 'All' || p.type === selectedType;
-    const matchesPrice = p.price >= priceRange[0] && p.price <= priceRange[1];
-    return matchesSearch && matchesLocation && matchesType && matchesPrice && p.available;
+    const matchesPrice = (p.price_per_night || 0) >= priceRange[0] && (p.price_per_night || 0) <= priceRange[1];
+    return matchesSearch && matchesLocation && matchesType && matchesPrice && p.is_active !== false;
   });
 
   // ===== WISHLIST =====
@@ -316,14 +231,36 @@ const HalalStay = () => {
       setError('Please sign in to book a stay.');
       return;
     }
+    
+    if (isFullyBooked(property)) {
+      setError('This property is fully booked for the selected dates.');
+      return;
+    }
+    
     if (!checkIn || !checkOut) {
       setError('Please select check-in and check-out dates.');
       return;
     }
+    
+    const nights = calculateNights();
+    if (property.min_stay && nights < property.min_stay) {
+      setError(`Minimum stay is ${property.min_stay} night(s).`);
+      return;
+    }
+    
     if (!guestName || !guestEmail || !guestPhone) {
       setError('Please fill in all guest details.');
       return;
     }
+    
+    const maxGuestsPerRoom = getMaxGuestsPerRoom(property);
+    const maxAllowedGuests = rooms * maxGuestsPerRoom;
+    
+    if (guests > maxAllowedGuests) {
+      setError(`Maximum ${maxGuestsPerRoom} guests per room. You booked ${rooms} room(s), so maximum ${maxAllowedGuests} guests allowed.`);
+      return;
+    }
+    
     setSelectedProperty(property);
     setShowBookingModal(true);
   };
@@ -332,68 +269,52 @@ const HalalStay = () => {
     setProcessing(true);
     setError('');
     try {
-      const nights = Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24));
-      const subtotal = selectedProperty.price * guests * nights;
-      const tax = subtotal * 0.16;
-      const total = subtotal + tax;
+      const nights = getNights();
+      const totalPrice = getTotalPrice();
       
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const response = await axios.post(`${API_BASE}/client/bookings`, {
+        listing_id: selectedProperty.id,
+        check_in: checkIn,
+        check_out: checkOut,
+        guests: guests,
+        rooms: rooms,
+        special_requests: specialRequests
+      }, config);
       
-      const bookingRef = `HS-${Date.now().toString().slice(-8)}`;
+      const bookingRef = response.data.bookingId || `HS-${Date.now().toString().slice(-8)}`;
       
       setBookingData({
         bookingRef,
-        propertyName: selectedProperty.name,
-        propertyLocation: selectedProperty.location,
+        propertyName: selectedProperty.title,
+        propertyLocation: selectedProperty.location || selectedProperty.county,
         checkIn,
         checkOut,
         nights,
         guests,
-        subtotal,
-        tax,
-        total,
+        rooms,
+        total: totalPrice,
         property: selectedProperty,
         guestName,
         guestEmail,
         guestPhone,
         specialRequests,
         agreementAccepted: termsAccepted,
-        agreementVersion,
         status: 'confirmed',
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        roomsLeft: response.data.rooms_left
       });
       
-      // Create booking
-      const newBooking = {
-        id: Date.now(),
-        property: selectedProperty.name,
-        checkIn,
-        checkOut,
-        guests,
-        total,
-        status: 'confirmed',
-        bookingRef,
-        agreementAccepted: true,
-        agreementVersion
-      };
-      setBookings([newBooking, ...bookings]);
-      
-      // Create notification
-      const newNotification = {
-        id: Date.now(),
-        message: `Booking confirmed for ${selectedProperty.name}. Reference: ${bookingRef}`,
-        type: 'success',
-        read: false
-      };
-      setNotifications([newNotification, ...notifications]);
+      await fetchBookings();
+      await fetchProperties();
       
       setShowBookingModal(false);
       setShowSuccessModal(true);
       
-      setSuccess(`Booking confirmed for ${selectedProperty.name}!`);
+      setSuccess(`Booking confirmed for ${selectedProperty.title}!`);
       setTimeout(() => setSuccess(''), 5000);
     } catch (err) {
-      setError('Booking failed. Please try again.');
+      setError(err.response?.data?.error || 'Booking failed. Please try again.');
     } finally {
       setProcessing(false);
     }
@@ -402,14 +323,6 @@ const HalalStay = () => {
   const viewBookingDetails = (booking) => {
     setSelectedBooking(booking);
     setShowBookingDetailsModal(true);
-  };
-
-  const cancelBooking = (bookingId) => {
-    if (window.confirm('Are you sure you want to cancel this booking?')) {
-      setBookings(bookings.filter(b => b.id !== bookingId));
-      setSuccess('Booking cancelled successfully.');
-      setTimeout(() => setSuccess(''), 3000);
-    }
   };
 
   const markNotificationRead = (notificationId) => {
@@ -425,10 +338,11 @@ const HalalStay = () => {
       currency: 'KES',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
-    }).format(amount);
+    }).format(amount || 0);
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-KE', {
       year: 'numeric',
       month: 'short',
@@ -452,7 +366,6 @@ const HalalStay = () => {
     return { style: styles[status] || styles.confirmed, label: labels[status] || status };
   };
 
-  // ===== LOADING STATE =====
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F1F7FC] p-4 md:p-6 flex items-center justify-center">
@@ -493,7 +406,9 @@ const HalalStay = () => {
                   className="relative p-2 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors"
                   onClick={() => setShowNotifications(!showNotifications)}
                 >
-                  <span className="text-white/70 text-sm">🔔</span>
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
                   {notifications.filter(n => !n.read).length > 0 && (
                     <span className="absolute -top-1 -right-1 w-4 h-4 text-[10px] bg-[#DC2626] text-white rounded-full flex items-center justify-center">
                       {notifications.filter(n => !n.read).length}
@@ -516,31 +431,32 @@ const HalalStay = () => {
 
       {/* ===== NOTIFICATIONS DROPDOWN ===== */}
       {showNotifications && isAuthenticated && (
-        <div className="absolute right-4 md:right-8 mt-2 w-80 max-h-64 overflow-y-auto bg-white rounded-xl border border-[#E8EEF4] shadow-lg z-20">
-          <div className="p-3 border-b border-[#F1F7FC]">
-            <span className="text-sm font-bold text-[#1A2A3A]">Notifications</span>
+        <div className="relative z-20 max-w-7xl mx-auto px-4 md:px-6">
+          <div className="absolute right-0 mt-2 w-80 max-h-64 overflow-y-auto bg-white rounded-xl border border-[#E8EEF4] shadow-lg">
+            <div className="p-3 border-b border-[#F1F7FC]">
+              <span className="text-sm font-bold text-[#1A2A3A]">Notifications</span>
+            </div>
+            {notifications.length === 0 ? (
+              <div className="p-4 text-center text-sm text-[#94A3B8]">No notifications</div>
+            ) : (
+              notifications.map(n => (
+                <div 
+                  key={n.id} 
+                  className={`p-3 border-b border-[#F1F7FC] cursor-pointer hover:bg-[#F8FAFC] transition-colors ${!n.read ? 'bg-[#F1F7FC]' : ''}`}
+                  onClick={() => markNotificationRead(n.id)}
+                >
+                  <p className="text-sm text-[#1A2A3A]">{n.message}</p>
+                  <span className="text-xs text-[#94A3B8]">Just now</span>
+                </div>
+              ))
+            )}
           </div>
-          {notifications.length === 0 ? (
-            <div className="p-4 text-center text-sm text-[#94A3B8]">No notifications</div>
-          ) : (
-            notifications.map(n => (
-              <div 
-                key={n.id} 
-                className={`p-3 border-b border-[#F1F7FC] cursor-pointer hover:bg-[#F8FAFC] transition-colors ${!n.read ? 'bg-[#F1F7FC]' : ''}`}
-                onClick={() => markNotificationRead(n.id)}
-              >
-                <p className="text-sm text-[#1A2A3A]">{n.message}</p>
-                <span className="text-xs text-[#94A3B8]">Just now</span>
-              </div>
-            ))
-          )}
         </div>
       )}
 
       {/* ===== MAIN CONTENT ===== */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
         
-        {/* ===== ERROR ===== */}
         {error && (
           <div className="mb-4 p-4 bg-[#FEF2F2] border border-[#FECACA] rounded-xl flex flex-wrap items-center justify-between gap-3">
             <span className="text-sm text-[#DC2626]">{error}</span>
@@ -558,18 +474,25 @@ const HalalStay = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">Search</label>
-              <input
-                type="text"
-                className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
-                placeholder="Search by name or location..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  className="w-full px-4 py-2.5 pl-9 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                  placeholder="Search by name or location..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </span>
+              </div>
             </div>
             <div>
               <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">Location</label>
               <select
-                className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200 appearance-none"
                 value={selectedLocation}
                 onChange={(e) => setSelectedLocation(e.target.value)}
               >
@@ -581,7 +504,7 @@ const HalalStay = () => {
             <div>
               <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">Property Type</label>
               <select
-                className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200 appearance-none"
                 value={selectedType}
                 onChange={(e) => setSelectedType(e.target.value)}
               >
@@ -603,7 +526,7 @@ const HalalStay = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
             <div>
               <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">Check-in</label>
               <input
@@ -623,16 +546,29 @@ const HalalStay = () => {
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">Max Price: {formatCurrency(priceRange[1])}</label>
+              <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">Number of Rooms</label>
               <input
-                type="range"
-                min="0"
-                max="15000"
-                step="500"
-                value={priceRange[1]}
-                onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                className="w-full accent-[#1769AA] cursor-pointer"
+                type="number"
+                className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                value={rooms}
+                onChange={(e) => setRooms(Math.max(1, parseInt(e.target.value) || 1))}
+                min="1"
               />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">Max Price</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min="0"
+                  max="15000"
+                  step="500"
+                  value={priceRange[1]}
+                  onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
+                  className="flex-1 accent-[#1769AA] cursor-pointer"
+                />
+                <span className="text-sm font-semibold text-[#1769AA] min-w-[70px]">{formatCurrency(priceRange[1])}</span>
+              </div>
             </div>
           </div>
 
@@ -640,7 +576,7 @@ const HalalStay = () => {
             <span className="text-sm text-[#94A3B8]">{filteredProperties.length} properties found</span>
             {checkIn && checkOut && (
               <span className="text-sm font-semibold text-[#1769AA]">
-                {Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24))} nights
+                {getNights()} nights
               </span>
             )}
           </div>
@@ -653,70 +589,122 @@ const HalalStay = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            {filteredProperties.map((property) => (
-              <div 
-                key={property.id} 
-                className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
-              >
-                <div className="h-48 bg-gradient-to-br from-[#1769AA]/10 to-[#2F80C0]/10 flex items-center justify-center relative">
-                  <span className="text-6xl opacity-30">🏠</span>
-                  <button
-                    className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md hover:shadow-lg transition-all duration-200"
-                    onClick={() => toggleWishlist(property.id)}
+            {filteredProperties.map((property) => {
+              const fullyBooked = isFullyBooked(property);
+              const availableRooms = getAvailableRooms(property);
+              const maxGuestsPerRoom = getMaxGuestsPerRoom(property);
+              return (
+                <div 
+                  key={property.id} 
+                  className={`bg-white rounded-xl border border-[#E8EEF4] shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group ${fullyBooked ? 'opacity-75' : ''}`}
+                >
+                  <div 
+                    className="h-48 bg-cover bg-center relative"
+                    style={{ backgroundImage: `url(${property.images?.[0] || 'https://via.placeholder.com/400x300/1769AA/fff?text=HalalStay'})` }}
                   >
-                    <span className={`text-lg ${wishlist.includes(property.id) ? 'text-[#DC2626]' : 'text-[#94A3B8]'}`}>
-                      {wishlist.includes(property.id) ? '♥' : '♡'}
-                    </span>
-                  </button>
-                  <span className="absolute bottom-3 left-3 text-xs font-semibold px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    Halal-Friendly
-                  </span>
-                </div>
-
-                <div className="p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h3 className="font-bold text-[#1A2A3A]">{property.name}</h3>
-                      <p className="text-sm text-[#94A3B8]">{property.location}</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-semibold text-[#1769AA]">{formatCurrency(property.price)}</div>
-                      <div className="text-xs text-[#94A3B8]">per night</div>
-                    </div>
-                  </div>
-
-                  <p className="text-sm text-[#94A3B8] mt-2 line-clamp-2">{property.description}</p>
-
-                  <div className="flex flex-wrap gap-1.5 mt-3">
-                    {property.halalFeatures.slice(0, 3).map((feature, i) => (
-                      <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-[#F1F7FC] text-[#5A6A7A]">
-                        {feature}
+                    <button
+                      className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm hover:scale-110 transition-transform"
+                      onClick={() => toggleWishlist(property.id)}
+                    >
+                      <svg className={`w-5 h-5 ${wishlist.includes(property.id) ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} fill={wishlist.includes(property.id) ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      </svg>
+                    </button>
+                    <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                      <span className="text-xs font-semibold px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        Halal-Friendly
                       </span>
-                    ))}
-                    {property.halalFeatures.length > 3 && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-[#F1F7FC] text-[#94A3B8]">
-                        +{property.halalFeatures.length - 3}
+                      {fullyBooked && (
+                        <span className="text-xs font-semibold px-2 py-1 rounded-full bg-red-50 text-red-700 border border-red-200">
+                          Fully Booked
+                        </span>
+                      )}
+                    </div>
+                    {!fullyBooked && availableRooms <= 3 && (
+                      <span className="absolute bottom-3 right-3 text-xs font-semibold px-2 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                        {availableRooms} room{availableRooms > 1 ? 's' : ''} left
                       </span>
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#F1F7FC]">
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="text-[#C9A84C]">★</span>
-                      <span className="font-semibold text-[#1A2A3A]">{property.rating}</span>
-                      <span className="text-[#94A3B8]">({property.reviews})</span>
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h3 className="font-bold text-[#1A2A3A] group-hover:text-[#1769AA] transition-colors">{property.title}</h3>
+                        <p className="text-sm text-[#94A3B8] flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          {property.location || property.county}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-semibold text-[#1769AA]">{formatCurrency(property.price_per_night)}</div>
+                        <div className="text-xs text-[#94A3B8]">per night</div>
+                      </div>
                     </div>
-                    <button
-                      className="px-4 py-1.5 bg-[#1769AA] text-white text-sm font-semibold rounded-lg hover:bg-[#2F80C0] transition-all duration-200"
-                      onClick={() => handleBookNow(property)}
-                      disabled={!property.available}
-                    >
-                      {property.available ? 'Book Now' : 'Unavailable'}
-                    </button>
+
+                    <p className="text-sm text-[#94A3B8] mt-2 line-clamp-2">{property.description}</p>
+
+                    <div className="flex flex-wrap gap-1.5 mt-3">
+                      {property.amenities?.slice(0, 3).map((amenity, i) => (
+                        <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-[#F1F7FC] text-[#5A6A7A]">
+                          {amenity}
+                        </span>
+                      ))}
+                      {(property.amenities?.length || 0) > 3 && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-[#F1F7FC] text-[#94A3B8]">
+                          +{(property.amenities?.length || 0) - 3}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-[#94A3B8]">
+                      <span className="flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                        </svg>
+                        {property.bedrooms} bed{property.bedrooms > 1 ? 's' : ''}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        {property.max_guests} guests
+                      </span>
+                      <span>Max {maxGuestsPerRoom} guests/room</span>
+                      {property.min_stay > 1 && (
+                        <span className="text-amber-600">Min {property.min_stay} nights</span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#F1F7FC]">
+                      <div className="flex items-center gap-1 text-sm">
+                        <svg className="w-4 h-4 fill-current text-[#C9A84C]" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                        <span className="font-semibold text-[#1A2A3A]">{property.rating || 'New'}</span>
+                        {property.total_reviews > 0 && (
+                          <span className="text-[#94A3B8]">({property.total_reviews})</span>
+                        )}
+                      </div>
+                      <button
+                        className={`px-4 py-1.5 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                          fullyBooked || !property.is_active
+                            ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                            : 'bg-[#1769AA] text-white hover:bg-[#2F80C0]'
+                        }`}
+                        onClick={() => handleBookNow(property)}
+                        disabled={fullyBooked || !property.is_active}
+                      >
+                        {fullyBooked ? 'Fully Booked' : property.is_active ? 'Book Now' : 'Unavailable'}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -752,26 +740,28 @@ const HalalStay = () => {
                       onClick={() => viewBookingDetails(booking)}
                     >
                       <div>
-                        <div className="font-semibold text-[#1A2A3A]">{booking.property}</div>
-                        <div className="text-sm text-[#94A3B8]">
-                          {formatDate(booking.checkIn)} → {formatDate(booking.checkOut)}
+                        <div className="font-semibold text-[#1A2A3A]">{booking.listing_title || 'Property'}</div>
+                        <div className="text-sm text-[#94A3B8] flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          {formatDate(booking.check_in)} → {formatDate(booking.check_out)}
                         </div>
-                        <div className="text-sm text-[#94A3B8]">{booking.guests} guests</div>
-                        {booking.agreementAccepted && (
-                          <span className="text-xs text-emerald-600">✓ Terms accepted</span>
-                        )}
+                        <div className="text-sm text-[#94A3B8]">
+                          <svg className="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                          {booking.guests} guests
+                        </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-bold text-[#1769AA]">{formatCurrency(booking.total)}</div>
+                        <div className="font-bold text-[#1769AA]">{formatCurrency(booking.total_price)}</div>
                         <span className={`text-xs px-2 py-0.5 rounded-full border ${status.style}`}>
                           {status.label}
                         </span>
-                        <button
-                          className="block text-xs text-[#DC2626] hover:text-[#B91C1C] transition-colors mt-1"
-                          onClick={(e) => { e.stopPropagation(); cancelBooking(booking.id); }}
-                        >
-                          Cancel
-                        </button>
+                        <div className="text-xs text-[#94A3B8] mt-1">
+                          {booking.payment_status === 'completed' ? 'Paid' : 'Pending Payment'}
+                        </div>
                       </div>
                     </div>
                   );
@@ -789,18 +779,34 @@ const HalalStay = () => {
             <div className="p-6 border-b border-[#F1F7FC] flex justify-between items-center sticky top-0 bg-white rounded-t-2xl z-10">
               <h3 className="text-lg font-bold text-[#1A2A3A]">Confirm Booking</h3>
               <button className="text-[#94A3B8] hover:text-[#1A2A3A] transition-colors" onClick={() => setShowBookingModal(false)}>
-                ✕
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
             
             <div className="p-6 space-y-4">
-              {/* Property Info */}
               <div>
-                <div className="font-bold text-[#1A2A3A]">{selectedProperty.name}</div>
-                <div className="text-sm text-[#94A3B8]">{selectedProperty.location}</div>
+                <div className="font-bold text-[#1A2A3A]">{selectedProperty.title}</div>
+                <div className="text-sm text-[#94A3B8] flex items-center gap-1">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  {selectedProperty.location || selectedProperty.county}
+                </div>
+                {selectedProperty.available_rooms !== undefined && (
+                  <div className="text-sm mt-1">
+                    <span className={`font-semibold ${selectedProperty.available_rooms <= 3 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                      {selectedProperty.available_rooms} room{selectedProperty.available_rooms > 1 ? 's' : ''} available
+                    </span>
+                    <span className="text-[#94A3B8] text-xs ml-2">
+                      (Max {selectedProperty.max_guests_per_room || 2} guests per room)
+                    </span>
+                  </div>
+                )}
               </div>
 
-              {/* Stay Details */}
               <div className="bg-[#F1F7FC] rounded-xl p-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-[#94A3B8]">Check-in</span>
@@ -812,17 +818,28 @@ const HalalStay = () => {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-[#94A3B8]">Nights</span>
-                  <span className="font-semibold text-[#1A2A3A]">
-                    {Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24))}
-                  </span>
+                  <span className="font-semibold text-[#1A2A3A]">{getNights()}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#94A3B8]">Rooms</span>
+                  <span className="font-semibold text-[#1A2A3A]">{rooms}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-[#94A3B8]">Guests</span>
                   <span className="font-semibold text-[#1A2A3A]">{guests}</span>
                 </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#94A3B8]">Max Guests Allowed</span>
+                  <span className="font-semibold text-[#1A2A3A]">{rooms * getMaxGuestsPerRoom(selectedProperty)}</span>
+                </div>
+                {selectedProperty.min_stay > 1 && (
+                  <div className="flex justify-between text-sm text-amber-600">
+                    <span>Minimum Stay</span>
+                    <span className="font-semibold">{selectedProperty.min_stay} night{selectedProperty.min_stay > 1 ? 's' : ''}</span>
+                  </div>
+                )}
               </div>
 
-              {/* Guest Details */}
               <div className="bg-[#F1F7FC] rounded-xl p-4 space-y-3">
                 <h4 className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Guest Details</h4>
                 <div>
@@ -867,29 +884,25 @@ const HalalStay = () => {
                 </div>
               </div>
 
-              {/* Price Breakdown */}
               <div className="bg-[#F1F7FC] rounded-xl p-4 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#94A3B8]">Subtotal</span>
-                  <span className="font-semibold text-[#1A2A3A]">
-                    {formatCurrency(selectedProperty.price * guests * Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)))}
-                  </span>
+                  <span className="text-[#94A3B8]">Price per night</span>
+                  <span className="font-semibold text-[#1A2A3A]">{formatCurrency(selectedProperty.price_per_night)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#94A3B8]">Tax (16%)</span>
-                  <span className="font-semibold text-[#1A2A3A]">
-                    {formatCurrency(selectedProperty.price * guests * Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)) * 0.16)}
-                  </span>
+                  <span className="text-[#94A3B8]">Rooms</span>
+                  <span className="font-semibold text-[#1A2A3A]">× {rooms}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#94A3B8]">Nights</span>
+                  <span className="font-semibold text-[#1A2A3A]">× {getNights()}</span>
                 </div>
                 <div className="flex justify-between text-sm font-bold pt-2 border-t border-[#E2E8F0]">
                   <span className="text-[#1A2A3A]">Total</span>
-                  <span className="text-[#1769AA]">
-                    {formatCurrency(selectedProperty.price * guests * Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)) * 1.16)}
-                  </span>
+                  <span className="text-[#1769AA]">{formatCurrency(getTotalPrice())}</span>
                 </div>
               </div>
 
-              {/* Terms & Agreement */}
               <div className="bg-[#F1F7FC] rounded-xl p-4">
                 <div className="flex items-start gap-3">
                   <input
@@ -949,7 +962,9 @@ const HalalStay = () => {
             <div className="p-6 border-b border-[#F1F7FC] flex justify-between items-center sticky top-0 bg-white rounded-t-2xl z-10">
               <h3 className="text-lg font-bold text-[#1A2A3A]">Terms & Conditions</h3>
               <button className="text-[#94A3B8] hover:text-[#1A2A3A] transition-colors" onClick={() => setShowTermsModal(false)}>
-                ✕
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
             
@@ -971,22 +986,14 @@ const HalalStay = () => {
                 <div className="bg-[#F1F7FC] rounded-xl p-4">
                   <h4 className="font-bold text-[#1A2A3A] mb-2">2. Property Terms & Conditions</h4>
                   <p className="text-sm text-[#5A6A7A] leading-relaxed">
-                    Each property has specific rules. For {selectedProperty?.name}:
+                    Each property has specific rules. Please review them carefully.
                   </p>
-                  <ul className="text-sm text-[#5A6A7A] list-disc pl-5 mt-2 space-y-1">
-                    <li>Check-in: {selectedProperty?.checkInTime}</li>
-                    <li>Check-out: {selectedProperty?.checkOutTime}</li>
-                    <li>Maximum guests: {selectedProperty?.maxGuests}</li>
-                    {selectedProperty?.halalFeatures?.map((feature, i) => (
-                      <li key={i}>✓ {feature}</li>
-                    ))}
-                  </ul>
                 </div>
 
                 <div className="bg-[#F1F7FC] rounded-xl p-4">
                   <h4 className="font-bold text-[#1A2A3A] mb-2">3. Cancellation & Refund Policy</h4>
                   <p className="text-sm text-[#5A6A7A] leading-relaxed">
-                    {selectedProperty?.cancellationPolicy || 'Standard cancellation policy applies.'}
+                    Cancellations must be made by the vendor. Guests cannot cancel bookings directly.
                   </p>
                 </div>
 
@@ -1001,18 +1008,11 @@ const HalalStay = () => {
                     <li>No alcohol, pork, or prohibited activities</li>
                   </ul>
                 </div>
-
-                <div className="bg-[#F1F7FC] rounded-xl p-4">
-                  <h4 className="font-bold text-[#1A2A3A] mb-2">5. Privacy & Data Protection</h4>
-                  <p className="text-sm text-[#5A6A7A] leading-relaxed">
-                    Your personal data is protected under applicable privacy laws. We only collect data necessary for booking and communication.
-                  </p>
-                </div>
               </div>
 
               {!termsScrollComplete && (
                 <div className="text-center text-sm text-[#C9A84C] font-semibold animate-pulse">
-                  ↓ Scroll to the bottom to accept
+                  Scroll to the bottom to accept
                 </div>
               )}
             </div>
@@ -1048,7 +1048,9 @@ const HalalStay = () => {
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-bold text-white">Booking Confirmed!</h3>
                 <button className="text-white/60 hover:text-white transition-colors" onClick={() => setShowSuccessModal(false)}>
-                  ✕
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
               </div>
             </div>
@@ -1076,6 +1078,10 @@ const HalalStay = () => {
                   <span className="font-semibold text-[#1A2A3A]">{formatDate(bookingData.checkOut)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
+                  <span className="text-[#94A3B8]">Rooms</span>
+                  <span className="font-semibold text-[#1A2A3A]">{bookingData.rooms}</span>
+                </div>
+                <div className="flex justify-between text-sm">
                   <span className="text-[#94A3B8]">Guests</span>
                   <span className="font-semibold text-[#1A2A3A]">{bookingData.guests}</span>
                 </div>
@@ -1083,10 +1089,12 @@ const HalalStay = () => {
                   <span className="text-[#1A2A3A] font-semibold">Total</span>
                   <span className="text-[#1769AA] font-bold">{formatCurrency(bookingData.total)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-[#94A3B8]">Agreement</span>
-                  <span className="text-emerald-600 font-semibold">✓ Accepted</span>
-                </div>
+                {bookingData.roomsLeft !== undefined && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[#94A3B8]">Rooms Left</span>
+                    <span className="font-semibold text-[#1A2A3A]">{bookingData.roomsLeft}</span>
+                  </div>
+                )}
               </div>
 
               <div className="bg-[#F1F7FC] rounded-xl p-4">
@@ -1095,14 +1103,12 @@ const HalalStay = () => {
                 </p>
               </div>
 
-              <div className="flex gap-2">
-                <button 
-                  className="flex-1 px-4 py-2.5 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200"
-                  onClick={() => setShowSuccessModal(false)}
-                >
-                  Done
-                </button>
-              </div>
+              <button 
+                className="w-full px-4 py-2.5 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200"
+                onClick={() => setShowSuccessModal(false)}
+              >
+                Done
+              </button>
             </div>
           </div>
         </div>
@@ -1115,24 +1121,33 @@ const HalalStay = () => {
             <div className="p-6 border-b border-[#F1F7FC] flex justify-between items-center">
               <h3 className="text-lg font-bold text-[#1A2A3A]">Booking Details</h3>
               <button className="text-[#94A3B8] hover:text-[#1A2A3A] transition-colors" onClick={() => setShowBookingDetailsModal(false)}>
-                ✕
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
             
             <div className="p-6 space-y-4">
               <div>
-                <div className="font-bold text-[#1A2A3A]">{selectedBooking.property}</div>
-                <div className="text-sm text-[#94A3B8]">Ref: {selectedBooking.bookingRef || 'N/A'}</div>
+                <div className="font-bold text-[#1A2A3A]">{selectedBooking.listing_title || 'Property'}</div>
+                <div className="text-sm text-[#94A3B8]">Ref: {selectedBooking.id || 'N/A'}</div>
+                <div className="text-sm text-[#94A3B8] flex items-center gap-1">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  {selectedBooking.listing_location || 'Location not specified'}
+                </div>
               </div>
 
               <div className="bg-[#F1F7FC] rounded-xl p-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-[#94A3B8]">Check-in</span>
-                  <span className="font-semibold text-[#1A2A3A]">{formatDate(selectedBooking.checkIn)}</span>
+                  <span className="font-semibold text-[#1A2A3A]">{formatDate(selectedBooking.check_in)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-[#94A3B8]">Check-out</span>
-                  <span className="font-semibold text-[#1A2A3A]">{formatDate(selectedBooking.checkOut)}</span>
+                  <span className="font-semibold text-[#1A2A3A]">{formatDate(selectedBooking.check_out)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-[#94A3B8]">Guests</span>
@@ -1140,7 +1155,7 @@ const HalalStay = () => {
                 </div>
                 <div className="flex justify-between text-sm pt-2 border-t border-[#E2E8F0]">
                   <span className="text-[#1A2A3A] font-semibold">Total</span>
-                  <span className="text-[#1769AA] font-bold">{formatCurrency(selectedBooking.total)}</span>
+                  <span className="text-[#1769AA] font-bold">{formatCurrency(selectedBooking.total_price)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-[#94A3B8]">Status</span>
@@ -1148,22 +1163,24 @@ const HalalStay = () => {
                     {getStatusBadge(selectedBooking.status).label}
                   </span>
                 </div>
-                {selectedBooking.agreementAccepted && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#94A3B8]">Agreement</span>
-                    <span className="text-emerald-600 font-semibold">✓ Accepted</span>
+                {selectedBooking.special_requests && (
+                  <div className="flex justify-between text-sm pt-2 border-t border-[#E2E8F0]">
+                    <span className="text-[#94A3B8]">Special Requests</span>
+                    <span className="font-semibold text-[#1A2A3A] text-right max-w-[60%]">{selectedBooking.special_requests}</span>
                   </div>
                 )}
               </div>
 
-              <div className="flex gap-2">
-                <button 
-                  className="flex-1 px-4 py-2.5 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200"
-                  onClick={() => setShowBookingDetailsModal(false)}
-                >
-                  Close
-                </button>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-700">
+                <strong>Note:</strong> Cancellations can only be processed by the property vendor. Please contact them directly if you need to cancel.
               </div>
+
+              <button 
+                className="w-full px-4 py-2.5 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200"
+                onClick={() => setShowBookingDetailsModal(false)}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
@@ -1171,16 +1188,15 @@ const HalalStay = () => {
 
       {/* ===== SUCCESS TOAST ===== */}
       {success && (
-        <div className="fixed top-6 right-6 z-50 bg-[#1769AA] text-white px-6 py-4 rounded-2xl shadow-2xl shadow-[#1769AA]/30 flex items-center gap-3 animate-slideDown max-w-sm border border-white/10">
-          <svg className="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-          </svg>
+        <div className="fixed top-6 right-6 z-50 bg-emerald-600 text-white px-6 py-4 rounded-2xl shadow-lg shadow-emerald-600/30 flex items-center gap-3 animate-slideDown max-w-sm">
           <span className="text-sm font-medium">{success}</span>
           <button 
-            className="text-white/60 hover:text-white transition ml-2"
+            className="text-white/70 hover:text-white transition ml-2"
             onClick={() => setSuccess('')}
           >
-            ✕
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
       )}

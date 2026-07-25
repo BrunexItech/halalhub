@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/api';
-import { getCounties, getSubCounties, getWards } from '../services/locationApi';
 
-const VendorRegister = () => {
+const ImamRegister = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -21,106 +20,26 @@ const VendorRegister = () => {
   const otpTimerRef = useRef(null);
   
   // Location data
-  const [counties, setCounties] = useState([]);
-  const [subCounties, setSubCounties] = useState([]);
-  const [wards, setWards] = useState([]);
-  const [loadingLocations, setLoadingLocations] = useState(true);
-  const [locationError, setLocationError] = useState('');
-
-  // Business Types
-  const businessTypes = [
-    { id: 'halalmarket', name: 'Halal Market', description: 'Sell halal products (food, meat, bakery, clothing, books, etc.)' },
-    { id: 'restaurant', name: 'Restaurant', description: 'Halal-certified dining & food delivery' },
-    { id: 'halalstay', name: 'HalalStay', description: 'Halal-friendly accommodation' },
-  ];
+  const [counties, setCounties] = useState(['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret', 'Garissa', 'Malindi', 'Thika', 'Kitale', 'Meru']);
 
   // Form data
   const [formData, setFormData] = useState({
-    businessName: '',
-    businessType: '',
+    fullName: '',
     phone: '',
     email: '',
     nationalId: '',
-    kraPin: '',
-    businessRegNo: '',
     pin: '',
-    county: '',
-    countyName: '',
+    title: 'Imam',
+    mosqueName: '',
+    mosqueLocation: '',
+    mosqueCounty: '',
+    qualifications: '',
+    yearsOfService: '',
+    region: '',
     subCounty: '',
-    subCountyName: '',
     ward: '',
-    wardName: '',
-    halalDeclared: false,
     termsAccepted: false
   });
-
-  // Fetch counties on mount
-  useEffect(() => {
-    const fetchCounties = async () => {
-      try {
-        setLoadingLocations(true);
-        const data = await getCounties();
-        setCounties(data);
-        setLocationError('');
-      } catch (err) {
-        setLocationError('Failed to load counties. Please refresh.');
-        console.error(err);
-      } finally {
-        setLoadingLocations(false);
-      }
-    };
-    fetchCounties();
-  }, []);
-
-  // Fetch sub-counties when county changes
-  useEffect(() => {
-    if (formData.countyName) {
-      const fetchSubs = async () => {
-        try {
-          const data = await getSubCounties(formData.countyName);
-          setSubCounties(data);
-          setWards([]);
-          setFormData(prev => ({
-            ...prev,
-            subCounty: '',
-            subCountyName: '',
-            ward: '',
-            wardName: ''
-          }));
-        } catch (err) {
-          console.error('Failed to fetch sub-counties:', err);
-          setSubCounties([]);
-        }
-      };
-      fetchSubs();
-    } else {
-      setSubCounties([]);
-      setWards([]);
-    }
-  }, [formData.countyName]);
-
-  // Fetch wards when sub-county changes
-  useEffect(() => {
-    if (formData.countyName && formData.subCountyName) {
-      const fetchWards = async () => {
-        try {
-          const data = await getWards(formData.countyName, formData.subCountyName);
-          setWards(data);
-          setFormData(prev => ({
-            ...prev,
-            ward: '',
-            wardName: ''
-          }));
-        } catch (err) {
-          console.error('Failed to fetch wards:', err);
-          setWards([]);
-        }
-      };
-      fetchWards();
-    } else {
-      setWards([]);
-    }
-  }, [formData.countyName, formData.subCountyName]);
 
   // Cleanup OTP timer
   useEffect(() => {
@@ -139,43 +58,6 @@ const VendorRegister = () => {
     });
   };
 
-  const handleCountyChange = (e) => {
-    const value = e.target.value;
-    const [id, name] = value.split('|');
-    setFormData({
-      ...formData,
-      county: id,
-      countyName: name,
-      subCounty: '',
-      subCountyName: '',
-      ward: '',
-      wardName: ''
-    });
-  };
-
-  const handleSubCountyChange = (e) => {
-    const value = e.target.value;
-    const [id, name] = value.split('|');
-    setFormData({
-      ...formData,
-      subCounty: id,
-      subCountyName: name,
-      ward: '',
-      wardName: ''
-    });
-  };
-
-  const handleWardChange = (e) => {
-    const value = e.target.value;
-    const [id, name] = value.split('|');
-    setFormData({
-      ...formData,
-      ward: id,
-      wardName: name
-    });
-  };
-
-  // OTP handlers
   const handleOtpChange = (index, value) => {
     if (!/^\d*$/.test(value)) return;
     const newOtp = [...otp];
@@ -194,11 +76,9 @@ const VendorRegister = () => {
 
   const startOtpCountdown = () => {
     setOtpExpirySeconds(30);
-    
     if (otpTimerRef.current) {
       clearInterval(otpTimerRef.current);
     }
-    
     otpTimerRef.current = setInterval(() => {
       setOtpExpirySeconds((prev) => {
         if (prev <= 1) {
@@ -219,28 +99,28 @@ const VendorRegister = () => {
     setLoading(true);
     setError('');
     try {
-      const response = await authService.sendRegistrationOtp({ 
+      const response = await authService.sendRegistrationOtp({
         phone: formData.phone,
-        email: formData.email 
+        email: formData.email
       });
-      
+
       setOtpSent(true);
       setOtpStep(true);
       setResendTimer(60);
-      
+
       const receivedOtp = response.data?.otp || response.data?.code || '123456';
       setOtpCode(receivedOtp);
       startOtpCountdown();
-      
+
       setSuccess('Verification code sent');
       setTimeout(() => setSuccess(''), 3000);
-      
+
       setTimeout(() => {
         if (inputRefs.current[0]) {
           inputRefs.current[0].focus();
         }
       }, 300);
-      
+
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to send OTP. Please try again.');
     } finally {
@@ -250,24 +130,24 @@ const VendorRegister = () => {
 
   const handleResendOtp = async () => {
     if (resendTimer > 0) return;
-    
+
     setLoading(true);
     setError('');
     try {
-      const response = await authService.sendRegistrationOtp({ 
+      const response = await authService.sendRegistrationOtp({
         phone: formData.phone,
-        email: formData.email 
+        email: formData.email
       });
-      
+
       setResendTimer(60);
-      
+
       const receivedOtp = response.data?.otp || response.data?.code || '123456';
       setOtpCode(receivedOtp);
       startOtpCountdown();
-      
+
       setSuccess('Code resent');
       setTimeout(() => setSuccess(''), 3000);
-      
+
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to resend OTP');
     } finally {
@@ -279,24 +159,20 @@ const VendorRegister = () => {
     setError('');
     setSuccess('');
 
-    if (step === 1 && (!formData.businessName || !formData.businessType || !formData.county || !formData.subCounty || !formData.ward)) {
+    if (step === 1 && (!formData.fullName || !formData.phone || !formData.email || !formData.nationalId || !formData.pin || formData.pin.length < 4)) {
+      setError('Please fill in all required fields. PIN must be at least 4 digits.');
+      return;
+    }
+    if (step === 2 && (!formData.mosqueName || !formData.mosqueLocation)) {
       setError('Please fill in all required fields');
       return;
     }
-    if (step === 2 && (!formData.phone || !formData.email)) {
-      setError('Please fill in all required fields');
+    if (step === 3 && (!formData.qualifications)) {
+      setError('Please enter your qualifications');
       return;
     }
-    if (step === 3 && (!formData.nationalId || !formData.kraPin || !formData.businessRegNo)) {
-      setError('Please fill in all required fields');
-      return;
-    }
-    if (step === 4 && (!formData.pin || formData.pin.length < 4)) {
-      setError('Please enter a valid PIN (min 4 digits)');
-      return;
-    }
-    if (step === 5 && (!formData.halalDeclared || !formData.termsAccepted)) {
-      setError('Please accept all declarations to continue');
+    if (step === 4 && (!formData.termsAccepted)) {
+      setError('Please accept the terms and conditions');
       return;
     }
     setStep(step + 1);
@@ -308,60 +184,65 @@ const VendorRegister = () => {
     setError('');
   };
 
-  const handleVerifyOtp = async () => {
+  const handleSubmit = async () => {
     const otpString = otp.join('');
     if (otpString.length < 6) {
       setError('Please enter all 6 digits of the OTP');
       return;
     }
-    
+
     setLoading(true);
     setError('');
     try {
+      // Verify OTP
       const verifyResponse = await authService.verifyRegistrationOtp({
         phone: formData.phone,
         otp: otpString
       });
-      
+
       if (!verifyResponse.data.success) {
         setError('Invalid OTP. Please try again.');
         setLoading(false);
         return;
       }
-      
-      // OTP verified, proceed with vendor registration
-      await authService.registerVendor({
-        businessName: formData.businessName,
-        businessType: formData.businessType,
+
+      // Register Imam
+      await authService.registerImam({
+        fullName: formData.fullName,
         phone: formData.phone,
         email: formData.email,
         nationalId: formData.nationalId,
-        kraPin: formData.kraPin,
-        businessRegNo: formData.businessRegNo,
         pin: formData.pin,
-        region: formData.countyName,
-        subCounty: formData.subCountyName,
-        ward: formData.wardName,
-        halalDeclared: formData.halalDeclared,
+        title: formData.title || 'Imam',
+        mosqueName: formData.mosqueName,
+        mosqueLocation: formData.mosqueLocation,
+        mosqueCounty: formData.mosqueCounty,
+        qualifications: formData.qualifications.split(',').map(q => q.trim()),
+        yearsOfService: parseInt(formData.yearsOfService) || 0,
+        region: formData.region,
+        subCounty: formData.subCounty,
+        ward: formData.ward,
         termsAccepted: formData.termsAccepted
       });
-      setStep(7);
+
+      setStep(6);
       setSuccess('Application submitted successfully!');
     } catch (err) {
-      setError(err.response?.data?.error || 'Registration failed');
+      setError(err.response?.data?.error || 'Registration failed. Please try again.');
     }
     setLoading(false);
   };
 
   const renderStepIndicator = () => {
-    const current = step > 6 ? 6 : step;
+    const current = step > 5 ? 5 : step;
+    const steps = [1, 2, 3, 4, 5];
     return (
       <div className="flex items-center justify-center gap-0 py-4">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
+        {steps.map((i) => (
           <div key={i} className="flex items-center">
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold transition-all duration-500 ${
-              i <= current 
-                ? 'bg-[#1769AA] text-white shadow-md shadow-[#1769AA]/25' 
+              i <= current
+                ? 'bg-[#1769AA] text-white shadow-md shadow-[#1769AA]/25'
                 : 'bg-[#F1F7FC] text-[#94A3B8]'
             }`}>
               {i < current ? (
@@ -370,7 +251,7 @@ const VendorRegister = () => {
                 </svg>
               ) : i}
             </div>
-            {i < 6 && (
+            {i < 5 && (
               <div className={`w-8 h-0.5 transition-all duration-500 ${
                 i < current ? 'bg-[#1769AA]' : 'bg-[#E2E8F0]'
               }`} />
@@ -387,106 +268,21 @@ const VendorRegister = () => {
         return (
           <div className="space-y-5 animate-fadeIn">
             <div className="mb-2">
-              <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">Business Information</h3>
-              <p className="text-sm text-[#94A3B8]">Tell us about your business</p>
+              <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">Personal Information</h3>
+              <p className="text-sm text-[#94A3B8]">Tell us about yourself</p>
             </div>
-            
+
             <div className="relative group">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-[#1769AA]/20 to-[#2F80C0]/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
               <input
                 className="relative w-full px-5 py-4 bg-white border border-[#E2E8F0] rounded-2xl text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-300"
-                name="businessName"
-                value={formData.businessName}
+                name="fullName"
+                value={formData.fullName}
                 onChange={handleChange}
-                placeholder="Business Name *"
+                placeholder="Full Name *"
               />
             </div>
 
-            <div className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#1769AA]/20 to-[#2F80C0]/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
-              <select
-                className="relative w-full px-5 py-4 bg-white border border-[#E2E8F0] rounded-2xl text-[#1A2A3A] text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-300 appearance-none"
-                name="businessType"
-                value={formData.businessType}
-                onChange={handleChange}
-              >
-                <option value="">Select Business Type *</option>
-                {businessTypes.map((type) => (
-                  <option key={type.id} value={type.id}>
-                    {type.name} - {type.description}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#1769AA]/20 to-[#2F80C0]/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
-              {loadingLocations ? (
-                <div className="relative w-full px-5 py-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl text-[#94A3B8] text-sm">Loading counties...</div>
-              ) : locationError ? (
-                <div className="relative w-full px-5 py-4 bg-[#FEF2F2] border border-[#FECACA] rounded-2xl text-[#DC2626] text-sm">{locationError}</div>
-              ) : (
-                <select
-                  className="relative w-full px-5 py-4 bg-white border border-[#E2E8F0] rounded-2xl text-[#1A2A3A] text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-300 appearance-none"
-                  value={formData.county ? `${formData.county}|${formData.countyName}` : ''}
-                  onChange={handleCountyChange}
-                >
-                  <option value="">Select County *</option>
-                  {counties.map((county) => (
-                    <option key={county.id} value={`${county.id}|${county.name}`}>
-                      {county.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            {formData.county && (
-              <div className="relative group">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-[#1769AA]/20 to-[#2F80C0]/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
-                <select
-                  className="relative w-full px-5 py-4 bg-white border border-[#E2E8F0] rounded-2xl text-[#1A2A3A] text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-300 appearance-none"
-                  value={formData.subCounty ? `${formData.subCounty}|${formData.subCountyName}` : ''}
-                  onChange={handleSubCountyChange}
-                >
-                  <option value="">Select Sub-County *</option>
-                  {subCounties.map((sub) => (
-                    <option key={sub.id} value={`${sub.id}|${sub.name}`}>
-                      {sub.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {formData.subCounty && (
-              <div className="relative group">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-[#1769AA]/20 to-[#2F80C0]/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
-                <select
-                  className="relative w-full px-5 py-4 bg-white border border-[#E2E8F0] rounded-2xl text-[#1A2A3A] text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-300 appearance-none"
-                  value={formData.ward ? `${formData.ward}|${formData.wardName}` : ''}
-                  onChange={handleWardChange}
-                >
-                  <option value="">Select Ward *</option>
-                  {wards.map((ward) => (
-                    <option key={ward.id} value={`${ward.id}|${ward.name}`}>
-                      {ward.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-          </div>
-        );
-
-      case 2:
-        return (
-          <div className="space-y-5 animate-fadeIn">
-            <div className="mb-2">
-              <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">Contact Information</h3>
-              <p className="text-sm text-[#94A3B8]">How can we reach you?</p>
-            </div>
-            
             <div className="relative group">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-[#1769AA]/20 to-[#2F80C0]/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
               <input
@@ -508,17 +304,7 @@ const VendorRegister = () => {
                 placeholder="Email Address *"
               />
             </div>
-          </div>
-        );
 
-      case 3:
-        return (
-          <div className="space-y-5 animate-fadeIn">
-            <div className="mb-2">
-              <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">Business Registration</h3>
-              <p className="text-sm text-[#94A3B8]">Verify your business identity</p>
-            </div>
-            
             <div className="relative group">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-[#1769AA]/20 to-[#2F80C0]/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
               <input
@@ -530,38 +316,6 @@ const VendorRegister = () => {
               />
             </div>
 
-            <div className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#1769AA]/20 to-[#2F80C0]/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
-              <input
-                className="relative w-full px-5 py-4 bg-white border border-[#E2E8F0] rounded-2xl text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-300"
-                name="kraPin"
-                value={formData.kraPin}
-                onChange={handleChange}
-                placeholder="KRA PIN *"
-              />
-            </div>
-
-            <div className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#1769AA]/20 to-[#2F80C0]/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
-              <input
-                className="relative w-full px-5 py-4 bg-white border border-[#E2E8F0] rounded-2xl text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-300"
-                name="businessRegNo"
-                value={formData.businessRegNo}
-                onChange={handleChange}
-                placeholder="Business Registration No. *"
-              />
-            </div>
-          </div>
-        );
-
-      case 4:
-        return (
-          <div className="space-y-5 animate-fadeIn">
-            <div className="mb-2">
-              <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">Security</h3>
-              <p className="text-sm text-[#94A3B8]">Create your account PIN</p>
-            </div>
-            
             <div className="relative group">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-[#1769AA]/20 to-[#2F80C0]/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
               <input
@@ -578,26 +332,107 @@ const VendorRegister = () => {
           </div>
         );
 
-      case 5:
+      case 2:
+        return (
+          <div className="space-y-5 animate-fadeIn">
+            <div className="mb-2">
+              <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">Mosque Details</h3>
+              <p className="text-sm text-[#94A3B8]">Tell us about your mosque</p>
+            </div>
+
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#1769AA]/20 to-[#2F80C0]/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
+              <input
+                className="relative w-full px-5 py-4 bg-white border border-[#E2E8F0] rounded-2xl text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-300"
+                name="mosqueName"
+                value={formData.mosqueName}
+                onChange={handleChange}
+                placeholder="Mosque Name *"
+              />
+            </div>
+
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#1769AA]/20 to-[#2F80C0]/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
+              <input
+                className="relative w-full px-5 py-4 bg-white border border-[#E2E8F0] rounded-2xl text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-300"
+                name="mosqueLocation"
+                value={formData.mosqueLocation}
+                onChange={handleChange}
+                placeholder="Mosque Location (Street/City) *"
+              />
+            </div>
+
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#1769AA]/20 to-[#2F80C0]/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
+              <select
+                className="relative w-full px-5 py-4 bg-white border border-[#E2E8F0] rounded-2xl text-[#1A2A3A] text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-300 appearance-none"
+                name="mosqueCounty"
+                value={formData.mosqueCounty}
+                onChange={handleChange}
+              >
+                <option value="">Select County</option>
+                {counties.map((county) => (
+                  <option key={county} value={county}>{county}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#1769AA]/20 to-[#2F80C0]/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
+              <input
+                className="relative w-full px-5 py-4 bg-white border border-[#E2E8F0] rounded-2xl text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-300"
+                name="title"
+                value={formData.title}
+                onChange={handleChange}
+                placeholder="Title (e.g., Chief Imam, Sheikh)"
+              />
+            </div>
+          </div>
+        );
+
+      case 3:
+        return (
+          <div className="space-y-5 animate-fadeIn">
+            <div className="mb-2">
+              <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">Qualifications</h3>
+              <p className="text-sm text-[#94A3B8]">Tell us about your background</p>
+            </div>
+
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#1769AA]/20 to-[#2F80C0]/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
+              <textarea
+                className="relative w-full px-5 py-4 bg-white border border-[#E2E8F0] rounded-2xl text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-300 resize-y min-h-[100px]"
+                name="qualifications"
+                value={formData.qualifications}
+                onChange={handleChange}
+                placeholder="Qualifications (e.g., Bachelors Islamic Studies, Masters Theology) *"
+              />
+              <p className="text-xs text-[#94A3B8] mt-2">Separate multiple qualifications with commas</p>
+            </div>
+
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#1769AA]/20 to-[#2F80C0]/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
+              <input
+                className="relative w-full px-5 py-4 bg-white border border-[#E2E8F0] rounded-2xl text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-300"
+                type="number"
+                name="yearsOfService"
+                value={formData.yearsOfService}
+                onChange={handleChange}
+                placeholder="Years of Service"
+              />
+            </div>
+          </div>
+        );
+
+      case 4:
         return (
           <div className="space-y-6 animate-fadeIn">
             <div className="mb-2">
-              <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">Halal Compliance</h3>
+              <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">Terms & Conditions</h3>
               <p className="text-sm text-[#94A3B8]">Please confirm the following to proceed</p>
             </div>
 
             <div className="space-y-4 pt-2">
-              <label className="flex items-start gap-3 p-4 bg-[#F1F7FC] rounded-2xl cursor-pointer hover:bg-[#E8EEF4] transition-all duration-200">
-                <input
-                  type="checkbox"
-                  name="halalDeclared"
-                  checked={formData.halalDeclared}
-                  onChange={handleChange}
-                  className="w-5 h-5 mt-0.5 rounded-md border-[#E2E8F0] text-[#1769AA] focus:ring-[#1769AA]/30 focus:ring-2"
-                />
-                <span className="text-sm text-[#1A2A3A] font-medium">I declare my business is Sharia-compliant</span>
-              </label>
-
               <label className="flex items-start gap-3 p-4 bg-[#F1F7FC] rounded-2xl cursor-pointer hover:bg-[#E8EEF4] transition-all duration-200">
                 <input
                   type="checkbox"
@@ -612,24 +447,19 @@ const VendorRegister = () => {
           </div>
         );
 
-      case 6:
+      case 5:
         return (
           <div className="space-y-6 animate-fadeIn">
             <div className="mb-2">
               <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">Verify Your Identity</h3>
-              <p className="text-sm text-[#94A3B8]">Enter the 6-digit code</p>
+              <p className="text-sm text-[#94A3B8]">Enter the 6-digit code sent to your phone</p>
             </div>
 
-            {/* OTP Display Box */}
             {otpSent && (
               <div className="bg-[#F1F7FC] rounded-xl p-4 border border-[#E8EEF4]">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="text-[#1769AA]">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                      </svg>
-                    </div>
+                    <span className="text-xl">🔐</span>
                     <div>
                       <span className="text-sm font-medium text-[#5A6A7A]">Your OTP Code</span>
                       <div className="text-2xl font-mono font-bold text-[#1769AA] tracking-widest mt-0.5">
@@ -642,7 +472,7 @@ const VendorRegister = () => {
                       {otpExpirySeconds > 0 ? `${otpExpirySeconds}s` : 'Expired'}
                     </div>
                     <div className="w-20 h-1 bg-[#E8EEF4] rounded-full mt-1 overflow-hidden">
-                      <div 
+                      <div
                         className={`h-full rounded-full transition-all duration-1000 ${
                           otpExpirySeconds <= 10 ? 'bg-red-600' : 'bg-[#1769AA]'
                         }`}
@@ -681,14 +511,14 @@ const VendorRegister = () => {
               <button
                 type="button"
                 className={`text-xs font-semibold transition ${
-                  otpSent 
-                    ? `text-[#1769AA] hover:text-[#2F80C0]`
+                  otpSent
+                    ? 'text-[#1769AA] hover:text-[#2F80C0]'
                     : 'text-[#1769AA] hover:text-[#2F80C0]'
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
                 onClick={otpSent ? handleResendOtp : handleSendOtp}
                 disabled={(otpSent && resendTimer > 0) || loading}
               >
-                {otpSent 
+                {otpSent
                   ? (resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend Code')
                   : 'Send Code'}
               </button>
@@ -696,7 +526,7 @@ const VendorRegister = () => {
           </div>
         );
 
-      case 7:
+      case 6:
         return (
           <div className="text-center py-8 animate-scaleIn">
             <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-emerald-400/20 to-emerald-500/20 flex items-center justify-center mx-auto mb-6 border border-emerald-400/20">
@@ -706,21 +536,21 @@ const VendorRegister = () => {
             </div>
             <h3 className="text-2xl font-heading font-bold text-[#1A2A3A]">Application Submitted!</h3>
             <p className="text-[#5A6A7A] mt-3 leading-relaxed">
-              Your vendor application is under review.<br />
+              Your imam application is under review.<br />
               We'll notify you once approved.
             </p>
             <div className="mt-6 p-5 bg-[#F1F7FC] rounded-2xl text-left space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-[#94A3B8]">Business:</span>
-                <span className="font-medium text-[#1A2A3A]">{formData.businessName}</span>
+                <span className="text-[#94A3B8]">Name:</span>
+                <span className="font-medium text-[#1A2A3A]">{formData.fullName}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-[#94A3B8]">Mosque:</span>
+                <span className="font-medium text-[#1A2A3A]">{formData.mosqueName}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-[#94A3B8]">Email:</span>
                 <span className="font-medium text-[#1A2A3A]">{formData.email}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-[#94A3B8]">County:</span>
-                <span className="font-medium text-[#1A2A3A]">{formData.countyName}</span>
               </div>
             </div>
             <button
@@ -745,7 +575,7 @@ const VendorRegister = () => {
         <div className="w-full lg:w-1/2 bg-gradient-to-br from-[#1769AA] to-[#2F80C0] p-8 lg:p-12 flex items-center justify-center relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
-          
+
           <div className="relative z-10 text-center text-white">
             <div className="mb-8">
               <div className="flex items-center justify-center gap-3 mb-4">
@@ -757,23 +587,23 @@ const VendorRegister = () => {
               <div className="text-xs text-white/60 tracking-[0.15em] uppercase mt-1">Sharia-Compliant Fintech</div>
             </div>
 
-            <h1 className="text-3xl lg:text-4xl font-bold mt-4">Become a Vendor</h1>
+            <h1 className="text-3xl lg:text-4xl font-bold mt-4">Become an Imam</h1>
             <p className="text-white/70 mt-2 max-w-sm mx-auto">
-              Register your business and start selling on Africa's leading halal platform
+              Register and manage your mosque profile, receive support, and build your pension fund.
             </p>
 
             <div className="mt-8 space-y-3">
               <div className="flex items-center justify-center gap-3 text-sm text-white/80">
                 <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-white/20 text-white text-xs font-bold">✓</span>
-                <span>Halal-Certified Marketplace</span>
+                <span>Build Your Pension Fund</span>
               </div>
               <div className="flex items-center justify-center gap-3 text-sm text-white/80">
                 <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-white/20 text-white text-xs font-bold">✓</span>
-                <span>Reach Thousands of Customers</span>
+                <span>Receive Community Support</span>
               </div>
               <div className="flex items-center justify-center gap-3 text-sm text-white/80">
                 <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-white/20 text-white text-xs font-bold">✓</span>
-                <span>Secure Payment Processing</span>
+                <span>Manage Your Mosque Profile</span>
               </div>
             </div>
 
@@ -790,14 +620,14 @@ const VendorRegister = () => {
           <div className="w-full max-w-sm mx-auto">
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-[#1A2A3A]">
-                {step > 6 ? 'Complete!' : `Step ${step} of 6`}
+                {step > 5 ? 'Complete!' : `Step ${step} of 5`}
               </h2>
               <p className="text-sm text-[#94A3B8] mt-1">
-                {step > 6 ? 'Your application is submitted' : 'Fill in your business details'}
+                {step > 5 ? 'Your application is submitted' : 'Fill in your details to continue'}
               </p>
             </div>
 
-            {step <= 6 && renderStepIndicator()}
+            {step <= 5 && renderStepIndicator()}
 
             {error && (
               <div className="mb-4 p-4 bg-[#FEF2F2] border border-[#FECACA] rounded-2xl flex items-center justify-between text-sm text-[#DC2626] animate-slideDown">
@@ -806,7 +636,7 @@ const VendorRegister = () => {
               </div>
             )}
 
-            {success && step === 7 && (
+            {success && step === 6 && (
               <div className="mb-4 p-4 bg-[#F0FDF4] border border-[#BBF7D0] rounded-2xl text-sm text-[#16A34A] animate-slideDown">
                 {success}
               </div>
@@ -816,7 +646,7 @@ const VendorRegister = () => {
               {renderStep()}
             </div>
 
-            {step >= 1 && step <= 5 && (
+            {step >= 1 && step <= 3 && (
               <div className="flex gap-3 mt-8">
                 {step > 1 && (
                   <button
@@ -830,12 +660,29 @@ const VendorRegister = () => {
                   className={`${step > 1 ? 'flex-[2]' : 'flex-1'} px-6 py-3.5 rounded-2xl bg-[#1769AA] text-white font-bold text-sm shadow-md shadow-[#1769AA]/20 hover:bg-[#2F80C0] hover:shadow-lg hover:shadow-[#1769AA]/30 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]`}
                   onClick={handleNext}
                 >
-                  {step === 5 ? 'Submit Application' : 'Continue'}
+                  Continue
                 </button>
               </div>
             )}
 
-            {step === 6 && (
+            {step === 4 && (
+              <div className="flex gap-3 mt-8">
+                <button
+                  className="flex-1 px-6 py-3.5 rounded-2xl bg-[#F1F7FC] text-[#5A6A7A] font-semibold text-sm hover:bg-[#E2E8F0] transition-all duration-300"
+                  onClick={handleBack}
+                >
+                  Back
+                </button>
+                <button
+                  className="flex-[2] px-6 py-3.5 rounded-2xl bg-[#1769AA] text-white font-bold text-sm shadow-md shadow-[#1769AA]/20 hover:bg-[#2F80C0] hover:shadow-lg hover:shadow-[#1769AA]/30 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+                  onClick={handleNext}
+                >
+                  Submit Application
+                </button>
+              </div>
+            )}
+
+            {step === 5 && (
               <div className="flex gap-3 mt-8">
                 <button
                   className="flex-1 px-6 py-3.5 rounded-2xl bg-[#F1F7FC] text-[#5A6A7A] font-semibold text-sm hover:bg-[#E2E8F0] transition-all duration-300"
@@ -845,13 +692,13 @@ const VendorRegister = () => {
                 </button>
                 <button
                   className="flex-[2] px-6 py-3.5 rounded-2xl bg-[#1769AA] text-white font-bold text-sm shadow-md shadow-[#1769AA]/20 hover:bg-[#2F80C0] hover:shadow-lg hover:shadow-[#1769AA]/30 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
-                  onClick={handleVerifyOtp}
+                  onClick={handleSubmit}
                   disabled={loading}
                 >
                   {loading ? (
                     <span className="flex items-center justify-center gap-3">
                       <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Verifying...
+                      Submitting...
                     </span>
                   ) : (
                     'Verify & Submit'
@@ -879,4 +726,4 @@ const VendorRegister = () => {
   );
 };
 
-export default VendorRegister;
+export default ImamRegister;

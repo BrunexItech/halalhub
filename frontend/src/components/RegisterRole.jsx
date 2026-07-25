@@ -117,6 +117,46 @@ const RegisterRole = () => {
                 </div>
               </div>
             </button>
+
+            {/* Imam Role */}
+            <button
+              onClick={() => navigate('/register/imam')}
+              onMouseEnter={() => setHovered('imam')}
+              onMouseLeave={() => setHovered(null)}
+              className={`w-full p-5 rounded-xl border-2 transition-all duration-300 text-left group ${
+                hovered === 'imam' 
+                  ? 'border-[#1769AA] bg-[#F1F7FC] shadow-lg shadow-[#1769AA]/10 -translate-y-0.5' 
+                  : 'border-[#E2E8F0] hover:border-[#1769AA]/40 hover:bg-[#F8FAFC]'
+              }`}
+            >
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold transition-all duration-300 ${
+                  hovered === 'imam' 
+                    ? 'bg-[#1769AA] text-white shadow-md shadow-[#1769AA]/20' 
+                    : 'bg-[#F1F7FC] text-[#1769AA]'
+                }`}>
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm1-13h-2v6l5.25 3.15L17 12.23l-4-2.37V7z"/>
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <div className="font-bold text-[#1A2A3A]">Imam</div>
+                  <div className="text-sm text-[#94A3B8]">Register as a religious leader</div>
+                  <div className="flex gap-2 mt-1.5 flex-wrap">
+                    <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[#FEF3C7] text-[#D97706]">Pension</span>
+                    <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[#EFF6FF] text-[#1769AA]">Supporters</span>
+                    <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[#F0FDF4] text-[#16A34A]">Verified</span>
+                  </div>
+                </div>
+                <div className={`text-[#1769AA] transition-all duration-300 ${
+                  hovered === 'imam' ? 'translate-x-1 opacity-100' : 'opacity-0'
+                }`}>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+            </button>
           </div>
 
           {/* Footer */}
