@@ -168,13 +168,14 @@ const AuthScreen = ({ onLogin }) => {
     return `${seconds}s`;
   };
 
-  // SVG Icons
+  // Lock SVG
   const LockIcon = () => (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
     </svg>
   );
 
+  // Eye SVG
   const EyeIcon = () => (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -182,12 +183,14 @@ const AuthScreen = ({ onLogin }) => {
     </svg>
   );
 
+  // Eye Off SVG
   const EyeOffIcon = () => (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
     </svg>
   );
 
+  // Spinner SVG
   const SpinnerIcon = () => (
     <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -195,54 +198,30 @@ const AuthScreen = ({ onLogin }) => {
     </svg>
   );
 
-  const CloseIcon = () => (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-    </svg>
-  );
-
-  const CheckIcon = () => (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-    </svg>
-  );
-
-  const PhoneIcon = () => (
-    <svg className="w-5 h-5 text-[#1769AA]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-    </svg>
-  );
-
-  const KeyIcon = () => (
-    <svg className="w-5 h-5 text-[#1769AA]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-    </svg>
-  );
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F1F7FC] px-4 py-8">
       <div className="w-full max-w-md mx-auto">
-        <div className="bg-white rounded-2xl shadow-xl shadow-[#1769AA]/5 p-8 lg:p-10 w-full border border-[#E8EEF4] transition-all duration-300 hover:shadow-2xl hover:shadow-[#1769AA]/10">
+        <div className="bg-white rounded-2xl shadow-xl shadow-[#1769AA]/5 p-8 lg:p-10 w-full border border-[#E8EEF4]">
           
           {/* Brand Header */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-3 mb-2">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#1769AA] to-[#2F80C0] flex items-center justify-center shadow-lg shadow-[#1769AA]/20 transition-all duration-300 hover:shadow-xl hover:shadow-[#1769AA]/30">
-                <span className="text-white text-xl font-bold">H</span>
+              <div className="w-10 h-10 rounded-xl bg-[#1769AA] flex items-center justify-center">
+                <span className="text-white text-lg font-bold">H</span>
               </div>
-              <span className="text-2xl font-bold text-[#1A2A3A] tracking-tight">HalalHub</span>
+              <span className="text-2xl font-bold text-[#1A2A3A]">HalalHub</span>
             </div>
-            <p className="text-sm text-[#94A3B8] mt-1 tracking-wide">Secure · Sharia-Compliant</p>
+            <p className="text-sm text-[#94A3B8] mt-1">Secure · Sharia-Compliant</p>
           </div>
 
           {/* Tab Navigation */}
           <div className="flex gap-1 bg-[#F1F7FC] rounded-xl p-1.5 mb-8">
-            <button className="flex-1 py-3 rounded-lg text-sm font-semibold bg-[#1769AA] text-white shadow-md shadow-[#1769AA]/20 transition-all duration-200 hover:shadow-lg hover:shadow-[#1769AA]/30">
+            <button className="flex-1 py-3 rounded-lg text-sm font-semibold bg-[#1769AA] text-white shadow-md shadow-[#1769AA]/20">
               Sign In
             </button>
             <button
               onClick={() => navigate('/register/role')}
-              className="flex-1 py-3 rounded-lg text-sm font-semibold text-[#5A6A7A] hover:text-[#1A2A3A] transition-all duration-200 hover:bg-white/50"
+              className="flex-1 py-3 rounded-lg text-sm font-semibold text-[#5A6A7A] hover:text-[#1A2A3A] transition"
             >
               Register
             </button>
@@ -250,20 +229,14 @@ const AuthScreen = ({ onLogin }) => {
 
           {/* Error/Success Messages */}
           {error && (
-            <div className="mb-6 p-4 bg-[#FEF2F2] border border-[#FECACA] rounded-xl text-sm text-[#DC2626] flex justify-between items-center animate-slideDown">
-              <span className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#DC2626]" />
-                {error}
-              </span>
-              <button onClick={() => setError('')} className="text-[#DC2626]/60 hover:text-[#DC2626] transition p-1 rounded-full hover:bg-[#FECACA]/30">
-                <CloseIcon />
-              </button>
+            <div className="mb-6 p-4 bg-[#FEF2F2] border border-[#FECACA] rounded-xl text-sm text-[#DC2626] flex justify-between items-center">
+              <span>{error}</span>
+              <button onClick={() => setError('')} className="text-[#DC2626]/60 hover:text-[#DC2626] transition">✕</button>
             </div>
           )}
 
           {success && (
-            <div className="mb-6 p-4 bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl text-sm text-[#16A34A] flex items-center gap-2 animate-slideDown">
-              <CheckIcon />
+            <div className="mb-6 p-4 bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl text-sm text-[#16A34A]">
               {success}
             </div>
           )}
@@ -274,20 +247,15 @@ const AuthScreen = ({ onLogin }) => {
               <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-2">
                 Phone Number
               </label>
-              <div className="relative">
-                <input
-                  type="tel"
-                  className="w-full px-5 py-3.5 pl-12 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+254 7XX XXX XXX"
-                  disabled={loading}
-                  required
-                />
-                <span className="absolute left-4 top-1/2 -translate-y-1/2">
-                  <PhoneIcon />
-                </span>
-              </div>
+              <input
+                type="tel"
+                className="w-full px-5 py-3.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+254 7XX XXX XXX"
+                disabled={loading}
+                required
+              />
             </div>
 
             {/* PIN Input */}
@@ -298,20 +266,17 @@ const AuthScreen = ({ onLogin }) => {
               <div className="relative">
                 <input
                   type={showPin ? 'text' : 'password'}
-                  className="w-full px-5 py-3.5 pl-12 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200 pr-14"
+                  className="w-full px-5 py-3.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200 pr-14"
                   value={pin}
                   onChange={(e) => setPin(e.target.value)}
                   placeholder="••••••"
                   disabled={loading}
                   required
                 />
-                <span className="absolute left-4 top-1/2 -translate-y-1/2">
-                  <KeyIcon />
-                </span>
                 <button
                   type="button"
                   onClick={togglePinVisibility}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#5A6A7A] transition p-1 rounded-full hover:bg-[#F1F7FC]"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#5A6A7A] transition"
                 >
                   {showPin ? <EyeOffIcon /> : <EyeIcon />}
                 </button>
@@ -320,11 +285,11 @@ const AuthScreen = ({ onLogin }) => {
 
             {/* OTP Section */}
             {otpSent && (
-              <div className="space-y-4 pt-2 animate-fadeIn">
-                <div className="bg-[#F1F7FC] rounded-xl p-4 border border-[#E8EEF4] transition-all duration-300 hover:border-[#1769AA]/20">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="space-y-4 pt-2">
+                <div className="bg-[#F1F7FC] rounded-xl p-4 border border-[#E8EEF4]">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="text-[#1769AA] p-2 bg-[#1769AA]/10 rounded-lg">
+                      <div className="text-[#1769AA]">
                         <LockIcon />
                       </div>
                       <div>
@@ -335,7 +300,7 @@ const AuthScreen = ({ onLogin }) => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className={`text-sm font-semibold ${otpExpirySeconds <= 10 ? 'text-red-600 animate-pulse' : 'text-[#5A6A7A]'}`}>
+                      <div className={`text-sm font-semibold ${otpExpirySeconds <= 10 ? 'text-red-600' : 'text-[#5A6A7A]'}`}>
                         {otpExpirySeconds > 0 ? formatTime(otpExpirySeconds) : 'Expired'}
                       </div>
                       <div className="w-20 h-1 bg-[#E8EEF4] rounded-full mt-1 overflow-hidden">
@@ -349,10 +314,7 @@ const AuthScreen = ({ onLogin }) => {
                     </div>
                   </div>
                   {otpExpirySeconds === 0 && (
-                    <p className="text-xs text-red-600 mt-2 flex items-center gap-1">
-                      <span className="w-1 h-1 rounded-full bg-red-600" />
-                      OTP expired. Click "Resend Code" below.
-                    </p>
+                    <p className="text-xs text-red-600 mt-2">OTP expired. Click "Resend Code" below.</p>
                   )}
                 </div>
 
@@ -360,7 +322,7 @@ const AuthScreen = ({ onLogin }) => {
                   <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-3">
                     Enter Verification Code
                   </label>
-                  <div className="flex gap-2 sm:gap-3 justify-center">
+                  <div className="flex gap-3 justify-between">
                     {otp.map((digit, index) => (
                       <input
                         key={index}
@@ -369,7 +331,7 @@ const AuthScreen = ({ onLogin }) => {
                         inputMode="numeric"
                         maxLength="1"
                         value={digit}
-                        className="w-12 h-14 sm:w-14 sm:h-14 text-center text-xl font-semibold border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200 hover:border-[#1769AA]/40"
+                        className="w-14 h-14 text-center text-xl font-semibold border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
                         onChange={(e) => handleOtpChange(index, e.target.value)}
                         onKeyDown={(e) => handleOtpKeyDown(index, e)}
                         required
@@ -377,11 +339,11 @@ const AuthScreen = ({ onLogin }) => {
                     ))}
                   </div>
                 </div>
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
+                <div className="flex justify-between items-center">
                   <span className="text-xs text-[#94A3B8]">Enter the 6-digit code above</span>
                   <button
                     type="button"
-                    className="text-xs font-semibold text-[#1769AA] hover:text-[#2F80C0] transition disabled:opacity-50 disabled:cursor-not-allowed hover:underline"
+                    className="text-xs font-semibold text-[#1769AA] hover:text-[#2F80C0] transition disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={handleResendOtp}
                     disabled={resendTimer > 0 || loading}
                   >
@@ -394,7 +356,7 @@ const AuthScreen = ({ onLogin }) => {
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full py-3.5 bg-gradient-to-r from-[#1769AA] to-[#2F80C0] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-[#1769AA]/25 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:shadow-none transform hover:scale-[1.01] active:scale-[0.98]"
+              className="w-full py-3.5 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] hover:shadow-lg hover:shadow-[#1769AA]/25 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:shadow-none"
               disabled={loading}
             >
               {loading ? (
@@ -410,53 +372,12 @@ const AuthScreen = ({ onLogin }) => {
 
           {/* Footer */}
           <div className="mt-8 pt-6 border-t border-[#F1F7FC]">
-            <div className="flex flex-wrap justify-center gap-3 text-center">
-              <span className="text-[10px] text-[#94A3B8] tracking-wider flex items-center gap-1.5">
-                <span className="w-1 h-1 rounded-full bg-[#C9A84C]" />
-                Secure
-              </span>
-              <span className="text-[10px] text-[#94A3B8] tracking-wider flex items-center gap-1.5">
-                <span className="w-1 h-1 rounded-full bg-[#C9A84C]" />
-                Encrypted
-              </span>
-              <span className="text-[10px] text-[#94A3B8] tracking-wider flex items-center gap-1.5">
-                <span className="w-1 h-1 rounded-full bg-[#C9A84C]" />
-                No Riba
-              </span>
-            </div>
+            <p className="text-center text-xs text-[#94A3B8] tracking-wider">
+              Secure · Encrypted · No Riba
+            </p>
           </div>
         </div>
       </div>
-
-      {/* CSS Animations */}
-      <style>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease-out forwards;
-        }
-        .animate-slideDown {
-          animation: slideDown 0.3s ease-out forwards;
-        }
-      `}</style>
     </div>
   );
 };

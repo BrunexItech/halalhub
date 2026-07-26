@@ -320,17 +320,17 @@ const ClientRegister = () => {
       }
       
       // OTP verified, proceed with registration
-      await authService.register({
-        fullName: formData.fullName,
-        phone: formData.phone,
-        email: formData.email,
-        nationalId: formData.nationalId,
-        pin: formData.pin,
-        region: formData.countyName,
-        subCounty: formData.subCountyName,
-        ward: formData.wardName,
-        role: 'client'
-      });
+     // OTP verified, proceed with registration
+    await authService.registerClient({
+      fullName: formData.fullName,
+      phone: formData.phone,
+      email: formData.email,
+      nationalId: formData.nationalId,
+      pin: formData.pin,
+      region: formData.countyName,
+      subCounty: formData.subCountyName,
+      ward: formData.wardName
+    });
       
       setStep(5);
       setSuccess('Registration complete!');
