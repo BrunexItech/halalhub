@@ -154,6 +154,11 @@ const Restaurants = () => {
   };
 
   const handlePlaceOrder = async () => {
+    if (cart.length === 0) {
+      setError('Your cart is empty. Please add items before ordering.');
+      return;
+    }
+
     if (!orderData.deliveryAddress && orderData.deliveryType === 'delivery') {
       setError('Please enter your delivery address');
       return;
@@ -239,6 +244,18 @@ const Restaurants = () => {
     </svg>
   );
 
+  const RestaurantIcon = () => (
+    <svg className="w-12 h-12 text-[#94A3B8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+    </svg>
+  );
+
+  const EmptyStateIcon = () => (
+    <svg className="w-16 h-16 text-[#E8EEF4] mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+    </svg>
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F1F7FC] p-6">
@@ -316,7 +333,8 @@ const Restaurants = () => {
         {/* ===== RESTAURANTS GRID ===== */}
         {filteredRestaurants.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl border border-[#E8EEF4]">
-            <h3 className="text-lg font-bold text-[#1A2A3A]">No restaurants found</h3>
+            <EmptyStateIcon />
+            <h3 className="text-lg font-bold text-[#1A2A3A] mt-4">No restaurants found</h3>
             <p className="text-sm text-[#94A3B8] mt-1">Try adjusting your filters</p>
           </div>
         ) : (
@@ -327,7 +345,7 @@ const Restaurants = () => {
                   backgroundImage: restaurant.cover_image ? `url(${restaurant.cover_image})` : restaurant.logo_url ? `url(${restaurant.logo_url})` : 'none',
                   backgroundColor: restaurant.cover_image || restaurant.logo_url ? 'transparent' : '#EDE5D4' 
                 }}>
-                  <span className={`text-5xl ${restaurant.cover_image || restaurant.logo_url ? 'opacity-40' : 'opacity-60'}`}>🍽️</span>
+                  {!restaurant.cover_image && !restaurant.logo_url && <RestaurantIcon />}
                   <span className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-semibold ${restaurant.is_active !== false ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
                     {restaurant.is_active !== false ? 'Open' : 'Closed'}
                   </span>
@@ -380,9 +398,12 @@ const Restaurants = () => {
         {/* ======================================== */}
         {showMenuModal && selectedRestaurant && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowMenuModal(false)}>
-            <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-[#E8EEF4] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <div className="p-6 border-b border-[#E8EEF4] flex justify-between items-center sticky top-0 bg-white z-10">
-                <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">{selectedRestaurant.business_name || selectedRestaurant.fullname} - Menu</h3>
+            <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-[#E8EEF4] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="p-6 border-b border-[#F1F7FC] flex justify-between items-center sticky top-0 bg-white z-10">
+                <div>
+                  <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">{selectedRestaurant.business_name || selectedRestaurant.fullname}</h3>
+                  <p className="text-sm text-[#94A3B8] mt-0.5">{selectedRestaurant.location || selectedRestaurant.county || 'Menu'}</p>
+                </div>
                 <button className="w-8 h-8 rounded-xl hover:bg-[#F1F7FC] transition flex items-center justify-center text-[#94A3B8] hover:text-[#1A2A3A]" onClick={() => setShowMenuModal(false)}><CloseIcon /></button>
               </div>
               <div className="p-6">
@@ -391,49 +412,67 @@ const Restaurants = () => {
                     <p className="text-[#94A3B8]">No menu items available</p>
                   </div>
                 ) : (
-                  [...new Set(menuItems.map(item => item.category))].map(category => (
-                    <div key={category} className="mb-6">
-                      <h4 className="font-bold text-[#1A2A3A] border-b-2 border-[#1769AA] pb-2 mb-3">{category}</h4>
-                      {menuItems.filter(item => item.category === category).map(item => (
-                        <div key={item.id} className="flex justify-between items-center py-3 border-b border-[#F1F7FC] last:border-0">
-                          <div>
-                            <div className="font-medium text-[#1A2A3A]">{item.name}</div>
-                            <div className="text-xs text-[#94A3B8]">{item.description}</div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className="font-bold text-[#1769AA]">{formatCurrency(item.price)}</span>
-                            <button className="px-3 py-1.5 rounded-xl bg-[#1769AA] text-white text-xs font-semibold hover:bg-[#2F80C0] transition-all duration-200" onClick={() => addToCart(item)}>Add</button>
-                          </div>
+                  <div className="space-y-6">
+                    {[...new Set(menuItems.map(item => item.category))].map(category => (
+                      <div key={category}>
+                        <h4 className="font-bold text-[#1A2A3A] border-b-2 border-[#1769AA] pb-2 mb-3">{category}</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {menuItems.filter(item => item.category === category).map(item => (
+                            <div key={item.id} className="bg-[#F8FAFC] rounded-xl p-3 hover:shadow-md transition-all duration-200 border border-[#E8EEF4] hover:border-[#1769AA]/30">
+                              <div className="flex gap-3">
+                                <div 
+                                  className="w-20 h-20 rounded-lg bg-cover bg-center flex-shrink-0 border border-[#E8EEF4]" 
+                                  style={{ 
+                                    backgroundImage: item.image ? `url(${item.image})` : 'none', 
+                                    backgroundColor: item.image ? 'transparent' : '#EDE5D4' 
+                                  }} 
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-[#1A2A3A] text-sm truncate">{item.name}</div>
+                                  <div className="text-xs text-[#94A3B8] line-clamp-2">{item.description}</div>
+                                  <div className="flex items-center justify-between mt-2">
+                                    <span className="font-bold text-[#1769AA]">{formatCurrency(item.price)}</span>
+                                    <button 
+                                      className="px-2.5 py-1 rounded-lg bg-[#1769AA] text-white text-xs font-semibold hover:bg-[#2F80C0] transition-all duration-200"
+                                      onClick={() => addToCart(item)}
+                                    >
+                                      Add
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  ))
-                )}
-
-                {cart.length > 0 && (
-                  <div className="bg-[#F8FAFC] rounded-xl p-4 mt-4 border border-[#E8EEF4]">
-                    <div className="flex justify-between font-semibold text-[#1A2A3A] pb-2 border-b border-[#E2E8F0]">
-                      <span>Your Order</span>
-                      <span>{cart.length} items</span>
-                    </div>
-                    {cart.map(item => (
-                      <div key={item.id} className="flex justify-between py-1.5 text-sm">
-                        <span className="text-[#5A6A7A]">{item.name} x{item.quantity}</span>
-                        <span className="font-medium text-[#1A2A3A]">{formatCurrency(item.price * item.quantity)}</span>
                       </div>
                     ))}
-                    <div className="flex justify-between pt-2 border-t border-[#E2E8F0] font-bold text-[#1A2A3A]">
-                      <span>Total:</span>
-                      <span className="text-[#1769AA]">{formatCurrency(getCartTotal())}</span>
-                    </div>
-                    <button className="w-full mt-3 py-2.5 rounded-xl bg-[#1769AA] text-white font-semibold text-sm shadow-md shadow-[#1769AA]/20 hover:bg-[#2F80C0] hover:shadow-lg transition-all duration-200" onClick={() => { setShowMenuModal(false); setShowOrderModal(true); }}>
-                      Proceed to Checkout
-                    </button>
+
+                    {cart.length > 0 && (
+                      <div className="bg-[#F8FAFC] rounded-xl p-4 mt-4 border border-[#E8EEF4] sticky bottom-0">
+                        <div className="flex justify-between font-semibold text-[#1A2A3A] pb-2 border-b border-[#E2E8F0]">
+                          <span>Your Order</span>
+                          <span>{cart.length} items</span>
+                        </div>
+                        {cart.map(item => (
+                          <div key={item.id} className="flex justify-between py-1.5 text-sm">
+                            <span className="text-[#5A6A7A]">{item.name} x{item.quantity}</span>
+                            <span className="font-medium text-[#1A2A3A]">{formatCurrency(item.price * item.quantity)}</span>
+                          </div>
+                        ))}
+                        <div className="flex justify-between pt-2 border-t border-[#E2E8F0] font-bold text-[#1A2A3A]">
+                          <span>Total:</span>
+                          <span className="text-[#1769AA]">{formatCurrency(getCartTotal())}</span>
+                        </div>
+                        <button 
+                          className="w-full mt-3 py-2.5 rounded-xl bg-[#1769AA] text-white font-semibold text-sm shadow-md shadow-[#1769AA]/20 hover:bg-[#2F80C0] hover:shadow-lg transition-all duration-200"
+                          onClick={() => { setShowMenuModal(false); setShowOrderModal(true); }}
+                        >
+                          Proceed to Checkout
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
-              <div className="p-6 border-t border-[#E8EEF4]">
-                <button className="w-full py-2.5 rounded-xl bg-[#F1F7FC] text-[#5A6A7A] font-semibold text-sm hover:bg-[#E2E8F0] transition-all duration-200" onClick={() => setShowMenuModal(false)}>Close</button>
               </div>
             </div>
           </div>
@@ -455,44 +494,60 @@ const Restaurants = () => {
                   <div className="text-xs text-[#94A3B8] mt-0.5">{selectedRestaurant.location || selectedRestaurant.address || 'Nairobi'}</div>
                 </div>
 
-                {cart.map(item => (
-                  <div key={item.id} className="flex justify-between py-2 border-b border-[#F1F7FC] text-sm">
-                    <span className="text-[#1A2A3A]">{item.name} x{item.quantity}</span>
-                    <span className="font-semibold text-[#1A2A3A]">{formatCurrency(item.price * item.quantity)}</span>
+                {cart.length === 0 ? (
+                  <div className="text-center py-6">
+                    <p className="text-[#94A3B8]">Your cart is empty. Please add items before ordering.</p>
+                    <button 
+                      className="mt-4 px-6 py-2.5 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200"
+                      onClick={() => { setShowOrderModal(false); setShowMenuModal(true); }}
+                    >
+                      View Menu
+                    </button>
                   </div>
-                ))}
+                ) : (
+                  <>
+                    {cart.map(item => (
+                      <div key={item.id} className="flex justify-between py-2 border-b border-[#F1F7FC] text-sm">
+                        <span className="text-[#1A2A3A]">{item.name} x{item.quantity}</span>
+                        <span className="font-semibold text-[#1A2A3A]">{formatCurrency(item.price * item.quantity)}</span>
+                      </div>
+                    ))}
 
-                <div className="bg-[#F8FAFC] rounded-xl p-4 mt-4 space-y-2">
-                  <div className="flex justify-between text-sm"><span className="text-[#94A3B8]">Subtotal</span><span className="font-semibold text-[#1A2A3A]">{formatCurrency(getCartTotal())}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-[#94A3B8]">Delivery Fee</span><span className="font-semibold text-[#1A2A3A]">{selectedRestaurant.delivery_fee === 0 ? 'FREE' : formatCurrency(selectedRestaurant.delivery_fee || 0)}</span></div>
-                  <div className="flex justify-between text-lg font-bold border-t border-[#E2E8F0] pt-2"><span className="text-[#1A2A3A]">Total</span><span className="text-[#1769AA]">{formatCurrency(getCartTotal() + (selectedRestaurant.delivery_fee || 0))}</span></div>
-                </div>
-
-                <div className="space-y-3 mt-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-1.5">Delivery Type</label>
-                    <select className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200 appearance-none" value={orderData.deliveryType} onChange={(e) => setOrderData({...orderData, deliveryType: e.target.value})}>
-                      <option value="delivery">Delivery</option>
-                      <option value="pickup">Pickup</option>
-                    </select>
-                  </div>
-                  {orderData.deliveryType === 'delivery' && (
-                    <div>
-                      <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-1.5">Delivery Address</label>
-                      <input className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200" placeholder="Enter your address" value={orderData.deliveryAddress} onChange={(e) => setOrderData({...orderData, deliveryAddress: e.target.value})} />
+                    <div className="bg-[#F8FAFC] rounded-xl p-4 mt-4 space-y-2">
+                      <div className="flex justify-between text-sm"><span className="text-[#94A3B8]">Subtotal</span><span className="font-semibold text-[#1A2A3A]">{formatCurrency(getCartTotal())}</span></div>
+                      <div className="flex justify-between text-sm"><span className="text-[#94A3B8]">Delivery Fee</span><span className="font-semibold text-[#1A2A3A]">{selectedRestaurant.delivery_fee === 0 ? 'FREE' : formatCurrency(selectedRestaurant.delivery_fee || 0)}</span></div>
+                      <div className="flex justify-between text-lg font-bold border-t border-[#E2E8F0] pt-2"><span className="text-[#1A2A3A]">Total</span><span className="text-[#1769AA]">{formatCurrency(getCartTotal() + (selectedRestaurant.delivery_fee || 0))}</span></div>
                     </div>
-                  )}
-                  <div>
-                    <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-1.5">Special Instructions</label>
-                    <textarea className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200 resize-y" placeholder="Any special requests..." rows="2" value={orderData.specialInstructions} onChange={(e) => setOrderData({...orderData, specialInstructions: e.target.value})} />
-                  </div>
-                </div>
+
+                    <div className="space-y-3 mt-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-1.5">Delivery Type</label>
+                        <select className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200 appearance-none" value={orderData.deliveryType} onChange={(e) => setOrderData({...orderData, deliveryType: e.target.value})}>
+                          <option value="delivery">Delivery</option>
+                          <option value="pickup">Pickup</option>
+                        </select>
+                      </div>
+                      {orderData.deliveryType === 'delivery' && (
+                        <div>
+                          <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-1.5">Delivery Address</label>
+                          <input className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200" placeholder="Enter your address" value={orderData.deliveryAddress} onChange={(e) => setOrderData({...orderData, deliveryAddress: e.target.value})} />
+                        </div>
+                      )}
+                      <div>
+                        <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-1.5">Special Instructions</label>
+                        <textarea className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200 resize-y" placeholder="Any special requests..." rows="2" value={orderData.specialInstructions} onChange={(e) => setOrderData({...orderData, specialInstructions: e.target.value})} />
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 mt-4">{error}</div>}
               </div>
               <div className="p-6 border-t border-[#E8EEF4] flex gap-3">
                 <button className="flex-1 px-6 py-3 rounded-xl bg-[#F1F7FC] text-[#5A6A7A] font-semibold text-sm hover:bg-[#E2E8F0] transition-all duration-200" onClick={() => setShowOrderModal(false)}>Cancel</button>
-                <button className="flex-1 px-6 py-3 rounded-xl bg-[#1769AA] text-white font-semibold text-sm shadow-md shadow-[#1769AA]/20 hover:bg-[#2F80C0] hover:shadow-lg transition-all duration-200 disabled:opacity-50" onClick={handlePlaceOrder} disabled={processing}>{processing ? 'Placing Order...' : 'Place Order'}</button>
+                {cart.length > 0 && (
+                  <button className="flex-1 px-6 py-3 rounded-xl bg-[#1769AA] text-white font-semibold text-sm shadow-md shadow-[#1769AA]/20 hover:bg-[#2F80C0] hover:shadow-lg transition-all duration-200 disabled:opacity-50" onClick={handlePlaceOrder} disabled={processing}>{processing ? 'Placing Order...' : 'Place Order'}</button>
+                )}
               </div>
             </div>
           </div>
@@ -509,8 +564,12 @@ const Restaurants = () => {
                 <button className="w-8 h-8 rounded-xl hover:bg-[#F1F7FC] transition flex items-center justify-center text-[#94A3B8] hover:text-[#1A2A3A]" onClick={() => setShowSuccessModal(false)}><CloseIcon /></button>
               </div>
               <div className="p-6 text-center">
-                <div className="text-6xl mb-4">🍽️</div>
-                <h4 className="text-xl font-heading font-bold text-[#1A2A3A]">Your order has been placed!</h4>
+                <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mx-auto border-4 border-emerald-200">
+                  <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h4 className="text-xl font-heading font-bold text-[#1A2A3A] mt-4">Your order has been placed!</h4>
                 <p className="text-sm text-[#94A3B8] mt-2">{selectedRestaurant?.business_name || selectedRestaurant?.fullname} is preparing your order.<br />You will receive a confirmation message shortly.</p>
               </div>
               <div className="p-6 border-t border-[#E8EEF4]">

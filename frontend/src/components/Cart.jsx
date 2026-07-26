@@ -41,6 +41,11 @@ const Cart = ({
   };
 
   const confirmOrder = async () => {
+    if (cart.length === 0) {
+      setError('Your cart is empty. Please add items before ordering.');
+      return;
+    }
+
     setLocalProcessing(true);
     setError('');
     try {
@@ -91,6 +96,12 @@ const Cart = ({
   const CheckIcon = () => (
     <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+    </svg>
+  );
+
+  const EmptyCartIcon = () => (
+    <svg className="w-20 h-20 text-[#E8EEF4] mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
     </svg>
   );
 
@@ -145,8 +156,8 @@ const Cart = ({
           <div className="p-6">
             {cart.length === 0 ? (
               <div className="text-center py-12">
-                <div className="text-5xl text-[#E8EEF4] mb-4">🛒</div>
-                <h3 className="text-xl font-bold text-[#1A2A3A] mb-2">Your cart is empty</h3>
+                <EmptyCartIcon />
+                <h3 className="text-xl font-bold text-[#1A2A3A] mt-4 mb-2">Your cart is empty</h3>
                 <p className="text-sm text-[#94A3B8] mb-6">Browse our halal products and add items you love</p>
                 <button 
                   className="px-6 py-2.5 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200"
@@ -268,6 +279,12 @@ const Cart = ({
                       )}
                     </button>
 
+                    {cart.length === 0 && (
+                      <p className="text-xs text-red-500 text-center mt-2">
+                        Your cart is empty. Add items to proceed.
+                      </p>
+                    )}
+
                     <p className="text-[10px] text-[#94A3B8] text-center mt-3">
                       Secure payment · Halal certified
                     </p>
@@ -291,35 +308,49 @@ const Cart = ({
             </div>
             
             <div className="p-6 space-y-4">
-              <div className="space-y-2">
-                {cart.map(item => (
-                  <div key={item.id} className="flex justify-between text-sm border-b border-[#F1F7FC] pb-2">
-                    <span className="text-[#1A2A3A]">{item.name} <span className="text-[#94A3B8]">×{item.quantity}</span></span>
-                    <span className="font-semibold text-[#1A2A3A]">{formatCurrency(item.price * item.quantity)}</span>
+              {cart.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-[#94A3B8]">Your cart is empty.</p>
+                  <button 
+                    className="mt-4 px-6 py-2.5 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200"
+                    onClick={() => setShowCheckoutModal(false)}
+                  >
+                    Continue Shopping
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    {cart.map(item => (
+                      <div key={item.id} className="flex justify-between text-sm border-b border-[#F1F7FC] pb-2">
+                        <span className="text-[#1A2A3A]">{item.name} <span className="text-[#94A3B8]">×{item.quantity}</span></span>
+                        <span className="font-semibold text-[#1A2A3A]">{formatCurrency(item.price * item.quantity)}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
 
-              <div className="bg-[#F8FAFC] rounded-xl p-4 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-[#94A3B8]">Subtotal</span>
-                  <span className="font-semibold text-[#1A2A3A]">{formatCurrency(getCartTotal())}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-[#94A3B8]">Delivery</span>
-                  <span className="font-semibold text-[#1A2A3A]">{getDeliveryFee() === 0 ? 'FREE' : formatCurrency(getDeliveryFee())}</span>
-                </div>
-                <div className="flex justify-between text-sm pt-2 border-t border-[#E2E8F0]">
-                  <span className="font-semibold text-[#1A2A3A]">Total</span>
-                  <span className="font-bold text-[#1769AA]">{formatCurrency(getTotal())}</span>
-                </div>
-              </div>
+                  <div className="bg-[#F8FAFC] rounded-xl p-4 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#94A3B8]">Subtotal</span>
+                      <span className="font-semibold text-[#1A2A3A]">{formatCurrency(getCartTotal())}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#94A3B8]">Delivery</span>
+                      <span className="font-semibold text-[#1A2A3A]">{getDeliveryFee() === 0 ? 'FREE' : formatCurrency(getDeliveryFee())}</span>
+                    </div>
+                    <div className="flex justify-between text-sm pt-2 border-t border-[#E2E8F0]">
+                      <span className="font-semibold text-[#1A2A3A]">Total</span>
+                      <span className="font-bold text-[#1769AA]">{formatCurrency(getTotal())}</span>
+                    </div>
+                  </div>
 
-              <div className="bg-blue-50 rounded-xl p-4 text-center">
-                <p className="text-sm text-blue-700 leading-relaxed">
-                  Payment will be processed via M-Pesa. A confirmation will be sent to your phone.
-                </p>
-              </div>
+                  <div className="bg-blue-50 rounded-xl p-4 text-center">
+                    <p className="text-sm text-blue-700 leading-relaxed">
+                      Payment will be processed via M-Pesa. A confirmation will be sent to your phone.
+                    </p>
+                  </div>
+                </>
+              )}
 
               {error && <p className="text-sm text-[#DC2626]">{error}</p>}
             </div>
@@ -331,20 +362,22 @@ const Cart = ({
               >
                 Cancel
               </button>
-              <button 
-                className="flex-[2] px-6 py-3 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
-                onClick={confirmOrder}
-                disabled={localProcessing}
-              >
-                {localProcessing ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Processing...
-                  </span>
-                ) : (
-                  'Confirm Order'
-                )}
-              </button>
+              {cart.length > 0 && (
+                <button 
+                  className="flex-[2] px-6 py-3 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                  onClick={confirmOrder}
+                  disabled={localProcessing || cart.length === 0}
+                >
+                  {localProcessing ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Processing...
+                    </span>
+                  ) : (
+                    'Confirm Order'
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>
