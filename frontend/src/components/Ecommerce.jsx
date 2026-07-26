@@ -312,8 +312,8 @@ const Ecommerce = () => {
   const getStars = (rating) => {
     const fullStars = Math.floor(rating || 0);
     let stars = '';
-    for (let i = 0; i < fullStars; i++) stars += '⭐';
-    if ((rating || 0) % 1 >= 0.5) stars += '⭐';
+    for (let i = 0; i < fullStars; i++) stars += '★';
+    if ((rating || 0) % 1 >= 0.5) stars += '★';
     return stars;
   };
 

@@ -105,6 +105,26 @@ const Cart = ({
     </svg>
   );
 
+  const ProductImage = ({ image, name }) => {
+    const getImageUrl = () => {
+      if (!image) return null;
+      if (Array.isArray(image)) return image[0] || null;
+      return image;
+    };
+
+    const imgUrl = getImageUrl();
+
+    return (
+      <div 
+        className="w-16 h-16 rounded-lg bg-cover bg-center flex-shrink-0 border border-[#E8EEF4]" 
+        style={{ 
+          backgroundImage: imgUrl ? `url(${imgUrl})` : 'none', 
+          backgroundColor: imgUrl ? 'transparent' : '#F1F7FC' 
+        }} 
+      />
+    );
+  };
+
   if (!showCart) {
     return null;
   }
@@ -178,13 +198,7 @@ const Cart = ({
                       <div className="flex flex-wrap items-center gap-4">
                         <div className="flex-1 min-w-[150px]">
                           <div className="flex items-start gap-3">
-                            <div 
-                              className="w-16 h-16 rounded-lg bg-cover bg-center flex-shrink-0 border border-[#E8EEF4]" 
-                              style={{ 
-                                backgroundImage: item.image ? `url(${item.image})` : 'none', 
-                                backgroundColor: item.image ? 'transparent' : '#F1F7FC' 
-                              }} 
-                            />
+                            <ProductImage image={item.image || item.images} name={item.name} />
                             <div>
                               <h4 className="font-semibold text-[#1A2A3A] text-sm">{item.name}</h4>
                               <p className="text-xs text-[#94A3B8]">{item.vendor_name || item.business_name || 'Vendor'}</p>

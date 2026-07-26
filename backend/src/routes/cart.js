@@ -61,6 +61,7 @@ router.get('/', async (req, res) => {
       original_price: row.original_price,
       quantity: row.quantity,
       images: row.images || [],
+      image: row.images && row.images.length > 0 ? row.images[0] : null,
       category: row.category,
       is_halal: row.is_halal,
       vendor_id: row.vendor_id,
@@ -96,7 +97,7 @@ router.post('/', async (req, res) => {
 
     // Check if product exists and is active
     const productCheck = await db.query(
-      'SELECT id, name, price, stock FROM products WHERE id = $1 AND is_active = true',
+      'SELECT id, name, price, stock, images FROM products WHERE id = $1 AND is_active = true',
       [product_id]
     );
 
