@@ -552,7 +552,7 @@ router.get('/imams/:imamId', async (req, res) => {
 });
 
 // ============================================================
-// 13. CREATE ORDER (Ecommerce)
+// 13. CREATE ORDER (Ecommerce) - FIXED
 // ============================================================
 router.post('/orders', async (req, res) => {
   try {
@@ -580,7 +580,7 @@ router.post('/orders', async (req, res) => {
         id, user_id, vendor_id, items, subtotal, delivery_fee, total_amount,
         delivery_address, delivery_type, special_instructions, status, order_date
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending', NOW())
-    `, [orderId, userId, vendor_id, items, subtotal, delivery_fee || 0, totalAmount, delivery_address || null, delivery_type || 'delivery', special_instructions || null]);
+    `, [orderId, userId, vendor_id, JSON.stringify(items), subtotal, delivery_fee || 0, totalAmount, delivery_address || null, delivery_type || 'delivery', special_instructions || null]);
 
     res.json({
       success: true,
