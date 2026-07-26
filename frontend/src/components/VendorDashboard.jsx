@@ -982,14 +982,16 @@ const VendorDashboard = ({ user }) => {
                     <tbody>
                       {orders.map((order) => {
                         const badge = getStatusBadge(order.status);
+                        const isBooking = order.order_type === 'booking';
+                        const itemDisplay = isBooking ? order.items || 'Stay' : order.items || `${order.items?.length || 0} items`;
                         return (
                           <tr key={order.id} className="border-b border-[#F8FAFC] hover:bg-[#F8FAFC] transition">
                             <td className="px-4 py-3 font-semibold text-[#1A2A3A]">
-                              {order.order_type === 'booking' ? '🏨' : '🛒'} {order.id}
+                              {isBooking ? '🏨' : '🛒'} {order.id}
                             </td>
                             <td className="px-4 py-3 text-[#1A2A3A]">{order.customer_name || 'Customer'}</td>
                             <td className="px-4 py-3 text-[#94A3B8] hidden md:table-cell">
-                              {order.order_type === 'booking' ? order.listing_title || 'Stay' : `${order.items?.length || 0} items`}
+                              {itemDisplay}
                             </td>
                             <td className="px-4 py-3 font-semibold text-[#1A2A3A]">{formatCurrency(order.total_amount)}</td>
                             <td className="px-4 py-3">
@@ -1185,6 +1187,7 @@ const VendorDashboard = ({ user }) => {
                     {orders.map((order) => {
                       const badge = getStatusBadge(order.status);
                       const isBooking = order.order_type === 'booking';
+                      const itemDisplay = isBooking ? order.items || 'Stay' : order.items || `${order.items?.length || 0} items`;
                       return (
                         <tr key={order.id} className="border-b border-[#F8FAFC] hover:bg-[#F8FAFC] transition">
                           <td className="px-4 py-3 font-semibold text-[#1A2A3A]">
@@ -1194,12 +1197,12 @@ const VendorDashboard = ({ user }) => {
                           <td className="px-4 py-3 text-[#94A3B8] hidden md:table-cell">
                             {isBooking ? (
                               <div>
-                                <div>{order.listing_title || 'Stay'}</div>
+                                <div>{order.items || 'Stay'}</div>
                                 <div className="text-xs">{formatDate(order.check_in)} → {formatDate(order.check_out)}</div>
                                 <div className="text-xs">{order.guests} guests</div>
                               </div>
                             ) : (
-                              <div>{order.items?.length || 0} items</div>
+                              <div>{itemDisplay}</div>
                             )}
                           </td>
                           <td className="px-4 py-3 font-semibold text-[#1A2A3A]">{formatCurrency(order.total_amount)}</td>
