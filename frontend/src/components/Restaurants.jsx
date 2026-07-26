@@ -206,8 +206,8 @@ const Restaurants = () => {
   const getStars = (rating) => {
     const fullStars = Math.floor(rating || 0);
     let stars = '';
-    for (let i = 0; i < fullStars; i++) stars += '⭐';
-    if ((rating || 0) % 1 >= 0.5) stars += '⭐';
+    for (let i = 0; i < fullStars; i++) stars += '★';
+    if ((rating || 0) % 1 >= 0.5) stars += '★';
     return stars;
   };
 
@@ -270,7 +270,7 @@ const Restaurants = () => {
         {/* ===== PAGE HEADER ===== */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl md:text-3xl font-heading font-bold text-[#1A2A3A]">HalaRestaurants</h1>
+            <h1 className="text-2xl md:text-3xl font-heading font-bold text-[#1A2A3A]">Halal Restaurants</h1>
             <p className="text-sm text-[#94A3B8] mt-0.5">Discover halal restaurants across Kenya</p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
@@ -325,10 +325,10 @@ const Restaurants = () => {
             {filteredRestaurants.map((restaurant) => (
               <div key={restaurant.id} className="bg-white rounded-2xl overflow-hidden border border-[#E8EEF4] shadow-sm hover:shadow-xl hover:shadow-[#1769AA]/5 transition-all duration-300 group">
                 <div className="h-40 bg-cover bg-center relative flex items-center justify-center" style={{ 
-                  backgroundImage: `url(${restaurant.cover_image || restaurant.logo_url || 'https://via.placeholder.com/400x300/1769AA/fff?text=Restaurant'})`, 
-                  backgroundColor: '#EDE5D4' 
+                  backgroundImage: restaurant.cover_image ? `url(${restaurant.cover_image})` : restaurant.logo_url ? `url(${restaurant.logo_url})` : 'none',
+                  backgroundColor: restaurant.cover_image || restaurant.logo_url ? 'transparent' : '#EDE5D4' 
                 }}>
-                  <span className="text-5xl opacity-60">🍽️</span>
+                  <span className={`text-5xl ${restaurant.cover_image || restaurant.logo_url ? 'opacity-40' : 'opacity-60'}`}>🍽️</span>
                   <span className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-semibold ${restaurant.is_active !== false ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
                     {restaurant.is_active !== false ? 'Open' : 'Closed'}
                   </span>
@@ -345,7 +345,7 @@ const Restaurants = () => {
                   </div>
                   <p className="text-xs text-[#94A3B8] mt-0.5">{restaurant.business_type || 'Restaurant'} · {restaurant.county || restaurant.location}</p>
                   <div className="flex flex-wrap gap-1 mt-2">
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">✓ Halal</span>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">Halal</span>
                     <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#F1F7FC] text-[#5A6A7A]">{restaurant.county || 'Kenya'}</span>
                     {restaurant.delivery_fee === 0 && (
                       <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">Free Delivery</span>
@@ -403,7 +403,7 @@ const Restaurants = () => {
                           </div>
                           <div className="flex items-center gap-3">
                             <span className="font-bold text-[#1769AA]">{formatCurrency(item.price)}</span>
-                            <button className="px-3 py-1.5 rounded-xl bg-[#1769AA] text-white text-xs font-semibold hover:bg-[#2F80C0] transition-all duration-200" onClick={() => addToCart(item)}>+ Add</button>
+                            <button className="px-3 py-1.5 rounded-xl bg-[#1769AA] text-white text-xs font-semibold hover:bg-[#2F80C0] transition-all duration-200" onClick={() => addToCart(item)}>Add</button>
                           </div>
                         </div>
                       ))}
@@ -479,7 +479,7 @@ const Restaurants = () => {
                   </div>
                   {orderData.deliveryType === 'delivery' && (
                     <div>
-                      <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-1.5">Delivery Address *</label>
+                      <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-1.5">Delivery Address</label>
                       <input className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200" placeholder="Enter your address" value={orderData.deliveryAddress} onChange={(e) => setOrderData({...orderData, deliveryAddress: e.target.value})} />
                     </div>
                   )}
