@@ -212,7 +212,7 @@ const Restaurants = () => {
   };
 
   const getPriceRangeDisplay = (range) => {
-    if (!range) return 'KES 0 - 0';
+    if (!range) return '';
     const parts = String(range).split('-');
     if (parts.length === 2) {
       return `${formatCurrency(parseInt(parts[0]))}–${formatCurrency(parseInt(parts[1]))}`;
@@ -316,7 +316,6 @@ const Restaurants = () => {
         {/* ===== RESTAURANTS GRID ===== */}
         {filteredRestaurants.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl border border-[#E8EEF4]">
-            <div className="text-5xl mb-4">🔍</div>
             <h3 className="text-lg font-bold text-[#1A2A3A]">No restaurants found</h3>
             <p className="text-sm text-[#94A3B8] mt-1">Try adjusting your filters</p>
           </div>
@@ -353,9 +352,9 @@ const Restaurants = () => {
                   </div>
                   <div className="flex justify-between items-center mt-3 pt-3 border-t border-[#F1F7FC]">
                     <div>
-                      <span className="font-semibold text-[#1A2A3A]">{getPriceRangeDisplay(restaurant.price_range || '0-1000')}</span>
+                      <span className="font-semibold text-[#1A2A3A]">{getPriceRangeDisplay(restaurant.price_range)}</span>
                       <span className="text-xs text-[#94A3B8] ml-2 flex items-center gap-1">
-                        <ClockIcon /> {restaurant.delivery_time || '30-45 min'}
+                        <ClockIcon /> {restaurant.delivery_time}
                       </span>
                     </div>
                     <div className="flex gap-2">
