@@ -14,7 +14,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
-// Custom marker styles using Tailwind classes
+// Custom marker styles
 const createMosqueIcon = () => {
   return L.divIcon({
     className: 'bg-transparent',
@@ -98,19 +98,24 @@ const MosqueFinder = () => {
     }
     
     setSearching(true);
+    setError('');
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1&countrycodes=KE`
       );
       
-      if (!response.ok) throw new Error('Geocoding service unavailable');
+      if (!response.ok) {
+        throw new Error('Geocoding service temporarily unavailable');
+      }
       
       const data = await response.json();
       setSearchResults(data);
       setShowSearchSuggestions(data.length > 0);
     } catch (err) {
       console.error('Geocoding error:', err);
+      setError('Location search failed. Please try again.');
       setSearchResults([]);
+      setShowSearchSuggestions(false);
     } finally {
       setSearching(false);
     }
@@ -123,6 +128,7 @@ const MosqueFinder = () => {
     setSearchQuery(result.display_name);
     setShowSearchSuggestions(false);
     setSearchResults([]);
+    setError('');
     
     if (mapRef.current) {
       mapRef.current.setView([lat, lon], 14);
@@ -158,7 +164,9 @@ const MosqueFinder = () => {
         },
       });
       
-      if (!response.ok) throw new Error('Failed to fetch mosque data');
+      if (!response.ok) {
+        throw new Error('Mosque data service temporarily unavailable');
+      }
       
       const data = await response.json();
       
@@ -231,7 +239,7 @@ const MosqueFinder = () => {
       
     } catch (err) {
       console.error('Overpass API error:', err);
-      setError('Failed to find nearby mosques. Please try again.');
+      setError('Unable to find mosques. Please check your connection and try again.');
     } finally {
       setIsLoadingMosques(false);
     }
@@ -279,6 +287,7 @@ const MosqueFinder = () => {
       setFavorites(res.data.favorites || []);
     } catch (err) {
       console.error('Failed to load favorites:', err);
+      setFavorites([]);
     } finally {
       setIsLoadingFavorites(false);
     }
@@ -316,7 +325,8 @@ const MosqueFinder = () => {
       
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError('Failed to update favorites');
+      console.error('Favorite toggle error:', err);
+      setError('Failed to update favorites. Please try again.');
       setTimeout(() => setError(''), 3000);
     }
   };
@@ -328,12 +338,14 @@ const MosqueFinder = () => {
       setReviews(prev => ({ ...prev, [mosqueId]: res.data.reviews || [] }));
     } catch (err) {
       console.error('Failed to load reviews:', err);
+      setReviews(prev => ({ ...prev, [mosqueId]: [] }));
     }
   };
 
   const submitReview = async () => {
     if (!selectedMosque) return;
     setIsSubmittingReview(true);
+    setError('');
     
     try {
       const res = await mosqueService.addReview({
@@ -342,7 +354,6 @@ const MosqueFinder = () => {
         comment: reviewComment
       });
       
-      // Add review locally
       const newReview = {
         id: res.data.reviewId || 'local-' + Date.now(),
         rating: reviewRating,
@@ -356,7 +367,6 @@ const MosqueFinder = () => {
         [selectedMosque.id]: [newReview, ...(prev[selectedMosque.id] || [])]
       }));
       
-      // Update mosque average rating
       setMosques(mosques.map(m => {
         if (m.id === selectedMosque.id) {
           const allReviews = [...(reviews[selectedMosque.id] || []), newReview];
@@ -371,7 +381,8 @@ const MosqueFinder = () => {
       setSuccess('Review submitted successfully');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError('Failed to submit review');
+      console.error('Submit review error:', err);
+      setError('Failed to submit review. Please try again.');
       setTimeout(() => setError(''), 3000);
     } finally {
       setIsSubmittingReview(false);
@@ -393,6 +404,7 @@ const MosqueFinder = () => {
   const submitJumuahTime = async () => {
     if (!selectedMosque) return;
     setIsSubmittingJumuah(true);
+    setError('');
     
     try {
       const res = await mosqueService.addJumuahTime({
@@ -417,7 +429,8 @@ const MosqueFinder = () => {
       setSuccess('Jumuah times updated successfully');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError('Failed to update Jumuah times');
+      console.error('Submit Jumuah error:', err);
+      setError('Failed to update Jumuah times. Please try again.');
       setTimeout(() => setError(''), 3000);
     } finally {
       setIsSubmittingJumuah(false);
@@ -428,6 +441,7 @@ const MosqueFinder = () => {
   const uploadPhoto = async () => {
     if (!selectedMosque || !selectedPhotoFile) return;
     setIsUploadingPhoto(true);
+    setError('');
     
     try {
       const formData = new FormData();
@@ -456,7 +470,8 @@ const MosqueFinder = () => {
       setSuccess('Photo uploaded successfully');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError('Failed to upload photo');
+      console.error('Upload photo error:', err);
+      setError('Failed to upload photo. Please try again.');
       setTimeout(() => setError(''), 3000);
     } finally {
       setIsUploadingPhoto(false);
@@ -553,6 +568,7 @@ const MosqueFinder = () => {
   // ===== HANDLERS =====
   const handleUseCurrentLocation = () => {
     if (navigator.geolocation) {
+      setError('');
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
@@ -592,7 +608,6 @@ const MosqueFinder = () => {
     setSelectedMosque(mosque);
     setShowMosqueModal(true);
     
-    // Load additional data
     await loadReviews(mosque.id);
     await loadJumuahTimes(mosque.id);
     
@@ -636,35 +651,39 @@ const MosqueFinder = () => {
 
   // ===== EFFECTS =====
   useEffect(() => {
-    loadFavorites();
-    
-    const initMap = () => {
-      if (!mapContainerRef.current) return;
-      if (mapRef.current) return;
+    const initData = async () => {
+      await loadFavorites();
       
-      initializeMap(mapCenter[0], mapCenter[1]);
+      const initMap = () => {
+        if (!mapContainerRef.current) return;
+        if (mapRef.current) return;
+        
+        initializeMap(mapCenter[0], mapCenter[1]);
+        
+        setTimeout(() => {
+          findNearbyMosques(mapCenter[0], mapCenter[1]);
+        }, 1000);
+      };
       
-      setTimeout(() => {
-        findNearbyMosques(mapCenter[0], mapCenter[1]);
-      }, 1000);
-    };
-    
-    if (userLocation) {
-      setTimeout(() => {
-        findNearbyMosques(userLocation.lat, userLocation.lng);
-      }, 500);
-    }
-    
-    const timer = setTimeout(initMap, 1000);
-    setLoading(false);
-    
-    return () => {
-      clearTimeout(timer);
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
+      if (userLocation) {
+        setTimeout(() => {
+          findNearbyMosques(userLocation.lat, userLocation.lng);
+        }, 500);
       }
+      
+      const timer = setTimeout(initMap, 1000);
+      setLoading(false);
+      
+      return () => {
+        clearTimeout(timer);
+        if (mapRef.current) {
+          mapRef.current.remove();
+          mapRef.current = null;
+        }
+      };
     };
+    
+    initData();
   }, []);
 
   useEffect(() => {
@@ -1321,7 +1340,7 @@ const MosqueFinder = () => {
         </div>
       )}
 
-      {/* ===== LEAFLET POPUP STYLES USING TAILWIND ===== */}
+      {/* ===== LEAFLET POPUP STYLES ===== */}
       <style>{`
         .mosque-popup .leaflet-popup-content-wrapper {
           border-radius: 12px;

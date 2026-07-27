@@ -46,6 +46,7 @@ app.use('/api/mosque', require('./src/routes/mosque'));
 app.use('/api/wills', require('./src/routes/wills'));
 app.use('/api/kadhis', require('./src/routes/kadhis'));
 app.use('/api/bookings', require('./src/routes/bookings'));
+app.use('/api/utilities', require('./src/routes/utilities'));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'HalalHub API is running' });
