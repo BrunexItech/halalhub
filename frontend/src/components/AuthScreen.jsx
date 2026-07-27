@@ -207,7 +207,7 @@ const AuthScreen = ({ onLogin }) => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F1F7FC] px-4 py-8">
       <div className="w-full max-w-md mx-auto">
-        <div className="bg-white rounded-2xl shadow-xl shadow-[#1769AA]/5 p-8 lg:p-10 w-full border border-[#E8EEF4]">
+        <div className="bg-white rounded-2xl shadow-xl shadow-[#1769AA]/5 p-6 md:p-8 lg:p-10 w-full border border-[#E8EEF4]">
           
           {/* Brand Header */}
           <div className="text-center mb-8">
@@ -236,8 +236,8 @@ const AuthScreen = ({ onLogin }) => {
           {/* Error/Success Messages */}
           {error && (
             <div className="mb-6 p-4 bg-[#FEF2F2] border border-[#FECACA] rounded-xl text-sm text-[#DC2626] flex justify-between items-center">
-              <span>{error}</span>
-              <button onClick={() => setError('')} className="text-[#DC2626]/60 hover:text-[#DC2626] transition">✕</button>
+              <span className="flex-1">{error}</span>
+              <button onClick={() => setError('')} className="text-[#DC2626]/60 hover:text-[#DC2626] transition ml-2 flex-shrink-0">✕</button>
             </div>
           )}
 
@@ -289,75 +289,78 @@ const AuthScreen = ({ onLogin }) => {
               </div>
             </div>
 
-            {/* OTP Section */}
-            {otpSent && (
-              <div className="space-y-4 pt-2">
-                <div className="bg-[#F1F7FC] rounded-xl p-4 border border-[#E8EEF4]">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="text-[#1769AA]">
-                        <LockIcon />
+            {/* OTP Section - Fixed Height to prevent layout shift */}
+            <div className="min-h-[180px]">
+              {otpSent && (
+                <div className="space-y-4 pt-2">
+                  <div className="bg-[#F1F7FC] rounded-xl p-4 border border-[#E8EEF4]">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="text-[#1769AA]">
+                          <LockIcon />
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-[#5A6A7A]">Your OTP Code</span>
+                          <div className="text-2xl font-mono font-bold text-[#1769AA] tracking-widest mt-0.5">
+                            {otpCode || '••••••'}
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-sm font-medium text-[#5A6A7A]">Your OTP Code</span>
-                        <div className="text-2xl font-mono font-bold text-[#1769AA] tracking-widest mt-0.5">
-                          {otpCode || '••••••'}
+                      <div className="text-right">
+                        <div className={`text-sm font-semibold ${otpExpirySeconds <= 10 ? 'text-red-600' : 'text-[#5A6A7A]'}`}>
+                          {otpExpirySeconds > 0 ? formatTime(otpExpirySeconds) : 'Expired'}
+                        </div>
+                        <div className="w-20 h-1 bg-[#E8EEF4] rounded-full mt-1 overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-1000 ${
+                              otpExpirySeconds <= 10 ? 'bg-red-600' : 'bg-[#1769AA]'
+                            }`}
+                            style={{ width: `${(otpExpirySeconds / 30) * 100}%` }}
+                          />
                         </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className={`text-sm font-semibold ${otpExpirySeconds <= 10 ? 'text-red-600' : 'text-[#5A6A7A]'}`}>
-                        {otpExpirySeconds > 0 ? formatTime(otpExpirySeconds) : 'Expired'}
-                      </div>
-                      <div className="w-20 h-1 bg-[#E8EEF4] rounded-full mt-1 overflow-hidden">
-                        <div 
-                          className={`h-full rounded-full transition-all duration-1000 ${
-                            otpExpirySeconds <= 10 ? 'bg-red-600' : 'bg-[#1769AA]'
-                          }`}
-                          style={{ width: `${(otpExpirySeconds / 30) * 100}%` }}
+                    {otpExpirySeconds === 0 && (
+                      <p className="text-xs text-red-600 mt-2">OTP expired. Click "Resend Code" below.</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-3">
+                      Enter Verification Code
+                    </label>
+                    {/* OTP Inputs - Responsive with fixed width */}
+                    <div className="flex gap-2 sm:gap-3 justify-center">
+                      {otp.map((digit, index) => (
+                        <input
+                          key={index}
+                          ref={(el) => inputRefs.current[index] = el}
+                          type="text"
+                          inputMode="numeric"
+                          maxLength="1"
+                          value={digit}
+                          className="w-10 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-semibold border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                          onChange={(e) => handleOtpChange(index, e.target.value)}
+                          onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                          required
                         />
-                      </div>
+                      ))}
                     </div>
                   </div>
-                  {otpExpirySeconds === 0 && (
-                    <p className="text-xs text-red-600 mt-2">OTP expired. Click "Resend Code" below.</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-3">
-                    Enter Verification Code
-                  </label>
-                  <div className="flex gap-3 justify-between">
-                    {otp.map((digit, index) => (
-                      <input
-                        key={index}
-                        ref={(el) => inputRefs.current[index] = el}
-                        type="text"
-                        inputMode="numeric"
-                        maxLength="1"
-                        value={digit}
-                        className="w-14 h-14 text-center text-xl font-semibold border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
-                        onChange={(e) => handleOtpChange(index, e.target.value)}
-                        onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                        required
-                      />
-                    ))}
+                  <div className="flex justify-between items-center flex-wrap gap-2">
+                    <span className="text-xs text-[#94A3B8]">Enter the 6-digit code above</span>
+                    <button
+                      type="button"
+                      className="text-xs font-semibold text-[#1769AA] hover:text-[#2F80C0] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={handleResendOtp}
+                      disabled={resendTimer > 0 || loading}
+                    >
+                      {resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend Code'}
+                    </button>
                   </div>
                 </div>
-                <div className="flex justify-between items-center flex-wrap gap-2">
-                  <span className="text-xs text-[#94A3B8]">Enter the 6-digit code above</span>
-                  <button
-                    type="button"
-                    className="text-xs font-semibold text-[#1769AA] hover:text-[#2F80C0] transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={handleResendOtp}
-                    disabled={resendTimer > 0 || loading}
-                  >
-                    {resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend Code'}
-                  </button>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Submit Button */}
             <button
