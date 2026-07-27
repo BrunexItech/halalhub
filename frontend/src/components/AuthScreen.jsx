@@ -23,7 +23,9 @@ const AuthScreen = ({ onLogin }) => {
 
   useEffect(() => {
     if (otpSent && inputRefs.current[0]) {
-      inputRefs.current[0].focus();
+      setTimeout(() => {
+        inputRefs.current[0]?.focus();
+      }, 300);
     }
   }, [otpSent]);
 
@@ -48,13 +50,13 @@ const AuthScreen = ({ onLogin }) => {
     newOtp[index] = value.slice(0, 1);
     setOtp(newOtp);
     if (value && index < 5) {
-      inputRefs.current[index + 1].focus();
+      inputRefs.current[index + 1]?.focus();
     }
   };
 
   const handleOtpKeyDown = (index, e) => {
     if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      inputRefs.current[index - 1].focus();
+      inputRefs.current[index - 1]?.focus();
     }
   };
 
@@ -109,33 +111,30 @@ const AuthScreen = ({ onLogin }) => {
       
       localStorage.setItem('halalhub_role', userData.role || 'client');
 
-      // Vendor status check
       if (userData.role === 'vendor' && userData.vendorStatus === 'pending') {
-        setError('Your vendor application is pending admin approval. You will be notified once approved.');
+        setError('Your vendor application is pending admin approval.');
         setLoading(false);
         return;
       }
 
       if (userData.role === 'vendor' && userData.vendorStatus === 'rejected') {
-        setError('Your vendor application has been rejected. Please contact support for assistance.');
+        setError('Your vendor application has been rejected.');
         setLoading(false);
         return;
       }
 
-      // Religious Leader status check (Imam / Kadhi)
       if (userData.role === 'imam' && userData.imamStatus === 'pending') {
-        setError('Your religious leader application is pending admin approval. You will be notified once approved.');
+        setError('Your religious leader application is pending admin approval.');
         setLoading(false);
         return;
       }
 
       if (userData.role === 'imam' && userData.imamStatus === 'rejected') {
-        setError('Your religious leader application has been rejected. Please contact support for assistance.');
+        setError('Your religious leader application has been rejected.');
         setLoading(false);
         return;
       }
       
-      // Store subRole for redirect
       if (userData.subRole) {
         localStorage.setItem('halalhub_subrole', userData.subRole);
       }
@@ -181,7 +180,6 @@ const AuthScreen = ({ onLogin }) => {
     </svg>
   );
 
-  // Eye SVG
   const EyeIcon = () => (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -189,14 +187,12 @@ const AuthScreen = ({ onLogin }) => {
     </svg>
   );
 
-  // Eye Off SVG
   const EyeOffIcon = () => (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
     </svg>
   );
 
-  // Spinner SVG
   const SpinnerIcon = () => (
     <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -207,7 +203,7 @@ const AuthScreen = ({ onLogin }) => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F1F7FC] px-4 py-8">
       <div className="w-full max-w-md mx-auto">
-        <div className="bg-white rounded-2xl shadow-xl shadow-[#1769AA]/5 p-6 md:p-8 lg:p-10 w-full border border-[#E8EEF4]">
+        <div className="bg-white rounded-2xl shadow-xl shadow-[#1769AA]/5 p-6 md:p-8 lg:p-10 w-full border border-[#E8EEF4] transition-all duration-300">
           
           {/* Brand Header */}
           <div className="text-center mb-8">
@@ -222,12 +218,12 @@ const AuthScreen = ({ onLogin }) => {
 
           {/* Tab Navigation */}
           <div className="flex gap-1 bg-[#F1F7FC] rounded-xl p-1.5 mb-8">
-            <button className="flex-1 py-3 rounded-lg text-sm font-semibold bg-[#1769AA] text-white shadow-md shadow-[#1769AA]/20">
+            <button className="flex-1 py-3 rounded-lg text-sm font-semibold bg-[#1769AA] text-white shadow-md shadow-[#1769AA]/20 transition-all duration-200">
               Sign In
             </button>
             <button
               onClick={() => navigate('/register/role')}
-              className="flex-1 py-3 rounded-lg text-sm font-semibold text-[#5A6A7A] hover:text-[#1A2A3A] transition"
+              className="flex-1 py-3 rounded-lg text-sm font-semibold text-[#5A6A7A] hover:text-[#1A2A3A] transition-all duration-200 hover:bg-white/50"
             >
               Register
             </button>
@@ -235,27 +231,27 @@ const AuthScreen = ({ onLogin }) => {
 
           {/* Error/Success Messages */}
           {error && (
-            <div className="mb-6 p-4 bg-[#FEF2F2] border border-[#FECACA] rounded-xl text-sm text-[#DC2626] flex justify-between items-center">
+            <div className="mb-6 p-4 bg-[#FEF2F2] border border-[#FECACA] rounded-xl text-sm text-[#DC2626] flex justify-between items-center animate-slideDown">
               <span className="flex-1">{error}</span>
               <button onClick={() => setError('')} className="text-[#DC2626]/60 hover:text-[#DC2626] transition ml-2 flex-shrink-0">✕</button>
             </div>
           )}
 
           {success && (
-            <div className="mb-6 p-4 bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl text-sm text-[#16A34A]">
+            <div className="mb-6 p-4 bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl text-sm text-[#16A34A] animate-slideDown">
               {success}
             </div>
           )}
 
           <form onSubmit={handleLogin} className="space-y-5">
             {/* Phone Input */}
-            <div>
+            <div className="transition-all duration-300">
               <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-2">
                 Phone Number
               </label>
               <input
                 type="tel"
-                className="w-full px-5 py-3.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                className="w-full px-5 py-3.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-300 hover:border-[#1769AA]/40"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+254 7XX XXX XXX"
@@ -265,14 +261,14 @@ const AuthScreen = ({ onLogin }) => {
             </div>
 
             {/* PIN Input */}
-            <div>
+            <div className="transition-all duration-300">
               <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-2">
                 PIN
               </label>
               <div className="relative">
                 <input
                   type={showPin ? 'text' : 'password'}
-                  className="w-full px-5 py-3.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200 pr-14"
+                  className="w-full px-5 py-3.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-300 pr-14 hover:border-[#1769AA]/40"
                   value={pin}
                   onChange={(e) => setPin(e.target.value)}
                   placeholder="••••••"
@@ -289,10 +285,14 @@ const AuthScreen = ({ onLogin }) => {
               </div>
             </div>
 
-            {/* OTP Section - Fixed Height to prevent layout shift */}
-            <div className="min-h-[180px]">
-              {otpSent && (
-                <div className="space-y-4 pt-2">
+            {/* OTP Section - Fixed Height with Smooth Transition */}
+            <div className="relative transition-all duration-500 ease-in-out">
+              <div 
+                className={`overflow-hidden transition-all duration-500 ease-in-out ${
+                  otpSent ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'
+                }`}
+              >
+                <div className="pt-2 space-y-4">
                   <div className="bg-[#F1F7FC] rounded-xl p-4 border border-[#E8EEF4]">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -307,7 +307,7 @@ const AuthScreen = ({ onLogin }) => {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className={`text-sm font-semibold ${otpExpirySeconds <= 10 ? 'text-red-600' : 'text-[#5A6A7A]'}`}>
+                        <div className={`text-sm font-semibold transition-colors duration-300 ${otpExpirySeconds <= 10 ? 'text-red-600' : 'text-[#5A6A7A]'}`}>
                           {otpExpirySeconds > 0 ? formatTime(otpExpirySeconds) : 'Expired'}
                         </div>
                         <div className="w-20 h-1 bg-[#E8EEF4] rounded-full mt-1 overflow-hidden">
@@ -321,7 +321,7 @@ const AuthScreen = ({ onLogin }) => {
                       </div>
                     </div>
                     {otpExpirySeconds === 0 && (
-                      <p className="text-xs text-red-600 mt-2">OTP expired. Click "Resend Code" below.</p>
+                      <p className="text-xs text-red-600 mt-2 animate-pulse">OTP expired. Click "Resend Code" below.</p>
                     )}
                   </div>
 
@@ -329,7 +329,7 @@ const AuthScreen = ({ onLogin }) => {
                     <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-3">
                       Enter Verification Code
                     </label>
-                    {/* OTP Inputs - Responsive with fixed width */}
+                    {/* OTP Inputs - Fixed size with responsive adjustments */}
                     <div className="flex gap-2 sm:gap-3 justify-center">
                       {otp.map((digit, index) => (
                         <input
@@ -339,7 +339,7 @@ const AuthScreen = ({ onLogin }) => {
                           inputMode="numeric"
                           maxLength="1"
                           value={digit}
-                          className="w-10 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-semibold border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                          className="w-10 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-semibold border-2 border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-300 hover:border-[#1769AA]/40"
                           onChange={(e) => handleOtpChange(index, e.target.value)}
                           onKeyDown={(e) => handleOtpKeyDown(index, e)}
                           required
@@ -351,7 +351,7 @@ const AuthScreen = ({ onLogin }) => {
                     <span className="text-xs text-[#94A3B8]">Enter the 6-digit code above</span>
                     <button
                       type="button"
-                      className="text-xs font-semibold text-[#1769AA] hover:text-[#2F80C0] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="text-xs font-semibold text-[#1769AA] hover:text-[#2F80C0] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                       onClick={handleResendOtp}
                       disabled={resendTimer > 0 || loading}
                     >
@@ -359,13 +359,13 @@ const AuthScreen = ({ onLogin }) => {
                     </button>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
 
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full py-3.5 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] hover:shadow-lg hover:shadow-[#1769AA]/25 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:shadow-none"
+              className="w-full py-3.5 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] hover:shadow-lg hover:shadow-[#1769AA]/25 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:hover:scale-100"
               disabled={loading}
             >
               {loading ? (
