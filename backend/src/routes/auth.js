@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { Client } = require('pg');
 const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 
 let client;
 
@@ -293,6 +294,20 @@ router.post('/register-imam', async (req, res) => {
       mosqueCounty || '', 
       qualifications || [], 
       parseInt(yearsOfService) || 0
+    ]);
+    
+    // Create mosque entry
+    const mosqueId = 'mosque-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
+    await db.query(`
+      INSERT INTO mosques (
+        id, name, location, county, imam_id, createdat, updatedat
+      ) VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+    `, [
+      mosqueId,
+      mosqueName,
+      mosqueLocation,
+      mosqueCounty || '',
+      imamProfileId
     ]);
     
     await db.query(`

@@ -11,6 +11,8 @@ const P2P = () => {
   // ===== STEP MANAGEMENT =====
   const [currentStep, setCurrentStep] = useState(1);
   const [stepHistory, setStepHistory] = useState([]);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const contentRef = useRef(null);
   
   // ===== TRANSFER DATA =====
   const [recipient, setRecipient] = useState(null);
@@ -28,6 +30,9 @@ const P2P = () => {
   const [errors, setErrors] = useState({});
   const [showSearch, setShowSearch] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  
+  // ===== REF FOR SCROLL =====
+  const topRef = useRef(null);
 
   // ===== FETCH BALANCE =====
   const fetchBalance = async () => {
@@ -71,7 +76,6 @@ const P2P = () => {
     fetchBalance();
   }, []);
 
-  // Search effect with debounce
   useEffect(() => {
     const timer = setTimeout(() => {
       if (searchQuery.length >= 2) {
@@ -81,9 +85,52 @@ const P2P = () => {
         setShowSearch(false);
       }
     }, 300);
-
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  // ===== SMOOTH STEP TRANSITION =====
+  const goToStep = (step) => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setStepHistory([...stepHistory, currentStep]);
+    setCurrentStep(step);
+    setErrors({});
+    
+    // Smooth scroll to top
+    setTimeout(() => {
+      if (topRef.current) {
+        topRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 50);
+    
+    setTimeout(() => {
+      setIsTransitioning(false);
+    }, 400);
+  };
+
+  const goBack = () => {
+    if (isTransitioning) return;
+    if (stepHistory.length > 0) {
+      const previousStep = stepHistory[stepHistory.length - 1];
+      setIsTransitioning(true);
+      setStepHistory(stepHistory.slice(0, -1));
+      setCurrentStep(previousStep);
+      setErrors({});
+      
+      setTimeout(() => {
+        if (topRef.current) {
+          topRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 50);
+      
+      setTimeout(() => {
+        setIsTransitioning(false);
+      }, 400);
+    } else {
+      setCurrentStep(1);
+      setErrors({});
+    }
+  };
 
   // ===== HANDLERS =====
   const handleSearchSelect = (user) => {
@@ -107,24 +154,6 @@ const P2P = () => {
 
   const handleNoteChange = (e) => {
     setNote(e.target.value);
-  };
-
-  const goToStep = (step) => {
-    setStepHistory([...stepHistory, currentStep]);
-    setCurrentStep(step);
-    setErrors({});
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const goBack = () => {
-    if (stepHistory.length > 0) {
-      const previousStep = stepHistory[stepHistory.length - 1];
-      setStepHistory(stepHistory.slice(0, -1));
-      setCurrentStep(previousStep);
-    } else {
-      setCurrentStep(1);
-    }
-    setErrors({});
   };
 
   const validateStep = () => {
@@ -251,12 +280,6 @@ const P2P = () => {
     </svg>
   );
 
-  const UserIcon = () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-    </svg>
-  );
-
   const WalletIcon = () => (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -265,7 +288,7 @@ const P2P = () => {
 
   // ===== RENDER STEPS =====
   const renderStep1 = () => (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-[#1A2A3A] mb-1">Select Recipient</h2>
         <p className="text-sm text-[#94A3B8]">Search by name, phone number, or email</p>
@@ -292,7 +315,7 @@ const P2P = () => {
         </div>
 
         {showSearch && searchResults.length > 0 && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-[#E8EEF4] rounded-xl shadow-xl max-h-64 overflow-y-auto z-20 animate-slideDown">
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-[#E8EEF4] rounded-xl shadow-xl max-h-64 overflow-y-auto z-20">
             {searchResults.map((user) => (
               <button
                 key={user.id}
@@ -327,7 +350,7 @@ const P2P = () => {
       </div>
 
       {recipient && (
-        <div className="bg-[#F1F7FC] rounded-xl p-4 border border-[#E8EEF4] animate-fadeIn">
+        <div className="bg-[#F1F7FC] rounded-xl p-4 border border-[#E8EEF4]">
           <div className="flex items-center gap-3">
             {recipient.profile_image ? (
               <img src={recipient.profile_image} alt={recipient.name} className="w-12 h-12 rounded-xl object-cover" />
@@ -357,7 +380,7 @@ const P2P = () => {
   );
 
   const renderStep2 = () => (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-[#1A2A3A] mb-1">Enter Amount</h2>
         <p className="text-sm text-[#94A3B8]">Sending to {recipient?.name}</p>
@@ -428,7 +451,7 @@ const P2P = () => {
   );
 
   const renderStep3 = () => (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-[#1A2A3A] mb-1">Add a Note</h2>
         <p className="text-sm text-[#94A3B8]">Optional · This will be visible to the recipient</p>
@@ -470,7 +493,7 @@ const P2P = () => {
   );
 
   const renderStep4 = () => (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-[#1A2A3A] mb-1">Review Transfer</h2>
         <p className="text-sm text-[#94A3B8]">Please verify the details before confirming</p>
@@ -527,7 +550,7 @@ const P2P = () => {
   );
 
   const renderStep5 = () => (
-    <div className="text-center py-6 space-y-6 animate-fadeIn">
+    <div className="text-center py-6 space-y-6">
       <div className="w-20 h-20 rounded-full bg-emerald-50 flex items-center justify-center mx-auto border-4 border-emerald-200">
         <CheckIcon />
       </div>
@@ -585,9 +608,21 @@ const P2P = () => {
     </div>
   );
 
+  // ===== STEP CONTENT WRAPPER WITH SMOOTH TRANSITION =====
+  const StepContent = ({ children }) => (
+    <div
+      ref={contentRef}
+      className={`transition-all duration-300 ease-in-out ${
+        isTransitioning ? 'opacity-0 transform -translate-y-4' : 'opacity-100 transform translate-y-0'
+      }`}
+    >
+      {children}
+    </div>
+  );
+
   // ===== MAIN RENDER =====
   return (
-    <div className="min-h-screen bg-[#F1F7FC] p-4 md:p-6">
+    <div className="min-h-screen bg-[#F1F7FC] p-4 md:p-6" ref={topRef}>
       <div className="max-w-2xl mx-auto">
         
         {/* ===== HEADER ===== */}
@@ -597,6 +632,7 @@ const P2P = () => {
               <button
                 className="p-2 hover:bg-[#E8EEF4] rounded-xl transition-colors"
                 onClick={goBack}
+                disabled={isTransitioning}
               >
                 <BackIcon />
               </button>
@@ -637,7 +673,7 @@ const P2P = () => {
 
         {/* ===== RECIPIENT INDICATOR ===== */}
         {currentStep > 1 && !transferComplete && recipient && (
-          <div className="mb-4 p-3 bg-white rounded-xl border border-[#E8EEF4] shadow-sm animate-fadeIn">
+          <div className="mb-4 p-3 bg-white rounded-xl border border-[#E8EEF4] shadow-sm">
             <div className="flex items-center gap-3">
               {recipient?.profile_image ? (
                 <img src={recipient.profile_image} alt={recipient.name} className="w-8 h-8 rounded-lg object-cover" />
@@ -664,17 +700,19 @@ const P2P = () => {
         )}
 
         {/* ===== CARD ===== */}
-        <div className="bg-white rounded-2xl border border-[#E8EEF4] shadow-sm p-6 md:p-8">
+        <div className="bg-white rounded-2xl border border-[#E8EEF4] shadow-sm p-6 md:p-8 overflow-hidden">
           {transferComplete ? (
-            renderStep5()
+            <div className="animate-fadeIn">
+              {renderStep5()}
+            </div>
           ) : (
             <>
-              <div className="transition-all duration-300">
+              <StepContent>
                 {currentStep === 1 && renderStep1()}
                 {currentStep === 2 && renderStep2()}
                 {currentStep === 3 && renderStep3()}
                 {currentStep === 4 && renderStep4()}
-              </div>
+              </StepContent>
 
               {/* ===== ACTIONS ===== */}
               <div className="flex gap-3 mt-8 pt-6 border-t border-[#F1F7FC]">
@@ -682,6 +720,7 @@ const P2P = () => {
                   <button
                     className="flex-1 px-6 py-3 bg-white text-[#5A6A7A] font-semibold rounded-xl border border-[#E8EEF4] hover:bg-[#F1F7FC] transition-all duration-200"
                     onClick={goBack}
+                    disabled={isTransitioning}
                   >
                     Back
                   </button>
@@ -693,6 +732,7 @@ const P2P = () => {
                     } px-6 py-3 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200 shadow-md shadow-[#1769AA]/20 hover:shadow-lg hover:shadow-[#1769AA]/30 disabled:opacity-60 disabled:cursor-not-allowed`}
                     onClick={handleNext}
                     disabled={
+                      isTransitioning ||
                       (currentStep === 1 && !recipient) ||
                       (currentStep === 2 && (!amount || parseFloat(amount) <= 0))
                     }
@@ -703,7 +743,7 @@ const P2P = () => {
                   <button
                     className="flex-1 px-6 py-3 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 transition-all duration-200 shadow-md shadow-emerald-600/20 disabled:opacity-60 disabled:cursor-not-allowed"
                     onClick={handleConfirm}
-                    disabled={isProcessing}
+                    disabled={isProcessing || isTransitioning}
                   >
                     {isProcessing ? (
                       <span className="flex items-center justify-center gap-2">
@@ -733,7 +773,7 @@ const P2P = () => {
         @keyframes fadeIn {
           from {
             opacity: 0;
-            transform: translateY(10px);
+            transform: translateY(12px);
           }
           to {
             opacity: 1;
@@ -743,7 +783,7 @@ const P2P = () => {
         @keyframes slideDown {
           from {
             opacity: 0;
-            transform: translateY(-10px);
+            transform: translateY(-8px);
           }
           to {
             opacity: 1;
@@ -751,10 +791,10 @@ const P2P = () => {
           }
         }
         .animate-fadeIn {
-          animation: fadeIn 0.3s ease-out forwards;
+          animation: fadeIn 0.35s ease-out forwards;
         }
         .animate-slideDown {
-          animation: slideDown 0.25s ease-out forwards;
+          animation: slideDown 0.3s ease-out forwards;
         }
       `}</style>
     </div>
