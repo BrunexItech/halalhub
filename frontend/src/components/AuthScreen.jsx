@@ -109,7 +109,7 @@ const AuthScreen = ({ onLogin }) => {
       
       localStorage.setItem('halalhub_role', userData.role || 'client');
 
-      // Role-based status checking - fixed
+      // Vendor status check
       if (userData.role === 'vendor' && userData.vendorStatus === 'pending') {
         setError('Your vendor application is pending admin approval. You will be notified once approved.');
         setLoading(false);
@@ -122,16 +122,22 @@ const AuthScreen = ({ onLogin }) => {
         return;
       }
 
+      // Religious Leader status check (Imam / Kadhi)
       if (userData.role === 'imam' && userData.imamStatus === 'pending') {
-        setError('Your imam application is pending admin approval. You will be notified once approved.');
+        setError('Your religious leader application is pending admin approval. You will be notified once approved.');
         setLoading(false);
         return;
       }
 
       if (userData.role === 'imam' && userData.imamStatus === 'rejected') {
-        setError('Your imam application has been rejected. Please contact support for assistance.');
+        setError('Your religious leader application has been rejected. Please contact support for assistance.');
         setLoading(false);
         return;
+      }
+      
+      // Store subRole for redirect
+      if (userData.subRole) {
+        localStorage.setItem('halalhub_subrole', userData.subRole);
       }
       
       onLogin(userData, response.data.token);
@@ -339,7 +345,7 @@ const AuthScreen = ({ onLogin }) => {
                     ))}
                   </div>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center flex-wrap gap-2">
                   <span className="text-xs text-[#94A3B8]">Enter the 6-digit code above</span>
                   <button
                     type="button"

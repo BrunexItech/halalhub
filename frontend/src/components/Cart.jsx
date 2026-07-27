@@ -55,6 +55,8 @@ const Cart = ({
       setOrderNumber(newOrderNumber);
       setShowCheckoutModal(false);
       setShowSuccessModal(true);
+      
+      // Clear cart immediately using parent's setCart
       setCart([]);
       
       if (fetchCart) {
@@ -75,7 +77,7 @@ const Cart = ({
   };
 
   const clearCart = async () => {
-    if (!window.confirm('Are you sure you want to clear your entire cart?')) return;
+    if (cart.length === 0) return;
     
     try {
       setCart([]);

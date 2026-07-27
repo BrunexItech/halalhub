@@ -270,12 +270,14 @@ const Ecommerce = () => {
         delivery_address: 'Nairobi CBD'
       };
       
-      const response = await axios.post(`${API_BASE}/client/orders`, orderData, config);
+      await axios.post(`${API_BASE}/client/orders`, orderData, config);
       
-      const newOrderNumber = response.data.orderId || 'HM' + Date.now().toString().slice(-8);
+      const newOrderNumber = 'HM' + Date.now().toString().slice(-8);
       setOrderNumber(newOrderNumber);
       setShowCheckoutModal(false);
       setShowSuccessModal(true);
+      
+      // Clear cart immediately
       setCart([]);
       
       await fetchOrders();

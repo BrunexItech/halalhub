@@ -24,15 +24,18 @@ const AdminPanel = () => {
   const [clients, setClients] = useState([]);
   const [vendors, setVendors] = useState([]);
   const [imams, setImams] = useState([]);
+  const [kadhis, setKadhis] = useState([]);
   const [admins, setAdmins] = useState([]);
   const [stats, setStats] = useState({});
   const [loadingData, setLoadingData] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterKYC, setFilterKYC] = useState('All');
+  const [filterSubRole, setFilterSubRole] = useState('All');
   
   // Pending applications
   const [pendingVendors, setPendingVendors] = useState([]);
   const [pendingImams, setPendingImams] = useState([]);
+  const [pendingKadhis, setPendingKadhis] = useState([]);
   const [loadingPending, setLoadingPending] = useState(false);
   
   // Transactions state
@@ -51,6 +54,16 @@ const AdminPanel = () => {
     totalAmount: 0
   });
   
+  // Consultation stats
+  const [consultationStats, setConsultationStats] = useState({
+    total: 0,
+    pending: 0,
+    confirmed: 0,
+    completed: 0,
+    cancelled: 0,
+    videoBookings: 0
+  });
+  
   // Modals
   const [selectedUser, setSelectedUser] = useState(null);
   const [showUserModal, setShowUserModal] = useState(false);
@@ -64,6 +77,7 @@ const AdminPanel = () => {
       fetchData();
       fetchTransactions();
       fetchPendingApplications();
+      fetchConsultationStats();
     }
   }, [token]);
 
@@ -83,7 +97,11 @@ const AdminPanel = () => {
       
       setClients(allUsersData.filter(u => u.role === 'client'));
       setVendors(allUsersData.filter(u => u.role === 'vendor'));
-      setImams(allUsersData.filter(u => u.role === 'imam'));
+      
+      const imamUsers = allUsersData.filter(u => u.role === 'imam');
+      setImams(imamUsers);
+      setKadhis(imamUsers.filter(u => u.imam_sub_role === 'kadhi'));
+      
       setAdmins(allUsersData.filter(u => u.role === 'admin'));
       setUsers(allUsersData);
       
@@ -104,7 +122,11 @@ const AdminPanel = () => {
         axios.get(`${API_BASE}/admin/pending-imams`, config)
       ]);
       setPendingVendors(vendorsRes.data.vendors || []);
-      setPendingImams(imamsRes.data.imams || []);
+      
+      const allPendingImams = imamsRes.data.imams || [];
+      setPendingImams(allPendingImams);
+      setPendingKadhis(allPendingImams.filter(i => i.sub_role === 'kadhi'));
+      
     } catch (err) {
       console.error('Failed to fetch pending applications:', err);
     } finally {
@@ -136,6 +158,18 @@ const AdminPanel = () => {
       console.error('Failed to fetch transactions:', err);
     } finally {
       setLoadingTransactions(false);
+    }
+  };
+
+  const fetchConsultationStats = async () => {
+    try {
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const response = await axios.get(`${API_BASE}/admin/consultations/stats`, config);
+      if (response.data.success) {
+        setConsultationStats(response.data.stats);
+      }
+    } catch (err) {
+      console.error('Failed to fetch consultation stats:', err);
     }
   };
 
@@ -203,7 +237,6 @@ const AdminPanel = () => {
     }
   };
 
-  // Get the actual user ID for imam approval
   const getImamUserId = (imam) => {
     if (imam.user_id) return imam.user_id;
     if (imam.id && imam.id.startsWith('imamprof-')) {
@@ -212,7 +245,6 @@ const AdminPanel = () => {
     return imam.id;
   };
 
-  // Get the actual user ID for vendor approval
   const getVendorUserId = (vendor) => {
     if (vendor.user_id) return vendor.user_id;
     return vendor.id;
@@ -268,13 +300,14 @@ const AdminPanel = () => {
         { status: 'approved' },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setModalMessage('Imam approved successfully!');
+      const label = imam.sub_role === 'kadhi' ? 'Kadhi' : 'Imam';
+      setModalMessage(`${label} approved successfully!`);
       setShowSuccessModal(true);
       await fetchData();
       await fetchPendingApplications();
       setTimeout(() => setShowSuccessModal(false), 3000);
     } catch (err) {
-      setError('Failed to approve imam');
+      setError('Failed to approve religious leader');
       console.error('Approve imam error:', err);
     } finally {
       setLoading(false);
@@ -289,13 +322,14 @@ const AdminPanel = () => {
         { status: 'rejected', admin_notes: 'Application rejected by admin' },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setModalMessage('Imam rejected');
+      const label = imam.sub_role === 'kadhi' ? 'Kadhi' : 'Imam';
+      setModalMessage(`${label} rejected`);
       setShowSuccessModal(true);
       await fetchData();
       await fetchPendingApplications();
       setTimeout(() => setShowSuccessModal(false), 3000);
     } catch (err) {
-      setError('Failed to reject imam');
+      setError(`Failed to reject ${imam.sub_role === 'kadhi' ? 'kadhi' : 'imam'}`);
       console.error('Reject imam error:', err);
     } finally {
       setLoading(false);
@@ -338,6 +372,7 @@ const AdminPanel = () => {
       'success': { bg: 'bg-emerald-50', text: 'text-emerald-700', label: 'Success' },
       'failed': { bg: 'bg-red-50', text: 'text-red-700', label: 'Failed' },
       'cancelled': { bg: 'bg-gray-50', text: 'text-gray-500', label: 'Cancelled' },
+      'confirmed': { bg: 'bg-blue-50', text: 'text-blue-700', label: 'Confirmed' },
     };
     return statusMap[status] || { bg: 'bg-gray-50', text: 'text-gray-500', label: status || 'N/A' };
   };
@@ -347,9 +382,16 @@ const AdminPanel = () => {
       'vendor': 'bg-amber-50 text-amber-700',
       'admin': 'bg-red-50 text-red-700',
       'client': 'bg-blue-50 text-blue-700',
-      'imam': 'bg-purple-50 text-purple-700'
+      'imam': 'bg-purple-50 text-purple-700',
+      'kadhi': 'bg-indigo-50 text-indigo-700'
     };
     return roles[role] || 'bg-gray-50 text-gray-500';
+  };
+
+  const getSubRoleLabel = (subRole) => {
+    if (subRole === 'kadhi') return 'Kadhi';
+    if (subRole === 'imam') return 'Imam';
+    return 'N/A';
   };
 
   const getCurrentUsers = () => {
@@ -357,6 +399,7 @@ const AdminPanel = () => {
       case 'clients': return clients;
       case 'vendors': return vendors;
       case 'imams': return imams;
+      case 'kadhis': return kadhis;
       case 'admins': return admins;
       default: return allUsers;
     }
@@ -367,6 +410,7 @@ const AdminPanel = () => {
       case 'clients': return clients.length;
       case 'vendors': return vendors.length;
       case 'imams': return imams.length;
+      case 'kadhis': return kadhis.length;
       case 'admins': return admins.length;
       default: return allUsers.length;
     }
@@ -379,6 +423,11 @@ const AdminPanel = () => {
       (user.phone || '').includes(searchQuery);
     const matchesKYC = filterKYC === 'All' || (user.kycstatus || 'pending') === filterKYC;
     return matchesSearch && matchesKYC;
+  });
+
+  const filteredPendingImams = pendingImams.filter(imam => {
+    if (filterSubRole === 'All') return true;
+    return imam.sub_role === filterSubRole;
   });
 
   const filteredTransactions = transactions.filter(tx => {
@@ -429,6 +478,12 @@ const AdminPanel = () => {
     </svg>
   );
 
+  const KadhiIcon = () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+    </svg>
+  );
+
   const AdminIcon = () => (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -456,6 +511,12 @@ const AdminPanel = () => {
   const OrdersIcon = () => (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+    </svg>
+  );
+
+  const ConsultationIcon = () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
     </svg>
   );
 
@@ -543,7 +604,7 @@ const AdminPanel = () => {
             <p className="text-sm text-[#94A3B8] mt-0.5">Manage users, applications, transactions, and platform activities</p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
-            <button className="px-4 py-2.5 rounded-xl bg-white border border-[#E8EEF4] text-[#5A6A7A] hover:bg-[#F1F7FC] transition text-sm" onClick={() => { fetchData(); fetchTransactions(); fetchPendingApplications(); }}>
+            <button className="px-4 py-2.5 rounded-xl bg-white border border-[#E8EEF4] text-[#5A6A7A] hover:bg-[#F1F7FC] transition text-sm" onClick={() => { fetchData(); fetchTransactions(); fetchPendingApplications(); fetchConsultationStats(); }}>
               Refresh
             </button>
             <button className="px-4 py-2.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition text-sm font-semibold" onClick={handleLogout}>
@@ -560,7 +621,7 @@ const AdminPanel = () => {
         )}
 
         {/* STATS GRID */}
-        <div className="grid grid-cols-2 lg:grid-cols-7 gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-8 gap-4 mb-6">
           <div className="bg-white rounded-2xl p-5 border border-[#E8EEF4] shadow-sm text-center hover:shadow-md transition">
             <div className="flex justify-center mb-1 text-[#1A2A3A]"><UsersIcon /></div>
             <div className="text-2xl font-heading font-bold text-[#1A2A3A]">{stats.totalUsers || 0}</div>
@@ -582,6 +643,11 @@ const AdminPanel = () => {
             <div className="text-xs text-[#94A3B8]">Imams</div>
           </div>
           <div className="bg-white rounded-2xl p-5 border border-[#E8EEF4] shadow-sm text-center hover:shadow-md transition">
+            <div className="flex justify-center mb-1 text-indigo-600"><KadhiIcon /></div>
+            <div className="text-2xl font-heading font-bold text-indigo-600">{kadhis.length}</div>
+            <div className="text-xs text-[#94A3B8]">Kadhis</div>
+          </div>
+          <div className="bg-white rounded-2xl p-5 border border-[#E8EEF4] shadow-sm text-center hover:shadow-md transition">
             <div className="flex justify-center mb-1 text-red-600"><PendingIcon /></div>
             <div className="text-2xl font-heading font-bold text-red-600">{stats.pendingKYC || 0}</div>
             <div className="text-xs text-[#94A3B8]">Pending KYC</div>
@@ -592,9 +658,9 @@ const AdminPanel = () => {
             <div className="text-xs text-[#94A3B8]">Revenue</div>
           </div>
           <div className="bg-white rounded-2xl p-5 border border-[#E8EEF4] shadow-sm text-center hover:shadow-md transition">
-            <div className="flex justify-center mb-1 text-emerald-600"><OrdersIcon /></div>
-            <div className="text-2xl font-heading font-bold text-emerald-600">{pendingVendors.length + pendingImams.length}</div>
-            <div className="text-xs text-[#94A3B8]">Pending Apps</div>
+            <div className="flex justify-center mb-1 text-emerald-600"><ConsultationIcon /></div>
+            <div className="text-2xl font-heading font-bold text-emerald-600">{consultationStats.total || 0}</div>
+            <div className="text-xs text-[#94A3B8]">Consultations</div>
           </div>
         </div>
 
@@ -656,6 +722,16 @@ const AdminPanel = () => {
             <span className="flex items-center gap-1.5"><ImamIcon /><span>Imams</span></span>
           </button>
           <button
+            onClick={() => { setActiveTab('users'); setActiveUserTab('kadhis'); }}
+            className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+              activeTab === 'users' && activeUserTab === 'kadhis'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' 
+                : 'text-[#5A6A7A] hover:bg-[#F1F7FC] hover:text-[#1A2A3A]'
+            }`}
+          >
+            <span className="flex items-center gap-1.5"><KadhiIcon /><span>Kadhis</span></span>
+          </button>
+          <button
             onClick={() => { setActiveTab('users'); setActiveUserTab('admins'); }}
             className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
               activeTab === 'users' && activeUserTab === 'admins'
@@ -694,8 +770,8 @@ const AdminPanel = () => {
                 </div>
               ) : pendingVendors.length === 0 ? (
                 <div className="text-center py-8">
-                  <div className="text-4xl mb-2">No pending vendor applications</div>
-                  <p className="text-[#1A2A3A] font-semibold">All vendors have been reviewed</p>
+                  <p className="text-[#1A2A3A] font-semibold">No pending vendor applications</p>
+                  <p className="text-sm text-[#94A3B8] mt-1">All vendors have been reviewed</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -752,11 +828,22 @@ const AdminPanel = () => {
               )}
             </div>
 
-            {/* Pending Imams */}
+            {/* Pending Religious Leaders (Imams + Kadhis) */}
             <div className="bg-white rounded-2xl border border-[#E8EEF4] shadow-sm p-5">
               <div className="flex justify-between items-center mb-4 pb-4 border-b border-[#F1F7FC]">
-                <h3 className="text-lg font-heading font-bold text-[#1A2A3A]">Pending Imam Applications</h3>
-                <span className="text-sm text-[#94A3B8]">{pendingImams.length} pending</span>
+                <h3 className="text-lg font-heading font-bold text-[#1A2A3A]">Pending Religious Leader Applications</h3>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-[#94A3B8]">{pendingImams.length} pending</span>
+                  <select
+                    className="px-2 py-1 text-xs border border-[#E2E8F0] rounded-lg bg-white text-[#1A2A3A] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30"
+                    value={filterSubRole}
+                    onChange={(e) => setFilterSubRole(e.target.value)}
+                  >
+                    <option value="All">All</option>
+                    <option value="imam">Imams</option>
+                    <option value="kadhi">Kadhis</option>
+                  </select>
+                </div>
               </div>
 
               {loadingPending ? (
@@ -764,17 +851,18 @@ const AdminPanel = () => {
                   <div className="w-6 h-6 border-2 border-[#1769AA]/20 border-t-[#1769AA] rounded-full animate-spin" />
                   <span>Loading...</span>
                 </div>
-              ) : pendingImams.length === 0 ? (
+              ) : filteredPendingImams.length === 0 ? (
                 <div className="text-center py-8">
-                  <div className="text-4xl mb-2">No pending imam applications</div>
-                  <p className="text-[#1A2A3A] font-semibold">All imams have been reviewed</p>
+                  <p className="text-[#1A2A3A] font-semibold">No pending religious leader applications</p>
+                  <p className="text-sm text-[#94A3B8] mt-1">All applicants have been reviewed</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b-2 border-[#1A2A3A]">
-                        <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Imam</th>
+                        <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Name</th>
+                        <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Role</th>
                         <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Mosque</th>
                         <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Contact</th>
                         <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Submitted</th>
@@ -782,47 +870,56 @@ const AdminPanel = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {pendingImams.map((imam) => (
-                        <tr key={imam.id} className="border-b border-[#F1F7FC] hover:bg-[#F8FAFC] transition">
-                          <td className="px-3 py-3">
-                            <div>
-                              <div className="font-semibold text-[#1A2A3A]">{imam.fullname}</div>
-                              <div className="text-xs text-[#94A3B8]">{imam.title || 'Imam'}</div>
-                            </div>
-                          </td>
-                          <td className="px-3 py-3">
-                            <div className="text-xs">
-                              <div className="text-[#1A2A3A]">{imam.mosque_name || 'N/A'}</div>
-                              <div className="text-[#94A3B8]">{imam.mosque_location || 'N/A'}</div>
-                            </div>
-                          </td>
-                          <td className="px-3 py-3">
-                            <div className="text-xs">
-                              <div className="text-[#1A2A3A]">{imam.email || 'N/A'}</div>
-                              <div className="text-[#94A3B8]">{imam.phone || 'N/A'}</div>
-                            </div>
-                          </td>
-                          <td className="px-3 py-3 text-xs text-[#94A3B8]">{formatDate(imam.createdat)}</td>
-                          <td className="px-3 py-3">
-                            <div className="flex gap-2">
-                              <button 
-                                className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition"
-                                onClick={() => approveImam(imam)}
-                                disabled={loading}
-                              >
-                                Approve
-                              </button>
-                              <button 
-                                className="px-3 py-1.5 bg-red-600 text-white text-xs font-semibold rounded-lg hover:bg-red-700 transition"
-                                onClick={() => rejectImam(imam)}
-                                disabled={loading}
-                              >
-                                Reject
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                      {filteredPendingImams.map((imam) => {
+                        const roleLabel = imam.sub_role === 'kadhi' ? 'Kadhi' : 'Imam';
+                        const roleColor = imam.sub_role === 'kadhi' ? 'bg-indigo-50 text-indigo-700' : 'bg-purple-50 text-purple-700';
+                        return (
+                          <tr key={imam.id} className="border-b border-[#F1F7FC] hover:bg-[#F8FAFC] transition">
+                            <td className="px-3 py-3">
+                              <div>
+                                <div className="font-semibold text-[#1A2A3A]">{imam.fullname}</div>
+                                <div className="text-xs text-[#94A3B8]">{imam.title || 'Religious Leader'}</div>
+                              </div>
+                            </td>
+                            <td className="px-3 py-3">
+                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${roleColor}`}>
+                                {roleLabel}
+                              </span>
+                            </td>
+                            <td className="px-3 py-3">
+                              <div className="text-xs">
+                                <div className="text-[#1A2A3A]">{imam.mosque_name || 'N/A'}</div>
+                                <div className="text-[#94A3B8]">{imam.mosque_location || 'N/A'}</div>
+                              </div>
+                            </td>
+                            <td className="px-3 py-3">
+                              <div className="text-xs">
+                                <div className="text-[#1A2A3A]">{imam.email || 'N/A'}</div>
+                                <div className="text-[#94A3B8]">{imam.phone || 'N/A'}</div>
+                              </div>
+                            </td>
+                            <td className="px-3 py-3 text-xs text-[#94A3B8]">{formatDate(imam.createdat)}</td>
+                            <td className="px-3 py-3">
+                              <div className="flex gap-2">
+                                <button 
+                                  className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition"
+                                  onClick={() => approveImam(imam)}
+                                  disabled={loading}
+                                >
+                                  Approve
+                                </button>
+                                <button 
+                                  className="px-3 py-1.5 bg-red-600 text-white text-xs font-semibold rounded-lg hover:bg-red-700 transition"
+                                  onClick={() => rejectImam(imam)}
+                                  disabled={loading}
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -839,6 +936,7 @@ const AdminPanel = () => {
                 {activeUserTab === 'clients' && 'Clients'}
                 {activeUserTab === 'vendors' && 'Vendors'}
                 {activeUserTab === 'imams' && 'Imams'}
+                {activeUserTab === 'kadhis' && 'Kadhis'}
                 {activeUserTab === 'admins' && 'Admins'}
                 {activeUserTab === 'all' && 'All Users'}
               </h3>
@@ -873,8 +971,8 @@ const AdminPanel = () => {
               </div>
             ) : filteredUsers.length === 0 ? (
               <div className="text-center py-12">
-                <div className="text-4xl mb-2">No users found</div>
-                <p className="text-[#1A2A3A] font-semibold">Try adjusting your search or filters</p>
+                <p className="text-[#1A2A3A] font-semibold">No users found</p>
+                <p className="text-sm text-[#94A3B8] mt-1">Try adjusting your search or filters</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -893,6 +991,7 @@ const AdminPanel = () => {
                   <tbody>
                     {filteredUsers.map((user) => {
                       const kycStatus = getStatusBadge(user.kycstatus || 'pending');
+                      const displayRole = user.role === 'imam' && user.imam_sub_role === 'kadhi' ? 'kadhi' : user.role;
                       return (
                         <tr key={user.id} className="border-b border-[#F1F7FC] hover:bg-[#F8FAFC] transition">
                           <td className="px-3 py-3">
@@ -902,7 +1001,12 @@ const AdminPanel = () => {
                               </div>
                               <div>
                                 <div className="font-semibold text-[#1A2A3A]">{user.fullname || user.fullName || 'Unknown'}</div>
-                                <div className="text-xs text-[#94A3B8]">{user.role || 'client'}</div>
+                                <div className="text-xs text-[#94A3B8]">
+                                  {displayRole === 'kadhi' ? 'Kadhi' : user.role || 'client'}
+                                  {user.role === 'imam' && user.imam_sub_role === 'kadhi' && (
+                                    <span className="ml-1 px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded text-[9px]">K</span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </td>
@@ -913,8 +1017,8 @@ const AdminPanel = () => {
                             </div>
                           </td>
                           <td className="px-3 py-3">
-                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${getRoleBadge(user.role)}`}>
-                              {user.role || 'client'}
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${getRoleBadge(displayRole)}`}>
+                              {displayRole === 'kadhi' ? 'Kadhi' : displayRole || 'client'}
                             </span>
                           </td>
                           <td className="px-3 py-3 hidden lg:table-cell font-semibold text-[#1A2A3A]">{formatCurrency(user.walletbalance || 0)}</td>
@@ -1003,6 +1107,8 @@ const AdminPanel = () => {
                 <option value="pension">Pension</option>
                 <option value="order">Order</option>
                 <option value="booking">Booking</option>
+                <option value="utility">Utility</option>
+                <option value="consultation">Consultation</option>
               </select>
               <select
                 className="px-4 py-2.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition appearance-none"
@@ -1038,8 +1144,8 @@ const AdminPanel = () => {
               </div>
             ) : filteredTransactions.length === 0 ? (
               <div className="text-center py-12">
-                <div className="text-4xl mb-2">No transactions found</div>
-                <p className="text-[#1A2A3A] font-semibold">Try adjusting your search or filters</p>
+                <p className="text-[#1A2A3A] font-semibold">No transactions found</p>
+                <p className="text-sm text-[#94A3B8] mt-1">Try adjusting your search or filters</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -1107,6 +1213,9 @@ const AdminPanel = () => {
                 <div>
                   <div className="text-lg font-bold text-[#1A2A3A]">{selectedUser.fullname || selectedUser.fullName}</div>
                   <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${getRoleBadge(selectedUser.role)}`}>{selectedUser.role || 'client'}</span>
+                  {selectedUser.role === 'imam' && selectedUser.imam_sub_role === 'kadhi' && (
+                    <span className="ml-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700">Kadhi</span>
+                  )}
                 </div>
               </div>
 
@@ -1154,7 +1263,6 @@ const AdminPanel = () => {
               <button className="w-8 h-8 rounded-xl hover:bg-[#F1F7FC] transition flex items-center justify-center text-[#94A3B8] hover:text-[#1A2A3A]" onClick={() => setShowDeleteModal(false)}>✕</button>
             </div>
             <div className="p-6 text-center">
-              <div className="text-5xl mb-3">Delete User?</div>
               <h4 className="text-lg font-bold text-[#1A2A3A]">Delete User?</h4>
               <p className="text-sm text-[#94A3B8] mt-2">Are you sure you want to delete <strong className="text-[#1A2A3A]">{userToDelete.fullname || userToDelete.fullName}</strong>? This action cannot be undone.</p>
             </div>
@@ -1174,7 +1282,6 @@ const AdminPanel = () => {
               <h3 className="text-xl font-heading font-bold text-white">Success</h3>
             </div>
             <div className="p-6 text-center">
-              <div className="text-5xl mb-3">Success</div>
               <p className="text-[#1A2A3A] font-medium">{modalMessage}</p>
             </div>
             <div className="p-6 border-t border-[#E8EEF4]">

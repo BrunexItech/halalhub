@@ -18,18 +18,20 @@ const Kadhis = () => {
   // Professionals
   const [professionals, setProfessionals] = useState([]);
   const [selectedProfessional, setSelectedProfessional] = useState(null);
-  const [professionalType, setProfessionalType] = useState('all'); // 'all', 'kadhi', 'scholar'
+  const [professionalType, setProfessionalType] = useState('all');
   
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCounty, setSelectedCounty] = useState('All');
   const [selectedExpertise, setSelectedExpertise] = useState('All');
+  const [counties, setCounties] = useState(['All']);
+  const [expertiseOptions, setExpertiseOptions] = useState(['All', 'Family Law', 'Inheritance', 'Islamic Finance', 'Business', 'Marriage', 'Fatwa', 'Criminal Law', 'Zakat', 'Takaful', 'Wasiyyah', 'Faraid']);
   
   // Booking
   const [bookingData, setBookingData] = useState({
     date: '',
     time: '',
-    type: 'in-person',
+    type: 'video',
     notes: '',
     topic: '',
     county: ''
@@ -44,19 +46,25 @@ const Kadhis = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   
-  // Counties
-  const counties = ['All', 'Nairobi', 'Mombasa', 'Kisumu', 'Garissa', 'Nakuru', 'Eldoret', 'Malindi', 'Kakamega', 'Kitale'];
-  const expertiseOptions = ['All', 'Family Law', 'Inheritance', 'Islamic Finance', 'Business', 'Marriage', 'Fatwa', 'Criminal Law', 'Zakat', 'Takaful', 'Wasiyyah', 'Faraid'];
   const consultationTopics = ['Family Matter', 'Inheritance', 'Marriage', 'Business', 'Finance', 'Zakat', 'Takaful', 'General Guidance', 'Other'];
 
   // ===== FETCH DATA =====
   useEffect(() => {
     checkAuth();
+    fetchCounties();
     fetchProfessionals();
     fetchBookings();
-    // Set loading to false after data fetch
-    setTimeout(() => setLoading(false), 500);
   }, []);
+
+  // Auto-refresh bookings every 30 seconds
+  useEffect(() => {
+    if (isAuthenticated) {
+      const interval = setInterval(() => {
+        fetchBookings();
+      }, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated]);
 
   const checkAuth = () => {
     const token = localStorage.getItem('halalhub_token');
@@ -67,124 +75,36 @@ const Kadhis = () => {
     }
   };
 
+  const fetchCounties = async () => {
+    try {
+      const res = await kadhiService.getCounties();
+      if (res.data.success) {
+        setCounties(['All', ...res.data.counties]);
+      }
+    } catch (err) {
+      console.error('Error fetching counties:', err);
+    }
+  };
+
   const fetchProfessionals = async () => {
+    setLoading(true);
     setError('');
     try {
-      const mockProfessionals = [
-        {
-          id: 1,
-          name: 'Sheikh Abdul Rahman Al-Naqib',
-          type: 'kadhi',
-          county: 'Nairobi',
-          expertise: ['Family Law', 'Inheritance', 'Marriage'],
-          fee: 2000,
-          rating: 4.9,
-          reviews: 45,
-          experience: '15 years',
-          bio: 'Senior Kadhi with extensive experience in family law, inheritance disputes, and marriage matters. Provides mediation and legal guidance.',
-          available: true,
-          languages: ['English', 'Swahili', 'Arabic'],
-          verified: true,
-          verificationDate: '2024-01-15',
-          institution: 'Kadhi Courts of Kenya',
-          consultationTypes: ['in-person', 'video', 'phone']
-        },
-        {
-          id: 2,
-          name: 'Kadhi Mohammed Ali Hassan',
-          type: 'kadhi',
-          county: 'Mombasa',
-          expertise: ['Inheritance', 'Business', 'Family Law'],
-          fee: 1500,
-          rating: 4.8,
-          reviews: 32,
-          experience: '12 years',
-          bio: 'Specializes in business disputes, inheritance matters, and family mediation. Known for fair and balanced resolutions.',
-          available: true,
-          languages: ['English', 'Swahili'],
-          verified: true,
-          verificationDate: '2024-02-01',
-          institution: 'Kadhi Courts of Kenya',
-          consultationTypes: ['in-person', 'phone']
-        },
-        {
-          id: 3,
-          name: 'Sheikh Ibrahim Yusuf',
-          type: 'scholar',
-          county: 'Nairobi',
-          expertise: ['Islamic Finance', 'Fatwa', 'Zakat', 'Takaful'],
-          fee: 3000,
-          rating: 5.0,
-          reviews: 56,
-          experience: '20 years',
-          bio: 'Leading expert in Islamic finance, Fatwa issuance, and Zakat. PhD in Islamic Economics. Consultant for several Islamic financial institutions.',
-          available: true,
-          languages: ['English', 'Arabic'],
-          verified: true,
-          verificationDate: '2024-01-10',
-          institution: 'Islamic University of Madinah',
-          consultationTypes: ['video', 'phone', 'chat']
-        },
-        {
-          id: 4,
-          name: 'Sheikh Abdirahman Mohamed',
-          type: 'scholar',
-          county: 'Garissa',
-          expertise: ['Marriage', 'Family Law', 'Wasiyyah'],
-          fee: 800,
-          rating: 4.7,
-          reviews: 28,
-          experience: '8 years',
-          bio: 'Dedicated to resolving family matters with compassion and Islamic guidance. Specializes in marriage counseling and wasiyyah.',
-          available: true,
-          languages: ['English', 'Swahili', 'Somali'],
-          verified: true,
-          verificationDate: '2024-02-15',
-          institution: 'Al-Azhar University',
-          consultationTypes: ['in-person', 'phone', 'video']
-        },
-        {
-          id: 5,
-          name: 'Sheikh Fatima Noor',
-          type: 'kadhi',
-          county: 'Kisumu',
-          expertise: ['Family Law', 'Inheritance', 'Marriage', 'Faraid'],
-          fee: 1200,
-          rating: 4.9,
-          reviews: 39,
-          experience: '10 years',
-          bio: 'Pioneering female Kadhi specializing in women\'s rights, family law, and inheritance matters. Respected for her fair and empathetic approach.',
-          available: false,
-          languages: ['English', 'Swahili', 'Luo'],
-          verified: true,
-          verificationDate: '2024-03-01',
-          institution: 'Kadhi Courts of Kenya',
-          consultationTypes: ['in-person', 'phone']
-        },
-        {
-          id: 6,
-          name: 'Sheikh Hassan Juma',
-          type: 'scholar',
-          county: 'Nakuru',
-          expertise: ['Islamic Finance', 'Takaful', 'Business'],
-          fee: 1800,
-          rating: 4.6,
-          reviews: 23,
-          experience: '14 years',
-          bio: 'Islamic finance expert with extensive experience in Takaful and business-related Islamic guidance.',
-          available: true,
-          languages: ['English', 'Swahili'],
-          verified: false,
-          verificationDate: null,
-          institution: 'University of Nairobi',
-          consultationTypes: ['video', 'chat']
-        }
-      ];
+      const params = {};
+      if (professionalType !== 'all') params.type = professionalType;
+      if (selectedCounty !== 'All') params.county = selectedCounty;
+      if (selectedExpertise !== 'All') params.expertise = selectedExpertise;
+      if (searchQuery) params.search = searchQuery;
       
-      setProfessionals(mockProfessionals);
+      const res = await kadhiService.getKadhis(params);
+      if (res.data.success) {
+        setProfessionals(res.data.kadhis || []);
+      }
     } catch (err) {
+      console.error('Error fetching professionals:', err);
       setError('Failed to load professionals. Please refresh.');
-      console.error('Professionals error:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -192,26 +112,23 @@ const Kadhis = () => {
     if (!isAuthenticated) return;
     setLoadingBookings(true);
     try {
-      setBookings([
-        { id: 1, professional: 'Sheikh Abdul Rahman Al-Naqib', date: '2024-04-15', time: '10:00 AM', status: 'confirmed', type: 'in-person' },
-        { id: 2, professional: 'Sheikh Ibrahim Yusuf', date: '2024-04-10', time: '2:00 PM', status: 'completed', type: 'video' }
-      ]);
+      const res = await bookingService.getBookings();
+      if (res.data.success) {
+        setBookings(res.data.bookings || []);
+      }
     } catch (err) {
-      console.error('Bookings error:', err);
+      console.error('Error fetching bookings:', err);
     } finally {
       setLoadingBookings(false);
     }
   };
 
   // ===== FILTERS =====
-  const filteredProfessionals = professionals.filter(p => {
-    const matchesType = professionalType === 'all' || p.type === professionalType;
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.bio.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCounty = selectedCounty === 'All' || p.county === selectedCounty;
-    const matchesExpertise = selectedExpertise === 'All' || p.expertise.includes(selectedExpertise);
-    return matchesType && matchesSearch && matchesCounty && matchesExpertise;
-  });
+  useEffect(() => {
+    if (!loading) {
+      fetchProfessionals();
+    }
+  }, [professionalType, selectedCounty, selectedExpertise, searchQuery]);
 
   // ===== BOOKING =====
   const handleBook = (professional) => {
@@ -222,7 +139,7 @@ const Kadhis = () => {
     setSelectedProfessional(professional);
     setBookingData({
       ...bookingData,
-      county: professional.county,
+      county: professional.county || '',
       topic: ''
     });
     setShowBookingModal(true);
@@ -247,16 +164,29 @@ const Kadhis = () => {
     setProcessing(true);
     setError('');
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      setShowBookingModal(false);
-      setShowSuccessModal(true);
-      await fetchBookings();
-      
-      setSuccess('Consultation booked successfully!');
-      setTimeout(() => setSuccess(''), 5000);
+      const response = await bookingService.createBooking({
+        kadhiId: selectedProfessional.id,
+        bookingDate: bookingData.date,
+        bookingTime: bookingData.time,
+        type: bookingData.type,
+        topic: bookingData.topic,
+        notes: bookingData.notes,
+        userName: user?.fullName || 'Guest',
+        userEmail: user?.email || ''
+      });
+
+      if (response.data.success) {
+        setShowBookingModal(false);
+        setShowSuccessModal(true);
+        // Immediately refresh bookings
+        await fetchBookings();
+        // Also refresh professionals to update availability if needed
+        await fetchProfessionals();
+        setSuccess('Consultation booked successfully');
+        setTimeout(() => setSuccess(''), 5000);
+      }
     } catch (err) {
-      setError('Failed to book. Please try again.');
+      setError(err.response?.data?.error || 'Failed to book. Please try again.');
     } finally {
       setProcessing(false);
     }
@@ -265,6 +195,23 @@ const Kadhis = () => {
   const handleViewProfile = (professional) => {
     setSelectedProfessional(professional);
     setShowProfileModal(true);
+  };
+
+  const handleJoinMeeting = (booking) => {
+    if (booking.room_name) {
+      navigate(`/video-call/${booking.id}`);
+    } else {
+      setError('No video call available for this booking');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
+  const handleViewConsultations = () => {
+    setShowSuccessModal(false);
+    const section = document.querySelector('.my-consultations-section');
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   // ===== HELPERS =====
@@ -299,6 +246,24 @@ const Kadhis = () => {
       'pending': 'Pending'
     };
     return { style: styles[status] || styles.pending, label: labels[status] || status };
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-KE', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const formatTime = (timeString) => {
+    if (!timeString) return 'N/A';
+    return timeString;
+  };
+
+  const isVideoBooking = (booking) => {
+    return booking.type === 'video' && booking.room_name;
   };
 
   // ===== LOADING STATE =====
@@ -414,19 +379,19 @@ const Kadhis = () => {
           
           <div className="mt-3 pt-3 border-t border-[#F1F7FC] flex flex-wrap items-center justify-between gap-2">
             <span className="text-sm text-[#94A3B8]">
-              {filteredProfessionals.length} professional{filteredProfessionals.length !== 1 ? 's' : ''} available
+              {professionals.length} professional{professionals.length !== 1 ? 's' : ''} available
             </span>
           </div>
         </div>
 
         {/* ===== PROFESSIONALS GRID ===== */}
-        {filteredProfessionals.length === 0 ? (
+        {professionals.length === 0 ? (
           <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-12 text-center">
             <p className="text-sm text-[#94A3B8]">No professionals found. Try adjusting your filters.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            {filteredProfessionals.map((professional) => (
+            {professionals.map((professional) => (
               <div 
                 key={professional.id} 
                 className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
@@ -435,7 +400,7 @@ const Kadhis = () => {
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#1769AA] to-[#2F80C0] flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                        {professional.name.charAt(0)}
+                        {professional.name?.charAt(0) || 'K'}
                       </div>
                       <div>
                         <h3 className="font-bold text-[#1A2A3A]">{professional.name}</h3>
@@ -456,28 +421,28 @@ const Kadhis = () => {
                     </div>
                   </div>
 
-                  <p className="text-sm text-[#94A3B8] mt-2">{professional.county}</p>
+                  <p className="text-sm text-[#94A3B8] mt-2">{professional.county || 'Location not specified'}</p>
 
                   <div className="flex flex-wrap gap-1.5 mt-3">
-                    {professional.expertise.slice(0, 3).map((exp, i) => (
+                    {(professional.expertise || []).slice(0, 3).map((exp, i) => (
                       <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-[#F1F7FC] text-[#5A6A7A]">
                         {exp}
                       </span>
                     ))}
-                    {professional.expertise.length > 3 && (
+                    {(professional.expertise || []).length > 3 && (
                       <span className="text-xs px-2 py-0.5 rounded-full bg-[#F1F7FC] text-[#94A3B8]">
-                        +{professional.expertise.length - 3}
+                        +{(professional.expertise || []).length - 3}
                       </span>
                     )}
                   </div>
 
-                  <p className="text-sm text-[#5A6A7A] mt-3 line-clamp-2">{professional.bio}</p>
+                  <p className="text-sm text-[#5A6A7A] mt-3 line-clamp-2">{professional.bio || 'No bio available'}</p>
 
                   <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#F1F7FC]">
                     <div className="flex items-center gap-2 text-sm">
                       <span className="text-[#C9A84C]">★</span>
-                      <span className="font-semibold text-[#1A2A3A]">{professional.rating}</span>
-                      <span className="text-[#94A3B8]">({professional.reviews})</span>
+                      <span className="font-semibold text-[#1A2A3A]">{professional.rating || 0}</span>
+                      <span className="text-[#94A3B8]">({professional.reviews || 0})</span>
                       <span className="text-[#94A3B8]">·</span>
                       <span className="text-[#94A3B8]">{professional.fee ? formatCurrency(professional.fee) + '/hr' : 'Contact'}</span>
                     </div>
@@ -509,7 +474,7 @@ const Kadhis = () => {
 
         {/* ===== MY CONSULTATIONS ===== */}
         {isAuthenticated && (
-          <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-6">
+          <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-6 my-consultations-section">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-bold text-[#1A2A3A]">My Consultations</h3>
               <button 
@@ -532,17 +497,32 @@ const Kadhis = () => {
               <div className="space-y-3">
                 {bookings.map((booking) => {
                   const status = getStatusBadge(booking.status);
+                  const isVideo = isVideoBooking(booking);
+                  const canJoin = isVideo && booking.status === 'confirmed';
+                  
                   return (
                     <div key={booking.id} className="flex flex-wrap items-center justify-between p-4 bg-[#F1F7FC] rounded-lg">
-                      <div>
-                        <div className="font-semibold text-[#1A2A3A]">{booking.professional}</div>
-                        <div className="text-sm text-[#94A3B8]">{booking.date} at {booking.time}</div>
+                      <div className="flex-1 min-w-[150px]">
+                        <div className="font-semibold text-[#1A2A3A]">{booking.kadhi_name || 'Kadhi'}</div>
+                        <div className="text-sm text-[#94A3B8]">{formatDate(booking.booking_date)} at {formatTime(booking.booking_time)}</div>
                         <div className="text-sm text-[#94A3B8] capitalize">{booking.type}</div>
+                        <div className="text-xs text-[#94A3B8]">Status: {status.label}</div>
+                        {isVideo && booking.room_name && (
+                          <div className="text-xs text-[#1769AA] font-mono mt-0.5">Room: {booking.room_name}</div>
+                        )}
                       </div>
-                      <div className="text-right">
+                      <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
                         <span className={`text-xs px-2 py-0.5 rounded-full border ${status.style}`}>
                           {status.label}
                         </span>
+                        {canJoin && (
+                          <button
+                            className="px-3 py-1.5 bg-[#1769AA] text-white text-xs font-semibold rounded-lg hover:bg-[#2F80C0] transition-colors"
+                            onClick={() => handleJoinMeeting(booking)}
+                          >
+                            Join Call
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -559,7 +539,7 @@ const Kadhis = () => {
           <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="p-6 border-b border-[#F1F7FC] flex justify-between items-center">
               <h3 className="text-lg font-bold text-[#1A2A3A]">Book Consultation</h3>
-              <button className="text-[#94A3B8] hover:text-[#1A2A3A] transition-colors" onClick={() => setShowBookingModal(false)}>
+              <button className="text-[#94A3B8] hover:text-[#1A2A3A] transition-colors text-xl" onClick={() => setShowBookingModal(false)}>
                 ✕
               </button>
             </div>
@@ -567,7 +547,7 @@ const Kadhis = () => {
             <div className="p-6 space-y-4">
               <div className="bg-[#F1F7FC] rounded-xl p-4 text-center">
                 <div className="font-bold text-[#1A2A3A]">{selectedProfessional.name}</div>
-                <div className="text-sm text-[#94A3B8]">{getTypeLabel(selectedProfessional.type)} · {selectedProfessional.county}</div>
+                <div className="text-sm text-[#94A3B8]">{getTypeLabel(selectedProfessional.type)} · {selectedProfessional.county || 'Location not specified'}</div>
                 <div className="text-sm font-semibold text-[#1769AA] mt-1">{selectedProfessional.fee ? formatCurrency(selectedProfessional.fee) + '/hr' : 'Fee upon consultation'}</div>
               </div>
 
@@ -607,12 +587,12 @@ const Kadhis = () => {
                   onChange={handleBookingChange}
                 >
                   <option value="">Select time</option>
-                  <option value="09:00 AM">09:00 AM</option>
-                  <option value="10:00 AM">10:00 AM</option>
-                  <option value="11:00 AM">11:00 AM</option>
-                  <option value="02:00 PM">2:00 PM</option>
-                  <option value="03:00 PM">3:00 PM</option>
-                  <option value="04:00 PM">4:00 PM</option>
+                  <option value="09:00">09:00</option>
+                  <option value="10:00">10:00</option>
+                  <option value="11:00">11:00</option>
+                  <option value="14:00">14:00</option>
+                  <option value="15:00">15:00</option>
+                  <option value="16:00">16:00</option>
                 </select>
               </div>
 
@@ -652,7 +632,7 @@ const Kadhis = () => {
               {error && <p className="text-sm text-[#DC2626]">{error}</p>}
             </div>
             
-            <div className="p-6 border-t border-[#F1F7FC] flex gap-3">
+            <div className="p-6 border-t border-[#F1F7FC] flex flex-col sm:flex-row gap-3">
               <button 
                 className="flex-1 px-6 py-3 bg-white text-[#5A6A7A] font-semibold rounded-xl border border-[#E8EEF4] hover:bg-[#F1F7FC] transition-all duration-200"
                 onClick={() => setShowBookingModal(false)}
@@ -684,7 +664,7 @@ const Kadhis = () => {
           <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="p-6 border-b border-[#F1F7FC] flex justify-between items-center">
               <h3 className="text-lg font-bold text-[#1A2A3A]">Professional Profile</h3>
-              <button className="text-[#94A3B8] hover:text-[#1A2A3A] transition-colors" onClick={() => setShowProfileModal(false)}>
+              <button className="text-[#94A3B8] hover:text-[#1A2A3A] transition-colors text-xl" onClick={() => setShowProfileModal(false)}>
                 ✕
               </button>
             </div>
@@ -692,7 +672,7 @@ const Kadhis = () => {
             <div className="p-6 space-y-4">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#1769AA] to-[#2F80C0] flex items-center justify-center text-white font-bold text-2xl flex-shrink-0">
-                  {selectedProfessional.name.charAt(0)}
+                  {selectedProfessional.name?.charAt(0) || 'K'}
                 </div>
                 <div>
                   <div className="font-bold text-[#1A2A3A] text-lg">{selectedProfessional.name}</div>
@@ -706,18 +686,18 @@ const Kadhis = () => {
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-[#94A3B8]">{selectedProfessional.county}</p>
+                  <p className="text-sm text-[#94A3B8]">{selectedProfessional.county || 'Location not specified'}</p>
                 </div>
               </div>
 
               <div className="bg-[#F1F7FC] rounded-xl p-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-[#94A3B8]">Experience</span>
-                  <span className="font-semibold text-[#1A2A3A]">{selectedProfessional.experience}</span>
+                  <span className="font-semibold text-[#1A2A3A]">{selectedProfessional.experience || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-[#94A3B8]">Languages</span>
-                  <span className="font-semibold text-[#1A2A3A]">{selectedProfessional.languages?.join(', ')}</span>
+                  <span className="font-semibold text-[#1A2A3A]">{selectedProfessional.languages?.join(', ') || 'N/A'}</span>
                 </div>
                 {selectedProfessional.institution && (
                   <div className="flex justify-between text-sm">
@@ -725,15 +705,15 @@ const Kadhis = () => {
                     <span className="font-semibold text-[#1A2A3A] text-right max-w-[60%]">{selectedProfessional.institution}</span>
                   </div>
                 )}
-                {selectedProfessional.verified && selectedProfessional.verificationDate && (
+                {selectedProfessional.verified && selectedProfessional.verification_date && (
                   <div className="flex justify-between text-sm">
                     <span className="text-[#94A3B8]">Verified</span>
-                    <span className="font-semibold text-[#1A2A3A]">{selectedProfessional.verificationDate}</span>
+                    <span className="font-semibold text-[#1A2A3A]">{selectedProfessional.verification_date}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm">
                   <span className="text-[#94A3B8]">Rating</span>
-                  <span className="font-semibold text-[#C9A84C]">★ {selectedProfessional.rating} ({selectedProfessional.reviews} reviews)</span>
+                  <span className="font-semibold text-[#C9A84C]">★ {selectedProfessional.rating || 0} ({selectedProfessional.reviews || 0} reviews)</span>
                 </div>
                 {selectedProfessional.fee && (
                   <div className="flex justify-between text-sm">
@@ -745,13 +725,13 @@ const Kadhis = () => {
 
               <div className="bg-[#F1F7FC] rounded-xl p-4">
                 <h4 className="text-sm font-semibold text-[#1A2A3A] mb-2">About</h4>
-                <p className="text-sm text-[#5A6A7A] leading-relaxed">{selectedProfessional.bio}</p>
+                <p className="text-sm text-[#5A6A7A] leading-relaxed">{selectedProfessional.bio || 'No bio available'}</p>
               </div>
 
               <div className="bg-[#F1F7FC] rounded-xl p-4">
                 <h4 className="text-sm font-semibold text-[#1A2A3A] mb-2">Expertise</h4>
                 <div className="flex flex-wrap gap-2">
-                  {selectedProfessional.expertise.map((exp, i) => (
+                  {(selectedProfessional.expertise || []).map((exp, i) => (
                     <span key={i} className="text-xs px-3 py-1 rounded-full bg-white text-[#5A6A7A] border border-[#E8EEF4]">
                       {exp}
                     </span>
@@ -759,7 +739,7 @@ const Kadhis = () => {
                 </div>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   className="flex-1 px-4 py-2.5 bg-white text-[#5A6A7A] font-semibold rounded-xl border border-[#E8EEF4] hover:border-[#1769AA] hover:text-[#1769AA] transition-all duration-200"
                   onClick={() => setShowProfileModal(false)}
@@ -789,8 +769,8 @@ const Kadhis = () => {
           <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="p-6 border-b border-[#F1F7FC] bg-[#1769AA] rounded-t-2xl">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-bold text-white">Booking Confirmed!</h3>
-                <button className="text-white/60 hover:text-white transition-colors" onClick={() => setShowSuccessModal(false)}>
+                <h3 className="text-lg font-bold text-white">Booking Confirmed</h3>
+                <button className="text-white/60 hover:text-white transition-colors text-xl" onClick={() => setShowSuccessModal(false)}>
                   ✕
                 </button>
               </div>
@@ -822,12 +802,18 @@ const Kadhis = () => {
               </div>
             </div>
             
-            <div className="p-6 border-t border-[#F1F7FC]">
+            <div className="p-6 border-t border-[#F1F7FC] flex flex-col sm:flex-row gap-3">
               <button 
-                className="w-full px-6 py-3 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200"
+                className="flex-1 px-6 py-3 bg-white text-[#5A6A7A] font-semibold rounded-xl border border-[#E8EEF4] hover:bg-[#F1F7FC] transition-all duration-200"
                 onClick={() => setShowSuccessModal(false)}
               >
                 Done
+              </button>
+              <button 
+                className="flex-1 px-6 py-3 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200"
+                onClick={handleViewConsultations}
+              >
+                View My Consultations
               </button>
             </div>
           </div>
@@ -837,12 +823,12 @@ const Kadhis = () => {
       {/* ===== SUCCESS TOAST ===== */}
       {success && (
         <div className="fixed top-6 right-6 z-50 bg-[#1769AA] text-white px-6 py-4 rounded-2xl shadow-2xl shadow-[#1769AA]/30 flex items-center gap-3 animate-slideDown max-w-sm border border-white/10">
-          <svg className="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-white/80 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
           </svg>
           <span className="text-sm font-medium">{success}</span>
           <button 
-            className="text-white/60 hover:text-white transition ml-2"
+            className="text-white/60 hover:text-white transition ml-2 flex-shrink-0"
             onClick={() => setSuccess('')}
           >
             ✕

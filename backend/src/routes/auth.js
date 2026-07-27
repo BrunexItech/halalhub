@@ -149,7 +149,7 @@ router.post('/register-client', async (req, res) => {
 });
 
 // ============================================================
-// 2. VENDOR REGISTRATION (FIXED - county removed, using region)
+// 2. VENDOR REGISTRATION
 // ============================================================
 router.post('/register-vendor', async (req, res) => {
   try {
@@ -176,7 +176,6 @@ router.post('/register-vendor', async (req, res) => {
     const vendorId = 'vendor-' + Date.now();
     const profileId = 'profile-' + Date.now();
     
-    // Insert user
     await db.query(
       `INSERT INTO users (
         id, fullname, phone, email, nationalid, pinhash, role, region, sub_county, ward,
@@ -201,7 +200,6 @@ router.post('/register-vendor', async (req, res) => {
       ]
     );
     
-    // Insert vendor profile - FIXED: removed county, using region as location
     await db.query(`
       INSERT INTO vendor_profiles (
         id, user_id, business_name, business_type, description, location, is_active, createdat, updatedat
@@ -236,13 +234,13 @@ router.post('/register-vendor', async (req, res) => {
 });
 
 // ============================================================
-// 3. IMAM REGISTRATION
+// 3. RELIGIOUS LEADER REGISTRATION (Imam / Kadhi)
 // ============================================================
 router.post('/register-imam', async (req, res) => {
   try {
     const { 
       fullName, phone, email, nationalId, pin, 
-      title, mosqueName, mosqueLocation, mosqueCounty, qualifications, yearsOfService,
+      title, subRole, mosqueName, mosqueLocation, mosqueCounty, qualifications, yearsOfService,
       region, subCounty, ward, termsAccepted 
     } = req.body;
     
@@ -252,6 +250,10 @@ router.post('/register-imam', async (req, res) => {
     
     if (!mosqueName || !mosqueLocation) {
       return res.status(400).json({ error: 'Mosque name and location are required' });
+    }
+    
+    if (!subRole || !['imam', 'kadhi'].includes(subRole)) {
+      return res.status(400).json({ error: 'Please select a valid sub-role (Imam or Kadhi)' });
     }
     
     if (!termsAccepted) {
@@ -278,30 +280,64 @@ router.post('/register-imam', async (req, res) => {
     
     await db.query(`
       INSERT INTO imams (
-        id, user_id, title, mosque_name, mosque_location, mosque_county, 
+        id, user_id, title, sub_role, mosque_name, mosque_location, mosque_county, 
         qualifications, years_of_service, status, createdat, updatedat
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', NOW(), NOW())
-    `, [imamProfileId, imamId, title || 'Imam', mosqueName, mosqueLocation, mosqueCounty || '', qualifications || [], parseInt(yearsOfService) || 0]);
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending', NOW(), NOW())
+    `, [
+      imamProfileId, 
+      imamId, 
+      title || 'Imam', 
+      subRole, 
+      mosqueName, 
+      mosqueLocation, 
+      mosqueCounty || '', 
+      qualifications || [], 
+      parseInt(yearsOfService) || 0
+    ]);
     
     await db.query(`
       INSERT INTO pension_balances (imam_id, total_contributions, total_supporters)
       VALUES ($1, 0, 0)
     `, [imamProfileId]);
     
+    // If subRole is kadhi, also create entry in kadhis table
+    if (subRole === 'kadhi') {
+      const kadhiId = 'kadhi-' + Date.now();
+      await db.query(`
+        INSERT INTO kadhis (
+          id, user_id, name, type, county, expertise, experience, bio, institution, available, createdat, updatedat
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+      `, [
+        kadhiId,
+        imamId,
+        fullName,
+        'kadhi',
+        mosqueCounty || '',
+        qualifications || [],
+        parseInt(yearsOfService) || 0,
+        req.body.bio || '',
+        req.body.institution || '',
+        true
+      ]);
+    }
+    
     otpStore.delete(`reg_${phone}`);
     otpStore.delete(`reg_${phone}_verified`);
     
     res.status(201).json({
       success: true,
-      message: 'Imam application submitted successfully! Awaiting admin approval.',
+      message: `${
+        subRole === 'kadhi' ? 'Kadhi' : 'Imam'
+      } application submitted successfully! Awaiting admin approval.`,
       imamId: imamId,
+      subRole: subRole,
       status: 'pending'
     });
   } catch (err) {
     if (err.code === '23505') {
       res.status(409).json({ error: 'Phone, email, or national ID already registered' });
     } else {
-      console.error('Imam registration error:', err.message);
+      console.error('Religious leader registration error:', err.message);
       res.status(500).json({ error: err.message });
     }
   }
@@ -396,17 +432,31 @@ router.post('/login-step2', async (req, res) => {
     }
     
     let statusWarning = null;
+    let subRole = null;
+    
     if (user.role === 'vendor' && user.vendor_status !== 'approved') {
       statusWarning = `Vendor account status: ${user.vendor_status}`;
     }
+    
     if (user.role === 'imam' && user.imam_status !== 'approved') {
-      statusWarning = `Imam account status: ${user.imam_status}`;
+      statusWarning = `Religious leader account status: ${user.imam_status}`;
+    }
+    
+    // Get sub_role if user is an imam
+    if (user.role === 'imam') {
+      const imamResult = await db.query(
+        'SELECT sub_role FROM imams WHERE user_id = $1',
+        [user.id]
+      );
+      if (imamResult.rows.length > 0) {
+        subRole = imamResult.rows[0].sub_role || 'imam';
+      }
     }
     
     otpStore.delete(`login_${phone}`);
     
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user.id, email: user.email, role: user.role, subRole: subRole },
       process.env.JWT_SECRET || 'halalhub_sharia_2025',
       { expiresIn: '7d' }
     );
@@ -421,6 +471,7 @@ router.post('/login-step2', async (req, res) => {
         phone: user.phone,
         email: user.email,
         role: user.role,
+        subRole: subRole,
         vendorStatus: user.vendor_status || 'pending',
         imamStatus: user.imam_status || 'pending',
         kycStatus: user.kycstatus || 'pending'
@@ -456,7 +507,26 @@ router.get('/me', async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
     
-    res.json({ success: true, user: result.rows[0] });
+    const user = result.rows[0];
+    let subRole = null;
+    
+    if (user.role === 'imam') {
+      const imamResult = await db.query(
+        'SELECT sub_role FROM imams WHERE user_id = $1',
+        [user.id]
+      );
+      if (imamResult.rows.length > 0) {
+        subRole = imamResult.rows[0].sub_role || 'imam';
+      }
+    }
+    
+    res.json({ 
+      success: true, 
+      user: {
+        ...user,
+        subRole: subRole
+      } 
+    });
   } catch (err) {
     console.error('Error fetching user:', err.message);
     res.status(500).json({ error: err.message });

@@ -35,7 +35,7 @@ const fileFilter = (req, file, cb) => {
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 50 * 1024 * 1024 },
+  limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter: fileFilter
 });
 
@@ -444,7 +444,7 @@ router.delete('/products/:productId', async (req, res) => {
 });
 
 // ============================================================
-// 9. GET VENDOR ORDERS (shows bookings for HalalStay)
+// 9. GET VENDOR ORDERS (FIXED - shows item names)
 // ============================================================
 router.get('/orders', async (req, res) => {
   try {
@@ -475,7 +475,7 @@ router.get('/orders', async (req, res) => {
           b.special_requests,
           u.fullname as customer_name,
           u.phone as customer_phone,
-          l.title as listing_title
+          l.title as items
         FROM bookings b
         JOIN listings l ON b.listing_id = l.id
         JOIN users u ON b.user_id = u.id
@@ -497,9 +497,18 @@ router.get('/orders', async (req, res) => {
 
     let query = `
       SELECT 
-        o.*,
+        o.id,
+        o.user_id,
+        o.vendor_id,
+        'order' as order_type,
+        o.total_amount,
+        o.status,
+        o.order_date,
+        o.delivery_address,
+        o.special_instructions,
         u.fullname as customer_name,
-        u.phone as customer_phone
+        u.phone as customer_phone,
+        o.items
       FROM orders o
       JOIN users u ON o.user_id = u.id
       WHERE o.vendor_id = $1
@@ -515,7 +524,24 @@ router.get('/orders', async (req, res) => {
 
     const result = await db.query(query, params);
 
-    res.json({ success: true, orders: result.rows });
+    // Format items to show item names
+    const orders = result.rows.map(order => {
+      let itemsDisplay = '';
+      if (order.items) {
+        const itemsArray = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+        if (Array.isArray(itemsArray) && itemsArray.length > 0) {
+          itemsDisplay = itemsArray.map(item => item.name).join(', ');
+        } else {
+          itemsDisplay = `${itemsArray?.length || 0} items`;
+        }
+      }
+      return {
+        ...order,
+        items: itemsDisplay || `${order.items?.length || 0} items`
+      };
+    });
+
+    res.json({ success: true, orders: orders });
 
   } catch (err) {
     console.error('Error fetching orders:', err.message);

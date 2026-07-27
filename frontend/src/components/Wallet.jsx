@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { walletService, mpesaService } from '../services/api';
+import { walletService, mpesaService, transactionService } from '../services/api';
 
 const Wallet = () => {
   const navigate = useNavigate();
@@ -14,6 +14,7 @@ const Wallet = () => {
   const [isPolling, setIsPolling] = useState(false);
   const [transactions, setTransactions] = useState([]);
   const [loadingTx, setLoadingTx] = useState(false);
+  const [totalTransactions, setTotalTransactions] = useState(0);
 
   const quickAmounts = [100, 500, 1000, 2500, 5000, 10000];
 
@@ -56,23 +57,84 @@ const Wallet = () => {
       const res = await walletService.getBalance();
       setBalance(res.data.balance || 0);
     } catch (err) {
-      console.error('Failed to fetch balance');
+      console.error('Failed to fetch balance:', err);
     }
   };
 
   const fetchTransactions = async () => {
     setLoadingTx(true);
     try {
-      setTransactions([
-        { date: 'Today, 09:15', title: 'M-Pesa Top Up', amount: 5000, type: 'topup', status: 'completed' },
-        { date: 'Yesterday, 14:30', title: 'Zakat Payment', amount: -3125, type: 'zakat', status: 'completed' },
-        { date: 'Apr 6, 10:00', title: 'Sadaqa Donation', amount: -500, type: 'sadaqa', status: 'completed' },
-        { date: 'Apr 5, 16:45', title: 'P2P Loan Repayment', amount: 2000, type: 'repayment', status: 'completed' },
-        { date: 'Apr 4, 08:20', title: 'KPLC Electricity Bill', amount: -1800, type: 'utility', status: 'completed' },
-        { date: 'Apr 3, 12:30', title: 'M-Pesa Top Up', amount: 10000, type: 'topup', status: 'completed' },
-      ]);
+      const res = await transactionService.getRecent(50);
+      const txData = res.data.transactions || [];
+      
+      // Format transactions for display
+      const formattedTx = txData.map(tx => {
+        let title = tx.type || 'Transaction';
+        let iconType = tx.type || 'default';
+        
+        switch(tx.type) {
+          case 'topup':
+            title = 'M-Pesa Top Up';
+            iconType = 'topup';
+            break;
+          case 'utility':
+            title = tx.description || 'Utility Payment';
+            iconType = 'utility';
+            break;
+          case 'zakat':
+            title = 'Zakat Payment';
+            iconType = 'zakat';
+            break;
+          case 'sadaqa':
+            title = 'Sadaqa Donation';
+            iconType = 'sadaqa';
+            break;
+          case 'p2p':
+            title = 'P2P Transfer';
+            iconType = 'transfer';
+            break;
+          case 'repayment':
+            title = 'Loan Repayment';
+            iconType = 'repayment';
+            break;
+          case 'withdrawal':
+            title = 'Withdrawal';
+            iconType = 'withdrawal';
+            break;
+          default:
+            title = tx.description || tx.type || 'Transaction';
+            iconType = 'default';
+        }
+        
+        const date = tx.createdat || tx.createdAt || tx.paid_at;
+        const formattedDate = date ? new Date(date).toLocaleDateString('en-KE', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        }) : 'N/A';
+        
+        const time = date ? new Date(date).toLocaleTimeString('en-KE', {
+          hour: '2-digit',
+          minute: '2-digit'
+        }) : '';
+        
+        return {
+          id: tx.id,
+          title: title,
+          amount: tx.amount || 0,
+          type: iconType,
+          status: tx.status || 'completed',
+          date: `${formattedDate}, ${time}`,
+          reference: tx.reference || tx.transaction_ref
+        };
+      });
+      
+      setTransactions(formattedTx);
+      setTotalTransactions(formattedTx.length);
+      
     } catch (err) {
-      console.error('Failed to fetch transactions');
+      console.error('Failed to fetch transactions:', err);
+      setTransactions([]);
     } finally {
       setLoadingTx(false);
     }
@@ -138,9 +200,25 @@ const Wallet = () => {
       'utility': 'U',
       'payment': 'P',
       'transfer': 'X',
+      'withdrawal': 'W',
       'default': '•'
     };
     return icons[type] || icons.default;
+  };
+
+  const getTransactionColor = (type) => {
+    const colors = {
+      'topup': 'bg-emerald-50 text-emerald-600',
+      'zakat': 'bg-amber-50 text-amber-600',
+      'sadaqa': 'bg-purple-50 text-purple-600',
+      'repayment': 'bg-blue-50 text-blue-600',
+      'utility': 'bg-orange-50 text-orange-600',
+      'payment': 'bg-indigo-50 text-indigo-600',
+      'transfer': 'bg-cyan-50 text-cyan-600',
+      'withdrawal': 'bg-red-50 text-red-600',
+      'default': 'bg-gray-50 text-gray-600'
+    };
+    return colors[type] || colors.default;
   };
 
   const getMessageStyles = () => {
@@ -221,6 +299,12 @@ const Wallet = () => {
             onClick={() => navigate('/p2p')}
           >
             P2P Loan
+          </button>
+          <button 
+            className="px-4 py-2.5 bg-white text-[#1A2A3A] font-semibold rounded-xl border border-[#E8EEF4] hover:border-[#1769AA] hover:text-[#1769AA] transition-colors"
+            onClick={() => navigate('/utilities')}
+          >
+            Pay Utilities
           </button>
         </div>
 
@@ -332,7 +416,10 @@ const Wallet = () => {
         {/* Transaction History */}
         <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-5 md:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <h3 className="text-base font-bold text-[#1A2A3A]">Transaction History</h3>
+            <div>
+              <h3 className="text-base font-bold text-[#1A2A3A]">Transaction History</h3>
+              <p className="text-xs text-[#94A3B8]">{totalTransactions} transactions</p>
+            </div>
             <button 
               className="p-1.5 text-[#94A3B8] hover:text-[#1769AA] transition-colors"
               onClick={fetchTransactions}
@@ -357,14 +444,10 @@ const Wallet = () => {
           ) : (
             <>
               <div className="space-y-2">
-                {transactions.map((tx, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#F8FAFC] transition-colors">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                      tx.amount > 0 ? 'bg-emerald-50' : 'bg-red-50'
-                    }`}>
-                      <span className={`text-sm font-bold ${
-                        tx.amount > 0 ? 'text-emerald-600' : 'text-red-600'
-                      }`}>
+                {transactions.slice(0, 10).map((tx, i) => (
+                  <div key={tx.id || i} className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#F8FAFC] transition-colors">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${getTransactionColor(tx.type)}`}>
+                      <span className="text-sm font-bold">
                         {getTransactionIcon(tx.type)}
                       </span>
                     </div>
@@ -376,18 +459,23 @@ const Wallet = () => {
                         <span className={`font-bold text-sm whitespace-nowrap ${
                           tx.amount > 0 ? 'text-emerald-600' : 'text-[#DC2626]'
                         }`}>
-                          {tx.amount > 0 ? '+' : ''}{formatCurrency(tx.amount)}
+                          {tx.amount > 0 ? '+' : ''}{formatCurrency(Math.abs(tx.amount))}
                         </span>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 mt-0.5 text-xs text-[#94A3B8]">
                         <span>{tx.date}</span>
+                        {tx.reference && (
+                          <span className="text-[10px] font-mono">Ref: {tx.reference}</span>
+                        )}
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
                           tx.status === 'completed' ? 'bg-emerald-50 text-emerald-600' :
                           tx.status === 'pending' ? 'bg-amber-50 text-amber-600' :
+                          tx.status === 'processing' ? 'bg-blue-50 text-blue-600' :
                           'bg-red-50 text-red-600'
                         }`}>
                           {tx.status === 'completed' ? 'Complete' :
-                           tx.status === 'pending' ? 'Pending' : 'Failed'}
+                           tx.status === 'pending' ? 'Pending' :
+                           tx.status === 'processing' ? 'Processing' : 'Failed'}
                         </span>
                       </div>
                     </div>
@@ -395,14 +483,16 @@ const Wallet = () => {
                 ))}
               </div>
 
-              <div className="text-center mt-4 pt-4 border-t border-[#F1F7FC]">
-                <button 
-                  className="text-sm font-semibold text-[#1769AA] hover:text-[#2F80C0] transition-colors"
-                  onClick={() => navigate('/wallet/history')}
-                >
-                  View All Transactions →
-                </button>
-              </div>
+              {totalTransactions > 10 && (
+                <div className="text-center mt-4 pt-4 border-t border-[#F1F7FC]">
+                  <button 
+                    className="text-sm font-semibold text-[#1769AA] hover:text-[#2F80C0] transition-colors"
+                    onClick={() => navigate('/wallet/history')}
+                  >
+                    View All Transactions ({totalTransactions}) →
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { mosqueService } from '../services/api';
 
 // Import Leaflet and OpenStreetMap components
 import L from 'leaflet';
@@ -59,6 +60,30 @@ const MosqueFinder = () => {
   const [selectedMosque, setSelectedMosque] = useState(null);
   const [isLoadingMosques, setIsLoadingMosques] = useState(false);
   const [mapCenter, setMapCenter] = useState([-1.2921, 36.8219]);
+  
+  // Favorites
+  const [favorites, setFavorites] = useState([]);
+  const [isLoadingFavorites, setIsLoadingFavorites] = useState(false);
+  
+  // Reviews
+  const [reviews, setReviews] = useState({});
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  
+  // Jumu'ah Times
+  const [jumuahTimes, setJumuahTimes] = useState({});
+  const [showJumuahModal, setShowJumuahModal] = useState(false);
+  const [jumuahForm, setJumuahForm] = useState({ khutbah: '', prayer: '', notes: '' });
+  const [isSubmittingJumuah, setIsSubmittingJumuah] = useState(false);
+  
+  // Photo Upload
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [selectedPhotoFile, setSelectedPhotoFile] = useState(null);
+  const [photoCaption, setPhotoCaption] = useState('');
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [mosquePhotos, setMosquePhotos] = useState({});
   
   // Modals
   const [showMosqueModal, setShowMosqueModal] = useState(false);
@@ -175,6 +200,11 @@ const MosqueFinder = () => {
             source: 'osm',
             osmId: el.id,
             tags: el.tags,
+            isFavorite: favorites.some(f => f.osm_id === el.id || f.mosque_name === el.tags.name),
+            photos: mosquePhotos[el.id] || [],
+            jumuahTime: jumuahTimes[el.id] || null,
+            reviews: reviews[el.id] || [],
+            averageRating: calculateAverageRating(reviews[el.id] || [])
           };
         })
         .filter(m => m.lat && m.lon)
@@ -212,13 +242,15 @@ const MosqueFinder = () => {
     const facilities = [];
     if (tags['wudu'] || tags['ablution'] || tags['handwashing']) facilities.push('Wudu Area');
     if (tags['parking'] || tags['parking:street'] === 'yes') facilities.push('Parking');
-    if (tags['women'] === 'yes' || tags['women:area'] === 'yes') facilities.push('Women\'s Section');
+    if (tags['women'] === 'yes' || tags['women:area'] === 'yes') facilities.push('Women Section');
     if (tags['wheelchair'] === 'yes') facilities.push('Wheelchair Accessible');
     if (tags['school'] === 'yes' || tags['madrasa'] === 'yes') facilities.push('Madrasa');
     if (tags['library'] === 'yes') facilities.push('Library');
     if (tags['kitchen'] === 'yes') facilities.push('Kitchen Facilities');
     if (tags['toilets'] === 'yes') facilities.push('Toilets');
     if (tags['shower'] === 'yes') facilities.push('Shower Facilities');
+    if (tags['heating'] === 'yes') facilities.push('Heating');
+    if (tags['cooling'] === 'yes' || tags['air_conditioning'] === 'yes') facilities.push('Air Conditioning');
     return facilities;
   };
 
@@ -231,6 +263,204 @@ const MosqueFinder = () => {
               Math.sin(dLon/2) * Math.sin(dLon/2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     return R * c;
+  };
+
+  const calculateAverageRating = (reviewsList) => {
+    if (!reviewsList || reviewsList.length === 0) return 0;
+    const sum = reviewsList.reduce((acc, r) => acc + r.rating, 0);
+    return parseFloat((sum / reviewsList.length).toFixed(1));
+  };
+
+  // ===== FAVORITES =====
+  const loadFavorites = async () => {
+    setIsLoadingFavorites(true);
+    try {
+      const res = await mosqueService.getFavorites();
+      setFavorites(res.data.favorites || []);
+    } catch (err) {
+      console.error('Failed to load favorites:', err);
+    } finally {
+      setIsLoadingFavorites(false);
+    }
+  };
+
+  const toggleFavorite = async (mosque) => {
+    try {
+      const isFav = favorites.some(f => f.osm_id === mosque.id || f.mosque_name === mosque.name);
+      
+      if (isFav) {
+        const fav = favorites.find(f => f.osm_id === mosque.id || f.mosque_name === mosque.name);
+        await mosqueService.removeFavorite(fav.id);
+        setFavorites(favorites.filter(f => f.id !== fav.id));
+        setSuccess('Removed from favorites');
+      } else {
+        const res = await mosqueService.addFavorite({
+          osm_id: mosque.id,
+          mosque_name: mosque.name,
+          latitude: mosque.lat,
+          longitude: mosque.lon,
+          address: mosque.address,
+          city: mosque.city
+        });
+        setFavorites([...favorites, { ...res.data.favorite, osm_id: mosque.id }]);
+        setSuccess('Added to favorites');
+      }
+      
+      // Update mosque list
+      setMosques(mosques.map(m => {
+        if (m.id === mosque.id) {
+          return { ...m, isFavorite: !isFav };
+        }
+        return m;
+      }));
+      
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError('Failed to update favorites');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
+  // ===== REVIEWS =====
+  const loadReviews = async (mosqueId) => {
+    try {
+      const res = await mosqueService.getReviews(mosqueId);
+      setReviews(prev => ({ ...prev, [mosqueId]: res.data.reviews || [] }));
+    } catch (err) {
+      console.error('Failed to load reviews:', err);
+    }
+  };
+
+  const submitReview = async () => {
+    if (!selectedMosque) return;
+    setIsSubmittingReview(true);
+    
+    try {
+      const res = await mosqueService.addReview({
+        mosque_id: selectedMosque.id,
+        rating: reviewRating,
+        comment: reviewComment
+      });
+      
+      // Add review locally
+      const newReview = {
+        id: res.data.reviewId || 'local-' + Date.now(),
+        rating: reviewRating,
+        comment: reviewComment,
+        user_name: 'You',
+        createdat: new Date().toISOString()
+      };
+      
+      setReviews(prev => ({
+        ...prev,
+        [selectedMosque.id]: [newReview, ...(prev[selectedMosque.id] || [])]
+      }));
+      
+      // Update mosque average rating
+      setMosques(mosques.map(m => {
+        if (m.id === selectedMosque.id) {
+          const allReviews = [...(reviews[selectedMosque.id] || []), newReview];
+          return { ...m, averageRating: calculateAverageRating(allReviews) };
+        }
+        return m;
+      }));
+      
+      setShowReviewModal(false);
+      setReviewRating(5);
+      setReviewComment('');
+      setSuccess('Review submitted successfully');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError('Failed to submit review');
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
+  // ===== JUMU'AH TIMES =====
+  const loadJumuahTimes = async (mosqueId) => {
+    try {
+      const res = await mosqueService.getJumuahTimes(mosqueId);
+      if (res.data.jumuah) {
+        setJumuahTimes(prev => ({ ...prev, [mosqueId]: res.data.jumuah }));
+      }
+    } catch (err) {
+      console.error('Failed to load Jumuah times:', err);
+    }
+  };
+
+  const submitJumuahTime = async () => {
+    if (!selectedMosque) return;
+    setIsSubmittingJumuah(true);
+    
+    try {
+      const res = await mosqueService.addJumuahTime({
+        mosque_id: selectedMosque.id,
+        khutbah: jumuahForm.khutbah,
+        prayer: jumuahForm.prayer,
+        notes: jumuahForm.notes
+      });
+      
+      setJumuahTimes(prev => ({
+        ...prev,
+        [selectedMosque.id]: {
+          khutbah: jumuahForm.khutbah,
+          prayer: jumuahForm.prayer,
+          notes: jumuahForm.notes,
+          id: res.data.jumuahId
+        }
+      }));
+      
+      setShowJumuahModal(false);
+      setJumuahForm({ khutbah: '', prayer: '', notes: '' });
+      setSuccess('Jumuah times updated successfully');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError('Failed to update Jumuah times');
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setIsSubmittingJumuah(false);
+    }
+  };
+
+  // ===== PHOTO UPLOAD =====
+  const uploadPhoto = async () => {
+    if (!selectedMosque || !selectedPhotoFile) return;
+    setIsUploadingPhoto(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append('mosque_id', selectedMosque.id);
+      formData.append('photo', selectedPhotoFile);
+      formData.append('caption', photoCaption);
+      
+      const res = await mosqueService.uploadPhoto(formData);
+      
+      const newPhoto = {
+        id: res.data.photoId || 'local-' + Date.now(),
+        url: URL.createObjectURL(selectedPhotoFile),
+        caption: photoCaption,
+        uploaded_by: 'You',
+        createdat: new Date().toISOString()
+      };
+      
+      setMosquePhotos(prev => ({
+        ...prev,
+        [selectedMosque.id]: [...(prev[selectedMosque.id] || []), newPhoto]
+      }));
+      
+      setShowPhotoModal(false);
+      setSelectedPhotoFile(null);
+      setPhotoCaption('');
+      setSuccess('Photo uploaded successfully');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError('Failed to upload photo');
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setIsUploadingPhoto(false);
+    }
   };
 
   // ===== MAP FUNCTIONS =====
@@ -272,22 +502,26 @@ const MosqueFinder = () => {
       .openPopup();
   };
 
-  const addMarkers = (mosques, centerLat, centerLon) => {
+  const addMarkers = (mosquesList, centerLat, centerLon) => {
     if (!mapRef.current) return;
     
     const mosqueIcon = createMosqueIcon();
     
-    mosques.forEach(mosque => {
+    mosquesList.forEach(mosque => {
+      const popupContent = `
+        <div class="p-2 max-w-[220px]">
+          <strong class="text-sm text-[#1A2A3A] block">${mosque.name}</strong>
+          ${mosque.distance ? `<span class="text-[#1769AA] font-medium text-xs">${mosque.distance.toFixed(1)} km away</span>` : ''}
+          ${mosque.address ? `<br><span class="text-[#94A3B8] text-xs">${mosque.address}</span>` : ''}
+          ${mosque.averageRating > 0 ? `<br><span class="text-xs">⭐ ${mosque.averageRating} (${(reviews[mosque.id] || []).length} reviews)</span>` : ''}
+          ${mosque.isFavorite ? '<br><span class="text-xs text-[#E8C96A]">❤️ Saved</span>' : ''}
+          <br><button onclick="window.selectMosque(${mosque.id})" class="mt-2 px-3 py-1 bg-[#1769AA] text-white text-xs font-medium rounded-lg hover:bg-[#2F80C0] transition-colors cursor-pointer border-none">View Details</button>
+        </div>
+      `;
+      
       const marker = L.marker([mosque.lat, mosque.lon], { icon: mosqueIcon })
         .addTo(mapRef.current)
-        .bindPopup(`
-          <div class="p-1">
-            <strong class="text-sm text-[#1A2A3A]">${mosque.name}</strong>
-            ${mosque.distance ? `<br><span class="text-[#1769AA] font-medium text-xs">${mosque.distance.toFixed(1)} km away</span>` : ''}
-            ${mosque.address ? `<br><span class="text-[#94A3B8] text-xs">${mosque.address}</span>` : ''}
-            <br><button onclick="window.selectMosque(${mosque.id})" class="mt-1.5 px-3 py-1 bg-[#1769AA] text-white text-xs font-medium rounded-lg hover:bg-[#2F80C0] transition-colors cursor-pointer border-none">View Details</button>
-          </div>
-        `, { className: 'mosque-popup' });
+        .bindPopup(popupContent, { className: 'mosque-popup' });
       
       marker.mosqueData = mosque;
       markersRef.current.push(marker);
@@ -354,9 +588,13 @@ const MosqueFinder = () => {
     }
   };
 
-  const handleSelectMosque = (mosque) => {
+  const handleSelectMosque = async (mosque) => {
     setSelectedMosque(mosque);
     setShowMosqueModal(true);
+    
+    // Load additional data
+    await loadReviews(mosque.id);
+    await loadJumuahTimes(mosque.id);
     
     if (mapRef.current) {
       mapRef.current.setView([mosque.lat, mosque.lon], 16);
@@ -383,8 +621,23 @@ const MosqueFinder = () => {
     }
   };
 
+  const renderStars = (rating) => {
+    const fullStars = Math.floor(rating);
+    const halfStar = rating % 1 >= 0.5;
+    const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+    
+    let stars = '';
+    for (let i = 0; i < fullStars; i++) stars += '⭐';
+    if (halfStar) stars += '⭐';
+    for (let i = 0; i < emptyStars; i++) stars += '☆';
+    
+    return stars || '☆☆☆☆☆';
+  };
+
   // ===== EFFECTS =====
   useEffect(() => {
+    loadFavorites();
+    
     const initMap = () => {
       if (!mapContainerRef.current) return;
       if (mapRef.current) return;
@@ -403,8 +656,6 @@ const MosqueFinder = () => {
     }
     
     const timer = setTimeout(initMap, 1000);
-    
-    // Set loading to false after initialization
     setLoading(false);
     
     return () => {
@@ -463,12 +714,15 @@ const MosqueFinder = () => {
                 Find Mosques Near You
               </h1>
               <p className="text-white/70 text-sm mt-2 max-w-lg">
-                Discover mosques in your area using OpenStreetMap data. Search by location or use your current position.
+                Discover mosques, save favorites, add reviews, and share Jumuah times.
               </p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <span className="text-xs font-semibold text-[#E8C96A] bg-white/10 px-3 py-1.5 rounded-full border border-white/10">
                 {mosques.length} Mosques Found
+              </span>
+              <span className="text-xs font-semibold text-white/70 bg-white/10 px-3 py-1.5 rounded-full border border-white/10">
+                ❤️ {favorites.length} Saved
               </span>
             </div>
           </div>
@@ -625,7 +879,13 @@ const MosqueFinder = () => {
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <h4 className="font-semibold text-[#1A2A3A] text-sm">{mosque.name}</h4>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-semibold text-[#1A2A3A] text-sm">{mosque.name}</h4>
+                              {mosque.isFavorite && <span className="text-xs">❤️</span>}
+                              {mosque.averageRating > 0 && (
+                                <span className="text-xs text-[#E8C96A]">⭐ {mosque.averageRating}</span>
+                              )}
+                            </div>
                             {mosque.address && (
                               <p className="text-xs text-[#94A3B8]">{mosque.address}</p>
                             )}
@@ -635,6 +895,11 @@ const MosqueFinder = () => {
                             {mosque.distance !== null && (
                               <p className="text-xs text-[#1769AA] font-medium mt-1">
                                 {formatDistance(mosque.distance)} away
+                              </p>
+                            )}
+                            {mosque.jumuahTime && (
+                              <p className="text-xs text-emerald-600 mt-0.5">
+                                🕌 Jumuah: {mosque.jumuahTime.khutbah || 'Call to prayer'} - {mosque.jumuahTime.prayer || 'Prayer'}
                               </p>
                             )}
                           </div>
@@ -695,7 +960,10 @@ const MosqueFinder = () => {
                     className="p-4 rounded-xl border border-[#E8EEF4] hover:border-[#1769AA]/40 hover:shadow-md transition-all duration-200 cursor-pointer"
                     onClick={() => handleSelectMosque(mosque)}
                   >
-                    <h4 className="font-bold text-[#1A2A3A]">{mosque.name}</h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-bold text-[#1A2A3A]">{mosque.name}</h4>
+                      {mosque.isFavorite && <span className="text-sm">❤️</span>}
+                    </div>
                     {mosque.address && (
                       <p className="text-sm text-[#94A3B8] mt-1">{mosque.address}</p>
                     )}
@@ -705,6 +973,17 @@ const MosqueFinder = () => {
                     {mosque.distance !== null && (
                       <p className="text-sm text-[#1769AA] font-medium mt-2">
                         {formatDistance(mosque.distance)} away
+                      </p>
+                    )}
+                    {mosque.averageRating > 0 && (
+                      <p className="text-sm mt-1">
+                        <span className="text-[#E8C96A]">⭐ {mosque.averageRating}</span>
+                        <span className="text-[#94A3B8] text-xs ml-1">({(reviews[mosque.id] || []).length} reviews)</span>
+                      </p>
+                    )}
+                    {mosque.jumuahTime && (
+                      <p className="text-xs text-emerald-600 mt-1">
+                        🕌 Jumuah: {mosque.jumuahTime.khutbah || 'Call to prayer'}
                       </p>
                     )}
                     <div className="flex flex-wrap gap-2 mt-3">
@@ -740,13 +1019,35 @@ const MosqueFinder = () => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="p-6 border-b border-[#F1F7FC] flex justify-between items-center">
-              <h3 className="text-lg font-bold text-[#1A2A3A]">{selectedMosque.name}</h3>
-              <button className="text-[#94A3B8] hover:text-[#1A2A3A] transition-colors" onClick={() => setShowMosqueModal(false)}>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-bold text-[#1A2A3A]">{selectedMosque.name}</h3>
+                <button
+                  className="text-xl hover:scale-110 transition-transform"
+                  onClick={() => toggleFavorite(selectedMosque)}
+                >
+                  {selectedMosque.isFavorite ? '❤️' : '🤍'}
+                </button>
+              </div>
+              <button 
+                className="text-[#94A3B8] hover:text-[#1A2A3A] transition-colors text-xl"
+                onClick={() => setShowMosqueModal(false)}
+              >
                 ✕
               </button>
             </div>
             
             <div className="p-6 space-y-4">
+              {/* Rating Display */}
+              {selectedMosque.averageRating > 0 && (
+                <div className="bg-[#F1F7FC] rounded-xl p-3 text-center">
+                  <div className="text-2xl">{renderStars(selectedMosque.averageRating)}</div>
+                  <p className="text-sm text-[#94A3B8]">
+                    {selectedMosque.averageRating} out of 5 · {(reviews[selectedMosque.id] || []).length} reviews
+                  </p>
+                </div>
+              )}
+
+              {/* Basic Info */}
               <div className="bg-[#F1F7FC] rounded-xl p-4 space-y-2">
                 {selectedMosque.address && (
                   <div className="flex justify-between text-sm">
@@ -784,8 +1085,27 @@ const MosqueFinder = () => {
                     <span className="font-semibold text-[#1A2A3A] text-right max-w-[60%]">{selectedMosque.openingHours}</span>
                   </div>
                 )}
+                {selectedMosque.jumuahTime && (
+                  <>
+                    <div className="flex justify-between text-sm pt-2 border-t border-[#E8EEF4]">
+                      <span className="text-[#94A3B8]">Jumuah Khutbah</span>
+                      <span className="font-semibold text-emerald-600">{selectedMosque.jumuahTime.khutbah || 'Not specified'}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#94A3B8]">Jumuah Prayer</span>
+                      <span className="font-semibold text-emerald-600">{selectedMosque.jumuahTime.prayer || 'Not specified'}</span>
+                    </div>
+                    {selectedMosque.jumuahTime.notes && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-[#94A3B8]">Notes</span>
+                        <span className="font-semibold text-[#1A2A3A] text-right max-w-[60%]">{selectedMosque.jumuahTime.notes}</span>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
+              {/* Facilities */}
               {selectedMosque.facilities && selectedMosque.facilities.length > 0 && (
                 <div className="bg-[#F1F7FC] rounded-xl p-4">
                   <h4 className="text-sm font-semibold text-[#1A2A3A] mb-2">Facilities</h4>
@@ -799,13 +1119,38 @@ const MosqueFinder = () => {
                 </div>
               )}
 
-              <div className="bg-[#F1F7FC] rounded-xl p-4">
-                <h4 className="text-sm font-semibold text-[#1A2A3A] mb-2">Source</h4>
-                <p className="text-xs text-[#94A3B8]">Data provided by OpenStreetMap</p>
-                <p className="text-xs text-[#94A3B8]">OSM ID: {selectedMosque.osmId}</p>
-              </div>
+              {/* Photos */}
+              {(mosquePhotos[selectedMosque.id] || []).length > 0 && (
+                <div className="bg-[#F1F7FC] rounded-xl p-4">
+                  <h4 className="text-sm font-semibold text-[#1A2A3A] mb-2">Photos</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(mosquePhotos[selectedMosque.id] || []).slice(0, 6).map((photo, i) => (
+                      <img key={i} src={photo.url} alt={photo.caption || 'Mosque photo'} className="w-full h-20 object-cover rounded-lg" />
+                    ))}
+                  </div>
+                </div>
+              )}
 
-              <div className="flex gap-3">
+              {/* Reviews */}
+              {(reviews[selectedMosque.id] || []).length > 0 && (
+                <div className="bg-[#F1F7FC] rounded-xl p-4">
+                  <h4 className="text-sm font-semibold text-[#1A2A3A] mb-2">Reviews</h4>
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {(reviews[selectedMosque.id] || []).slice(0, 3).map((review, i) => (
+                      <div key={i} className="bg-white rounded-lg p-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs">{renderStars(review.rating)}</span>
+                          <span className="text-xs font-medium text-[#1A2A3A]">{review.user_name || 'Anonymous'}</span>
+                        </div>
+                        {review.comment && <p className="text-xs text-[#5A6A7A] mt-1">{review.comment}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-2">
                 <button
                   className="flex-1 px-4 py-2.5 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200"
                   onClick={() => handleGetDirections(selectedMosque)}
@@ -813,12 +1158,164 @@ const MosqueFinder = () => {
                   Get Directions
                 </button>
                 <button
-                  className="flex-1 px-4 py-2.5 bg-white text-[#5A6A7A] font-semibold rounded-xl border border-[#E8EEF4] hover:border-[#1769AA] hover:text-[#1769AA] transition-all duration-200"
-                  onClick={() => setShowMosqueModal(false)}
+                  className="px-4 py-2.5 bg-[#F1F7FC] text-[#5A6A7A] font-semibold rounded-xl hover:bg-[#E8EEF4] transition-all duration-200"
+                  onClick={() => { setShowReviewModal(true); setShowMosqueModal(false); }}
                 >
-                  Close
+                  ⭐ Review
+                </button>
+                <button
+                  className="px-4 py-2.5 bg-[#F1F7FC] text-[#5A6A7A] font-semibold rounded-xl hover:bg-[#E8EEF4] transition-all duration-200"
+                  onClick={() => { setShowJumuahModal(true); setShowMosqueModal(false); }}
+                >
+                  🕌 Jumuah
+                </button>
+                <button
+                  className="px-4 py-2.5 bg-[#F1F7FC] text-[#5A6A7A] font-semibold rounded-xl hover:bg-[#E8EEF4] transition-all duration-200"
+                  onClick={() => { setShowPhotoModal(true); setShowMosqueModal(false); }}
+                >
+                  📸 Photo
                 </button>
               </div>
+
+              <div className="bg-[#F1F7FC] rounded-xl p-3">
+                <p className="text-xs text-[#94A3B8]">Data provided by OpenStreetMap · OSM ID: {selectedMosque.osmId}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== REVIEW MODAL ===== */}
+      {showReviewModal && selectedMosque && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl">
+            <div className="p-6 border-b border-[#F1F7FC] flex justify-between items-center">
+              <h3 className="text-lg font-bold text-[#1A2A3A]">Review {selectedMosque.name}</h3>
+              <button className="text-[#94A3B8] hover:text-[#1A2A3A] transition-colors text-xl" onClick={() => setShowReviewModal(false)}>✕</button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="text-sm font-semibold text-[#1A2A3A] block mb-2">Rating</label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      className={`text-3xl transition-transform hover:scale-110 ${reviewRating >= star ? '' : 'opacity-30'}`}
+                      onClick={() => setReviewRating(star)}
+                    >
+                      ⭐
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-[#1A2A3A] block mb-2">Comment</label>
+                <textarea
+                  className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                  rows="3"
+                  placeholder="Share your experience..."
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                />
+              </div>
+              <button
+                className="w-full py-3 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200 disabled:opacity-60"
+                onClick={submitReview}
+                disabled={isSubmittingReview}
+              >
+                {isSubmittingReview ? 'Submitting...' : 'Submit Review'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== JUMUAH TIMES MODAL ===== */}
+      {showJumuahModal && selectedMosque && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl">
+            <div className="p-6 border-b border-[#F1F7FC] flex justify-between items-center">
+              <h3 className="text-lg font-bold text-[#1A2A3A]">Jumuah Times for {selectedMosque.name}</h3>
+              <button className="text-[#94A3B8] hover:text-[#1A2A3A] transition-colors text-xl" onClick={() => setShowJumuahModal(false)}>✕</button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="text-sm font-semibold text-[#1A2A3A] block mb-2">Khutbah (Call to Prayer)</label>
+                <input
+                  type="text"
+                  className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                  placeholder="e.g., 12:30 PM"
+                  value={jumuahForm.khutbah}
+                  onChange={(e) => setJumuahForm({ ...jumuahForm, khutbah: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-[#1A2A3A] block mb-2">Prayer Time</label>
+                <input
+                  type="text"
+                  className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                  placeholder="e.g., 1:00 PM"
+                  value={jumuahForm.prayer}
+                  onChange={(e) => setJumuahForm({ ...jumuahForm, prayer: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-[#1A2A3A] block mb-2">Additional Notes</label>
+                <input
+                  type="text"
+                  className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                  placeholder="e.g., Two khutbahs, parking available"
+                  value={jumuahForm.notes}
+                  onChange={(e) => setJumuahForm({ ...jumuahForm, notes: e.target.value })}
+                />
+              </div>
+              <button
+                className="w-full py-3 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200 disabled:opacity-60"
+                onClick={submitJumuahTime}
+                disabled={isSubmittingJumuah}
+              >
+                {isSubmittingJumuah ? 'Saving...' : 'Save Jumuah Times'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== PHOTO UPLOAD MODAL ===== */}
+      {showPhotoModal && selectedMosque && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl">
+            <div className="p-6 border-b border-[#F1F7FC] flex justify-between items-center">
+              <h3 className="text-lg font-bold text-[#1A2A3A]">Upload Photo for {selectedMosque.name}</h3>
+              <button className="text-[#94A3B8] hover:text-[#1A2A3A] transition-colors text-xl" onClick={() => setShowPhotoModal(false)}>✕</button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="text-sm font-semibold text-[#1A2A3A] block mb-2">Select Photo</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                  onChange={(e) => setSelectedPhotoFile(e.target.files[0])}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-[#1A2A3A] block mb-2">Caption</label>
+                <input
+                  type="text"
+                  className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                  placeholder="e.g., Main prayer hall"
+                  value={photoCaption}
+                  onChange={(e) => setPhotoCaption(e.target.value)}
+                />
+              </div>
+              <button
+                className="w-full py-3 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200 disabled:opacity-60"
+                onClick={uploadPhoto}
+                disabled={!selectedPhotoFile || isUploadingPhoto}
+              >
+                {isUploadingPhoto ? 'Uploading...' : 'Upload Photo'}
+              </button>
             </div>
           </div>
         </div>

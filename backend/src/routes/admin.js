@@ -2,7 +2,7 @@ const router = require('express').Router();
 const jwt = require('jsonwebtoken');
 const { Client } = require('pg');
 const bcrypt = require('bcryptjs');
-const { v4: uuidv4 } =require('uuid');
+const { v4: uuidv4 } = require('uuid');
 const { authenticate, authorize } = require('../middleware/auth');
 
 let client;
@@ -94,6 +94,10 @@ router.get('/stats', async (req, res) => {
         (SELECT COUNT(*) FROM bookings) as total_bookings,
         (SELECT COUNT(*) FROM products) as total_products,
         (SELECT COUNT(*) FROM listings) as total_listings,
+        (SELECT COUNT(*) FROM consultation_bookings) as total_consultations,
+        (SELECT COUNT(*) FROM consultation_bookings WHERE status = 'pending') as pending_consultations,
+        (SELECT COUNT(*) FROM consultation_bookings WHERE status = 'confirmed') as confirmed_consultations,
+        (SELECT COUNT(*) FROM consultation_bookings WHERE status = 'completed') as completed_consultations,
         (SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE status = 'completed') as total_revenue
     `);
     
@@ -106,32 +110,47 @@ router.get('/stats', async (req, res) => {
 });
 
 // ============================================================
-// 3. GET ALL USERS (with filters)
+// 3. GET ALL USERS (with filters including sub_role)
 // ============================================================
 router.get('/users', async (req, res) => {
   try {
     const db = await getClient();
-    const { role, status, limit = 100 } = req.query;
+    const { role, status, sub_role, limit = 100 } = req.query;
     
-    let query = 'SELECT * FROM users';
+    let query = `
+      SELECT 
+        u.*,
+        i.sub_role as imam_sub_role,
+        i.mosque_name,
+        i.mosque_location,
+        i.is_verified as imam_verified,
+        i.status as imam_profile_status
+      FROM users u
+      LEFT JOIN imams i ON u.id = i.user_id
+    `;
     const params = [];
     const conditions = [];
     
     if (role) {
-      conditions.push(`role = $${params.length + 1}`);
+      conditions.push(`u.role = $${params.length + 1}`);
       params.push(role);
     }
     
     if (status) {
-      conditions.push(`vendor_status = $${params.length + 1} OR imam_status = $${params.length + 1}`);
+      conditions.push(`(u.vendor_status = $${params.length + 1} OR u.imam_status = $${params.length + 1})`);
       params.push(status);
+    }
+    
+    if (sub_role) {
+      conditions.push(`i.sub_role = $${params.length + 1}`);
+      params.push(sub_role);
     }
     
     if (conditions.length > 0) {
       query += ' WHERE ' + conditions.join(' AND ');
     }
     
-    query += ` ORDER BY createdat DESC LIMIT ${parseInt(limit)}`;
+    query += ` ORDER BY u.createdat DESC LIMIT ${parseInt(limit)}`;
     
     const result = await db.query(query, params);
     res.json({ success: true, users: result.rows });
@@ -148,7 +167,18 @@ router.get('/users', async (req, res) => {
 router.get('/users/:id', async (req, res) => {
   try {
     const db = await getClient();
-    const result = await db.query('SELECT * FROM users WHERE id = $1', [req.params.id]);
+    const result = await db.query(`
+      SELECT 
+        u.*,
+        i.sub_role as imam_sub_role,
+        i.mosque_name,
+        i.mosque_location,
+        i.is_verified as imam_verified,
+        i.status as imam_profile_status
+      FROM users u
+      LEFT JOIN imams i ON u.id = i.user_id
+      WHERE u.id = $1
+    `, [req.params.id]);
     
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
@@ -257,7 +287,7 @@ router.put('/users/:id/kyc', async (req, res) => {
 });
 
 // ============================================================
-// 7. GET PENDING VENDORS (FIXED - includes user_id)
+// 7. GET PENDING VENDORS
 // ============================================================
 router.get('/pending-vendors', async (req, res) => {
   try {
@@ -344,7 +374,7 @@ router.put('/vendors/:id/verify', async (req, res) => {
 });
 
 // ============================================================
-// 9. GET PENDING IMAMS (FIXED - includes user_id)
+// 9. GET PENDING IMAMS (including Kadhis)
 // ============================================================
 router.get('/pending-imams', async (req, res) => {
   try {
@@ -366,7 +396,7 @@ router.get('/pending-imams', async (req, res) => {
 });
 
 // ============================================================
-// 10. APPROVE OR REJECT IMAM
+// 10. APPROVE OR REJECT IMAM (also handles Kadhi)
 // ============================================================
 router.put('/imams/:id/verify', async (req, res) => {
   try {
@@ -399,6 +429,25 @@ router.put('/imams/:id/verify', async (req, res) => {
       WHERE user_id = $4
     `, [status === 'approved', status, admin_notes || null, imamId]);
     
+    // If approved and sub_role is kadhi, also update kadhis table
+    if (status === 'approved') {
+      const imamResult = await db.query(`
+        SELECT sub_role FROM imams WHERE user_id = $1
+      `, [imamId]);
+      
+      if (imamResult.rows.length > 0 && imamResult.rows[0].sub_role === 'kadhi') {
+        await db.query(`
+          UPDATE kadhis SET available = true, verified = true WHERE user_id = $1
+        `, [imamId]);
+      }
+    }
+    
+    const roleLabel = await db.query(`
+      SELECT sub_role FROM imams WHERE user_id = $1
+    `, [imamId]);
+    
+    const label = roleLabel.rows.length > 0 && roleLabel.rows[0].sub_role === 'kadhi' ? 'Kadhi' : 'Imam';
+    
     const notificationId = uuidv4();
     await db.query(`
       INSERT INTO notifications (id, user_id, title, message, type, createdat)
@@ -406,15 +455,15 @@ router.put('/imams/:id/verify', async (req, res) => {
     `, [
       notificationId, 
       imamId, 
-      status === 'approved' ? 'Imam Application Approved' : 'Imam Application Rejected',
+      status === 'approved' ? `${label} Application Approved` : `${label} Application Rejected`,
       status === 'approved' 
-        ? 'Your imam application has been approved. You can now manage your profile and receive support.' 
-        : `Your imam application has been rejected. ${admin_notes || 'Please contact support for more details.'}`
+        ? `Your ${label.toLowerCase()} application has been approved. You can now manage your profile and serve the community.` 
+        : `Your ${label.toLowerCase()} application has been rejected. ${admin_notes || 'Please contact support for more details.'}`
     ]);
     
     res.json({ 
       success: true, 
-      message: `Imam ${status} successfully`,
+      message: `${label} ${status} successfully`,
       imam: result.rows[0]
     });
     
@@ -457,12 +506,12 @@ router.get('/vendors', async (req, res) => {
 });
 
 // ============================================================
-// 12. GET ALL IMAMS
+// 12. GET ALL IMAMS (including Kadhis with sub_role filter)
 // ============================================================
 router.get('/imams', async (req, res) => {
   try {
     const db = await getClient();
-    const { status } = req.query;
+    const { status, sub_role } = req.query;
     
     let query = `
       SELECT u.*, i.*
@@ -475,6 +524,11 @@ router.get('/imams', async (req, res) => {
     if (status) {
       query += ` AND u.imam_status = $${params.length + 1}`;
       params.push(status);
+    }
+    
+    if (sub_role) {
+      query += ` AND i.sub_role = $${params.length + 1}`;
+      params.push(sub_role);
     }
     
     query += ' ORDER BY u.createdat DESC';
@@ -633,7 +687,7 @@ router.get('/orders', async (req, res) => {
 });
 
 // ============================================================
-// 16. GET ALL BOOKINGS
+// 16. GET ALL BOOKINGS (HalalStay bookings)
 // ============================================================
 router.get('/bookings', async (req, res) => {
   try {
@@ -671,7 +725,87 @@ router.get('/bookings', async (req, res) => {
 });
 
 // ============================================================
-// 17. GET SYSTEM OVERVIEW
+// 17. GET CONSULTATION BOOKINGS (Kadhi bookings)
+// ============================================================
+router.get('/consultations', async (req, res) => {
+  try {
+    const db = await getClient();
+    const { status, kadhi_id, limit = 100 } = req.query;
+    
+    let query = `
+      SELECT 
+        cb.*,
+        u.fullname as user_name,
+        u.email as user_email,
+        u.phone as user_phone,
+        k.name as kadhi_name,
+        k.type as kadhi_type,
+        k.county as kadhi_county
+      FROM consultation_bookings cb
+      LEFT JOIN users u ON cb.user_id = u.id
+      LEFT JOIN kadhis k ON cb.kadhi_id = k.id
+      WHERE 1=1
+    `;
+    const params = [];
+    
+    if (status) {
+      query += ` AND cb.status = $${params.length + 1}`;
+      params.push(status);
+    }
+    
+    if (kadhi_id) {
+      query += ` AND cb.kadhi_id = $${params.length + 1}`;
+      params.push(kadhi_id);
+    }
+    
+    query += ` ORDER BY cb.booking_date DESC, cb.booking_time DESC LIMIT ${parseInt(limit)}`;
+    
+    const result = await db.query(query, params);
+    
+    res.json({ 
+      success: true, 
+      consultations: result.rows 
+    });
+    
+  } catch (err) {
+    console.error('Error fetching consultations:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// 18. GET CONSULTATION STATS
+// ============================================================
+router.get('/consultations/stats', async (req, res) => {
+  try {
+    const db = await getClient();
+    
+    const result = await db.query(`
+      SELECT 
+        COUNT(*) as total,
+        COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
+        COUNT(CASE WHEN status = 'confirmed' THEN 1 END) as confirmed,
+        COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed,
+        COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled,
+        COUNT(CASE WHEN type = 'video' THEN 1 END) as video_bookings,
+        COUNT(CASE WHEN type = 'in-person' THEN 1 END) as in_person_bookings,
+        COUNT(CASE WHEN type = 'phone' THEN 1 END) as phone_bookings
+      FROM consultation_bookings
+    `);
+    
+    res.json({ 
+      success: true, 
+      stats: result.rows[0] 
+    });
+    
+  } catch (err) {
+    console.error('Error fetching consultation stats:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// 19. GET SYSTEM OVERVIEW
 // ============================================================
 router.get('/overview', async (req, res) => {
   try {
@@ -686,6 +820,7 @@ router.get('/overview', async (req, res) => {
         (SELECT COUNT(*) FROM listings) as total_listings,
         (SELECT COUNT(*) FROM orders WHERE status = 'pending') as pending_orders,
         (SELECT COUNT(*) FROM bookings WHERE status = 'pending') as pending_bookings,
+        (SELECT COUNT(*) FROM consultation_bookings WHERE status = 'pending') as pending_consultations,
         (SELECT COUNT(*) FROM reviews) as total_reviews,
         (SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE status = 'completed') as total_revenue,
         (SELECT COALESCE(SUM(total_contributions), 0) FROM pension_balances) as total_pension_fund
@@ -700,7 +835,7 @@ router.get('/overview', async (req, res) => {
 });
 
 // ============================================================
-// 18. GET USER TRANSACTIONS
+// 20. GET USER TRANSACTIONS
 // ============================================================
 router.get('/users/:userId/transactions', async (req, res) => {
   try {

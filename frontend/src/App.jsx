@@ -7,6 +7,7 @@ import Navbar from './components/Navbar';
 import Dashboard from './components/Dashboard';
 import VendorDashboard from './components/VendorDashboard';
 import ImamDashboard from './components/ImamDashboard';
+import KadhiDashboard from './components/KadhiDashboard';
 import Wallet from './components/Wallet';
 import Zakat from './components/Zakat';
 import Sadaqa from './components/Sadaqa';
@@ -30,6 +31,7 @@ import KYCStatus from './components/KYCStatus';
 import AdminPanel from './components/AdminPanel';
 import ChatBot from './components/ChatBot';
 import PaymentModal from './components/PaymentModal';
+import VideoCall from './components/VideoCall';
 
 // Registration Components
 import RegisterRole from './components/RegisterRole';
@@ -73,6 +75,8 @@ function App() {
   const handleLogout = () => {
     localStorage.removeItem('halalhub_token');
     localStorage.removeItem('halalhub_user');
+    localStorage.removeItem('halalhub_role');
+    localStorage.removeItem('halalhub_subrole');
     setIsAuthenticated(false);
     setUser(null);
   };
@@ -82,6 +86,10 @@ function App() {
       return <VendorDashboard user={user} />;
     }
     if (user?.role === 'imam') {
+      const subRole = localStorage.getItem('halalhub_subrole');
+      if (subRole === 'kadhi') {
+        return <KadhiDashboard />;
+      }
       return <ImamDashboard />;
     }
     return <Dashboard user={user} />;
@@ -96,8 +104,8 @@ function App() {
               <span className="text-3xl font-bold text-white">H</span>
             </div>
           </div>
-          <div className="font-arabic text-4xl text-white/90">هَلَال هَبْ</div>
-          <div className="font-heading text-2xl text-white/80 mt-1">HalalHub</div>
+          <div className="text-4xl text-white/90">هَلَال هَبْ</div>
+          <div className="text-2xl text-white/80 mt-1">HalalHub</div>
           <div className="mt-4 flex items-center justify-center gap-2">
             <div className="w-2 h-2 rounded-full bg-white/60 animate-bounce" style={{ animationDelay: '0ms' }} />
             <div className="w-2 h-2 rounded-full bg-white/60 animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -147,6 +155,9 @@ function App() {
               <Route path="/imam/:id" element={<ImamProfile />} />
               <Route path="/imam-dashboard" element={<ImamDashboard />} />
               
+              {/* Kadhi Dashboard */}
+              <Route path="/kadhi-dashboard" element={<KadhiDashboard />} />
+              
               {/* Independent Mosque Finder */}
               <Route path="/mosque-finder" element={<MosqueFinder />} />
               
@@ -161,6 +172,10 @@ function App() {
               <Route path="/about" element={<About />} />
               <Route path="/kyc-status" element={<KYCStatus />} />
               <Route path="/admin" element={<AdminPanel />} />
+              
+              {/* Video Call Route */}
+              <Route path="/video-call/:bookingId" element={<VideoCall />} />
+              
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </main>

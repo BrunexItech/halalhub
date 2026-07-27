@@ -30,11 +30,14 @@ const ImamRegister = () => {
     nationalId: '',
     pin: '',
     title: 'Imam',
+    subRole: 'imam',
     mosqueName: '',
     mosqueLocation: '',
     mosqueCounty: '',
     qualifications: '',
     yearsOfService: '',
+    institution: '',
+    bio: '',
     region: '',
     subCounty: '',
     ward: '',
@@ -163,15 +166,19 @@ const ImamRegister = () => {
       setError('Please fill in all required fields. PIN must be at least 4 digits.');
       return;
     }
-    if (step === 2 && (!formData.mosqueName || !formData.mosqueLocation)) {
+    if (step === 2 && (!formData.subRole)) {
+      setError('Please select your role (Imam or Kadhi)');
+      return;
+    }
+    if (step === 3 && (!formData.mosqueName || !formData.mosqueLocation)) {
       setError('Please fill in all required fields');
       return;
     }
-    if (step === 3 && (!formData.qualifications)) {
+    if (step === 4 && (!formData.qualifications)) {
       setError('Please enter your qualifications');
       return;
     }
-    if (step === 4 && (!formData.termsAccepted)) {
+    if (step === 5 && (!formData.termsAccepted)) {
       setError('Please accept the terms and conditions');
       return;
     }
@@ -206,7 +213,7 @@ const ImamRegister = () => {
         return;
       }
 
-      // Register Imam
+      // Register Religious Leader (Imam or Kadhi)
       await authService.registerImam({
         fullName: formData.fullName,
         phone: formData.phone,
@@ -214,19 +221,23 @@ const ImamRegister = () => {
         nationalId: formData.nationalId,
         pin: formData.pin,
         title: formData.title || 'Imam',
+        subRole: formData.subRole,
         mosqueName: formData.mosqueName,
         mosqueLocation: formData.mosqueLocation,
         mosqueCounty: formData.mosqueCounty,
         qualifications: formData.qualifications.split(',').map(q => q.trim()),
         yearsOfService: parseInt(formData.yearsOfService) || 0,
+        institution: formData.institution,
+        bio: formData.bio,
         region: formData.region,
         subCounty: formData.subCounty,
         ward: formData.ward,
         termsAccepted: formData.termsAccepted
       });
 
-      setStep(6);
-      setSuccess('Application submitted successfully!');
+      setStep(7);
+      const roleLabel = formData.subRole === 'kadhi' ? 'Kadhi' : 'Imam';
+      setSuccess(`${roleLabel} application submitted successfully!`);
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed. Please try again.');
     }
@@ -234,8 +245,8 @@ const ImamRegister = () => {
   };
 
   const renderStepIndicator = () => {
-    const current = step > 5 ? 5 : step;
-    const steps = [1, 2, 3, 4, 5];
+    const current = step > 6 ? 6 : step;
+    const steps = [1, 2, 3, 4, 5, 6];
     return (
       <div className="flex items-center justify-center gap-0 py-4">
         {steps.map((i) => (
@@ -251,7 +262,7 @@ const ImamRegister = () => {
                 </svg>
               ) : i}
             </div>
-            {i < 5 && (
+            {i < 6 && (
               <div className={`w-8 h-0.5 transition-all duration-500 ${
                 i < current ? 'bg-[#1769AA]' : 'bg-[#E2E8F0]'
               }`} />
@@ -336,6 +347,72 @@ const ImamRegister = () => {
         return (
           <div className="space-y-5 animate-fadeIn">
             <div className="mb-2">
+              <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">Select Your Role</h3>
+              <p className="text-sm text-[#94A3B8]">Choose your primary role as a religious leader</p>
+            </div>
+
+            <div className="space-y-4">
+              <label className={`flex items-start gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${
+                formData.subRole === 'imam'
+                  ? 'border-[#1769AA] bg-[#F1F7FC] shadow-md shadow-[#1769AA]/10'
+                  : 'border-[#E2E8F0] hover:border-[#1769AA]/40 hover:bg-[#F8FAFC]'
+              }`}>
+                <input
+                  type="radio"
+                  name="subRole"
+                  value="imam"
+                  checked={formData.subRole === 'imam'}
+                  onChange={handleChange}
+                  className="w-5 h-5 mt-0.5 rounded-full border-[#E2E8F0] text-[#1769AA] focus:ring-[#1769AA]/30 focus:ring-2 flex-shrink-0"
+                />
+                <div>
+                  <div className="font-bold text-[#1A2A3A]">Imam</div>
+                  <div className="text-sm text-[#94A3B8]">Mosque leadership, pension, community support</div>
+                  <div className="flex gap-2 mt-1.5 flex-wrap">
+                    <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[#FEF3C7] text-[#D97706]">Pension</span>
+                    <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[#F0FDF4] text-[#16A34A]">Supporters</span>
+                    <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[#EFF6FF] text-[#1769AA]">Verified</span>
+                  </div>
+                </div>
+              </label>
+
+              <label className={`flex items-start gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${
+                formData.subRole === 'kadhi'
+                  ? 'border-[#1769AA] bg-[#F1F7FC] shadow-md shadow-[#1769AA]/10'
+                  : 'border-[#E2E8F0] hover:border-[#1769AA]/40 hover:bg-[#F8FAFC]'
+              }`}>
+                <input
+                  type="radio"
+                  name="subRole"
+                  value="kadhi"
+                  checked={formData.subRole === 'kadhi'}
+                  onChange={handleChange}
+                  className="w-5 h-5 mt-0.5 rounded-full border-[#E2E8F0] text-[#1769AA] focus:ring-[#1769AA]/30 focus:ring-2 flex-shrink-0"
+                />
+                <div>
+                  <div className="font-bold text-[#1A2A3A]">Kadhi</div>
+                  <div className="text-sm text-[#94A3B8]">Islamic legal guidance, consultations, video calls</div>
+                  <div className="flex gap-2 mt-1.5 flex-wrap">
+                    <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[#EFF6FF] text-[#1769AA]">Consultations</span>
+                    <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[#F0FDF4] text-[#16A34A]">Video Calls</span>
+                    <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[#FEF3C7] text-[#D97706]">Legal Guidance</span>
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            <div className="bg-[#F1F7FC] rounded-xl p-4 border border-[#E8EEF4] mt-2">
+              <p className="text-xs text-[#94A3B8] text-center leading-relaxed">
+                You can only register as one primary role. If you serve in both capacities, please choose your primary role.
+              </p>
+            </div>
+          </div>
+        );
+
+      case 3:
+        return (
+          <div className="space-y-5 animate-fadeIn">
+            <div className="mb-2">
               <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">Mosque Details</h3>
               <p className="text-sm text-[#94A3B8]">Tell us about your mosque</p>
             </div>
@@ -390,12 +467,12 @@ const ImamRegister = () => {
           </div>
         );
 
-      case 3:
+      case 4:
         return (
           <div className="space-y-5 animate-fadeIn">
             <div className="mb-2">
-              <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">Qualifications</h3>
-              <p className="text-sm text-[#94A3B8]">Tell us about your background</p>
+              <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">Qualifications & Background</h3>
+              <p className="text-sm text-[#94A3B8]">Tell us about your qualifications</p>
             </div>
 
             <div className="relative group">
@@ -421,10 +498,32 @@ const ImamRegister = () => {
                 placeholder="Years of Service"
               />
             </div>
+
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#1769AA]/20 to-[#2F80C0]/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
+              <input
+                className="relative w-full px-5 py-4 bg-white border border-[#E2E8F0] rounded-2xl text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-300"
+                name="institution"
+                value={formData.institution}
+                onChange={handleChange}
+                placeholder="Institution (optional)"
+              />
+            </div>
+
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#1769AA]/20 to-[#2F80C0]/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
+              <textarea
+                className="relative w-full px-5 py-4 bg-white border border-[#E2E8F0] rounded-2xl text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-300 resize-y min-h-[80px]"
+                name="bio"
+                value={formData.bio}
+                onChange={handleChange}
+                placeholder="Bio / About You (optional)"
+              />
+            </div>
           </div>
         );
 
-      case 4:
+      case 5:
         return (
           <div className="space-y-6 animate-fadeIn">
             <div className="mb-2">
@@ -441,13 +540,13 @@ const ImamRegister = () => {
                   onChange={handleChange}
                   className="w-5 h-5 mt-0.5 rounded-md border-[#E2E8F0] text-[#1769AA] focus:ring-[#1769AA]/30 focus:ring-2"
                 />
-                <span className="text-sm text-[#1A2A3A] font-medium">I accept HalalHub's Terms &amp; Conditions</span>
+                <span className="text-sm text-[#1A2A3A] font-medium">I accept HalalHub's Terms & Conditions</span>
               </label>
             </div>
           </div>
         );
 
-      case 5:
+      case 6:
         return (
           <div className="space-y-6 animate-fadeIn">
             <div className="mb-2">
@@ -459,7 +558,11 @@ const ImamRegister = () => {
               <div className="bg-[#F1F7FC] rounded-xl p-4 border border-[#E8EEF4]">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-xl">🔐</span>
+                    <div className="w-10 h-10 rounded-xl bg-[#1769AA]/10 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-[#1769AA]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    </div>
                     <div>
                       <span className="text-sm font-medium text-[#5A6A7A]">Your OTP Code</span>
                       <div className="text-2xl font-mono font-bold text-[#1769AA] tracking-widest mt-0.5">
@@ -504,7 +607,7 @@ const ImamRegister = () => {
               ))}
             </div>
 
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center flex-wrap gap-2">
               <span className="text-xs text-[#94A3B8]">
                 {otpSent ? 'Enter the code above' : 'Click "Send Code" to receive OTP'}
               </span>
@@ -526,7 +629,7 @@ const ImamRegister = () => {
           </div>
         );
 
-      case 6:
+      case 7:
         return (
           <div className="text-center py-8 animate-scaleIn">
             <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-emerald-400/20 to-emerald-500/20 flex items-center justify-center mx-auto mb-6 border border-emerald-400/20">
@@ -534,15 +637,19 @@ const ImamRegister = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h3 className="text-2xl font-heading font-bold text-[#1A2A3A]">Application Submitted!</h3>
+            <h3 className="text-2xl font-heading font-bold text-[#1A2A3A]">Application Submitted</h3>
             <p className="text-[#5A6A7A] mt-3 leading-relaxed">
-              Your imam application is under review.<br />
+              Your {formData.subRole === 'kadhi' ? 'Kadhi' : 'Imam'} application is under review.<br />
               We'll notify you once approved.
             </p>
             <div className="mt-6 p-5 bg-[#F1F7FC] rounded-2xl text-left space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-[#94A3B8]">Name:</span>
                 <span className="font-medium text-[#1A2A3A]">{formData.fullName}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-[#94A3B8]">Role:</span>
+                <span className="font-medium text-[#1A2A3A]">{formData.subRole === 'kadhi' ? 'Kadhi' : 'Imam'}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-[#94A3B8]">Mosque:</span>
@@ -587,23 +694,23 @@ const ImamRegister = () => {
               <div className="text-xs text-white/60 tracking-[0.15em] uppercase mt-1">Sharia-Compliant Fintech</div>
             </div>
 
-            <h1 className="text-3xl lg:text-4xl font-bold mt-4">Become an Imam</h1>
+            <h1 className="text-3xl lg:text-4xl font-bold mt-4">Become a Religious Leader</h1>
             <p className="text-white/70 mt-2 max-w-sm mx-auto">
-              Register and manage your mosque profile, receive support, and build your pension fund.
+              Register as an Imam or Kadhi to serve your community.
             </p>
 
             <div className="mt-8 space-y-3">
               <div className="flex items-center justify-center gap-3 text-sm text-white/80">
                 <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-white/20 text-white text-xs font-bold">✓</span>
-                <span>Build Your Pension Fund</span>
+                <span>Choose Your Primary Role</span>
               </div>
               <div className="flex items-center justify-center gap-3 text-sm text-white/80">
                 <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-white/20 text-white text-xs font-bold">✓</span>
-                <span>Receive Community Support</span>
+                <span>Serve Your Community</span>
               </div>
               <div className="flex items-center justify-center gap-3 text-sm text-white/80">
                 <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-white/20 text-white text-xs font-bold">✓</span>
-                <span>Manage Your Mosque Profile</span>
+                <span>Access Platform Services</span>
               </div>
             </div>
 
@@ -620,14 +727,14 @@ const ImamRegister = () => {
           <div className="w-full max-w-sm mx-auto">
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-[#1A2A3A]">
-                {step > 5 ? 'Complete!' : `Step ${step} of 5`}
+                {step > 6 ? 'Complete!' : `Step ${step} of 6`}
               </h2>
               <p className="text-sm text-[#94A3B8] mt-1">
-                {step > 5 ? 'Your application is submitted' : 'Fill in your details to continue'}
+                {step > 6 ? 'Your application is submitted' : 'Fill in your details to continue'}
               </p>
             </div>
 
-            {step <= 5 && renderStepIndicator()}
+            {step <= 6 && renderStepIndicator()}
 
             {error && (
               <div className="mb-4 p-4 bg-[#FEF2F2] border border-[#FECACA] rounded-2xl flex items-center justify-between text-sm text-[#DC2626] animate-slideDown">
@@ -636,7 +743,7 @@ const ImamRegister = () => {
               </div>
             )}
 
-            {success && step === 6 && (
+            {success && step === 7 && (
               <div className="mb-4 p-4 bg-[#F0FDF4] border border-[#BBF7D0] rounded-2xl text-sm text-[#16A34A] animate-slideDown">
                 {success}
               </div>
@@ -646,7 +753,7 @@ const ImamRegister = () => {
               {renderStep()}
             </div>
 
-            {step >= 1 && step <= 3 && (
+            {step >= 1 && step <= 4 && (
               <div className="flex gap-3 mt-8">
                 {step > 1 && (
                   <button
@@ -665,7 +772,7 @@ const ImamRegister = () => {
               </div>
             )}
 
-            {step === 4 && (
+            {step === 5 && (
               <div className="flex gap-3 mt-8">
                 <button
                   className="flex-1 px-6 py-3.5 rounded-2xl bg-[#F1F7FC] text-[#5A6A7A] font-semibold text-sm hover:bg-[#E2E8F0] transition-all duration-300"
@@ -682,7 +789,7 @@ const ImamRegister = () => {
               </div>
             )}
 
-            {step === 5 && (
+            {step === 6 && (
               <div className="flex gap-3 mt-8">
                 <button
                   className="flex-1 px-6 py-3.5 rounded-2xl bg-[#F1F7FC] text-[#5A6A7A] font-semibold text-sm hover:bg-[#E2E8F0] transition-all duration-300"

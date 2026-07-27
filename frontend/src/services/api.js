@@ -341,26 +341,57 @@ export const willService = {
   getWills: () => api.get('/wills'),
   getWillById: (id) => api.get(`/wills/${id}`),
   updateWill: (id, data) => api.put(`/wills/${id}`, data),
+  calculateInheritance: (data) => api.post('/wills/calculate-inheritance', data),
 };
 
 // ========================================
 // KADHI SERVICE
 // ========================================
 export const kadhiService = {
+  // Get all kadhis with filters
+  getKadhis: (params) => api.get('/kadhis', { params }),
+  // Get kadhi by ID
+  getKadhiById: (id) => api.get(`/kadhis/${id}`),
+  // Get kadhi statistics
+  getKadhiStats: () => api.get('/kadhis/stats/summary'),
+  // Get counties with kadhis
+  getCounties: () => api.get('/kadhis/counties/list'),
+  // Create kadhi (admin only)
+  createKadhi: (data) => api.post('/kadhis', data),
+  // Update kadhi (admin only)
+  updateKadhi: (id, data) => api.put(`/kadhis/${id}`, data),
+  // Delete kadhi (admin only)
+  deleteKadhi: (id) => api.delete(`/kadhis/${id}`),
+};
+
+// ========================================
+// BOOKING SERVICE (Consultation Bookings)
+// ========================================
+export const bookingService = {
+  // Get all bookings for user
+  getBookings: (params) => api.get('/bookings', { params }),
+  // Get booking by ID
+  getBookingById: (id) => api.get(`/bookings/${id}`),
+  // Create a new booking
+  createBooking: (data) => api.post('/bookings', data),
+  // Update a booking
+  updateBooking: (id, data) => api.put(`/bookings/${id}`, data),
+  // Cancel a booking
+  cancelBooking: (id) => api.put(`/bookings/${id}/cancel`),
+  // Get booking by room name
+  getBookingByRoom: (roomName) => api.get(`/bookings/room/${roomName}`),
+  // Get booking statistics
+  getBookingStats: () => api.get('/bookings/stats/summary'),
+};
+
+// ========================================
+// KADHI SERVICE (Legacy - keep for compatibility)
+// ========================================
+export const kadhiServiceLegacy = {
   getKadhis: () => api.get('/kadhis'),
   getKadhiById: (id) => api.get(`/kadhis/${id}`),
   getReviews: (kadhiId) => api.get(`/kadhis/${kadhiId}/reviews`),
   addReview: (data) => api.post('/kadhis/reviews', data),
-};
-
-// ========================================
-// BOOKING SERVICE (Kadhis)
-// ========================================
-export const bookingService = {
-  getBookings: () => api.get('/bookings'),
-  createBooking: (data) => api.post('/bookings', data),
-  updateBooking: (id, data) => api.put(`/bookings/${id}`, data),
-  cancelBooking: (id) => api.delete(`/bookings/${id}`),
 };
 
 // ========================================

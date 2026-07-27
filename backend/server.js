@@ -43,6 +43,9 @@ app.use('/api/p2p', require('./src/routes/p2p'));
 app.use('/api/takaful', require('./src/routes/takaful'));
 app.use('/api/pension', require('./src/routes/pension'));
 app.use('/api/mosque', require('./src/routes/mosque'));
+app.use('/api/wills', require('./src/routes/wills'));
+app.use('/api/kadhis', require('./src/routes/kadhis'));
+app.use('/api/bookings', require('./src/routes/bookings'));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'HalalHub API is running' });
@@ -220,10 +223,10 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 7. BOOKINGS TABLE (HalalStay)
+    // 7. HALALSTAY BOOKINGS TABLE
     // ============================================================
     await client.query(`
-      CREATE TABLE IF NOT EXISTS bookings (
+      CREATE TABLE IF NOT EXISTS halalstay_bookings (
         id TEXT PRIMARY KEY,
         listing_id TEXT NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
         user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -272,6 +275,7 @@ async function initDB() {
         id TEXT PRIMARY KEY,
         user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         title TEXT DEFAULT 'Imam',
+        sub_role TEXT DEFAULT 'imam',
         mosque_name TEXT NOT NULL,
         mosque_location TEXT NOT NULL,
         mosque_county TEXT,
@@ -537,6 +541,81 @@ async function initDB() {
     `);
 
     // ============================================================
+    // 25. WILLS TABLE
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS wills (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        full_name TEXT NOT NULL,
+        id_number TEXT,
+        executor_name TEXT NOT NULL,
+        executor_phone TEXT,
+        executor_email TEXT,
+        assets TEXT,
+        bequests JSONB DEFAULT '[]',
+        heirs JSONB DEFAULT '[]',
+        witnesses JSONB DEFAULT '[]',
+        special_instructions TEXT,
+        status TEXT DEFAULT 'draft',
+        version TEXT DEFAULT 'v1',
+        reference TEXT UNIQUE,
+        createdat TIMESTAMP DEFAULT NOW(),
+        updatedat TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // ============================================================
+    // 26. KADHIS TABLE
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS kadhis (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        type TEXT DEFAULT 'kadhi',
+        county TEXT NOT NULL,
+        expertise TEXT[],
+        fee INTEGER DEFAULT 0,
+        rating DECIMAL(3,2) DEFAULT 0,
+        reviews INTEGER DEFAULT 0,
+        experience TEXT,
+        bio TEXT,
+        languages TEXT[],
+        verified BOOLEAN DEFAULT FALSE,
+        verification_date DATE,
+        institution TEXT,
+        consultation_types TEXT[],
+        available BOOLEAN DEFAULT TRUE,
+        createdat TIMESTAMP DEFAULT NOW(),
+        updatedat TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // ============================================================
+    // 27. CONSULTATION BOOKINGS TABLE
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS consultation_bookings (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        kadhi_id TEXT NOT NULL REFERENCES kadhis(id) ON DELETE CASCADE,
+        booking_date DATE NOT NULL,
+        booking_time TEXT NOT NULL,
+        type TEXT DEFAULT 'video',
+        topic TEXT NOT NULL,
+        notes TEXT,
+        status TEXT DEFAULT 'pending',
+        room_name TEXT,
+        user_name TEXT,
+        user_email TEXT,
+        accepted_at TIMESTAMP,
+        createdat TIMESTAMP DEFAULT NOW(),
+        updatedat TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // ============================================================
     // INDEXES FOR PERFORMANCE
     // ============================================================
     await client.query(`CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)`);
@@ -544,11 +623,11 @@ async function initDB() {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_users_imam_status ON users(imam_status)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_products_vendor_id ON products(vendor_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_listings_vendor_id ON listings(vendor_id)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_bookings_user_id ON bookings(user_id)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_bookings_vendor_id ON bookings(vendor_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_halalstay_bookings_user_id ON halalstay_bookings(user_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_halalstay_bookings_vendor_id ON halalstay_bookings(vendor_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_orders_vendor_id ON orders(vendor_id)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_halalstay_bookings_status ON halalstay_bookings(status)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_listing_availability_date ON listing_availability(date)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id)`);
@@ -564,6 +643,7 @@ async function initDB() {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_takaful_claims_status ON takaful_claims(status)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_takaful_family_members_policy_id ON takaful_family_members(policy_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_imams_user_id ON imams(user_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_imams_sub_role ON imams(sub_role)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_imams_mosque_name ON imams(mosque_name)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_supporters_imam_id ON supporters(imam_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_supporters_user_id ON supporters(user_id)`);
@@ -571,6 +651,16 @@ async function initDB() {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_pension_contributions_user_id ON pension_contributions(user_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_mosques_imam_id ON mosques(imam_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_mosques_county ON mosques(county)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_wills_user_id ON wills(user_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_wills_status ON wills(status)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_wills_reference ON wills(reference)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_kadhis_user_id ON kadhis(user_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_kadhis_type ON kadhis(type)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_kadhis_county ON kadhis(county)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_consultation_bookings_user_id ON consultation_bookings(user_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_consultation_bookings_kadhi_id ON consultation_bookings(kadhi_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_consultation_bookings_status ON consultation_bookings(status)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_consultation_bookings_room_name ON consultation_bookings(room_name)`);
 
     console.log('All database tables ready');
     await client.end();

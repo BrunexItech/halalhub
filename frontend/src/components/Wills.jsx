@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { willService, pdfService } from '../services/api';
-// Import jsPDF
 import jsPDF from 'jspdf';
 
 const Wills = () => {
@@ -38,13 +37,14 @@ const Wills = () => {
   const [heirs, setHeirs] = useState([
     { relation: 'Wife', name: '', share: '1/8', shareDecimal: 0.125 },
     { relation: 'Son', name: '', share: 'Asabah', shareDecimal: 0.5 },
-    { relation: 'Daughter', name: '', share: 'Asabah ÷ 2', shareDecimal: 0.25 }
+    { relation: 'Daughter', name: '', share: 'Asabah / 2', shareDecimal: 0.25 }
   ]);
   
   // ===== WILLS HISTORY =====
   const [willsHistory, setWillsHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [estateValue, setEstateValue] = useState(5000000);
+  const [inheritanceResult, setInheritanceResult] = useState(null);
   
   // ===== MODALS =====
   const [showHeirModal, setShowHeirModal] = useState(false);
@@ -80,14 +80,47 @@ const Wills = () => {
   const fetchWillsHistory = async () => {
     setLoadingHistory(true);
     try {
-      setWillsHistory([
-        { id: 1, date: '2024-04-01', status: 'active', version: 'v1' },
-        { id: 2, date: '2024-01-15', status: 'draft', version: 'v0.5' }
-      ]);
+      const res = await willService.getWills();
+      if (res.data.success) {
+        setWillsHistory(res.data.wills || []);
+      }
     } catch (err) {
       console.error('History error:', err);
+      setWillsHistory([]);
     } finally {
       setLoadingHistory(false);
+    }
+  };
+
+  const fetchWillById = async (id) => {
+    try {
+      const res = await willService.getWillById(id);
+      if (res.data.success) {
+        const will = res.data.will;
+        setWillData({
+          fullName: will.fullName || '',
+          idNumber: will.idNumber || '',
+          executorName: will.executorName || '',
+          executorPhone: will.executorPhone || '',
+          executorEmail: will.executorEmail || '',
+          assets: will.assets || '',
+          bequests: will.bequests || [{ name: '', relation: '', amount: 0 }],
+          witnesses: will.witnesses || [
+            { name: '', idNumber: '', phone: '' },
+            { name: '', idNumber: '', phone: '' }
+          ],
+          specialInstructions: will.specialInstructions || '',
+          dateCreated: will.createdAt ? will.createdAt.split('T')[0] : new Date().toISOString().split('T')[0]
+        });
+        if (will.heirs && will.heirs.length > 0) {
+          setHeirs(will.heirs);
+        }
+        setSuccess('Will loaded successfully');
+        setTimeout(() => setSuccess(''), 3000);
+      }
+    } catch (err) {
+      setError('Failed to load will');
+      setTimeout(() => setError(''), 3000);
     }
   };
 
@@ -99,6 +132,7 @@ const Wills = () => {
   const removeHeir = (index) => {
     if (heirs.length <= 1) {
       setError('You must have at least one heir');
+      setTimeout(() => setError(''), 3000);
       return;
     }
     setHeirs(heirs.filter((_, i) => i !== index));
@@ -121,6 +155,7 @@ const Wills = () => {
   const removeBequest = (index) => {
     if (willData.bequests.length <= 1) {
       setError('You must have at least one bequest');
+      setTimeout(() => setError(''), 3000);
       return;
     }
     const updated = [...willData.bequests];
@@ -148,21 +183,25 @@ const Wills = () => {
     setError('');
   };
 
-  const saveWill = () => {
+  const saveWill = async () => {
     if (!willData.fullName) {
       setError('Please enter your full name');
+      setTimeout(() => setError(''), 3000);
       return;
     }
     if (!willData.executorName) {
       setError('Please enter the executor name');
+      setTimeout(() => setError(''), 3000);
       return;
     }
     if (!willData.assets) {
       setError('Please list your assets');
+      setTimeout(() => setError(''), 3000);
       return;
     }
     if (willData.witnesses.some(w => !w.name)) {
       setError('Please enter all witness names');
+      setTimeout(() => setError(''), 3000);
       return;
     }
     setShowConfirmModal(true);
@@ -172,16 +211,50 @@ const Wills = () => {
     setProcessing(true);
     setError('');
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      setShowConfirmModal(false);
-      setShowSuccessModal(true);
-      await fetchWillsHistory();
-      
-      setSuccess('Will created and encrypted successfully!');
-      setTimeout(() => setSuccess(''), 5000);
+      const response = await willService.createWill({
+        fullName: willData.fullName,
+        idNumber: willData.idNumber,
+        executorName: willData.executorName,
+        executorPhone: willData.executorPhone,
+        executorEmail: willData.executorEmail,
+        assets: willData.assets,
+        bequests: willData.bequests.filter(b => b.name),
+        heirs: heirs.filter(h => h.relation || h.name),
+        witnesses: willData.witnesses,
+        specialInstructions: willData.specialInstructions,
+        status: 'draft'
+      });
+
+      if (response.data.success) {
+        setShowConfirmModal(false);
+        setShowSuccessModal(true);
+        await fetchWillsHistory();
+        setSuccess('Will created and encrypted successfully');
+        setTimeout(() => setSuccess(''), 5000);
+      }
     } catch (err) {
-      setError('Failed to save will. Please try again.');
+      setError(err.response?.data?.error || 'Failed to save will. Please try again.');
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const calculateInheritance = async () => {
+    setProcessing(true);
+    try {
+      const response = await willService.calculateInheritance({
+        estate: estateValue,
+        heirs: heirs
+      });
+      if (response.data.success) {
+        setInheritanceResult(response.data.data);
+        setSuccess('Inheritance calculated successfully');
+        setTimeout(() => setSuccess(''), 3000);
+      }
+    } catch (err) {
+      setError('Failed to calculate inheritance');
+      setTimeout(() => setError(''), 3000);
     } finally {
       setProcessing(false);
     }
@@ -211,7 +284,7 @@ const Wills = () => {
         return newY;
       };
       
-      // ===== TITLE =====
+      // Title
       doc.setFontSize(22);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(23, 105, 170);
@@ -220,7 +293,7 @@ const Wills = () => {
       
       doc.setFontSize(16);
       doc.setTextColor(0, 0, 0);
-      doc.text('بسم الله الرحمن الرحيم', pageWidth / 2, yPos, { align: 'center' });
+      doc.text('Bismillah ir-Rahman ir-Rahim', pageWidth / 2, yPos, { align: 'center' });
       yPos += 12;
       
       doc.setDrawColor(201, 168, 76);
@@ -237,7 +310,7 @@ const Wills = () => {
       doc.text('This is the last will and testament of:', margin, yPos);
       yPos += 8;
       
-      // ===== PERSONAL INFORMATION =====
+      // Personal Information
       doc.setFont('helvetica', 'bold');
       doc.text('Full Name:', margin, yPos);
       doc.setFont('helvetica', 'normal');
@@ -256,7 +329,7 @@ const Wills = () => {
       doc.text(new Date().toLocaleDateString(), margin + 50, yPos);
       yPos += 12;
       
-      // ===== SECTION 1: EXECUTOR =====
+      // Section 1: Executor
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(23, 105, 170);
@@ -287,7 +360,7 @@ const Wills = () => {
       doc.text(willData.executorEmail || 'N/A', margin + 50, yPos);
       yPos += 12;
       
-      // ===== SECTION 2: ASSETS =====
+      // Section 2: Assets
       yPos = checkPageBreak(yPos + 10);
       
       doc.setFontSize(14);
@@ -302,7 +375,7 @@ const Wills = () => {
       yPos = addWrappedText(willData.assets || 'No assets listed.', margin + 2, yPos, pageWidth - margin * 2 - 4);
       yPos += 8;
       
-      // ===== SECTION 3: BEQUESTS =====
+      // Section 3: Bequests
       yPos = checkPageBreak(yPos + 10);
       
       doc.setFontSize(14);
@@ -328,7 +401,7 @@ const Wills = () => {
       }
       yPos += 8;
       
-      // ===== SECTION 4: HEIRS =====
+      // Section 4: Heirs
       yPos = checkPageBreak(yPos + 10);
       
       doc.setFontSize(14);
@@ -355,7 +428,7 @@ const Wills = () => {
       doc.text(`Estate Value: KES ${estateValue.toLocaleString()}`, margin, yPos);
       yPos += 12;
       
-      // ===== SECTION 5: WITNESSES =====
+      // Section 5: Witnesses
       yPos = checkPageBreak(yPos + 10);
       
       doc.setFontSize(14);
@@ -394,7 +467,7 @@ const Wills = () => {
         yPos += 8;
       });
       
-      // ===== SECTION 6: SPECIAL INSTRUCTIONS =====
+      // Section 6: Special Instructions
       yPos = checkPageBreak(yPos + 10);
       
       doc.setFontSize(14);
@@ -409,7 +482,7 @@ const Wills = () => {
       yPos = addWrappedText(willData.specialInstructions || 'None', margin + 2, yPos, pageWidth - margin * 2 - 4);
       yPos += 8;
       
-      // ===== SECTION 7: ISLAMIC GUIDANCE =====
+      // Section 7: Islamic Guidance
       yPos = checkPageBreak(yPos + 10);
       
       doc.setFontSize(14);
@@ -423,12 +496,12 @@ const Wills = () => {
       doc.setFont('helvetica', 'italic');
       doc.text('"And whoever leaves behind a will, it shall be carried out after any debts."', margin, yPos);
       yPos += 6;
-      doc.text('— Quran, Surah Al-Baqarah 2:180', margin + 10, yPos);
+      doc.text('Quran, Surah Al-Baqarah 2:180', margin + 10, yPos);
       yPos += 8;
       
       doc.text('"Verily, Allah has given to each person their rightful share."', margin, yPos);
       yPos += 6;
-      doc.text('— Hadith', margin + 10, yPos);
+      doc.text('Hadith', margin + 10, yPos);
       yPos += 10;
       
       doc.setFont('helvetica', 'normal');
@@ -439,7 +512,7 @@ const Wills = () => {
       doc.text(`Date: ${new Date().toISOString().split('T')[0]}`, margin, yPos);
       yPos += 12;
       
-      // ===== SIGNATURES =====
+      // Signatures
       yPos = checkPageBreak(yPos + 10);
       
       doc.setFontSize(12);
@@ -451,28 +524,28 @@ const Wills = () => {
       doc.setFontSize(11);
       doc.text('Testator: _________________________', margin, yPos);
       yPos += 6;
-      doc.text(`Date: _____________________________`, margin, yPos);
+      doc.text('Date: _____________________________', margin, yPos);
       yPos += 10;
       
       doc.text('Witness 1: _________________________', margin, yPos);
       yPos += 6;
-      doc.text(`Date: _____________________________`, margin, yPos);
+      doc.text('Date: _____________________________', margin, yPos);
       yPos += 10;
       
       doc.text('Witness 2: _________________________', margin, yPos);
       yPos += 6;
-      doc.text(`Date: _____________________________`, margin, yPos);
+      doc.text('Date: _____________________________', margin, yPos);
       yPos += 12;
       
-      // ===== FOOTER =====
+      // Footer
       doc.setFontSize(9);
       doc.setTextColor(150, 150, 150);
       doc.setFont('helvetica', 'italic');
-      doc.text(`© ${new Date().getFullYear()} HalalHub - Islamic Will Services`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+      doc.text(`Copyright ${new Date().getFullYear()} HalalHub - Islamic Will Services`, pageWidth / 2, pageHeight - 10, { align: 'center' });
       
       doc.save(`Islamic_Will_${willData.fullName.replace(/\s/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
       
-      setSuccess('PDF downloaded successfully!');
+      setSuccess('PDF downloaded successfully');
       setTimeout(() => setSuccess(''), 5000);
     } catch (err) {
       setError('Failed to generate PDF. Please try again.');
@@ -516,26 +589,26 @@ const Wills = () => {
     <div className="min-h-screen bg-[#F1F7FC]">
       
       {/* ===== HERO SECTION ===== */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#1769AA] via-[#2F80C0] to-[#4A9AD9] rounded-2xl mx-4 md:mx-6 lg:mx-8 mt-4 md:mt-6 p-8 md:p-12 shadow-lg shadow-[#1769AA]/20">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-2xl" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-2xl" />
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#1769AA] via-[#2F80C0] to-[#4A9AD9] rounded-2xl mx-4 md:mx-6 lg:mx-8 mt-4 md:mt-6 p-6 md:p-8 lg:p-12 shadow-lg shadow-[#1769AA]/20">
+        <div className="absolute top-0 right-0 w-48 md:w-64 h-48 md:h-64 bg-white/5 rounded-full blur-2xl" />
+        <div className="absolute bottom-0 left-0 w-36 md:w-48 h-36 md:h-48 bg-white/5 rounded-full blur-2xl" />
         
         <div className="relative z-10 max-w-5xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6">
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Digital Wasiyyah</span>
                 <span className="w-px h-4 bg-white/20" />
                 <span className="text-xs font-medium text-white/50">Islamic Will</span>
               </div>
-              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white leading-tight">
+              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-white leading-tight">
                 Create Your Islamic Will
               </h1>
-              <p className="text-white/70 text-sm mt-2 max-w-lg">
+              <p className="text-white/70 text-sm mt-1 md:mt-2 max-w-lg">
                 A guided process to create your Wasiyyah. Secure, Sharia-compliant, and professionally structured.
               </p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 md:gap-3">
               <span className="text-xs font-semibold text-[#E8C96A] bg-white/10 px-3 py-1.5 rounded-full border border-white/10">
                 Sharia Compliant
               </span>
@@ -563,13 +636,13 @@ const Wills = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           
           {/* ===== LEFT COLUMN - WILL FORM ===== */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 md:space-y-6">
             
             {/* Personal Information */}
-            <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-6">
+            <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-4 md:p-6">
               <h2 className="text-base font-bold text-[#1A2A3A] mb-4">Personal Information</h2>
               <div className="space-y-4">
                 <div>
@@ -598,7 +671,7 @@ const Wills = () => {
             </div>
 
             {/* Executor */}
-            <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-6">
+            <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-4 md:p-6">
               <h2 className="text-base font-bold text-[#1A2A3A] mb-4">Executor (Wasi)</h2>
               <div className="space-y-4">
                 <div>
@@ -612,7 +685,7 @@ const Wills = () => {
                     placeholder="Name of trusted executor"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">Phone</label>
                     <input
@@ -640,7 +713,7 @@ const Wills = () => {
             </div>
 
             {/* Assets */}
-            <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-6">
+            <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-4 md:p-6">
               <h2 className="text-base font-bold text-[#1A2A3A] mb-4">Assets</h2>
               <div>
                 <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">List Your Assets</label>
@@ -656,8 +729,8 @@ const Wills = () => {
             </div>
 
             {/* Bequests */}
-            <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-6">
-              <div className="flex items-center justify-between mb-4">
+            <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-4 md:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                 <h2 className="text-base font-bold text-[#1A2A3A]">Bequests</h2>
                 <button
                   className="text-sm font-semibold text-[#1769AA] hover:text-[#2F80C0] transition-colors"
@@ -670,8 +743,8 @@ const Wills = () => {
               
               <div className="space-y-3">
                 {willData.bequests.map((bequest, index) => (
-                  <div key={index} className="flex items-center gap-3 p-3 bg-[#F1F7FC] rounded-lg">
-                    <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div key={index} className="flex items-center gap-3 p-3 bg-[#F1F7FC] rounded-lg flex-wrap md:flex-nowrap">
+                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3 w-full">
                       <input
                         type="text"
                         className="px-3 py-2 border border-[#E2E8F0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA]"
@@ -695,7 +768,7 @@ const Wills = () => {
                       />
                     </div>
                     <button
-                      className="text-[#DC2626] hover:text-[#B91C1C] transition-colors"
+                      className="text-[#DC2626] hover:text-[#B91C1C] transition-colors flex-shrink-0"
                       onClick={() => removeBequest(index)}
                     >
                       ✕
@@ -706,8 +779,8 @@ const Wills = () => {
             </div>
 
             {/* Witnesses */}
-            <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-6">
-              <div className="flex items-center justify-between mb-4">
+            <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-4 md:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                 <h2 className="text-base font-bold text-[#1A2A3A]">Witnesses</h2>
                 <span className="text-xs text-[#94A3B8]">Two witnesses required</span>
               </div>
@@ -716,7 +789,7 @@ const Wills = () => {
                 {willData.witnesses.map((witness, index) => (
                   <div key={index} className="p-4 bg-[#F1F7FC] rounded-lg">
                     <h4 className="text-sm font-semibold text-[#1A2A3A] mb-3">Witness {index + 1}</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <input
                         type="text"
                         className="px-3 py-2 border border-[#E2E8F0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA]"
@@ -745,7 +818,7 @@ const Wills = () => {
             </div>
 
             {/* Special Instructions */}
-            <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-6">
+            <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-4 md:p-6">
               <h2 className="text-base font-bold text-[#1A2A3A] mb-4">Special Instructions</h2>
               <textarea
                 className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200 resize-y"
@@ -758,12 +831,13 @@ const Wills = () => {
             </div>
 
             {/* Actions */}
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 className="flex-1 px-6 py-3 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200 shadow-md shadow-[#1769AA]/20"
                 onClick={saveWill}
+                disabled={processing}
               >
-                Save & Encrypt Will
+                {processing ? 'Saving...' : 'Save & Encrypt Will'}
               </button>
               <button
                 className="flex-1 px-6 py-3 bg-white text-[#5A6A7A] font-semibold rounded-xl border border-[#E8EEF4] hover:border-[#1769AA] hover:text-[#1769AA] transition-all duration-200"
@@ -776,10 +850,10 @@ const Wills = () => {
           </div>
 
           {/* ===== RIGHT COLUMN ===== */}
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             
             {/* Islamic Guidance */}
-            <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-6">
+            <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-4 md:p-6">
               <h3 className="text-sm font-bold text-[#1A2A3A] mb-3">Islamic Guidance</h3>
               <div className="space-y-4">
                 <div className="bg-[#F1F7FC] rounded-xl p-4">
@@ -795,16 +869,16 @@ const Wills = () => {
                 <div className="bg-[#F1F7FC] rounded-xl p-4">
                   <h4 className="text-sm font-semibold text-[#1A2A3A] mb-1">What is a Wasiyyah?</h4>
                   <p className="text-sm text-[#5A6A7A] leading-relaxed">
-                    A Wasiyyah (Islamic will) allows you to allocate up to <strong>1/3</strong> of your estate 
-                    to non-heirs, while the remaining <strong>2/3</strong> is distributed according to 
-                    <strong> Faraidh</strong> (Islamic inheritance law).
+                    A Wasiyyah (Islamic will) allows you to allocate up to 1/3 of your estate 
+                    to non-heirs, while the remaining 2/3 is distributed according to 
+                    Faraidh (Islamic inheritance law).
                   </p>
                 </div>
               </div>
             </div>
 
             {/* Faraidh Calculator */}
-            <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-6">
+            <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-4 md:p-6">
               <h3 className="text-sm font-bold text-[#1A2A3A] mb-3">Faraidh Calculator</h3>
               <div className="space-y-4">
                 <div>
@@ -819,7 +893,7 @@ const Wills = () => {
                   />
                 </div>
                 
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <h4 className="text-sm font-medium text-[#1A2A3A]">Heirs</h4>
                   <button
                     className="text-sm font-semibold text-[#1769AA] hover:text-[#2F80C0] transition-colors"
@@ -829,10 +903,10 @@ const Wills = () => {
                   </button>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 max-h-40 overflow-y-auto">
                   {heirs.map((heir, index) => (
-                    <div key={index} className="flex items-center gap-2 p-2 bg-[#F1F7FC] rounded-lg">
-                      <div className="flex-1 grid grid-cols-3 gap-2">
+                    <div key={index} className="flex items-center gap-2 p-2 bg-[#F1F7FC] rounded-lg flex-wrap">
+                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2 min-w-[180px]">
                         <input
                           type="text"
                           className="px-2 py-1.5 border border-[#E2E8F0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA]"
@@ -856,7 +930,7 @@ const Wills = () => {
                         />
                       </div>
                       <button
-                        className="text-[#DC2626] hover:text-[#B91C1C] transition-colors"
+                        className="text-[#DC2626] hover:text-[#B91C1C] transition-colors flex-shrink-0"
                         onClick={() => removeHeir(index)}
                       >
                         ✕
@@ -865,35 +939,40 @@ const Wills = () => {
                   ))}
                 </div>
 
-                <div className="bg-[#F1F7FC] rounded-xl p-4">
-                  <div className="flex justify-between text-sm font-semibold text-[#1A2A3A] mb-2">
-                    <span>Estimated Distribution</span>
-                    <span>Total: {formatCurrency(estateValue)}</span>
-                  </div>
-                  {heirs.map((heir, index) => {
-                    let amount = 0;
-                    if (heir.share.includes('/')) {
-                      const parts = heir.share.split('/');
-                      amount = (parseFloat(parts[0]) / parseFloat(parts[1])) * estateValue;
-                    } else if (heir.share === 'Asabah') {
-                      amount = estateValue * 0.5;
-                    } else if (heir.share.includes('÷')) {
-                      amount = (estateValue * 0.5) / 2;
-                    }
-                    return (
+                <button
+                  className="w-full py-2.5 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200 disabled:opacity-60"
+                  onClick={calculateInheritance}
+                  disabled={processing}
+                >
+                  {processing ? 'Calculating...' : 'Calculate Inheritance'}
+                </button>
+
+                {inheritanceResult && (
+                  <div className="bg-[#F1F7FC] rounded-xl p-4">
+                    <div className="flex justify-between text-sm font-semibold text-[#1A2A3A] mb-2">
+                      <span>Distribution</span>
+                      <span>Total: {formatCurrency(inheritanceResult.estate)}</span>
+                    </div>
+                    {inheritanceResult.distribution.map((item, index) => (
                       <div key={index} className="flex justify-between text-sm py-1 border-b border-[#E2E8F0] last:border-0">
-                        <span className="text-[#5A6A7A]">{heir.relation}: {heir.name || 'Unnamed'}</span>
-                        <span className="font-medium text-[#1A2A3A]">{heir.share} — {formatCurrency(amount)}</span>
+                        <span className="text-[#5A6A7A]">{item.relation}: {item.name}</span>
+                        <span className="font-medium text-[#1A2A3A]">{item.share} — {formatCurrency(item.amount)}</span>
                       </div>
-                    );
-                  })}
-                </div>
+                    ))}
+                    {inheritanceResult.remaining > 0 && (
+                      <div className="flex justify-between text-sm py-1 border-t border-[#E2E8F0] mt-1 pt-2">
+                        <span className="text-[#94A3B8]">Remaining (Asabah)</span>
+                        <span className="font-medium text-[#1769AA]">{formatCurrency(inheritanceResult.remaining)}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Previous Wills */}
-            <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-6">
-              <div className="flex items-center justify-between mb-3">
+            <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-4 md:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                 <h3 className="text-sm font-bold text-[#1A2A3A]">Previous Wills</h3>
                 <button 
                   className="text-xs text-[#1769AA] hover:text-[#2F80C0] transition-colors"
@@ -912,18 +991,31 @@ const Wills = () => {
                   <p className="text-sm text-[#94A3B8]">No previous wills</p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-2 max-h-48 overflow-y-auto">
                   {willsHistory.map((will) => (
-                    <div key={will.id} className="flex items-center justify-between p-3 bg-[#F1F7FC] rounded-lg">
+                    <div 
+                      key={will.id} 
+                      className="flex flex-wrap items-center justify-between p-3 bg-[#F1F7FC] rounded-lg cursor-pointer hover:border-[#1769AA] border border-transparent transition-all duration-200"
+                      onClick={() => fetchWillById(will.id)}
+                    >
                       <div>
-                        <div className="font-medium text-[#1A2A3A] text-sm">{will.version}</div>
+                        <div className="font-medium text-[#1A2A3A] text-sm">{will.fullName || will.version}</div>
                         <div className="text-xs text-[#94A3B8]">{formatDate(will.date)}</div>
+                        {will.reference && (
+                          <div className="text-[10px] text-[#94A3B8] font-mono">Ref: {will.reference}</div>
+                        )}
                       </div>
-                      <span className={`text-xs px-2 py-0.5 rounded-full border ${
-                        will.status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
-                      }`}>
-                        {will.status === 'active' ? 'Active' : 'Draft'}
-                      </span>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className={`text-xs px-2 py-0.5 rounded-full border ${
+                          will.status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 
+                          will.status === 'completed' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                          'bg-amber-50 text-amber-700 border-amber-200'
+                        }`}>
+                          {will.status === 'active' ? 'Active' : 
+                           will.status === 'completed' ? 'Completed' : 'Draft'}
+                        </span>
+                        <span className="text-[10px] text-[#94A3B8]">v{will.version || '1'}</span>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -939,7 +1031,7 @@ const Wills = () => {
           <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="p-6 border-b border-[#F1F7FC] flex justify-between items-center">
               <h3 className="text-lg font-bold text-[#1A2A3A]">Confirm Will</h3>
-              <button className="text-[#94A3B8] hover:text-[#1A2A3A] transition-colors" onClick={() => setShowConfirmModal(false)}>
+              <button className="text-[#94A3B8] hover:text-[#1A2A3A] transition-colors text-xl" onClick={() => setShowConfirmModal(false)}>
                 ✕
               </button>
             </div>
@@ -958,11 +1050,11 @@ const Wills = () => {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-[#94A3B8]">Bequests</span>
-                  <span className="font-semibold text-[#1A2A3A]">{willData.bequests.length}</span>
+                  <span className="font-semibold text-[#1A2A3A]">{willData.bequests.filter(b => b.name).length}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-[#94A3B8]">Heirs</span>
-                  <span className="font-semibold text-[#1A2A3A]">{heirs.length}</span>
+                  <span className="font-semibold text-[#1A2A3A]">{heirs.filter(h => h.relation || h.name).length}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-[#94A3B8]">Witnesses</span>
@@ -973,7 +1065,7 @@ const Wills = () => {
               {error && <p className="text-sm text-[#DC2626]">{error}</p>}
             </div>
             
-            <div className="p-6 border-t border-[#F1F7FC] flex gap-3">
+            <div className="p-6 border-t border-[#F1F7FC] flex flex-col sm:flex-row gap-3">
               <button 
                 className="flex-1 px-6 py-3 bg-white text-[#5A6A7A] font-semibold rounded-xl border border-[#E8EEF4] hover:bg-[#F1F7FC] transition-all duration-200"
                 onClick={() => setShowConfirmModal(false)}
@@ -1005,8 +1097,8 @@ const Wills = () => {
           <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="p-6 border-b border-[#F1F7FC] bg-[#1769AA] rounded-t-2xl">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-bold text-white">Will Saved!</h3>
-                <button className="text-white/60 hover:text-white transition-colors" onClick={() => setShowSuccessModal(false)}>
+                <h3 className="text-lg font-bold text-white">Will Saved</h3>
+                <button className="text-white/60 hover:text-white transition-colors text-xl" onClick={() => setShowSuccessModal(false)}>
                   ✕
                 </button>
               </div>
@@ -1053,12 +1145,12 @@ const Wills = () => {
       {/* ===== SUCCESS TOAST ===== */}
       {success && (
         <div className="fixed top-6 right-6 z-50 bg-[#1769AA] text-white px-6 py-4 rounded-2xl shadow-2xl shadow-[#1769AA]/30 flex items-center gap-3 animate-slideDown max-w-sm border border-white/10">
-          <svg className="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-white/80 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
           </svg>
           <span className="text-sm font-medium">{success}</span>
           <button 
-            className="text-white/60 hover:text-white transition ml-2"
+            className="text-white/60 hover:text-white transition ml-2 flex-shrink-0"
             onClick={() => setSuccess('')}
           >
             ✕
