@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { cartService } from '../services/api';
 
 const Cart = ({ 
   cart, 
@@ -49,23 +50,46 @@ const Cart = ({
     setLocalProcessing(true);
     setError('');
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const newOrderNumber = 'ORD' + Date.now().toString().slice(-8);
+      // Create order
+      const orderResponse = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('halalhub_token')}`
+        },
+        body: JSON.stringify({
+          items: cart.map(item => ({
+            productId: item.product_id || item.id,
+            quantity: item.quantity,
+            price: item.price
+          })),
+          subtotal: getCartTotal(),
+          deliveryFee: getDeliveryFee(),
+          total: getTotal()
+        })
+      });
+
+      if (!orderResponse.ok) {
+        throw new Error('Order creation failed');
+      }
+
+      const orderData = await orderResponse.json();
+      const newOrderNumber = orderData.orderNumber || 'ORD' + Date.now().toString().slice(-8);
       setOrderNumber(newOrderNumber);
+
+      // Clear cart from database using API
+      await cartService.clearCart();
+
+      // Clear local cart state
+      setCart([]);
+
       setShowCheckoutModal(false);
       setShowSuccessModal(true);
-      
-      // Clear cart immediately using parent's setCart
-      setCart([]);
-      
-      if (fetchCart) {
-        await fetchCart();
-      }
       
       setSuccess('Order placed successfully!');
       setTimeout(() => setSuccess(''), 5000);
     } catch (err) {
+      console.error('Order error:', err);
       setError(err.response?.data?.error || 'Order failed. Please try again.');
     } finally {
       setLocalProcessing(false);
@@ -80,6 +104,7 @@ const Cart = ({
     if (cart.length === 0) return;
     
     try {
+      await cartService.clearCart();
       setCart([]);
       setSuccess('Cart cleared.');
       setTimeout(() => setSuccess(''), 3000);

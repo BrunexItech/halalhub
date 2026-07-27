@@ -1,8 +1,8 @@
 const router = require('express').Router();
-const { v4: uuidv4 } = require('uuid');
-const { Client } = require('pg');
 const { authenticate } = require('../middleware/auth');
+const { Client } = require('pg');
 
+// Database connection
 let client;
 
 async function getClient() {
@@ -19,90 +19,85 @@ async function getClient() {
   return client;
 }
 
-// All cart routes require authentication
-router.use(authenticate);
-
 // ============================================================
-// 1. GET CART ITEMS
+// 1. GET CART ITEMS (Authenticated)
 // ============================================================
-router.get('/', async (req, res) => {
+router.get('/', authenticate, async (req, res) => {
   try {
     const db = await getClient();
     const userId = req.user.id;
 
-    const result = await db.query(`
+    const result = await db.query(
+      `
       SELECT 
-        c.id as cart_id,
+        c.id,
         c.product_id,
         c.quantity,
-        c.createdat as added_at,
-        p.id,
-        p.name,
+        c.createdat,
+        p.name as product_name,
         p.price,
+        p.description,
         p.original_price,
         p.images,
-        p.category,
+        p.stock,
         p.is_halal,
-        p.vendor_id,
         u.fullname as vendor_name,
-        u.business_name
+        u.id as vendor_id
       FROM cart c
       JOIN products p ON c.product_id = p.id
       JOIN users u ON p.vendor_id = u.id
       WHERE c.user_id = $1
       ORDER BY c.createdat DESC
-    `, [userId]);
+      `,
+      [userId]
+    );
 
-    const items = result.rows.map(row => ({
-      id: row.product_id,
-      cart_id: row.cart_id,
-      name: row.name,
-      price: row.price,
-      original_price: row.original_price,
-      quantity: row.quantity,
-      images: row.images || [],
-      image: row.images && row.images.length > 0 ? row.images[0] : null,
-      category: row.category,
-      is_halal: row.is_halal,
-      vendor_id: row.vendor_id,
-      vendor_name: row.vendor_name || row.business_name,
-      added_at: row.added_at
-    }));
+    const totalItems = result.rows.reduce((sum, item) => sum + parseInt(item.quantity), 0);
+    const totalAmount = result.rows.reduce((sum, item) => sum + (parseFloat(item.price) * parseInt(item.quantity)), 0);
 
     res.json({
       success: true,
-      items: items,
-      total_items: items.reduce((sum, item) => sum + item.quantity, 0),
-      total_price: items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+      items: result.rows,
+      totalItems: totalItems,
+      totalAmount: totalAmount
     });
 
-  } catch (err) {
-    console.error('Error fetching cart:', err.message);
-    res.status(500).json({ error: 'Failed to fetch cart' });
+  } catch (error) {
+    console.error('Error fetching cart:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch cart items'
+    });
   }
 });
 
 // ============================================================
-// 2. ADD ITEM TO CART
+// 2. ADD ITEM TO CART (Authenticated)
 // ============================================================
-router.post('/', async (req, res) => {
+router.post('/', authenticate, async (req, res) => {
   try {
     const db = await getClient();
     const userId = req.user.id;
-    const { product_id, quantity } = req.body;
+    const { productId, quantity = 1 } = req.body;
 
-    if (!product_id) {
-      return res.status(400).json({ error: 'Product ID is required' });
+    if (!productId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Product ID is required'
+      });
     }
 
-    // Check if product exists and is active
+    // Check product exists and has stock
     const productCheck = await db.query(
-      'SELECT id, name, price, stock, images FROM products WHERE id = $1 AND is_active = true',
-      [product_id]
+      'SELECT id, stock FROM products WHERE id = $1 AND is_active = true',
+      [productId]
     );
 
     if (productCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Product not found or unavailable' });
+      return res.status(404).json({
+        success: false,
+        error: 'Product not found or unavailable'
+      });
     }
 
     const product = productCheck.rows[0];
@@ -110,128 +105,170 @@ router.post('/', async (req, res) => {
     // Check if item already in cart
     const existing = await db.query(
       'SELECT id, quantity FROM cart WHERE user_id = $1 AND product_id = $2',
-      [userId, product_id]
+      [userId, productId]
     );
 
-    const newQuantity = quantity || 1;
+    let cartId;
+    let newQuantity;
 
     if (existing.rows.length > 0) {
-      // Update existing cart item
-      const updatedQuantity = existing.rows[0].quantity + newQuantity;
+      // Update quantity
+      newQuantity = parseInt(existing.rows[0].quantity) + parseInt(quantity);
       
       // Check stock
-      if (product.stock !== null && updatedQuantity > product.stock) {
-        return res.status(400).json({ 
-          error: `Only ${product.stock} items available in stock` 
+      if (newQuantity > parseInt(product.stock)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Not enough stock available'
         });
       }
 
       await db.query(
         'UPDATE cart SET quantity = $1, updatedat = NOW() WHERE id = $2',
-        [updatedQuantity, existing.rows[0].id]
+        [newQuantity, existing.rows[0].id]
       );
-
-      res.json({
-        success: true,
-        message: 'Cart updated successfully',
-        cart_id: existing.rows[0].id,
-        quantity: updatedQuantity
-      });
+      cartId = existing.rows[0].id;
     } else {
-      // Check stock
-      if (product.stock !== null && newQuantity > product.stock) {
-        return res.status(400).json({ 
-          error: `Only ${product.stock} items available in stock` 
+      // Add new item
+      if (parseInt(quantity) > parseInt(product.stock)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Not enough stock available'
         });
       }
 
-      // Add new item to cart
-      const cartId = 'cart-' + Date.now();
+      cartId = 'cart-' + Date.now().toString(36);
       await db.query(
-        'INSERT INTO cart (id, user_id, product_id, quantity, createdat, updatedat) VALUES ($1, $2, $3, $4, NOW(), NOW())',
-        [cartId, userId, product_id, newQuantity]
+        `INSERT INTO cart (id, user_id, product_id, quantity, createdat, updatedat)
+         VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+        [cartId, userId, productId, quantity]
       );
-
-      res.json({
-        success: true,
-        message: 'Item added to cart successfully',
-        cart_id: cartId,
-        quantity: newQuantity
-      });
+      newQuantity = parseInt(quantity);
     }
 
-  } catch (err) {
-    console.error('Error adding to cart:', err.message);
-    res.status(500).json({ error: 'Failed to add to cart' });
+    // Get updated cart total
+    const cartSummary = await db.query(
+      `
+      SELECT 
+        COUNT(*) as total_items,
+        COALESCE(SUM(quantity), 0) as total_quantity,
+        COALESCE(SUM(p.price * quantity), 0) as total_amount
+      FROM cart c
+      JOIN products p ON c.product_id = p.id
+      WHERE c.user_id = $1
+      `,
+      [userId]
+    );
+
+    res.status(201).json({
+      success: true,
+      message: 'Item added to cart',
+      data: {
+        cartId: cartId,
+        productId: productId,
+        quantity: newQuantity,
+        totalItems: parseInt(cartSummary.rows[0].total_items) || 0,
+        totalQuantity: parseInt(cartSummary.rows[0].total_quantity) || 0,
+        totalAmount: parseFloat(cartSummary.rows[0].total_amount) || 0
+      }
+    });
+
+  } catch (error) {
+    console.error('Error adding to cart:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to add item to cart'
+    });
   }
 });
 
 // ============================================================
-// 3. UPDATE CART ITEM QUANTITY
+// 3. UPDATE CART ITEM QUANTITY (Authenticated)
 // ============================================================
-router.put('/:productId', async (req, res) => {
+router.put('/:productId', authenticate, async (req, res) => {
   try {
     const db = await getClient();
     const userId = req.user.id;
-    const productId = req.params.productId;
+    const { productId } = req.params;
     const { quantity } = req.body;
 
-    if (!quantity || quantity < 1) {
-      return res.status(400).json({ error: 'Quantity must be at least 1' });
+    if (!quantity || parseInt(quantity) < 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Valid quantity is required'
+      });
     }
 
     // Check if item exists in cart
-    const cartCheck = await db.query(
+    const existing = await db.query(
       'SELECT id FROM cart WHERE user_id = $1 AND product_id = $2',
       [userId, productId]
     );
 
-    if (cartCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Item not found in cart' });
-    }
-
-    // Check product stock
-    const productCheck = await db.query(
-      'SELECT stock FROM products WHERE id = $1 AND is_active = true',
-      [productId]
-    );
-
-    if (productCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Product not found' });
-    }
-
-    const product = productCheck.rows[0];
-    if (product.stock !== null && quantity > product.stock) {
-      return res.status(400).json({ 
-        error: `Only ${product.stock} items available in stock` 
+    if (existing.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Item not found in cart'
       });
     }
 
-    await db.query(
-      'UPDATE cart SET quantity = $1, updatedat = NOW() WHERE user_id = $2 AND product_id = $3',
-      [quantity, userId, productId]
+    if (parseInt(quantity) === 0) {
+      // Remove item if quantity is 0
+      await db.query(
+        'DELETE FROM cart WHERE user_id = $1 AND product_id = $2',
+        [userId, productId]
+      );
+    } else {
+      // Update quantity
+      await db.query(
+        'UPDATE cart SET quantity = $1, updatedat = NOW() WHERE user_id = $2 AND product_id = $3',
+        [quantity, userId, productId]
+      );
+    }
+
+    // Get updated cart summary
+    const cartSummary = await db.query(
+      `
+      SELECT 
+        COUNT(*) as total_items,
+        COALESCE(SUM(quantity), 0) as total_quantity,
+        COALESCE(SUM(p.price * quantity), 0) as total_amount
+      FROM cart c
+      JOIN products p ON c.product_id = p.id
+      WHERE c.user_id = $1
+      `,
+      [userId]
     );
 
     res.json({
       success: true,
-      message: 'Cart updated successfully',
-      quantity: quantity
+      message: parseInt(quantity) === 0 ? 'Item removed from cart' : 'Cart updated',
+      data: {
+        productId: productId,
+        quantity: parseInt(quantity),
+        totalItems: parseInt(cartSummary.rows[0].total_items) || 0,
+        totalQuantity: parseInt(cartSummary.rows[0].total_quantity) || 0,
+        totalAmount: parseFloat(cartSummary.rows[0].total_amount) || 0
+      }
     });
 
-  } catch (err) {
-    console.error('Error updating cart:', err.message);
-    res.status(500).json({ error: 'Failed to update cart' });
+  } catch (error) {
+    console.error('Error updating cart:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update cart'
+    });
   }
 });
 
 // ============================================================
-// 4. REMOVE ITEM FROM CART
+// 4. REMOVE ITEM FROM CART (Authenticated)
 // ============================================================
-router.delete('/:productId', async (req, res) => {
+router.delete('/:productId', authenticate, async (req, res) => {
   try {
     const db = await getClient();
     const userId = req.user.id;
-    const productId = req.params.productId;
+    const { productId } = req.params;
 
     const result = await db.query(
       'DELETE FROM cart WHERE user_id = $1 AND product_id = $2 RETURNING id',
@@ -239,24 +276,49 @@ router.delete('/:productId', async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Item not found in cart' });
+      return res.status(404).json({
+        success: false,
+        error: 'Item not found in cart'
+      });
     }
+
+    // Get updated cart summary
+    const cartSummary = await db.query(
+      `
+      SELECT 
+        COUNT(*) as total_items,
+        COALESCE(SUM(quantity), 0) as total_quantity,
+        COALESCE(SUM(p.price * quantity), 0) as total_amount
+      FROM cart c
+      JOIN products p ON c.product_id = p.id
+      WHERE c.user_id = $1
+      `,
+      [userId]
+    );
 
     res.json({
       success: true,
-      message: 'Item removed from cart successfully'
+      message: 'Item removed from cart',
+      data: {
+        totalItems: parseInt(cartSummary.rows[0].total_items) || 0,
+        totalQuantity: parseInt(cartSummary.rows[0].total_quantity) || 0,
+        totalAmount: parseFloat(cartSummary.rows[0].total_amount) || 0
+      }
     });
 
-  } catch (err) {
-    console.error('Error removing from cart:', err.message);
-    res.status(500).json({ error: 'Failed to remove from cart' });
+  } catch (error) {
+    console.error('Error removing from cart:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to remove item from cart'
+    });
   }
 });
 
 // ============================================================
-// 5. CLEAR CART
+// 5. CLEAR CART (Authenticated)
 // ============================================================
-router.delete('/', async (req, res) => {
+router.delete('/', authenticate, async (req, res) => {
   try {
     const db = await getClient();
     const userId = req.user.id;
@@ -268,12 +330,59 @@ router.delete('/', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Cart cleared successfully'
+      message: 'Cart cleared successfully',
+      data: {
+        totalItems: 0,
+        totalQuantity: 0,
+        totalAmount: 0
+      }
     });
 
-  } catch (err) {
-    console.error('Error clearing cart:', err.message);
-    res.status(500).json({ error: 'Failed to clear cart' });
+  } catch (error) {
+    console.error('Error clearing cart:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to clear cart'
+    });
+  }
+});
+
+// ============================================================
+// 6. GET CART SUMMARY (Authenticated)
+// ============================================================
+router.get('/summary', authenticate, async (req, res) => {
+  try {
+    const db = await getClient();
+    const userId = req.user.id;
+
+    const result = await db.query(
+      `
+      SELECT 
+        COUNT(*) as total_items,
+        COALESCE(SUM(quantity), 0) as total_quantity,
+        COALESCE(SUM(p.price * quantity), 0) as total_amount
+      FROM cart c
+      JOIN products p ON c.product_id = p.id
+      WHERE c.user_id = $1
+      `,
+      [userId]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        totalItems: parseInt(result.rows[0].total_items) || 0,
+        totalQuantity: parseInt(result.rows[0].total_quantity) || 0,
+        totalAmount: parseFloat(result.rows[0].total_amount) || 0
+      }
+    });
+
+  } catch (error) {
+    console.error('Error getting cart summary:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get cart summary'
+    });
   }
 });
 
