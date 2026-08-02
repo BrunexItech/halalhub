@@ -49,6 +49,8 @@ services:
       args:
         VITE_API_URL: ${VITE_API_URL}
         VITE_LIVEKIT_URL: ${VITE_LIVEKIT_URL}
+    env_file:
+      - ./frontend/.env
     container_name: halalhub_frontend
     ports:
       - "9999:80"
