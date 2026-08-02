@@ -68,7 +68,7 @@ services:
     environment:
       - LIVEKIT_API_KEY=devkey
       - LIVEKIT_API_SECRET=secret
-    command: --dev --bind 0.0.0.0
+    command: --dev --bind 0.0.0.0 --node-ip=38.242.200.152
     networks:
       - halalhub_network
     restart: unless-stopped
