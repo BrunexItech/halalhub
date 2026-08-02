@@ -20,6 +20,7 @@ const VideoCall = () => {
   const [isConnected, setIsConnected] = useState(false);
 
   const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL || 'ws://38.242.200.152:7880';
 
   useEffect(() => {
     if (bookingId) {
@@ -313,7 +314,7 @@ const VideoCall = () => {
       >
         {token ? (
           <LiveKitRoom
-            serverUrl="ws://halalhub_livekit:7880"
+            serverUrl={LIVEKIT_URL}
             token={token}
             connect={true}
             audio={!isMuted}

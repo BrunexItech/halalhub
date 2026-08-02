@@ -6,7 +6,12 @@ COPY package*.json ./
 RUN npm install
 
 COPY . .
-COPY .env .env
+
+# Pass build-time environment variables
+ARG VITE_API_URL
+ARG VITE_LIVEKIT_URL
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_LIVEKIT_URL=$VITE_LIVEKIT_URL
 
 RUN npm run build
 
