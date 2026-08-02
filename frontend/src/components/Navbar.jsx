@@ -542,7 +542,7 @@ const Navbar = ({ user, onLogout }) => {
           </nav>
 
           {/* Mobile User Section */}
-          <div className="flex-shrink-0 border-t border-[rgba(201,164,75,0.18)] p-3">
+          <div className="border-t border-[rgba(201,164,75,0.18)] p-3">
             <div className="flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg bg-[#0B342B]">
               <div className="relative flex-shrink-0">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#C9A44B] to-[#E1C16B] flex items-center justify-center text-[#032A24] font-bold text-sm">

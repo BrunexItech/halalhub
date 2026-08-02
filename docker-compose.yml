@@ -44,7 +44,11 @@ services:
     restart: unless-stopped
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+        VITE_LIVEKIT_URL: ${VITE_LIVEKIT_URL}
     container_name: halalhub_frontend
     ports:
       - "9999:80"
