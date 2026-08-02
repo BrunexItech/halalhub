@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const axios = require('axios');
 const { Client } = require('pg');
+const { authenticate } = require('../middleware/auth');
 const virtualAccountService = require('../services/virtual-account.service');
 
 let client;
@@ -39,10 +40,10 @@ async function getToken() {
 // ============================================================
 // 1. STK PUSH - Initiate M-Pesa Payment
 // ============================================================
-router.post('/stk-push', async (req, res) => {
+router.post('/stk-push', authenticate, async (req, res) => {
   try {
     const { phone, amount } = req.body;
-    const userId = req.headers['user-id'] || req.user?.id;
+    const userId = req.user.id;
 
     if (!userId) {
       return res.status(400).json({
@@ -431,17 +432,10 @@ router.post('/manual-topup', async (req, res) => {
 // ============================================================
 // 5. GET USER DEPOSIT HISTORY
 // ============================================================
-router.get('/history', async (req, res) => {
+router.get('/history', authenticate, async (req, res) => {
   try {
     const db = await getClient();
-    const userId = req.user?.id;
-
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        error: 'Authentication required'
-      });
-    }
+    const userId = req.user.id;
 
     const userAccount = await virtualAccountService.getUserAccount(userId);
 
