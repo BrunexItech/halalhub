@@ -4,6 +4,8 @@ const jwt = require('jsonwebtoken');
 const { Client } = require('pg');
 const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
+const bankClient = require('../services/bank-client');
+const virtualAccountService = require('../services/virtual-account.service');
 
 let client;
 
@@ -99,7 +101,22 @@ router.post('/verify-registration-otp', async (req, res) => {
 });
 
 // ============================================================
-// 1. CLIENT REGISTRATION
+// CREATE VIRTUAL ACCOUNT HELPER
+// ============================================================
+const createVirtualAccount = async (userId) => {
+  try {
+    const account = await virtualAccountService.getOrCreateAccount(userId, 'KES');
+    console.log(`[Auth] Virtual account created: ${account.account_number}`);
+    return account;
+  } catch (err) {
+    console.error('[Auth] Failed to create virtual account:', err.message);
+    // Don't throw - registration should succeed even if account creation fails
+    return null;
+  }
+};
+
+// ============================================================
+// 1. CLIENT REGISTRATION (with Virtual Account)
 // ============================================================
 router.post('/register-client', async (req, res) => {
   try {
@@ -118,27 +135,55 @@ router.post('/register-client', async (req, res) => {
     const pinHash = await bcrypt.hash(pin, 12);
     const userId = 'client-' + Date.now();
     
-    await db.query(
-      `INSERT INTO users (id, fullname, phone, email, nationalid, pinhash, role, region, sub_county, ward, kycstatus)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending')`,
-      [userId, fullName, phone, email, nationalId, pinHash, 'client', region || '', subCounty || '', ward || '']
-    );
+    await db.query('BEGIN');
     
-    otpStore.delete(`reg_${phone}`);
-    otpStore.delete(`reg_${phone}_verified`);
+    try {
+      // Create user
+      await db.query(
+        `INSERT INTO users (id, fullname, phone, email, nationalid, pinhash, role, region, sub_county, ward, kycstatus)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending')`,
+        [userId, fullName, phone, email, nationalId, pinHash, 'client', region || '', subCounty || '', ward || '']
+      );
+      
+      // Commit user creation first
+      await db.query('COMMIT');
+      
+      // Create virtual account AFTER user is committed
+      await createVirtualAccount(userId);
+      
+      otpStore.delete(`reg_${phone}`);
+      otpStore.delete(`reg_${phone}_verified`);
+      
+      // Get virtual account balance
+      const account = await virtualAccountService.getUserAccount(userId);
+      const balance = account?.balance || 0;
+      
+      const token = jwt.sign(
+        { id: userId, email, role: 'client' },
+        process.env.JWT_SECRET || 'halalhub_sharia_2025',
+        { expiresIn: '7d' }
+      );
+      
+      res.status(201).json({
+        success: true,
+        message: 'Account created successfully!',
+        token,
+        user: { 
+          id: userId, 
+          fullName, 
+          phone, 
+          email, 
+          role: 'client',
+          balance: balance,
+          accountNumber: account?.account_number || null
+        }
+      });
+      
+    } catch (err) {
+      await db.query('ROLLBACK');
+      throw err;
+    }
     
-    const token = jwt.sign(
-      { id: userId, email, role: 'client' },
-      process.env.JWT_SECRET || 'halalhub_sharia_2025',
-      { expiresIn: '7d' }
-    );
-    
-    res.status(201).json({
-      success: true,
-      message: 'Account created successfully!',
-      token,
-      user: { id: userId, fullName, phone, email, role: 'client' }
-    });
   } catch (err) {
     if (err.code === '23505') {
       res.status(409).json({ error: 'Phone, email, or national ID already registered' });
@@ -150,13 +195,25 @@ router.post('/register-client', async (req, res) => {
 });
 
 // ============================================================
-// 2. VENDOR REGISTRATION
+// 2. VENDOR REGISTRATION (with Virtual Account)
 // ============================================================
 router.post('/register-vendor', async (req, res) => {
   try {
     const { 
-      businessName, businessType, phone, email, nationalId, kraPin, businessRegNo, pin, 
-      region, subCounty, ward, halalDeclared, termsAccepted 
+      businessName, 
+      businessType, 
+      vendorType,
+      phone, 
+      email, 
+      nationalId, 
+      kraPin, 
+      businessRegNo, 
+      pin, 
+      region, 
+      subCounty, 
+      ward, 
+      halalDeclared, 
+      termsAccepted 
     } = req.body;
     
     if (!businessName || !businessType || !phone || !email || !nationalId || !kraPin || !businessRegNo || !pin) {
@@ -177,53 +234,79 @@ router.post('/register-vendor', async (req, res) => {
     const vendorId = 'vendor-' + Date.now();
     const profileId = 'profile-' + Date.now();
     
-    await db.query(
-      `INSERT INTO users (
-        id, fullname, phone, email, nationalid, pinhash, role, region, sub_county, ward,
-        business_name, kra_pin, business_reg_no, halal_declared, terms_accepted, vendor_status, kycstatus
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'pending', 'pending')`,
-      [
+    // Determine vendor type (default to businessType if vendorType not provided)
+    const vendorTypeValue = vendorType || businessType || 'halalmarket';
+    
+    await db.query('BEGIN');
+    
+    try {
+      await db.query(
+        `INSERT INTO users (
+          id, fullname, phone, email, nationalid, pinhash, role, region, sub_county, ward,
+          business_name, kra_pin, business_reg_no, halal_declared, terms_accepted, vendor_status, kycstatus
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'pending', 'pending')`,
+        [
+          vendorId, 
+          businessName, 
+          phone, 
+          email, 
+          nationalId, 
+          pinHash, 
+          'vendor', 
+          region || '',
+          subCounty || '',
+          ward || '',
+          businessName,
+          kraPin,
+          businessRegNo,
+          halalDeclared,
+          termsAccepted
+        ]
+      );
+      
+      await db.query(`
+        INSERT INTO vendor_profiles (
+          id, user_id, business_name, business_type, vendor_type, description, location, is_active, createdat, updatedat
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+      `, [
+        profileId, 
         vendorId, 
         businessName, 
-        phone, 
-        email, 
-        nationalId, 
-        pinHash, 
-        'vendor', 
-        region || '',
-        subCounty || '',
-        ward || '',
-        businessName,
-        kraPin,
-        businessRegNo,
-        halalDeclared,
-        termsAccepted
-      ]
-    );
+        businessType || 'halalmarket', 
+        vendorTypeValue,
+        req.body.description || '', 
+        region || '', 
+        true
+      ]);
+      
+      // Commit vendor creation first
+      await db.query('COMMIT');
+      
+      // Create virtual account AFTER vendor is committed
+      await createVirtualAccount(vendorId);
+      
+      otpStore.delete(`reg_${phone}`);
+      otpStore.delete(`reg_${phone}_verified`);
+      
+      // Get virtual account balance
+      const account = await virtualAccountService.getUserAccount(vendorId);
+      const balance = account?.balance || 0;
+      
+      res.status(201).json({
+        success: true,
+        message: 'Vendor application submitted successfully! Awaiting admin approval.',
+        vendorId: vendorId,
+        vendorType: vendorTypeValue,
+        status: 'pending',
+        balance: balance,
+        accountNumber: account?.account_number || null
+      });
+      
+    } catch (err) {
+      await db.query('ROLLBACK');
+      throw err;
+    }
     
-    await db.query(`
-      INSERT INTO vendor_profiles (
-        id, user_id, business_name, business_type, description, location, is_active, createdat, updatedat
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-    `, [
-      profileId, 
-      vendorId, 
-      businessName, 
-      businessType || 'halalmarket', 
-      req.body.description || '', 
-      region || '', 
-      true
-    ]);
-    
-    otpStore.delete(`reg_${phone}`);
-    otpStore.delete(`reg_${phone}_verified`);
-    
-    res.status(201).json({
-      success: true,
-      message: 'Vendor application submitted successfully! Awaiting admin approval.',
-      vendorId: vendorId,
-      status: 'pending'
-    });
   } catch (err) {
     if (err.code === '23505') {
       res.status(409).json({ error: 'Phone, email, or national ID already registered' });
@@ -235,7 +318,7 @@ router.post('/register-vendor', async (req, res) => {
 });
 
 // ============================================================
-// 3. RELIGIOUS LEADER REGISTRATION (Imam / Kadhi)
+// 3. RELIGIOUS LEADER REGISTRATION (with Virtual Account)
 // ============================================================
 router.post('/register-imam', async (req, res) => {
   try {
@@ -271,83 +354,104 @@ router.post('/register-imam', async (req, res) => {
     const imamId = 'imam-' + Date.now();
     const imamProfileId = 'imamprof-' + Date.now();
     
-    await db.query(
-      `INSERT INTO users (
-        id, fullname, phone, email, nationalid, pinhash, role, region, sub_county, ward, 
-        imam_status, kycstatus
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending', 'pending')`,
-      [imamId, fullName, phone, email, nationalId, pinHash, 'imam', region || '', subCounty || '', ward || '']
-    );
+    await db.query('BEGIN');
     
-    await db.query(`
-      INSERT INTO imams (
-        id, user_id, title, sub_role, mosque_name, mosque_location, mosque_county, 
-        qualifications, years_of_service, status, createdat, updatedat
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending', NOW(), NOW())
-    `, [
-      imamProfileId, 
-      imamId, 
-      title || 'Imam', 
-      subRole, 
-      mosqueName, 
-      mosqueLocation, 
-      mosqueCounty || '', 
-      qualifications || [], 
-      parseInt(yearsOfService) || 0
-    ]);
-    
-    // Create mosque entry
-    const mosqueId = 'mosque-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
-    await db.query(`
-      INSERT INTO mosques (
-        id, name, location, county, imam_id, createdat, updatedat
-      ) VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
-    `, [
-      mosqueId,
-      mosqueName,
-      mosqueLocation,
-      mosqueCounty || '',
-      imamProfileId
-    ]);
-    
-    await db.query(`
-      INSERT INTO pension_balances (imam_id, total_contributions, total_supporters)
-      VALUES ($1, 0, 0)
-    `, [imamProfileId]);
-    
-    // If subRole is kadhi, also create entry in kadhis table
-    if (subRole === 'kadhi') {
-      const kadhiId = 'kadhi-' + Date.now();
+    try {
+      await db.query(
+        `INSERT INTO users (
+          id, fullname, phone, email, nationalid, pinhash, role, region, sub_county, ward, 
+          imam_status, kycstatus
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending', 'pending')`,
+        [imamId, fullName, phone, email, nationalId, pinHash, 'imam', region || '', subCounty || '', ward || '']
+      );
+      
       await db.query(`
-        INSERT INTO kadhis (
-          id, user_id, name, type, county, expertise, experience, bio, institution, available, createdat, updatedat
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+        INSERT INTO imams (
+          id, user_id, title, sub_role, mosque_name, mosque_location, mosque_county, 
+          qualifications, years_of_service, status, createdat, updatedat
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending', NOW(), NOW())
       `, [
-        kadhiId,
-        imamId,
-        fullName,
-        'kadhi',
-        mosqueCounty || '',
-        qualifications || [],
-        parseInt(yearsOfService) || 0,
-        req.body.bio || '',
-        req.body.institution || '',
-        true
+        imamProfileId, 
+        imamId, 
+        title || 'Imam', 
+        subRole, 
+        mosqueName, 
+        mosqueLocation, 
+        mosqueCounty || '', 
+        qualifications || [], 
+        parseInt(yearsOfService) || 0
       ]);
+      
+      // Create mosque entry
+      const mosqueId = 'mosque-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
+      await db.query(`
+        INSERT INTO mosques (
+          id, name, location, county, imam_id, createdat, updatedat
+        ) VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+      `, [
+        mosqueId,
+        mosqueName,
+        mosqueLocation,
+        mosqueCounty || '',
+        imamProfileId
+      ]);
+      
+      await db.query(`
+        INSERT INTO pension_balances (imam_id, total_contributions, total_supporters)
+        VALUES ($1, 0, 0)
+      `, [imamProfileId]);
+      
+      // If subRole is kadhi, also create entry in kadhis table
+      if (subRole === 'kadhi') {
+        const kadhiId = 'kadhi-' + Date.now();
+        await db.query(`
+          INSERT INTO kadhis (
+            id, user_id, name, type, county, expertise, experience, bio, institution, available, createdat, updatedat
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+        `, [
+          kadhiId,
+          imamId,
+          fullName,
+          'kadhi',
+          mosqueCounty || '',
+          qualifications || [],
+          parseInt(yearsOfService) || 0,
+          req.body.bio || '',
+          req.body.institution || '',
+          true
+        ]);
+      }
+      
+      // Commit religious leader creation first
+      await db.query('COMMIT');
+      
+      // Create virtual account AFTER leader is committed
+      await createVirtualAccount(imamId);
+      
+      otpStore.delete(`reg_${phone}`);
+      otpStore.delete(`reg_${phone}_verified`);
+      
+      // Get virtual account balance
+      const account = await virtualAccountService.getUserAccount(imamId);
+      const balance = account?.balance || 0;
+      
+      res.status(201).json({
+        success: true,
+        message: `${
+          subRole === 'kadhi' ? 'Kadhi' : 'Imam'
+        } application submitted successfully! Awaiting admin approval.`,
+        imamId: imamId,
+        subRole: subRole,
+        status: 'pending',
+        balance: balance,
+        accountNumber: account?.account_number || null
+      });
+      
+    } catch (err) {
+      await db.query('ROLLBACK');
+      throw err;
     }
     
-    otpStore.delete(`reg_${phone}`);
-    otpStore.delete(`reg_${phone}_verified`);
-    
-    res.status(201).json({
-      success: true,
-      message: `${
-        subRole === 'kadhi' ? 'Kadhi' : 'Imam'
-      } application submitted successfully! Awaiting admin approval.`,
-      imamId: imamId,
-      subRole: subRole,
-      status: 'pending'
-    });
   } catch (err) {
     if (err.code === '23505') {
       res.status(409).json({ error: 'Phone, email, or national ID already registered' });
@@ -428,9 +532,16 @@ router.post('/login-step2', async (req, res) => {
     }
     
     const db = await getClient();
+    
+    // ============================================================
+    // UPDATED: Remove walletbalance from query - get from virtual account
+    // ============================================================
     const result = await db.query(
-      `SELECT id, fullname, phone, email, role, pinhash, vendor_status, imam_status, kycstatus, walletbalance 
-       FROM users WHERE phone = $1`,
+      `SELECT u.id, u.fullname, u.phone, u.email, u.role, u.pinhash, u.vendor_status, u.imam_status, u.kycstatus,
+              vp.vendor_type
+       FROM users u
+       LEFT JOIN vendor_profiles vp ON u.id = vp.user_id
+       WHERE u.phone = $1`,
       [phone]
     );
     
@@ -448,6 +559,7 @@ router.post('/login-step2', async (req, res) => {
     
     let statusWarning = null;
     let subRole = null;
+    let vendorType = user.vendor_type || null;
     
     if (user.role === 'vendor' && user.vendor_status !== 'approved') {
       statusWarning = `Vendor account status: ${user.vendor_status}`;
@@ -470,8 +582,15 @@ router.post('/login-step2', async (req, res) => {
     
     otpStore.delete(`login_${phone}`);
     
+    // ============================================================
+    // GET VIRTUAL ACCOUNT BALANCE
+    // ============================================================
+    const account = await virtualAccountService.getUserAccount(user.id);
+    const balance = account?.balance || 0;
+    const accountNumber = account?.account_number || null;
+    
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, subRole: subRole },
+      { id: user.id, email: user.email, role: user.role, subRole: subRole, vendorType: vendorType },
       process.env.JWT_SECRET || 'halalhub_sharia_2025',
       { expiresIn: '7d' }
     );
@@ -487,9 +606,12 @@ router.post('/login-step2', async (req, res) => {
         email: user.email,
         role: user.role,
         subRole: subRole,
+        vendorType: vendorType,
         vendorStatus: user.vendor_status || 'pending',
         imamStatus: user.imam_status || 'pending',
-        kycStatus: user.kycstatus || 'pending'
+        kycStatus: user.kycstatus || 'pending',
+        balance: balance,
+        accountNumber: accountNumber
       },
       statusWarning: statusWarning
     });
@@ -512,9 +634,15 @@ router.get('/me', async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'halalhub_sharia_2025');
     const db = await getClient();
     
+    // ============================================================
+    // UPDATED: Remove walletbalance from query - get from virtual account
+    // ============================================================
     const result = await db.query(
-      `SELECT id, fullname, phone, email, role, vendor_status, imam_status, kycstatus, walletbalance 
-       FROM users WHERE id = $1`,
+      `SELECT u.id, u.fullname, u.phone, u.email, u.role, u.vendor_status, u.imam_status, u.kycstatus,
+              vp.vendor_type
+       FROM users u
+       LEFT JOIN vendor_profiles vp ON u.id = vp.user_id
+       WHERE u.id = $1`,
       [decoded.id]
     );
     
@@ -535,11 +663,28 @@ router.get('/me', async (req, res) => {
       }
     }
     
+    // ============================================================
+    // GET VIRTUAL ACCOUNT BALANCE
+    // ============================================================
+    const account = await virtualAccountService.getUserAccount(user.id);
+    const balance = account?.balance || 0;
+    const accountNumber = account?.account_number || null;
+    
     res.json({ 
       success: true, 
       user: {
-        ...user,
-        subRole: subRole
+        id: user.id,
+        fullName: user.fullname,
+        phone: user.phone,
+        email: user.email,
+        role: user.role,
+        subRole: subRole,
+        vendorType: user.vendor_type || null,
+        vendorStatus: user.vendor_status || 'pending',
+        imamStatus: user.imam_status || 'pending',
+        kycStatus: user.kycstatus || 'pending',
+        balance: balance,
+        accountNumber: accountNumber
       } 
     });
   } catch (err) {

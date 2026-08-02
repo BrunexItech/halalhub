@@ -1,6 +1,9 @@
 const router = require('express').Router();
 const { Client } = require('pg');
 const { authenticate } = require('../middleware/auth');
+const virtualAccountService = require('../services/virtual-account.service');
+const bankClient = require('../services/bank-client');
+const feeService = require('../services/fee.service');
 
 let client;
 
@@ -114,25 +117,26 @@ router.get('/users/:userId', async (req, res) => {
 });
 
 // ============================================================
-// 3. GET USER WALLET BALANCE
+// 3. GET USER WALLET BALANCE (From Virtual Account)
 // ============================================================
 router.get('/balance', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
 
-    const result = await db.query(
-      'SELECT walletbalance FROM users WHERE id = $1',
-      [userId]
-    );
+    const account = await virtualAccountService.getUserAccount(userId);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
+    if (!account) {
+      return res.status(404).json({
+        success: false,
+        error: 'Virtual account not found. Please contact support.'
+      });
     }
 
     res.json({
       success: true,
-      balance: parseInt(result.rows[0].walletbalance) || 0
+      balance: account.balance || 0,
+      currency: account.currency || 'KES',
+      accountNumber: account.account_number
     });
 
   } catch (err) {
@@ -142,11 +146,12 @@ router.get('/balance', async (req, res) => {
 });
 
 // ============================================================
-// 4. PROCESS P2P TRANSFER
+// 4. PROCESS P2P TRANSFER (Using Virtual Accounts)
 // ============================================================
 router.post('/transfer', async (req, res) => {
+  const db = await getClient();
+
   try {
-    const db = await getClient();
     const senderId = req.user.id;
     const { recipient_id, amount, note } = req.body;
 
@@ -167,20 +172,25 @@ router.post('/transfer', async (req, res) => {
       return res.status(400).json({ error: 'Cannot transfer to yourself' });
     }
 
-    // Check sender balance
-    const senderCheck = await db.query(
-      'SELECT walletbalance FROM users WHERE id = $1',
-      [senderId]
-    );
+    // Get sender's virtual account
+    const senderAccount = await virtualAccountService.getUserAccount(senderId);
 
-    if (senderCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Sender not found' });
+    if (!senderAccount) {
+      return res.status(404).json({
+        success: false,
+        error: 'Sender virtual account not found. Please contact support.'
+      });
     }
 
-    const senderBalance = parseInt(senderCheck.rows[0].walletbalance) || 0;
+    const senderBalance = senderAccount.balance || 0;
 
     if (senderBalance < parseFloat(amount)) {
-      return res.status(400).json({ error: 'Insufficient balance' });
+      return res.status(400).json({
+        success: false,
+        error: 'Insufficient balance',
+        balance: senderBalance,
+        required: parseFloat(amount)
+      });
     }
 
     // Check recipient exists
@@ -195,26 +205,61 @@ router.post('/transfer', async (req, res) => {
 
     const recipient = recipientCheck.rows[0];
 
+    // Get recipient's virtual account
+    const recipientAccount = await virtualAccountService.getUserAccount(recipient_id);
+
+    if (!recipientAccount) {
+      return res.status(404).json({
+        success: false,
+        error: 'Recipient virtual account not found. Please contact support.'
+      });
+    }
+
+    // Calculate fee
+    const fee = feeService.calculateTransferFee(parseFloat(amount));
+    const totalDeduct = parseFloat(amount) + fee.fee;
+
     // Generate transaction reference
     const reference = 'P2P-' + Date.now().toString().slice(-8) + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
 
-    // Start transaction
     await db.query('BEGIN');
 
     try {
-      // Deduct from sender
+      // 1. Deduct from sender's virtual account
       await db.query(
-        'UPDATE users SET walletbalance = walletbalance - $1, updatedat = NOW() WHERE id = $2',
-        [parseFloat(amount), senderId]
+        `UPDATE virtual_accounts 
+         SET balance = balance - $1, updatedat = NOW() 
+         WHERE id = $2`,
+        [totalDeduct, senderAccount.id]
       );
 
-      // Add to recipient
+      // 2. Add to recipient's virtual account
       await db.query(
-        'UPDATE users SET walletbalance = walletbalance + $1, updatedat = NOW() WHERE id = $2',
-        [parseFloat(amount), recipient_id]
+        `UPDATE virtual_accounts 
+         SET balance = balance + $1, updatedat = NOW() 
+         WHERE id = $2`,
+        [parseFloat(amount), recipientAccount.id]
       );
 
-      // Record transaction
+      // 3. Record bank transaction
+      const txId = 'btxn-' + Date.now().toString(36) + require('crypto').randomBytes(4).toString('hex');
+      await db.query(`
+        INSERT INTO bank_transactions (
+          id, reference, from_account, to_account, amount, fee, type, status, description, completed_at, createdat, updatedat
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW(), NOW())
+      `, [
+        txId,
+        reference,
+        senderAccount.account_number,
+        recipientAccount.account_number,
+        parseFloat(amount),
+        fee.fee,
+        'transfer',
+        'completed',
+        `P2P transfer to ${recipient.fullname}`
+      ]);
+
+      // 4. Record P2P transaction
       const transactionId = 'p2p-' + Date.now();
       await db.query(`
         INSERT INTO p2p_transactions (
@@ -222,21 +267,41 @@ router.post('/transfer', async (req, res) => {
         ) VALUES ($1, $2, $3, $4, $5, $6, 'completed', NOW(), NOW())
       `, [transactionId, senderId, recipient_id, parseFloat(amount), note || null, reference]);
 
+      // 5. Record fee transaction (if fee > 0)
+      if (fee.fee > 0) {
+        const feeTxId = 'btxn-' + Date.now().toString(36) + require('crypto').randomBytes(4).toString('hex');
+        const feeRef = 'FEE-' + Date.now().toString(36).toUpperCase() + require('crypto').randomBytes(4).toString('hex').toUpperCase();
+
+        await db.query(`
+          INSERT INTO bank_transactions (
+            id, reference, from_account, to_account, amount, fee, type, status, description, completed_at, createdat, updatedat
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW(), NOW())
+        `, [
+          feeTxId,
+          feeRef,
+          senderAccount.account_number,
+          process.env.BANK_MASTER_ACCOUNT || 'HALALHUB_MASTER',
+          fee.fee,
+          0,
+          'fee',
+          'completed',
+          'P2P transfer fee'
+        ]);
+      }
+
       await db.query('COMMIT');
 
       // Get updated balance
-      const newBalance = await db.query(
-        'SELECT walletbalance FROM users WHERE id = $1',
-        [senderId]
-      );
+      const newBalance = await virtualAccountService.getUserAccount(senderId);
 
       res.json({
         success: true,
         message: 'Transfer completed successfully',
         reference: reference,
         amount: parseFloat(amount),
+        fee: fee.fee,
         recipient_name: recipient.fullname,
-        new_balance: parseInt(newBalance.rows[0].walletbalance) || 0,
+        new_balance: newBalance?.balance || 0,
         timestamp: new Date().toISOString()
       });
 
@@ -381,6 +446,39 @@ router.get('/stats', async (req, res) => {
   } catch (err) {
     console.error('Error fetching stats:', err.message);
     res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
+// ============================================================
+// 8. SYNC P2P BALANCE WITH BANK
+// ============================================================
+router.post('/sync', async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const result = await virtualAccountService.syncWithBank(userId);
+
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        error: result.error || 'Failed to sync with bank'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Balance synced with bank successfully',
+      data: {
+        ourBalance: result.ourBalance,
+        bankBalance: result.bankBalance,
+        isSynced: result.isSynced,
+        accountNumber: result.accountNumber
+      }
+    });
+
+  } catch (err) {
+    console.error('Error syncing P2P balance:', err.message);
+    res.status(500).json({ error: 'Failed to sync balance' });
   }
 });
 

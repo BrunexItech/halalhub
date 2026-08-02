@@ -289,14 +289,15 @@ const PaymentModal = ({
           }
 
           .payment-modal {
-            background: white;
+            background: #FAFAF7;
             border-radius: 16px;
             max-width: 420px;
             width: 100%;
             max-height: 90vh;
             overflow-y: auto;
             animation: slideUp 0.3s ease;
-            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 24px 80px rgba(11, 52, 43, 0.25);
+            border: 1px solid #E8EEF4;
           }
 
           @keyframes slideUp {
@@ -309,22 +310,23 @@ const PaymentModal = ({
             justify-content: space-between;
             align-items: center;
             padding: 16px 20px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-            background: linear-gradient(135deg, #0B3D2E, #145A40);
+            border-bottom: 1px solid #E8EEF4;
+            background: #0B342B;
             border-radius: 16px 16px 0 0;
           }
 
           .payment-modal-header h3 {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 1.2rem;
-            color: white;
+            font-family: 'Outfit', sans-serif;
+            font-size: 17px;
+            font-weight: 600;
+            color: #FFFFFF;
             margin: 0;
           }
 
           .payment-modal-close {
             background: none;
             border: none;
-            font-size: 1.2rem;
+            font-size: 18px;
             cursor: pointer;
             color: rgba(255, 255, 255, 0.6);
             padding: 4px 8px;
@@ -332,7 +334,7 @@ const PaymentModal = ({
           }
 
           .payment-modal-close:hover {
-            color: white;
+            color: #FFFFFF;
           }
 
           .payment-modal-body {
@@ -343,22 +345,24 @@ const PaymentModal = ({
           .payment-amount {
             text-align: center;
             padding: 16px;
-            background: #F5E8C0;
+            background: #F4F5F1;
             border-radius: 10px;
             margin-bottom: 20px;
+            border: 1px solid #E8EEF4;
           }
 
           .payment-amount-label {
-            font-size: 0.75rem;
-            color: #6B5C3E;
+            font-size: 13px;
+            color: #6B7280;
             display: block;
+            font-weight: 500;
           }
 
           .payment-amount-value {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 2rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: 28px;
             font-weight: 700;
-            color: #0B3D2E;
+            color: #0B342B;
           }
 
           /* ===== FORM ===== */
@@ -375,74 +379,81 @@ const PaymentModal = ({
           }
 
           .payment-label {
-            font-size: 0.7rem;
-            font-weight: 600;
-            color: #6B5C3E;
+            font-size: 13px;
+            font-weight: 500;
+            color: #6B7280;
             letter-spacing: 0.04em;
           }
 
           .payment-input {
             padding: 12px 14px;
-            border: 1.5px solid rgba(0, 0, 0, 0.08);
-            border-radius: 8px;
+            border: 1.5px solid #E8EEF4;
+            border-radius: 10px;
             font-family: 'Outfit', sans-serif;
-            font-size: 1rem;
-            color: #1C1208;
-            background: white;
+            font-size: 15px;
+            color: #1F2937;
+            background: #FFFFFF;
             outline: none;
             transition: all 0.28s ease;
             width: 100%;
           }
 
           .payment-input:focus {
-            border-color: #0B3D2E;
-            box-shadow: 0 0 0 3px rgba(11, 61, 46, 0.08);
+            border-color: #0B342B;
+            box-shadow: 0 0 0 3px rgba(11, 52, 43, 0.08);
+          }
+
+          .payment-input::placeholder {
+            color: #9CA3AF;
           }
 
           .payment-hint {
-            font-size: 0.65rem;
-            color: #6B5C3E;
+            font-size: 12px;
+            color: #6B7280;
           }
 
           .payment-details {
-            background: rgba(0, 0, 0, 0.02);
+            background: #F4F5F1;
             border-radius: 8px;
             padding: 10px 14px;
+            border: 1px solid #E8EEF4;
           }
 
           .payment-detail-row {
             display: flex;
             justify-content: space-between;
             padding: 3px 0;
-            font-size: 0.8rem;
-            color: #1C1208;
+            font-size: 14px;
+            color: #1F2937;
           }
 
           .payment-error {
-            color: #C0392B;
-            font-size: 0.8rem;
+            color: #DC2626;
+            font-size: 14px;
             padding: 8px 12px;
-            background: rgba(192, 57, 43, 0.06);
+            background: rgba(220, 38, 38, 0.06);
             border-radius: 6px;
+            border: 1px solid rgba(220, 38, 38, 0.15);
           }
 
           .payment-submit-btn {
             width: 100%;
             padding: 14px;
-            background: linear-gradient(135deg, #C9A84C, #E8C96A);
+            background: #0B342B;
             border: none;
-            border-radius: 8px;
-            color: #0B3D2E;
+            border-radius: 10px;
+            color: #FFFFFF;
             font-family: 'Outfit', sans-serif;
-            font-size: 1rem;
-            font-weight: 700;
+            font-size: 15px;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
           }
 
           .payment-submit-btn:hover:not(:disabled) {
+            background: #032A24;
             transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(201, 168, 76, 0.3);
+            box-shadow: 0 4px 20px rgba(11, 52, 43, 0.25);
           }
 
           .payment-submit-btn:disabled {
@@ -461,8 +472,8 @@ const PaymentModal = ({
             display: inline-block;
             width: 18px;
             height: 18px;
-            border: 2px solid rgba(11, 61, 46, 0.2);
-            border-top-color: #0B3D2E;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-top-color: #FFFFFF;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
           }
@@ -478,19 +489,19 @@ const PaymentModal = ({
           }
 
           .payment-polling-icon {
-            font-size: 3rem;
+            font-size: 40px;
             margin-bottom: 8px;
           }
 
           .payment-polling-title {
-            font-size: 1.1rem;
+            font-size: 17px;
             font-weight: 600;
-            color: #0B3D2E;
+            color: #1F2937;
           }
 
           .payment-polling-message {
-            font-size: 0.85rem;
-            color: #6B5C3E;
+            font-size: 14px;
+            color: #6B7280;
             margin: 4px 0 16px;
           }
 
@@ -498,8 +509,8 @@ const PaymentModal = ({
             display: inline-block;
             width: 40px;
             height: 40px;
-            border: 3px solid rgba(0, 0, 0, 0.06);
-            border-top-color: #C9A84C;
+            border: 3px solid rgba(11, 52, 43, 0.1);
+            border-top-color: #0B342B;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
             margin: 8px 0;
@@ -508,12 +519,16 @@ const PaymentModal = ({
           .payment-polling-cancel {
             background: none;
             border: none;
-            color: #C0392B;
-            font-size: 0.8rem;
+            color: #DC2626;
+            font-size: 14px;
             text-decoration: underline;
             cursor: pointer;
             font-family: 'Outfit', sans-serif;
             margin-top: 8px;
+          }
+
+          .payment-polling-cancel:hover {
+            color: #B91C1C;
           }
 
           /* ===== SUCCESS ===== */
@@ -523,61 +538,63 @@ const PaymentModal = ({
           }
 
           .payment-success-icon {
-            font-size: 3.5rem;
+            font-size: 48px;
             margin-bottom: 4px;
           }
 
           .payment-success-title {
-            font-size: 1.1rem;
+            font-size: 17px;
             font-weight: 700;
-            color: #27AE60;
+            color: #3FAF73;
           }
 
           .payment-success-message {
-            font-size: 0.85rem;
-            color: #6B5C3E;
+            font-size: 14px;
+            color: #6B7280;
             margin-bottom: 12px;
           }
 
           .payment-success-details {
             text-align: left;
-            background: rgba(0, 0, 0, 0.02);
+            background: #F4F5F1;
             border-radius: 8px;
             padding: 12px;
             margin-bottom: 16px;
+            border: 1px solid #E8EEF4;
           }
 
           .payment-success-row {
             display: flex;
             justify-content: space-between;
             padding: 4px 0;
-            font-size: 0.8rem;
-            color: #1C1208;
+            font-size: 14px;
+            color: #1F2937;
           }
 
           .payment-success-ref {
             font-family: monospace;
-            font-size: 0.7rem;
-            color: #6B5C3E;
+            font-size: 12px;
+            color: #6B7280;
           }
 
           .payment-success-btn {
             width: 100%;
             padding: 12px;
-            background: linear-gradient(135deg, #27AE60, #2ECC71);
+            background: #0B342B;
             border: none;
-            border-radius: 8px;
-            color: white;
+            border-radius: 10px;
+            color: #FFFFFF;
             font-family: 'Outfit', sans-serif;
-            font-size: 0.95rem;
-            font-weight: 700;
+            font-size: 15px;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
           }
 
           .payment-success-btn:hover {
+            background: #032A24;
             transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(39, 174, 96, 0.3);
+            box-shadow: 0 4px 20px rgba(11, 52, 43, 0.25);
           }
 
           /* ===== ERROR STATE ===== */
@@ -587,19 +604,19 @@ const PaymentModal = ({
           }
 
           .payment-error-icon {
-            font-size: 3rem;
+            font-size: 40px;
             margin-bottom: 4px;
           }
 
           .payment-error-title {
-            font-size: 1.1rem;
+            font-size: 17px;
             font-weight: 700;
-            color: #C0392B;
+            color: #DC2626;
           }
 
           .payment-error-message {
-            font-size: 0.85rem;
-            color: #6B5C3E;
+            font-size: 14px;
+            color: #6B7280;
             margin: 4px 0 16px;
           }
 
@@ -611,39 +628,40 @@ const PaymentModal = ({
           .payment-error-retry {
             flex: 1;
             padding: 10px;
-            background: linear-gradient(135deg, #C9A84C, #E8C96A);
+            background: #0B342B;
             border: none;
             border-radius: 8px;
-            color: #0B3D2E;
+            color: #FFFFFF;
             font-family: 'Outfit', sans-serif;
-            font-size: 0.85rem;
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
           }
 
           .payment-error-retry:hover {
+            background: #032A24;
             transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(201, 168, 76, 0.3);
+            box-shadow: 0 4px 16px rgba(11, 52, 43, 0.25);
           }
 
           .payment-error-cancel {
             flex: 1;
             padding: 10px;
             background: transparent;
-            border: 1.5px solid #C0392B;
+            border: 1.5px solid #DC2626;
             border-radius: 8px;
-            color: #C0392B;
+            color: #DC2626;
             font-family: 'Outfit', sans-serif;
-            font-size: 0.85rem;
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
           }
 
           .payment-error-cancel:hover {
-            background: #C0392B;
-            color: white;
+            background: #DC2626;
+            color: #FFFFFF;
           }
 
           /* ======================================== */
@@ -657,7 +675,7 @@ const PaymentModal = ({
             }
 
             .payment-amount-value {
-              font-size: 1.5rem;
+              font-size: 22px;
             }
 
             .payment-error-actions {
@@ -674,7 +692,22 @@ const PaymentModal = ({
             }
 
             .payment-success-row {
-              font-size: 0.75rem;
+              font-size: 13px;
+            }
+
+            .payment-modal-header h3 {
+              font-size: 15px;
+            }
+
+            .payment-submit-btn {
+              font-size: 14px;
+              padding: 12px;
+            }
+          }
+
+          @media (min-width: 481px) and (max-width: 768px) {
+            .payment-modal {
+              max-width: 90%;
             }
           }
         `}</style>

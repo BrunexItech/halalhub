@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { hearseService } from '../services/api';
 
 const Hearse = () => {
   const navigate = useNavigate();
@@ -48,7 +49,6 @@ const Hearse = () => {
   useEffect(() => {
     checkAuth();
     fetchMyRequests();
-    // Set loading to false after initial data fetch
     setLoading(false);
   }, []);
 
@@ -63,29 +63,16 @@ const Hearse = () => {
 
   const fetchMyRequests = async () => {
     setLoadingRequests(true);
+    setError('');
     try {
-      // Mock data
-      setMyRequests([
-        { 
-          id: 'HR-2024-001', 
-          serviceType: 'hearse_transport', 
-          status: 'confirmed', 
-          date: '2024-04-15', 
-          amount: 5000,
-          pickupLocation: 'Nairobi, Jamhuri Estate',
-          destination: 'Langata Cemetery'
-        },
-        { 
-          id: 'HR-2024-002', 
-          serviceType: 'shroud', 
-          status: 'completed', 
-          date: '2024-04-10', 
-          amount: 2500,
-          pickupLocation: 'Nairobi CBD'
-        }
-      ]);
+      const response = await hearseService.getRequests();
+      if (response.data.success) {
+        setMyRequests(response.data.requests || []);
+      }
     } catch (err) {
       console.error('Requests error:', err);
+      setError('Failed to load your requests. Please refresh.');
+      setMyRequests([]);
     } finally {
       setLoadingRequests(false);
     }
@@ -97,24 +84,21 @@ const Hearse = () => {
       id: 'hearse_transport',
       name: 'Islamic Hearse Transport',
       description: 'Dignified transport of the deceased from pickup location to mosque and cemetery.',
-      icon: '🚗',
-      price: 5000,
+      price: 0,
       fields: ['pickupLocation', 'destination', 'mosqueLocation', 'cemeteryLocation']
     },
     {
       id: 'shroud',
       name: 'Shroud / Kafan Services',
       description: 'Complete shroud (kafan) set for male, female, or child.',
-      icon: '🧵',
-      price: 2500,
+      price: 0,
       fields: ['shroudType', 'shroudQuantity']
     },
     {
       id: 'complete_service',
       name: 'Complete Funeral Service',
       description: 'Full funeral assistance including hearse, shroud, and burial coordination.',
-      icon: '🕋',
-      price: 8500,
+      price: 0,
       fields: ['pickupLocation', 'destination', 'mosqueLocation', 'cemeteryLocation', 'shroudType', 'shroudQuantity']
     }
   ];
@@ -156,8 +140,8 @@ const Hearse = () => {
     }
     
     if (selectedService.id === 'hearse_transport' || selectedService.id === 'complete_service') {
-      if (!requestData.pickupLocation || !requestData.destination) {
-        setError('Please provide pickup and destination locations.');
+      if (!requestData.pickupLocation) {
+        setError('Please provide a pickup location.');
         return;
       }
     }
@@ -169,29 +153,35 @@ const Hearse = () => {
     setProcessing(true);
     setError('');
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const newRequestId = 'HR' + Date.now().toString().slice(-8);
-      setRequestId(newRequestId);
-      setShowConfirmModal(false);
-      setShowSuccessModal(true);
-      
-      // Add to my requests
-      const newRequest = {
-        id: newRequestId,
-        serviceType: selectedService.id,
-        status: 'submitted',
-        date: new Date().toISOString().split('T')[0],
-        amount: selectedService.price,
-        pickupLocation: requestData.pickupLocation || 'N/A',
-        destination: requestData.destination || 'N/A'
+      const payload = {
+        serviceType: requestData.serviceType,
+        pickupLocation: requestData.pickupLocation,
+        destinationLocation: requestData.destination || '',
+        mosqueLocation: requestData.mosqueLocation || '',
+        cemeteryLocation: requestData.cemeteryLocation || '',
+        shroudType: requestData.shroudType || '',
+        shroudQuantity: parseInt(requestData.shroudQuantity) || 1,
+        contactPerson: requestData.contactPerson || user?.fullName || '',
+        contactPhone: requestData.contactPhone || user?.phone || '',
+        scheduledDate: requestData.scheduledDate || '',
+        scheduledTime: requestData.scheduledTime || '',
+        urgency: requestData.urgency || 'standard',
+        specialRequests: requestData.specialRequests || ''
       };
-      setMyRequests([newRequest, ...myRequests]);
-      
-      setSuccess('Service request submitted successfully.');
-      setTimeout(() => setSuccess(''), 5000);
+
+      const response = await hearseService.createRequest(payload);
+
+      if (response.data.success) {
+        const data = response.data.data;
+        setRequestId(data.reference || 'HR-' + Date.now());
+        setShowConfirmModal(false);
+        setShowSuccessModal(true);
+        await fetchMyRequests();
+        setSuccess('Service request submitted successfully.');
+        setTimeout(() => setSuccess(''), 5000);
+      }
     } catch (err) {
-      setError('Failed to submit request. Please try again.');
+      setError(err.response?.data?.error || 'Failed to submit request. Please try again.');
     } finally {
       setProcessing(false);
     }
@@ -199,18 +189,20 @@ const Hearse = () => {
 
   const getStatusBadge = (status) => {
     const styles = {
-      'submitted': 'bg-blue-50 text-blue-700 border-blue-200',
-      'confirmed': 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      'in_progress': 'bg-amber-50 text-amber-700 border-amber-200',
-      'completed': 'bg-gray-50 text-gray-700 border-gray-200'
+      'pending': 'bg-[#FAFAF7] text-[#6B7280] border-[#E8EEF4]',
+      'assigned': 'bg-[#FEF3C7] text-[#D97706] border-[#FDE68A]',
+      'in_progress': 'bg-[#FEF3C7] text-[#D97706] border-[#FDE68A]',
+      'completed': 'bg-[#D1FAE5] text-[#3FAF73] border-[#A7F3D0]',
+      'cancelled': 'bg-[#FEE2E2] text-[#DC2626] border-[#FCA5A5]'
     };
     const labels = {
-      'submitted': 'Submitted',
-      'confirmed': 'Confirmed',
+      'pending': 'Pending',
+      'assigned': 'Assigned',
       'in_progress': 'In Progress',
-      'completed': 'Completed'
+      'completed': 'Completed',
+      'cancelled': 'Cancelled'
     };
-    return { style: styles[status] || styles.submitted, label: labels[status] || status };
+    return { style: styles[status] || styles.pending, label: labels[status] || status };
   };
 
   const getServiceLabel = (type) => {
@@ -222,52 +214,52 @@ const Hearse = () => {
     return labels[type] || type;
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-KE', {
-      style: 'currency',
-      currency: 'KES',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-KE', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   // ===== LOADING STATE =====
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F1F7FC] p-4 md:p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-[#FAFAF7] p-4 md:p-6 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#1769AA]/10 border-t-[#1769AA] rounded-full animate-spin mx-auto" />
-          <p className="text-[#94A3B8] mt-4">Loading services...</p>
+          <div className="w-12 h-12 border-4 border-[#0B342B]/10 border-t-[#0B342B] rounded-full animate-spin mx-auto" />
+          <p className="text-[#6B7280] mt-4 text-[15px]">Loading services...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F1F7FC]">
+    <div className="min-h-screen bg-[#FAFAF7]">
       
       {/* ===== HERO SECTION ===== */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#1769AA] via-[#2F80C0] to-[#4A9AD9] rounded-2xl mx-4 md:mx-6 lg:mx-8 mt-4 md:mt-6 p-8 md:p-12 shadow-lg shadow-[#1769AA]/20">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-2xl" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-2xl" />
+      <div className="relative overflow-hidden bg-[#0B342B] mx-4 md:mx-6 lg:mx-8 mt-4 md:mt-6 rounded-2xl p-8 md:p-12 shadow-lg shadow-[#0B342B]/10">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#C9A44B]/5 rounded-full blur-2xl" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#C9A44B]/5 rounded-full blur-2xl" />
         
         <div className="relative z-10 max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Islamic Services</span>
-                <span className="w-px h-4 bg-white/20" />
-                <span className="text-xs font-medium text-white/50">24/7 Support</span>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-[13px] font-medium text-[#C9A44B] uppercase tracking-wider">Islamic Services</span>
+                <span className="w-px h-4 bg-[#C9A44B]/30" />
+                <span className="text-[13px] font-medium text-[#C9A44B]/70">24/7 Support</span>
               </div>
-              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white leading-tight">
-                Islamic Funeral Services
+              <h1 className="text-[26px] md:text-[30px] font-semibold text-white leading-tight">
+                Hearse & Shroud Services
               </h1>
-              <p className="text-white/70 text-sm mt-2 max-w-lg">
+              <p className="text-white/70 text-[15px] mt-3 max-w-lg leading-relaxed">
                 Dignified and respectful funeral assistance. Available 24/7 to support you during difficult times.
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-xs font-semibold text-[#E8C96A] bg-white/10 px-3 py-1.5 rounded-full border border-white/10">
+              <span className="text-[13px] font-semibold text-[#C9A44B] bg-white/10 px-4 py-2 rounded-xl border border-[#C9A44B]/20">
                 24/7 Support Available
               </span>
             </div>
@@ -280,10 +272,10 @@ const Hearse = () => {
         
         {/* ===== ERROR ===== */}
         {error && (
-          <div className="mb-4 p-4 bg-[#FEF2F2] border border-[#FECACA] rounded-xl flex flex-wrap items-center justify-between gap-3">
-            <span className="text-sm text-[#DC2626]">{error}</span>
+          <div className="mb-6 p-4 bg-white border border-[#DC2626]/20 rounded-xl flex flex-wrap items-center justify-between gap-3 shadow-sm">
+            <span className="text-[15px] text-[#DC2626]">{error}</span>
             <button 
-              className="px-4 py-1.5 bg-[#DC2626] text-white text-xs font-semibold rounded-lg hover:bg-[#B91C1C] transition-colors"
+              className="px-5 py-2 bg-[#DC2626] text-white text-[13px] font-medium rounded-xl hover:bg-[#B91C1C] transition-colors"
               onClick={() => setError('')}
             >
               Dismiss
@@ -291,37 +283,39 @@ const Hearse = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* ===== LEFT COLUMN - SERVICES ===== */}
           <div className="lg:col-span-2 space-y-6">
             
             {/* Service Selection */}
             <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-6">
-              <h2 className="text-base font-bold text-[#1A2A3A] mb-4">Select a Service</h2>
-              <div className="space-y-3">
+              <h2 className="text-[17px] font-semibold text-[#1F2937] mb-5">Select a Service</h2>
+              <div className="space-y-4">
                 {services.map((service) => (
                   <div 
                     key={service.id}
-                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                    className={`p-5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                       selectedService?.id === service.id 
-                        ? 'border-[#1769AA] bg-[#F1F7FC]' 
-                        : 'border-[#E8EEF4] hover:border-[#1769AA]/40'
+                        ? 'border-[#0B342B] bg-[#FAFAF7] shadow-md' 
+                        : 'border-[#E8EEF4] hover:border-[#0B342B]/30'
                     }`}
                     onClick={() => handleServiceSelect(service)}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">{service.icon}</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-[#FAFAF7] flex items-center justify-center text-[#0B342B] font-bold text-[17px] flex-shrink-0 border border-[#E8EEF4]">
+                          {service.id === 'hearse_transport' ? 'H' : service.id === 'shroud' ? 'S' : 'C'}
+                        </div>
                         <div>
-                          <h3 className="font-semibold text-[#1A2A3A]">{service.name}</h3>
-                          <p className="text-sm text-[#94A3B8]">{service.description}</p>
+                          <h3 className="font-semibold text-[#1F2937] text-[15px]">{service.name}</h3>
+                          <p className="text-[14px] text-[#6B7280] mt-1">{service.description}</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-sm font-bold text-[#1769AA]">{formatCurrency(service.price)}</div>
+                      <div className="text-right flex-shrink-0">
+                        <div className="text-[15px] font-semibold text-[#0B342B]">Free Service</div>
                         {selectedService?.id === service.id && (
-                          <span className="text-xs text-emerald-600">Selected</span>
+                          <span className="text-[13px] text-[#0B342B] font-medium">✓ Selected</span>
                         )}
                       </div>
                     </div>
@@ -332,18 +326,18 @@ const Hearse = () => {
 
             {/* Request Form */}
             {selectedService && (
-              <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-6">
-                <h3 className="text-sm font-bold text-[#1A2A3A] mb-4">Service Details</h3>
-                <div className="space-y-4">
+              <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-6 animate-fadeIn">
+                <h3 className="text-[17px] font-semibold text-[#1F2937] mb-5">Service Details</h3>
+                <div className="space-y-5">
                   
                   {/* Common fields */}
                   {(selectedService.id === 'hearse_transport' || selectedService.id === 'complete_service') && (
                     <>
                       <div>
-                        <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">Pickup Location</label>
+                        <label className="text-[13px] font-medium text-[#6B7280] block mb-1.5">Pickup Location *</label>
                         <input
                           type="text"
-                          className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                          className="w-full px-4 py-2.5 border border-[#E8EEF4] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition-all duration-200 bg-white"
                           name="pickupLocation"
                           value={requestData.pickupLocation}
                           onChange={handleRequestChange}
@@ -351,10 +345,21 @@ const Hearse = () => {
                         />
                       </div>
                       <div>
-                        <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">Mosque Location (Optional)</label>
+                        <label className="text-[13px] font-medium text-[#6B7280] block mb-1.5">Destination Location</label>
                         <input
                           type="text"
-                          className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                          className="w-full px-4 py-2.5 border border-[#E8EEF4] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition-all duration-200 bg-white"
+                          name="destination"
+                          value={requestData.destination}
+                          onChange={handleRequestChange}
+                          placeholder="Enter destination location"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[13px] font-medium text-[#6B7280] block mb-1.5">Mosque Location (Optional)</label>
+                        <input
+                          type="text"
+                          className="w-full px-4 py-2.5 border border-[#E8EEF4] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition-all duration-200 bg-white"
                           name="mosqueLocation"
                           value={requestData.mosqueLocation}
                           onChange={handleRequestChange}
@@ -362,10 +367,10 @@ const Hearse = () => {
                         />
                       </div>
                       <div>
-                        <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">Cemetery Location</label>
+                        <label className="text-[13px] font-medium text-[#6B7280] block mb-1.5">Cemetery Location (Optional)</label>
                         <input
                           type="text"
-                          className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                          className="w-full px-4 py-2.5 border border-[#E8EEF4] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition-all duration-200 bg-white"
                           name="cemeteryLocation"
                           value={requestData.cemeteryLocation}
                           onChange={handleRequestChange}
@@ -379,9 +384,9 @@ const Hearse = () => {
                   {(selectedService.id === 'shroud' || selectedService.id === 'complete_service') && (
                     <>
                       <div>
-                        <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">Shroud Type</label>
+                        <label className="text-[13px] font-medium text-[#6B7280] block mb-1.5">Shroud Type *</label>
                         <select
-                          className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                          className="w-full px-4 py-2.5 border border-[#E8EEF4] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition-all duration-200 bg-white"
                           name="shroudType"
                           value={requestData.shroudType}
                           onChange={handleRequestChange}
@@ -392,10 +397,10 @@ const Hearse = () => {
                         </select>
                       </div>
                       <div>
-                        <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">Quantity</label>
+                        <label className="text-[13px] font-medium text-[#6B7280] block mb-1.5">Quantity *</label>
                         <input
                           type="number"
-                          className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                          className="w-full px-4 py-2.5 border border-[#E8EEF4] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition-all duration-200 bg-white"
                           name="shroudQuantity"
                           value={requestData.shroudQuantity}
                           onChange={handleRequestChange}
@@ -407,45 +412,47 @@ const Hearse = () => {
                   )}
 
                   {/* Contact Info */}
-                  <div>
-                    <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">Contact Person</label>
-                    <input
-                      type="text"
-                      className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
-                      name="contactPerson"
-                      value={requestData.contactPerson}
-                      onChange={handleRequestChange}
-                      placeholder="Enter contact person"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">Contact Phone</label>
-                    <input
-                      type="tel"
-                      className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
-                      name="contactPhone"
-                      value={requestData.contactPhone}
-                      onChange={handleRequestChange}
-                      placeholder="Enter phone number"
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[13px] font-medium text-[#6B7280] block mb-1.5">Contact Person *</label>
+                      <input
+                        type="text"
+                        className="w-full px-4 py-2.5 border border-[#E8EEF4] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition-all duration-200 bg-white"
+                        name="contactPerson"
+                        value={requestData.contactPerson}
+                        onChange={handleRequestChange}
+                        placeholder="Enter contact person"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[13px] font-medium text-[#6B7280] block mb-1.5">Contact Phone *</label>
+                      <input
+                        type="tel"
+                        className="w-full px-4 py-2.5 border border-[#E8EEF4] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition-all duration-200 bg-white"
+                        name="contactPhone"
+                        value={requestData.contactPhone}
+                        onChange={handleRequestChange}
+                        placeholder="Enter phone number"
+                      />
+                    </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">Date</label>
+                      <label className="text-[13px] font-medium text-[#6B7280] block mb-1.5">Scheduled Date</label>
                       <input
                         type="date"
-                        className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                        className="w-full px-4 py-2.5 border border-[#E8EEF4] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition-all duration-200 bg-white"
                         name="scheduledDate"
                         value={requestData.scheduledDate}
                         onChange={handleRequestChange}
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">Time</label>
+                      <label className="text-[13px] font-medium text-[#6B7280] block mb-1.5">Scheduled Time</label>
                       <input
                         type="time"
-                        className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                        className="w-full px-4 py-2.5 border border-[#E8EEF4] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition-all duration-200 bg-white"
                         name="scheduledTime"
                         value={requestData.scheduledTime}
                         onChange={handleRequestChange}
@@ -454,9 +461,9 @@ const Hearse = () => {
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">Urgency</label>
+                    <label className="text-[13px] font-medium text-[#6B7280] block mb-1.5">Urgency</label>
                     <select
-                      className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                      className="w-full px-4 py-2.5 border border-[#E8EEF4] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition-all duration-200 bg-white"
                       name="urgency"
                       value={requestData.urgency}
                       onChange={handleRequestChange}
@@ -467,19 +474,19 @@ const Hearse = () => {
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">Special Requests</label>
+                    <label className="text-[13px] font-medium text-[#6B7280] block mb-1.5">Special Requests</label>
                     <textarea
-                      className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200 resize-y"
+                      className="w-full px-4 py-2.5 border border-[#E8EEF4] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition-all duration-200 bg-white resize-y"
                       name="specialRequests"
                       value={requestData.specialRequests}
                       onChange={handleRequestChange}
-                      rows="2"
+                      rows="3"
                       placeholder="Any special requirements or instructions..."
                     />
                   </div>
 
                   <button
-                    className="w-full py-3 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200 shadow-md shadow-[#1769AA]/20"
+                    className="w-full py-3.5 bg-[#0B342B] text-white font-medium rounded-xl hover:bg-[#032A24] transition-all duration-200 shadow-md shadow-[#0B342B]/20 text-[15px]"
                     onClick={handleRequestSubmit}
                   >
                     Submit Request
@@ -494,35 +501,35 @@ const Hearse = () => {
             
             {/* Emergency Contact */}
             <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-6">
-              <h3 className="text-sm font-bold text-[#1A2A3A] mb-3">Emergency Contact</h3>
-              <div className="bg-[#FEF2F2] border border-[#FECACA] rounded-xl p-4 text-center">
-                <div className="text-sm text-[#DC2626] font-semibold">24/7 Support Hotline</div>
-                <div className="text-2xl font-bold text-[#DC2626] mt-1">0800 720 720</div>
-                <p className="text-xs text-[#94A3B8] mt-2">Available 24 hours a day, 7 days a week</p>
+              <h3 className="text-[17px] font-semibold text-[#1F2937] mb-4">Emergency Contact</h3>
+              <div className="bg-[#FEF2F2] border-2 border-[#DC2626]/20 rounded-xl p-5 text-center">
+                <div className="text-[14px] text-[#DC2626] font-medium">24/7 Support Hotline</div>
+                <div className="text-[28px] font-bold text-[#DC2626] mt-2">0800 720 720</div>
+                <p className="text-[13px] text-[#6B7280] mt-2">Available 24 hours a day, 7 days a week</p>
               </div>
             </div>
 
             {/* Islamic Guidance */}
             <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-6">
-              <h3 className="text-sm font-bold text-[#1A2A3A] mb-3">Islamic Guidance</h3>
-              <div className="space-y-3">
-                <p className="text-sm text-[#5A6A7A] leading-relaxed">
+              <h3 className="text-[17px] font-semibold text-[#1F2937] mb-4">Islamic Guidance</h3>
+              <div className="space-y-4">
+                <p className="text-[15px] text-[#6B7280] leading-relaxed">
                   "Every soul shall taste death." — Quran 3:185
                 </p>
-                <div className="bg-[#F1F7FC] rounded-xl p-4 text-center">
-                  <p className="text-lg font-arabic text-[#1A2A3A]">إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُونَ</p>
-                  <p className="text-xs text-[#94A3B8] mt-1">Inna lillahi wa inna ilayhi raji'un</p>
-                  <p className="text-xs text-[#94A3B8]">"To Allah we belong and to Him we shall return"</p>
+                <div className="bg-[#FAFAF7] rounded-xl p-5 text-center border border-[#E8EEF4]">
+                  <p className="text-[20px] font-arabic text-[#1F2937] leading-relaxed">إِنَّا لِلَّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُونَ</p>
+                  <p className="text-[14px] text-[#6B7280] mt-2">Inna lillahi wa inna ilayhi raji'un</p>
+                  <p className="text-[13px] text-[#6B7280]">"To Allah we belong and to Him we shall return"</p>
                 </div>
               </div>
             </div>
 
             {/* My Requests */}
             <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-6">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-[#1A2A3A]">My Requests</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-[17px] font-semibold text-[#1F2937]">My Requests</h3>
                 <button 
-                  className="text-xs text-[#1769AA] hover:text-[#2F80C0] transition-colors"
+                  className="text-[13px] text-[#0B342B] hover:text-[#032A24] transition-colors font-medium"
                   onClick={fetchMyRequests}
                 >
                   Refresh
@@ -530,27 +537,34 @@ const Hearse = () => {
               </div>
 
               {loadingRequests ? (
-                <div className="flex items-center justify-center py-6">
-                  <div className="w-6 h-6 border-2 border-[#1769AA]/10 border-t-[#1769AA] rounded-full animate-spin" />
+                <div className="flex items-center justify-center py-8">
+                  <div className="w-8 h-8 border-3 border-[#0B342B]/10 border-t-[#0B342B] rounded-full animate-spin" />
                 </div>
               ) : myRequests.length === 0 ? (
-                <div className="text-center py-6">
-                  <p className="text-sm text-[#94A3B8]">No requests yet</p>
+                <div className="text-center py-8">
+                  <p className="text-[15px] text-[#6B7280]">No requests yet</p>
+                  <p className="text-[13px] text-[#6B7280] mt-1">Submit a request to get started</p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
                   {myRequests.map((request) => {
                     const status = getStatusBadge(request.status);
                     return (
-                      <div key={request.id} className="p-3 bg-[#F1F7FC] rounded-lg">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="font-medium text-[#1A2A3A] text-sm">{getServiceLabel(request.serviceType)}</div>
-                            <div className="text-xs text-[#94A3B8]">{request.date}</div>
+                      <div key={request.id} className="p-4 bg-[#FAFAF7] rounded-xl border border-[#E8EEF4] hover:bg-[#F4F5F1] transition-colors">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-[#1F2937] text-[15px] truncate">
+                              {getServiceLabel(request.service_type)}
+                            </div>
+                            <div className="text-[13px] text-[#6B7280] mt-0.5">
+                              {formatDate(request.scheduled_date || request.createdat)}
+                            </div>
+                            <div className="text-[12px] text-[#6B7280] font-mono">
+                              {request.reference}
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-sm font-bold text-[#1769AA]">{formatCurrency(request.amount)}</div>
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full border ${status.style}`}>
+                          <div className="text-right flex-shrink-0">
+                            <span className={`text-[12px] px-3 py-1 rounded-full border ${status.style} font-medium`}>
                               {status.label}
                             </span>
                           </div>
@@ -568,75 +582,78 @@ const Hearse = () => {
       {/* ===== CONFIRMATION MODAL ===== */}
       {showConfirmModal && selectedService && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="p-6 border-b border-[#F1F7FC] flex justify-between items-center">
-              <h3 className="text-lg font-bold text-[#1A2A3A]">Confirm Request</h3>
-              <button className="text-[#94A3B8] hover:text-[#1A2A3A] transition-colors" onClick={() => setShowConfirmModal(false)}>
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-fadeIn">
+            <div className="p-6 border-b border-[#F4F5F1] flex justify-between items-center">
+              <h3 className="text-[22px] font-semibold text-[#1F2937]">Confirm Request</h3>
+              <button className="text-[#6B7280] hover:text-[#1F2937] transition-colors text-[24px]" onClick={() => setShowConfirmModal(false)}>
                 ✕
               </button>
             </div>
             
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-5">
               <div className="text-center">
-                <div className="text-2xl">{selectedService.icon}</div>
-                <div className="font-bold text-[#1A2A3A]">{selectedService.name}</div>
+                <div className="font-semibold text-[17px] text-[#1F2937]">{selectedService.name}</div>
               </div>
 
-              <div className="bg-[#F1F7FC] rounded-xl p-4 space-y-2">
+              <div className="bg-[#FAFAF7] rounded-xl p-4 space-y-3 border border-[#E8EEF4]">
                 {requestData.pickupLocation && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#94A3B8]">Pickup</span>
-                    <span className="font-semibold text-[#1A2A3A]">{requestData.pickupLocation}</span>
+                  <div className="flex justify-between text-[15px]">
+                    <span className="text-[#6B7280]">Pickup</span>
+                    <span className="font-semibold text-[#1F2937]">{requestData.pickupLocation}</span>
                   </div>
                 )}
                 {requestData.destination && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#94A3B8]">Destination</span>
-                    <span className="font-semibold text-[#1A2A3A]">{requestData.destination}</span>
+                  <div className="flex justify-between text-[15px]">
+                    <span className="text-[#6B7280]">Destination</span>
+                    <span className="font-semibold text-[#1F2937]">{requestData.destination}</span>
                   </div>
                 )}
                 {requestData.contactPerson && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#94A3B8]">Contact</span>
-                    <span className="font-semibold text-[#1A2A3A]">{requestData.contactPerson}</span>
+                  <div className="flex justify-between text-[15px]">
+                    <span className="text-[#6B7280]">Contact</span>
+                    <span className="font-semibold text-[#1F2937]">{requestData.contactPerson}</span>
                   </div>
                 )}
                 {requestData.shroudType && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#94A3B8]">Shroud Type</span>
-                    <span className="font-semibold text-[#1A2A3A]">{shroudTypes.find(t => t.id === requestData.shroudType)?.label}</span>
+                  <div className="flex justify-between text-[15px]">
+                    <span className="text-[#6B7280]">Shroud Type</span>
+                    <span className="font-semibold text-[#1F2937]">{shroudTypes.find(t => t.id === requestData.shroudType)?.label}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-sm pt-2 border-t border-[#E2E8F0]">
-                  <span className="text-[#1A2A3A] font-semibold">Total</span>
-                  <span className="text-[#1769AA] font-bold">{formatCurrency(selectedService.price)}</span>
-                </div>
+                {requestData.urgency && (
+                  <div className="flex justify-between text-[15px]">
+                    <span className="text-[#6B7280]">Urgency</span>
+                    <span className={`font-semibold ${requestData.urgency === 'urgent' ? 'text-[#DC2626]' : 'text-[#1F2937]'}`}>
+                      {requestData.urgency === 'urgent' ? 'Urgent' : 'Standard'}
+                    </span>
+                  </div>
+                )}
               </div>
 
-              <div className="bg-[#F1F7FC] rounded-xl p-4 text-center">
-                <p className="text-sm text-[#5A6A7A] leading-relaxed">
+              <div className="bg-[#FAFAF7] rounded-xl p-4 text-center border border-[#E8EEF4]">
+                <p className="text-[15px] text-[#6B7280] leading-relaxed">
                   A service provider will contact you shortly to confirm the details and coordinate the service.
                 </p>
               </div>
 
-              {error && <p className="text-sm text-[#DC2626]">{error}</p>}
+              {error && <p className="text-[15px] text-[#DC2626]">{error}</p>}
             </div>
             
-            <div className="p-6 border-t border-[#F1F7FC] flex gap-3">
+            <div className="p-6 border-t border-[#F4F5F1] flex flex-col sm:flex-row gap-3">
               <button 
-                className="flex-1 px-6 py-3 bg-white text-[#5A6A7A] font-semibold rounded-xl border border-[#E8EEF4] hover:bg-[#F1F7FC] transition-all duration-200"
+                className="flex-1 px-6 py-3 bg-white text-[#6B7280] font-medium rounded-xl border border-[#E8EEF4] hover:bg-[#FAFAF7] transition-all duration-200"
                 onClick={() => setShowConfirmModal(false)}
               >
                 Cancel
               </button>
               <button 
-                className="flex-[2] px-6 py-3 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="flex-[2] px-6 py-3 bg-[#0B342B] text-white font-medium rounded-xl hover:bg-[#032A24] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed shadow-md shadow-[#0B342B]/20"
                 onClick={confirmRequest}
                 disabled={processing}
               >
                 {processing ? (
                   <span className="flex items-center justify-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     Processing...
                   </span>
                 ) : (
@@ -651,44 +668,44 @@ const Hearse = () => {
       {/* ===== SUCCESS MODAL ===== */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="p-6 border-b border-[#F1F7FC] bg-[#1769AA] rounded-t-2xl">
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-fadeIn">
+            <div className="p-6 border-b border-[#F4F5F1] bg-[#0B342B] rounded-t-2xl">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-bold text-white">Request Submitted</h3>
-                <button className="text-white/60 hover:text-white transition-colors" onClick={() => setShowSuccessModal(false)}>
+                <h3 className="text-[22px] font-semibold text-white">Request Submitted</h3>
+                <button className="text-white/60 hover:text-white transition-colors text-[24px]" onClick={() => setShowSuccessModal(false)}>
                   ✕
                 </button>
               </div>
             </div>
             
-            <div className="p-6 space-y-4 text-center">
-              <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mx-auto border-4 border-emerald-200">
-                <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="p-6 space-y-5 text-center">
+              <div className="w-20 h-20 rounded-full bg-[#0B342B]/10 flex items-center justify-center mx-auto border-4 border-[#0B342B]/20">
+                <svg className="w-10 h-10 text-[#0B342B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
               
               <div>
-                <div className="text-sm text-[#94A3B8]">Your request has been submitted</div>
-                <div className="text-xl font-bold text-[#1A2A3A]">Reference: {requestId}</div>
+                <div className="text-[15px] text-[#6B7280]">Your request has been submitted</div>
+                <div className="text-[22px] font-bold text-[#1F2937] mt-1">Reference: {requestId}</div>
               </div>
 
-              <div className="bg-[#F1F7FC] rounded-xl p-4">
-                <p className="text-sm text-[#5A6A7A] leading-relaxed">
+              <div className="bg-[#FAFAF7] rounded-xl p-4 border border-[#E8EEF4]">
+                <p className="text-[15px] text-[#6B7280] leading-relaxed">
                   A service provider will contact you within 10 minutes to confirm the details.
                 </p>
               </div>
 
-              <div className="bg-[#F1F7FC] rounded-xl p-4">
-                <p className="text-sm text-[#5A6A7A] italic leading-relaxed">
+              <div className="bg-[#FAFAF7] rounded-xl p-4 border border-[#E8EEF4]">
+                <p className="text-[15px] text-[#6B7280] italic leading-relaxed">
                   "Every soul shall taste death." — Quran 3:185
                 </p>
               </div>
             </div>
             
-            <div className="p-6 border-t border-[#F1F7FC]">
+            <div className="p-6 border-t border-[#F4F5F1]">
               <button 
-                className="w-full px-6 py-3 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200"
+                className="w-full px-6 py-3 bg-[#0B342B] text-white font-medium rounded-xl hover:bg-[#032A24] transition-all duration-200 shadow-md shadow-[#0B342B]/20"
                 onClick={() => setShowSuccessModal(false)}
               >
                 Done
@@ -700,13 +717,13 @@ const Hearse = () => {
 
       {/* ===== SUCCESS TOAST ===== */}
       {success && (
-        <div className="fixed top-6 right-6 z-50 bg-[#1769AA] text-white px-6 py-4 rounded-2xl shadow-2xl shadow-[#1769AA]/30 flex items-center gap-3 animate-slideDown max-w-sm border border-white/10">
-          <svg className="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="fixed top-6 right-6 z-50 bg-[#0B342B] text-white px-6 py-4 rounded-2xl shadow-2xl shadow-[#0B342B]/30 flex items-center gap-3 animate-slideDown max-w-sm border border-[#C9A44B]/20">
+          <svg className="w-5 h-5 text-[#C9A44B] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
           </svg>
-          <span className="text-sm font-medium">{success}</span>
+          <span className="text-[15px] font-medium">{success}</span>
           <button 
-            className="text-white/60 hover:text-white transition ml-2"
+            className="text-white/60 hover:text-white transition ml-2 flex-shrink-0"
             onClick={() => setSuccess('')}
           >
             ✕

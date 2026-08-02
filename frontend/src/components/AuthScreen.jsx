@@ -134,6 +134,10 @@ const AuthScreen = ({ onLogin }) => {
         localStorage.setItem('halalhub_subrole', userData.subRole);
       }
       
+      if (userData.vendorType) {
+        localStorage.setItem('halalhub_vendor_type', userData.vendorType);
+      }
+      
       onLogin(userData, response.data.token);
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed');
@@ -169,200 +173,209 @@ const AuthScreen = ({ onLogin }) => {
   };
 
   const LockIcon = () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
     </svg>
   );
 
   const EyeIcon = () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
     </svg>
   );
 
   const EyeOffIcon = () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
     </svg>
   );
 
   const SpinnerIcon = () => (
-    <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
     </svg>
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F1F7FC] px-4 py-8">
-      <div className="w-full max-w-md mx-auto">
-        <div className="bg-white rounded-2xl shadow-xl shadow-[#1769AA]/5 p-6 md:p-8 lg:p-10 w-full border border-[#E8EEF4]">
+    <div className="min-h-screen flex items-center justify-center bg-[#032A24] px-4 py-8">
+      <div className="w-full max-w-[400px] mx-auto">
+        <div className="bg-[#183B33] rounded-2xl shadow-2xl shadow-black/30 p-6 md:p-8 w-full border border-[rgba(201,164,75,0.18)] relative overflow-hidden">
           
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-[#1769AA] flex items-center justify-center">
-                <span className="text-white text-lg font-bold">H</span>
+          {/* Subtle decorative elements */}
+          <div className="absolute -top-16 -right-16 w-48 h-48 bg-[#C9A44B]/5 rounded-full blur-3xl" />
+          <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-[#C9A44B]/5 rounded-full blur-3xl" />
+          
+          <div className="relative z-10">
+            {/* Logo */}
+            <div className="text-center mb-6">
+              <div className="flex items-center justify-center gap-2.5 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C9A44B] to-[#E1C16B] flex items-center justify-center shadow-lg shadow-[#C9A44B]/20">
+                  <span className="text-[#032A24] text-lg font-bold">H</span>
+                </div>
+                <span className="text-xl font-bold text-[#F7F6F1] tracking-tight">HalalHub</span>
               </div>
-              <span className="text-2xl font-bold text-[#1A2A3A]">HalalHub</span>
-            </div>
-            <p className="text-sm text-[#94A3B8] mt-1">Secure · Sharia-Compliant</p>
-          </div>
-
-          <div className="flex gap-1 bg-[#F1F7FC] rounded-xl p-1.5 mb-8">
-            <button className="flex-1 py-3 rounded-lg text-sm font-semibold bg-[#1769AA] text-white shadow-md shadow-[#1769AA]/20">
-              Sign In
-            </button>
-            <button
-              onClick={() => navigate('/register/role')}
-              className="flex-1 py-3 rounded-lg text-sm font-semibold text-[#5A6A7A] hover:text-[#1A2A3A] transition"
-            >
-              Register
-            </button>
-          </div>
-
-          {error && (
-            <div className="mb-6 p-4 bg-[#FEF2F2] border border-[#FECACA] rounded-xl text-sm text-[#DC2626] flex justify-between items-center">
-              <span>{error}</span>
-              <button onClick={() => setError('')} className="text-[#DC2626]/60 hover:text-[#DC2626] transition">✕</button>
-            </div>
-          )}
-
-          {success && (
-            <div className="mb-6 p-4 bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl text-sm text-[#16A34A]">
-              {success}
-            </div>
-          )}
-
-          <form onSubmit={handleLogin} className="space-y-5">
-            <div>
-              <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-2">
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                className="w-full px-5 py-3.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+254 7XX XXX XXX"
-                disabled={loading}
-                required
-              />
+              <p className="text-[9px] font-medium text-[#C9A44B] tracking-[0.2em] uppercase">Sharia-Compliant Fintech</p>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-2">
-                PIN
-              </label>
-              <div className="relative">
-                <input
-                  type={showPin ? 'text' : 'password'}
-                  className="w-full px-5 py-3.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200 pr-14"
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value)}
-                  placeholder="••••••"
-                  disabled={loading}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={togglePinVisibility}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#5A6A7A] transition"
-                >
-                  {showPin ? <EyeOffIcon /> : <EyeIcon />}
-                </button>
-              </div>
+            {/* Tabs */}
+            <div className="flex gap-1 bg-[#0B342B] rounded-xl p-1 mb-6">
+              <button className="flex-1 py-2.5 rounded-lg text-xs font-semibold bg-[#C9A44B] text-[#032A24] shadow-lg shadow-[#C9A44B]/20 transition-all duration-300">
+                Sign In
+              </button>
+              <button
+                onClick={() => navigate('/register/role')}
+                className="flex-1 py-2.5 rounded-lg text-xs font-semibold text-[#B7C0BA] hover:text-[#F7F6F1] transition-all duration-300"
+              >
+                Register
+              </button>
             </div>
 
-            {otpSent && (
-              <div className="space-y-4 pt-2">
-                <div className="bg-[#F1F7FC] rounded-xl p-4 border border-[#E8EEF4]">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="text-[#1769AA]">
-                        <LockIcon />
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium text-[#5A6A7A]">Your OTP Code</span>
-                        <div className="text-2xl font-mono font-bold text-[#1769AA] tracking-widest mt-0.5">
-                          {otpCode || '••••••'}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className={`text-sm font-semibold ${otpExpirySeconds <= 10 ? 'text-red-600' : 'text-[#5A6A7A]'}`}>
-                        {otpExpirySeconds > 0 ? formatTime(otpExpirySeconds) : 'Expired'}
-                      </div>
-                      <div className="w-20 h-1 bg-[#E8EEF4] rounded-full mt-1 overflow-hidden">
-                        <div 
-                          className={`h-full rounded-full transition-all duration-1000 ${
-                            otpExpirySeconds <= 10 ? 'bg-red-600' : 'bg-[#1769AA]'
-                          }`}
-                          style={{ width: `${(otpExpirySeconds / 30) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  {otpExpirySeconds === 0 && (
-                    <p className="text-xs text-red-600 mt-2">OTP expired. Click "Resend Code" below.</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-3">
-                    Enter Verification Code
-                  </label>
-                  <div className="flex gap-2 sm:gap-3 justify-center">
-                    {otp.map((digit, index) => (
-                      <input
-                        key={index}
-                        ref={(el) => inputRefs.current[index] = el}
-                        type="text"
-                        inputMode="numeric"
-                        maxLength="1"
-                        value={digit}
-                        className="w-10 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-semibold border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
-                        onChange={(e) => handleOtpChange(index, e.target.value)}
-                        onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                        required
-                      />
-                    ))}
-                  </div>
-                </div>
-                <div className="flex justify-between items-center flex-wrap gap-2">
-                  <span className="text-xs text-[#94A3B8]">Enter the 6-digit code above</span>
-                  <button
-                    type="button"
-                    className="text-xs font-semibold text-[#1769AA] hover:text-[#2F80C0] transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={handleResendOtp}
-                    disabled={resendTimer > 0 || loading}
-                  >
-                    {resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend Code'}
-                  </button>
-                </div>
+            {/* Error/Success Messages */}
+            {error && (
+              <div className="mb-4 p-3 bg-[#0B342B] border border-[rgba(201,164,75,0.18)] rounded-xl text-xs text-[#F7F6F1] flex justify-between items-center animate-slideDown">
+                <span>{error}</span>
+                <button onClick={() => setError('')} className="text-[#B7C0BA]/60 hover:text-[#B7C0BA] transition">✕</button>
               </div>
             )}
 
-            <button
-              type="submit"
-              className="w-full py-3.5 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] hover:shadow-lg hover:shadow-[#1769AA]/25 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:shadow-none"
-              disabled={loading}
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-3">
-                  <SpinnerIcon />
-                  Processing...
-                </span>
-              ) : (
-                otpSent ? 'Verify & Sign In' : 'Send Verification Code'
-              )}
-            </button>
-          </form>
+            {success && (
+              <div className="mb-4 p-3 bg-[#0B342B] border border-[#3FAF73]/30 rounded-xl text-xs text-[#3FAF73] animate-slideDown">
+                {success}
+              </div>
+            )}
 
-          <div className="mt-8 pt-6 border-t border-[#F1F7FC]">
-            <p className="text-center text-xs text-[#94A3B8] tracking-wider">
-              Secure · Encrypted · No Riba
-            </p>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-semibold text-[#B7C0BA] uppercase tracking-wider mb-1.5">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  className="w-full px-4 py-2.5 bg-[#0B342B] border border-[rgba(201,164,75,0.18)] rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/30 focus:border-[#C9A44B] transition-all duration-300"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+254 7XX XXX XXX"
+                  disabled={loading}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-semibold text-[#B7C0BA] uppercase tracking-wider mb-1.5">
+                  PIN
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPin ? 'text' : 'password'}
+                    className="w-full px-4 py-2.5 bg-[#0B342B] border border-[rgba(201,164,75,0.18)] rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/30 focus:border-[#C9A44B] transition-all duration-300 pr-12"
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value)}
+                    placeholder="••••••"
+                    disabled={loading}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={togglePinVisibility}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#B7C0BA]/60 hover:text-[#B7C0BA] transition"
+                  >
+                    {showPin ? <EyeOffIcon /> : <EyeIcon />}
+                  </button>
+                </div>
+              </div>
+
+              {otpSent && (
+                <div className="space-y-3 pt-1">
+                  <div className="bg-[#0B342B] rounded-xl p-3 border border-[rgba(201,164,75,0.18)]">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="text-[#C9A44B]">
+                          <LockIcon />
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-medium text-[#B7C0BA]">Your OTP Code</span>
+                          <div className="text-lg font-mono font-bold text-[#C9A44B] tracking-widest mt-0.5">
+                            {otpCode || '••••••'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`text-xs font-semibold ${otpExpirySeconds <= 10 ? 'text-[#DC2626]' : 'text-[#B7C0BA]'}`}>
+                          {otpExpirySeconds > 0 ? formatTime(otpExpirySeconds) : 'Expired'}
+                        </div>
+                        <div className="w-16 h-1 bg-[#0B342B] rounded-full mt-1 overflow-hidden border border-[rgba(201,164,75,0.18)]">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-1000 ${
+                              otpExpirySeconds <= 10 ? 'bg-[#DC2626]' : 'bg-[#C9A44B]'
+                            }`}
+                            style={{ width: `${(otpExpirySeconds / 30) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    {otpExpirySeconds === 0 && (
+                      <p className="text-[10px] text-[#DC2626] mt-1.5">OTP expired. Click "Resend Code" below.</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-semibold text-[#B7C0BA] uppercase tracking-wider mb-2">
+                      Enter Verification Code
+                    </label>
+                    <div className="flex gap-2 justify-center">
+                      {otp.map((digit, index) => (
+                        <input
+                          key={index}
+                          ref={(el) => inputRefs.current[index] = el}
+                          type="text"
+                          inputMode="numeric"
+                          maxLength="1"
+                          value={digit}
+                          className="w-10 h-12 text-center text-base font-semibold bg-[#0B342B] border border-[rgba(201,164,75,0.18)] rounded-xl text-[#F7F6F1] focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/30 focus:border-[#C9A44B] transition-all duration-300"
+                          onChange={(e) => handleOtpChange(index, e.target.value)}
+                          onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                          required
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center flex-wrap gap-2">
+                    <span className="text-[10px] text-[#B7C0BA]/60">Enter the 6-digit code above</span>
+                    <button
+                      type="button"
+                      className="text-[10px] font-semibold text-[#C9A44B] hover:text-[#E1C16B] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={handleResendOtp}
+                      disabled={resendTimer > 0 || loading}
+                    >
+                      {resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend Code'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="w-full py-2.5 bg-gradient-to-r from-[#C9A44B] to-[#E1C16B] text-[#032A24] font-semibold text-sm rounded-xl hover:shadow-lg hover:shadow-[#C9A44B]/30 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
+                disabled={loading}
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <SpinnerIcon />
+                    Processing...
+                  </span>
+                ) : (
+                  otpSent ? 'Verify & Sign In' : 'Send Verification Code'
+                )}
+              </button>
+            </form>
+
+            <div className="mt-6 pt-5 border-t border-[rgba(201,164,75,0.18)]">
+              <p className="text-center text-[9px] text-[#B7C0BA]/60 tracking-wider">
+                Secure · Encrypted · No Riba
+              </p>
+            </div>
           </div>
         </div>
       </div>

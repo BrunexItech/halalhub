@@ -245,7 +245,7 @@ const Restaurants = () => {
   );
 
   const RestaurantIcon = () => (
-    <svg className="w-12 h-12 text-[#94A3B8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg className="w-12 h-12 text-[#6B7280]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
     </svg>
   );
@@ -258,20 +258,20 @@ const Restaurants = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F1F7FC] p-6">
+      <div className="min-h-screen bg-[#FAFAF7] p-6">
         <div className="max-w-7xl mx-auto">
           <div className="mb-6">
-            <div className="h-8 bg-[#F1F7FC] rounded-2xl w-48 animate-pulse" />
-            <div className="h-4 bg-[#F1F7FC] rounded-lg w-64 mt-2 animate-pulse" />
+            <div className="h-8 bg-[#F4F5F1] rounded-2xl w-48 animate-pulse" />
+            <div className="h-4 bg-[#F4F5F1] rounded-lg w-64 mt-2 animate-pulse" />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[1, 2, 3, 4].map(i => (
               <div key={i} className="bg-white rounded-2xl overflow-hidden border border-[#E8EEF4] shadow-sm animate-pulse">
-                <div className="h-40 bg-[#F1F7FC]" />
+                <div className="h-40 bg-[#F4F5F1]" />
                 <div className="p-4 space-y-3">
-                  <div className="h-4 bg-[#F1F7FC] rounded-lg w-3/4" />
-                  <div className="h-3 bg-[#F1F7FC] rounded-lg w-1/2" />
-                  <div className="h-6 bg-[#F1F7FC] rounded-lg w-1/3" />
+                  <div className="h-4 bg-[#F4F5F1] rounded-lg w-3/4" />
+                  <div className="h-3 bg-[#F4F5F1] rounded-lg w-1/2" />
+                  <div className="h-6 bg-[#F4F5F1] rounded-lg w-1/3" />
                 </div>
               </div>
             ))}
@@ -282,102 +282,144 @@ const Restaurants = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F1F7FC] p-4 md:p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* ===== PAGE HEADER ===== */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-heading font-bold text-[#1A2A3A]">Halal Restaurants</h1>
-            <p className="text-sm text-[#94A3B8] mt-0.5">Discover halal restaurants across Kenya</p>
-          </div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">Halal Certified</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F1F7FC] text-[#5A6A7A] text-xs font-semibold">{restaurants.length} Restaurants</span>
+    <div className="min-h-screen bg-[#FAFAF7]">
+      
+      {/* ===== HERO BANNER ===== */}
+      <div className="relative overflow-hidden bg-[#0B342B] mx-4 md:mx-6 lg:mx-8 mt-4 md:mt-6 rounded-2xl p-8 md:p-12 shadow-lg shadow-[#0B342B]/10">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#C9A44B]/5 rounded-full blur-2xl" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#C9A44B]/5 rounded-full blur-2xl" />
+        
+        <div className="relative z-10 max-w-5xl mx-auto">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-[13px] font-medium text-[#C9A44B] uppercase tracking-wider">Halal Dining</span>
+                <span className="w-px h-4 bg-[#C9A44B]/30" />
+                <span className="text-[13px] font-medium text-[#C9A44B]/70">Premium Halal Restaurants</span>
+              </div>
+              <h1 className="text-[26px] md:text-[30px] font-semibold text-white leading-tight">
+                Discover Halal Restaurants
+              </h1>
+              <p className="text-white/70 text-[15px] mt-3 max-w-lg leading-relaxed">
+                Explore the finest halal-certified restaurants across Kenya. From local cuisine to international flavors, every meal is prepared with care and authenticity.
+              </p>
+              <div className="flex flex-wrap gap-3 mt-4">
+                <span className="text-[13px] font-medium text-[#C9A44B] bg-white/10 px-4 py-2 rounded-xl border border-[#C9A44B]/20">
+                  {restaurants.length} Halal Restaurants
+                </span>
+                <span className="text-[13px] font-medium text-[#C9A44B] bg-white/10 px-4 py-2 rounded-xl border border-[#C9A44B]/20">
+                  100% Halal Certified
+                </span>
+                <span className="text-[13px] font-medium text-[#C9A44B] bg-white/10 px-4 py-2 rounded-xl border border-[#C9A44B]/20">
+                  Trusted Vendors
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="text-6xl opacity-80">🍽️</div>
+            </div>
           </div>
         </div>
+      </div>
 
+      {/* ===== MAIN CONTENT ===== */}
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
+        
         {error && (
-          <div className="mb-4 p-4 rounded-xl bg-red-50 border border-red-200 flex flex-wrap items-center justify-between gap-3 text-sm text-red-600">
+          <div className="mb-4 p-4 rounded-xl bg-white border border-[#DC2626]/20 flex flex-wrap items-center justify-between gap-3 text-[15px] text-[#DC2626] shadow-sm">
             <span>{error}</span>
-            <button className="px-4 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold hover:bg-red-700 transition" onClick={() => { setError(''); fetchRestaurants(); }}>Retry</button>
+            <button className="px-4 py-1.5 rounded-lg bg-[#DC2626] text-white text-[13px] font-medium hover:bg-[#B91C1C] transition" onClick={() => { setError(''); fetchRestaurants(); }}>Retry</button>
           </div>
         )}
 
         {/* ===== FILTERS ===== */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-          <div className="relative">
-            <input 
-              className="w-full px-4 py-2.5 pl-9 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200" 
-              placeholder="Search restaurants..." 
-              value={searchQuery} 
-              onChange={(e) => setSearchQuery(e.target.value)} 
-            />
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]"><SearchIcon /></span>
+        <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-4 md:p-6 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="relative">
+              <label className="block text-[13px] font-medium text-[#6B7280] mb-1.5">Search</label>
+              <input 
+                className="w-full px-4 py-2.5 pl-9 border border-[#E8EEF4] rounded-xl bg-white text-[#1F2937] text-[15px] placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition-all duration-200" 
+                placeholder="Search restaurants..." 
+                value={searchQuery} 
+                onChange={(e) => setSearchQuery(e.target.value)} 
+              />
+              <span className="absolute left-3 bottom-3.5 text-[#6B7280]"><SearchIcon /></span>
+            </div>
+            <div>
+              <label className="block text-[13px] font-medium text-[#6B7280] mb-1.5">County</label>
+              <select className="w-full px-4 py-2.5 border border-[#E8EEF4] rounded-xl bg-white text-[#1F2937] text-[15px] focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition-all duration-200 appearance-none" value={selectedCounty} onChange={(e) => setSelectedCounty(e.target.value)}>
+                {counties.map(county => <option key={county} value={county}>{county}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[13px] font-medium text-[#6B7280] mb-1.5">Cuisine</label>
+              <select className="w-full px-4 py-2.5 border border-[#E8EEF4] rounded-xl bg-white text-[#1F2937] text-[15px] focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition-all duration-200 appearance-none" value={selectedCuisine} onChange={(e) => setSelectedCuisine(e.target.value)}>
+                {cuisineOptions.map(cuisine => <option key={cuisine} value={cuisine}>{cuisine}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[13px] font-medium text-[#6B7280] mb-1.5">Minimum Rating</label>
+              <select className="w-full px-4 py-2.5 border border-[#E8EEF4] rounded-xl bg-white text-[#1F2937] text-[15px] focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition-all duration-200 appearance-none" value={minRating} onChange={(e) => setMinRating(Number(e.target.value))}>
+                <option value={0}>All Ratings</option>
+                <option value={4.5}>4.5+</option>
+                <option value={4.0}>4.0+</option>
+                <option value={3.5}>3.5+</option>
+              </select>
+            </div>
           </div>
-          <select className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200 appearance-none" value={selectedCounty} onChange={(e) => setSelectedCounty(e.target.value)}>
-            {counties.map(county => <option key={county} value={county}>{county}</option>)}
-          </select>
-          <select className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200 appearance-none" value={selectedCuisine} onChange={(e) => setSelectedCuisine(e.target.value)}>
-            {cuisineOptions.map(cuisine => <option key={cuisine} value={cuisine}>{cuisine}</option>)}
-          </select>
-          <select className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200 appearance-none" value={minRating} onChange={(e) => setMinRating(Number(e.target.value))}>
-            <option value={0}>All Ratings</option>
-            <option value={4.5}>4.5+</option>
-            <option value={4.0}>4.0+</option>
-            <option value={3.5}>3.5+</option>
-          </select>
+          <div className="flex justify-between items-center mt-4 pt-4 border-t border-[#F4F5F1]">
+            <span className="text-[15px] text-[#6B7280]">{filteredRestaurants.length} restaurants found</span>
+          </div>
         </div>
-
-        <div className="text-sm text-[#94A3B8] mb-4">{filteredRestaurants.length} restaurants found</div>
 
         {/* ===== RESTAURANTS GRID ===== */}
         {filteredRestaurants.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl border border-[#E8EEF4]">
             <EmptyStateIcon />
-            <h3 className="text-lg font-bold text-[#1A2A3A] mt-4">No restaurants found</h3>
-            <p className="text-sm text-[#94A3B8] mt-1">Try adjusting your filters</p>
+            <h3 className="text-[17px] font-semibold text-[#1F2937] mt-4">No restaurants found</h3>
+            <p className="text-[15px] text-[#6B7280] mt-1">Try adjusting your filters</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             {filteredRestaurants.map((restaurant) => (
-              <div key={restaurant.id} className="bg-white rounded-2xl overflow-hidden border border-[#E8EEF4] shadow-sm hover:shadow-xl hover:shadow-[#1769AA]/5 transition-all duration-300 group">
+              <div key={restaurant.id} className="bg-white rounded-2xl overflow-hidden border border-[#E8EEF4] shadow-sm hover:shadow-xl hover:shadow-[#0B342B]/5 transition-all duration-300 group">
                 <div className="h-40 bg-cover bg-center relative flex items-center justify-center" style={{ 
                   backgroundImage: restaurant.cover_image ? `url(${restaurant.cover_image})` : restaurant.logo_url ? `url(${restaurant.logo_url})` : 'none',
-                  backgroundColor: restaurant.cover_image || restaurant.logo_url ? 'transparent' : '#EDE5D4' 
+                  backgroundColor: restaurant.cover_image || restaurant.logo_url ? 'transparent' : '#F4F5F1' 
                 }}>
                   {!restaurant.cover_image && !restaurant.logo_url && <RestaurantIcon />}
-                  <span className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-semibold ${restaurant.is_active !== false ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                  <span className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-[12px] font-medium ${restaurant.is_active !== false ? 'bg-[#D1FAE5] text-[#3FAF73]' : 'bg-[#F4F5F1] text-[#6B7280]'}`}>
                     {restaurant.is_active !== false ? 'Open' : 'Closed'}
                   </span>
                   {restaurant.is_verified && (
-                    <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-600 border border-blue-200">
+                    <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[12px] font-medium bg-[#DBEAFE] text-[#3B82F6] border border-[#BFDBFE]">
                       Verified
                     </span>
                   )}
                 </div>
                 <div className="p-4">
                   <div className="flex justify-between items-start">
-                    <h4 className="font-bold text-[#1A2A3A] group-hover:text-[#1769AA] transition-colors">{restaurant.business_name || restaurant.fullname}</h4>
-                    <span className="text-sm font-semibold text-[#C9A84C]">{getStars(restaurant.rating)} {restaurant.rating}</span>
+                    <h4 className="font-semibold text-[#1F2937] group-hover:text-[#0B342B] transition-colors text-[15px]">{restaurant.business_name || restaurant.fullname}</h4>
+                    <span className="text-[14px] font-semibold text-[#C9A44B]">{getStars(restaurant.rating)} {restaurant.rating}</span>
                   </div>
-                  <p className="text-xs text-[#94A3B8] mt-0.5">{restaurant.business_type || 'Restaurant'} · {restaurant.county || restaurant.location}</p>
+                  <p className="text-[13px] text-[#6B7280] mt-0.5">{restaurant.business_type || 'Restaurant'} · {restaurant.county || restaurant.location}</p>
                   <div className="flex flex-wrap gap-1 mt-2">
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">Halal</span>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#F1F7FC] text-[#5A6A7A]">{restaurant.county || 'Kenya'}</span>
+                    <span className="text-[12px] font-medium px-2 py-0.5 rounded-full bg-[#D1FAE5] text-[#3FAF73]">Halal</span>
+                    <span className="text-[12px] font-medium px-2 py-0.5 rounded-full bg-[#FAFAF7] text-[#6B7280] border border-[#E8EEF4]">{restaurant.county || 'Kenya'}</span>
                     {restaurant.delivery_fee === 0 && (
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">Free Delivery</span>
+                      <span className="text-[12px] font-medium px-2 py-0.5 rounded-full bg-[#D1FAE5] text-[#3FAF73]">Free Delivery</span>
                     )}
                   </div>
-                  <div className="flex justify-between items-center mt-3 pt-3 border-t border-[#F1F7FC]">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mt-3 pt-3 border-t border-[#F4F5F1]">
                     <div>
-                      <span className="font-semibold text-[#1A2A3A]">{getPriceRangeDisplay(restaurant.price_range)}</span>
-                      <span className="text-xs text-[#94A3B8] ml-2 flex items-center gap-1">
+                      <span className="font-semibold text-[#1F2937]">{getPriceRangeDisplay(restaurant.price_range)}</span>
+                      <span className="text-[13px] text-[#6B7280] ml-2 flex items-center gap-1">
                         <ClockIcon /> {restaurant.delivery_time}
                       </span>
                     </div>
                     <div className="flex gap-2">
-                      <button className="px-3 py-1.5 rounded-xl bg-white border border-[#E2E8F0] text-[#5A6A7A] text-xs font-semibold hover:bg-[#F1F7FC] transition" onClick={() => handleViewMenu(restaurant)}>Menu</button>
-                      <button className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 ${restaurant.is_active !== false ? 'bg-[#1769AA] text-white shadow-md shadow-[#1769AA]/20 hover:bg-[#2F80C0] hover:shadow-lg' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`} onClick={() => handleOrderNow(restaurant)} disabled={restaurant.is_active === false}>
+                      <button className="px-3 py-1.5 rounded-xl bg-white border border-[#E8EEF4] text-[#6B7280] text-[13px] font-medium hover:bg-[#FAFAF7] transition" onClick={() => handleViewMenu(restaurant)}>Menu</button>
+                      <button className={`px-3 py-1.5 rounded-xl text-[13px] font-medium transition-all duration-200 ${restaurant.is_active !== false ? 'bg-[#0B342B] text-white shadow-md shadow-[#0B342B]/20 hover:bg-[#032A24] hover:shadow-lg' : 'bg-[#F4F5F1] text-[#6B7280] cursor-not-allowed'}`} onClick={() => handleOrderNow(restaurant)} disabled={restaurant.is_active === false}>
                         {restaurant.is_active !== false ? 'Order' : 'Closed'}
                       </button>
                     </div>
@@ -398,42 +440,42 @@ const Restaurants = () => {
         {/* ======================================== */}
         {showMenuModal && selectedRestaurant && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowMenuModal(false)}>
-            <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-[#E8EEF4] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <div className="p-6 border-b border-[#F1F7FC] flex justify-between items-center sticky top-0 bg-white z-10">
+            <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-[#E8EEF4] shadow-2xl animate-fadeIn" onClick={(e) => e.stopPropagation()}>
+              <div className="p-6 border-b border-[#F4F5F1] flex justify-between items-center sticky top-0 bg-white z-10">
                 <div>
-                  <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">{selectedRestaurant.business_name || selectedRestaurant.fullname}</h3>
-                  <p className="text-sm text-[#94A3B8] mt-0.5">{selectedRestaurant.location || selectedRestaurant.county || 'Menu'}</p>
+                  <h3 className="text-[22px] font-semibold text-[#1F2937]">{selectedRestaurant.business_name || selectedRestaurant.fullname}</h3>
+                  <p className="text-[14px] text-[#6B7280] mt-0.5">{selectedRestaurant.location || selectedRestaurant.county || 'Menu'}</p>
                 </div>
-                <button className="w-8 h-8 rounded-xl hover:bg-[#F1F7FC] transition flex items-center justify-center text-[#94A3B8] hover:text-[#1A2A3A]" onClick={() => setShowMenuModal(false)}><CloseIcon /></button>
+                <button className="w-8 h-8 rounded-xl hover:bg-[#FAFAF7] transition flex items-center justify-center text-[#6B7280] hover:text-[#1F2937]" onClick={() => setShowMenuModal(false)}><CloseIcon /></button>
               </div>
               <div className="p-6">
                 {menuItems.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-[#94A3B8]">No menu items available</p>
+                    <p className="text-[#6B7280]">No menu items available</p>
                   </div>
                 ) : (
                   <div className="space-y-6">
                     {[...new Set(menuItems.map(item => item.category))].map(category => (
                       <div key={category}>
-                        <h4 className="font-bold text-[#1A2A3A] border-b-2 border-[#1769AA] pb-2 mb-3">{category}</h4>
+                        <h4 className="font-bold text-[#1F2937] border-b-2 border-[#0B342B] pb-2 mb-3 text-[15px]">{category}</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {menuItems.filter(item => item.category === category).map(item => (
-                            <div key={item.id} className="bg-[#F8FAFC] rounded-xl p-3 hover:shadow-md transition-all duration-200 border border-[#E8EEF4] hover:border-[#1769AA]/30">
+                            <div key={item.id} className="bg-[#FAFAF7] rounded-xl p-3 hover:shadow-md transition-all duration-200 border border-[#E8EEF4] hover:border-[#0B342B]/30">
                               <div className="flex gap-3">
                                 <div 
                                   className="w-20 h-20 rounded-lg bg-cover bg-center flex-shrink-0 border border-[#E8EEF4]" 
                                   style={{ 
                                     backgroundImage: item.image ? `url(${item.image})` : 'none', 
-                                    backgroundColor: item.image ? 'transparent' : '#EDE5D4' 
+                                    backgroundColor: item.image ? 'transparent' : '#F4F5F1' 
                                   }} 
                                 />
                                 <div className="flex-1 min-w-0">
-                                  <div className="font-medium text-[#1A2A3A] text-sm truncate">{item.name}</div>
-                                  <div className="text-xs text-[#94A3B8] line-clamp-2">{item.description}</div>
+                                  <div className="font-medium text-[#1F2937] text-[15px] truncate">{item.name}</div>
+                                  <div className="text-[13px] text-[#6B7280] line-clamp-2">{item.description}</div>
                                   <div className="flex items-center justify-between mt-2">
-                                    <span className="font-bold text-[#1769AA]">{formatCurrency(item.price)}</span>
+                                    <span className="font-bold text-[#0B342B]">{formatCurrency(item.price)}</span>
                                     <button 
-                                      className="px-2.5 py-1 rounded-lg bg-[#1769AA] text-white text-xs font-semibold hover:bg-[#2F80C0] transition-all duration-200"
+                                      className="px-2.5 py-1 rounded-lg bg-[#0B342B] text-white text-[13px] font-medium hover:bg-[#032A24] transition-all duration-200 shadow-sm"
                                       onClick={() => addToCart(item)}
                                     >
                                       Add
@@ -448,23 +490,23 @@ const Restaurants = () => {
                     ))}
 
                     {cart.length > 0 && (
-                      <div className="bg-[#F8FAFC] rounded-xl p-4 mt-4 border border-[#E8EEF4] sticky bottom-0">
-                        <div className="flex justify-between font-semibold text-[#1A2A3A] pb-2 border-b border-[#E2E8F0]">
+                      <div className="bg-[#FAFAF7] rounded-xl p-4 mt-4 border border-[#E8EEF4] sticky bottom-0">
+                        <div className="flex justify-between font-semibold text-[#1F2937] pb-2 border-b border-[#E8EEF4]">
                           <span>Your Order</span>
                           <span>{cart.length} items</span>
                         </div>
                         {cart.map(item => (
-                          <div key={item.id} className="flex justify-between py-1.5 text-sm">
-                            <span className="text-[#5A6A7A]">{item.name} x{item.quantity}</span>
-                            <span className="font-medium text-[#1A2A3A]">{formatCurrency(item.price * item.quantity)}</span>
+                          <div key={item.id} className="flex justify-between py-1.5 text-[14px]">
+                            <span className="text-[#6B7280]">{item.name} x{item.quantity}</span>
+                            <span className="font-medium text-[#1F2937]">{formatCurrency(item.price * item.quantity)}</span>
                           </div>
                         ))}
-                        <div className="flex justify-between pt-2 border-t border-[#E2E8F0] font-bold text-[#1A2A3A]">
+                        <div className="flex justify-between pt-2 border-t border-[#E8EEF4] font-bold text-[#1F2937]">
                           <span>Total:</span>
-                          <span className="text-[#1769AA]">{formatCurrency(getCartTotal())}</span>
+                          <span className="text-[#0B342B]">{formatCurrency(getCartTotal())}</span>
                         </div>
                         <button 
-                          className="w-full mt-3 py-2.5 rounded-xl bg-[#1769AA] text-white font-semibold text-sm shadow-md shadow-[#1769AA]/20 hover:bg-[#2F80C0] hover:shadow-lg transition-all duration-200"
+                          className="w-full mt-3 py-2.5 rounded-xl bg-[#0B342B] text-white font-medium text-[15px] shadow-md shadow-[#0B342B]/20 hover:bg-[#032A24] hover:shadow-lg transition-all duration-200"
                           onClick={() => { setShowMenuModal(false); setShowOrderModal(true); }}
                         >
                           Proceed to Checkout
@@ -483,22 +525,22 @@ const Restaurants = () => {
         {/* ======================================== */}
         {showOrderModal && selectedRestaurant && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowOrderModal(false)}>
-            <div className="bg-white rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-[#E8EEF4] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <div className="p-6 border-b border-[#E8EEF4] flex justify-between items-center">
-                <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">Place Order</h3>
-                <button className="w-8 h-8 rounded-xl hover:bg-[#F1F7FC] transition flex items-center justify-center text-[#94A3B8] hover:text-[#1A2A3A]" onClick={() => setShowOrderModal(false)}><CloseIcon /></button>
+            <div className="bg-white rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-[#E8EEF4] shadow-2xl animate-fadeIn" onClick={(e) => e.stopPropagation()}>
+              <div className="p-6 border-b border-[#F4F5F1] flex justify-between items-center">
+                <h3 className="text-[22px] font-semibold text-[#1F2937]">Place Order</h3>
+                <button className="w-8 h-8 rounded-xl hover:bg-[#FAFAF7] transition flex items-center justify-center text-[#6B7280] hover:text-[#1F2937]" onClick={() => setShowOrderModal(false)}><CloseIcon /></button>
               </div>
               <div className="p-6">
-                <div className="bg-[#F8FAFC] rounded-xl p-4 mb-4">
-                  <div className="font-bold text-[#1A2A3A]">{selectedRestaurant.business_name || selectedRestaurant.fullname}</div>
-                  <div className="text-xs text-[#94A3B8] mt-0.5">{selectedRestaurant.location || selectedRestaurant.address || 'Nairobi'}</div>
+                <div className="bg-[#FAFAF7] rounded-xl p-4 mb-4 border border-[#E8EEF4]">
+                  <div className="font-bold text-[#1F2937]">{selectedRestaurant.business_name || selectedRestaurant.fullname}</div>
+                  <div className="text-[13px] text-[#6B7280] mt-0.5">{selectedRestaurant.location || selectedRestaurant.address || 'Nairobi'}</div>
                 </div>
 
                 {cart.length === 0 ? (
                   <div className="text-center py-6">
-                    <p className="text-[#94A3B8]">Your cart is empty. Please add items before ordering.</p>
+                    <p className="text-[#6B7280]">Your cart is empty. Please add items before ordering.</p>
                     <button 
-                      className="mt-4 px-6 py-2.5 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200"
+                      className="mt-4 px-6 py-2.5 bg-[#0B342B] text-white font-medium rounded-xl hover:bg-[#032A24] transition-all duration-200 shadow-sm"
                       onClick={() => { setShowOrderModal(false); setShowMenuModal(true); }}
                     >
                       View Menu
@@ -507,46 +549,46 @@ const Restaurants = () => {
                 ) : (
                   <>
                     {cart.map(item => (
-                      <div key={item.id} className="flex justify-between py-2 border-b border-[#F1F7FC] text-sm">
-                        <span className="text-[#1A2A3A]">{item.name} x{item.quantity}</span>
-                        <span className="font-semibold text-[#1A2A3A]">{formatCurrency(item.price * item.quantity)}</span>
+                      <div key={item.id} className="flex justify-between py-2 border-b border-[#F4F5F1] text-[15px]">
+                        <span className="text-[#1F2937]">{item.name} x{item.quantity}</span>
+                        <span className="font-semibold text-[#1F2937]">{formatCurrency(item.price * item.quantity)}</span>
                       </div>
                     ))}
 
-                    <div className="bg-[#F8FAFC] rounded-xl p-4 mt-4 space-y-2">
-                      <div className="flex justify-between text-sm"><span className="text-[#94A3B8]">Subtotal</span><span className="font-semibold text-[#1A2A3A]">{formatCurrency(getCartTotal())}</span></div>
-                      <div className="flex justify-between text-sm"><span className="text-[#94A3B8]">Delivery Fee</span><span className="font-semibold text-[#1A2A3A]">{selectedRestaurant.delivery_fee === 0 ? 'FREE' : formatCurrency(selectedRestaurant.delivery_fee || 0)}</span></div>
-                      <div className="flex justify-between text-lg font-bold border-t border-[#E2E8F0] pt-2"><span className="text-[#1A2A3A]">Total</span><span className="text-[#1769AA]">{formatCurrency(getCartTotal() + (selectedRestaurant.delivery_fee || 0))}</span></div>
+                    <div className="bg-[#FAFAF7] rounded-xl p-4 mt-4 space-y-2 border border-[#E8EEF4]">
+                      <div className="flex justify-between text-[15px]"><span className="text-[#6B7280]">Subtotal</span><span className="font-semibold text-[#1F2937]">{formatCurrency(getCartTotal())}</span></div>
+                      <div className="flex justify-between text-[15px]"><span className="text-[#6B7280]">Delivery Fee</span><span className="font-semibold text-[#1F2937]">{selectedRestaurant.delivery_fee === 0 ? 'FREE' : formatCurrency(selectedRestaurant.delivery_fee || 0)}</span></div>
+                      <div className="flex justify-between text-[17px] font-bold border-t border-[#E8EEF4] pt-2"><span className="text-[#1F2937]">Total</span><span className="text-[#0B342B]">{formatCurrency(getCartTotal() + (selectedRestaurant.delivery_fee || 0))}</span></div>
                     </div>
 
                     <div className="space-y-3 mt-4">
                       <div>
-                        <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-1.5">Delivery Type</label>
-                        <select className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200 appearance-none" value={orderData.deliveryType} onChange={(e) => setOrderData({...orderData, deliveryType: e.target.value})}>
+                        <label className="block text-[13px] font-medium text-[#6B7280] mb-1.5">Delivery Type</label>
+                        <select className="w-full px-4 py-2.5 border border-[#E8EEF4] rounded-xl bg-white text-[#1F2937] text-[15px] focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition-all duration-200 appearance-none" value={orderData.deliveryType} onChange={(e) => setOrderData({...orderData, deliveryType: e.target.value})}>
                           <option value="delivery">Delivery</option>
                           <option value="pickup">Pickup</option>
                         </select>
                       </div>
                       {orderData.deliveryType === 'delivery' && (
                         <div>
-                          <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-1.5">Delivery Address</label>
-                          <input className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200" placeholder="Enter your address" value={orderData.deliveryAddress} onChange={(e) => setOrderData({...orderData, deliveryAddress: e.target.value})} />
+                          <label className="block text-[13px] font-medium text-[#6B7280] mb-1.5">Delivery Address</label>
+                          <input className="w-full px-4 py-2.5 border border-[#E8EEF4] rounded-xl bg-white text-[#1F2937] text-[15px] placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition-all duration-200" placeholder="Enter your address" value={orderData.deliveryAddress} onChange={(e) => setOrderData({...orderData, deliveryAddress: e.target.value})} />
                         </div>
                       )}
                       <div>
-                        <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-1.5">Special Instructions</label>
-                        <textarea className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200 resize-y" placeholder="Any special requests..." rows="2" value={orderData.specialInstructions} onChange={(e) => setOrderData({...orderData, specialInstructions: e.target.value})} />
+                        <label className="block text-[13px] font-medium text-[#6B7280] mb-1.5">Special Instructions</label>
+                        <textarea className="w-full px-4 py-2.5 border border-[#E8EEF4] rounded-xl bg-white text-[#1F2937] text-[15px] placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition-all duration-200 resize-y" placeholder="Any special requests..." rows="2" value={orderData.specialInstructions} onChange={(e) => setOrderData({...orderData, specialInstructions: e.target.value})} />
                       </div>
                     </div>
                   </>
                 )}
 
-                {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 mt-4">{error}</div>}
+                {error && <div className="p-3 bg-white border border-[#DC2626]/20 rounded-xl text-[15px] text-[#DC2626] mt-4">{error}</div>}
               </div>
-              <div className="p-6 border-t border-[#E8EEF4] flex gap-3">
-                <button className="flex-1 px-6 py-3 rounded-xl bg-[#F1F7FC] text-[#5A6A7A] font-semibold text-sm hover:bg-[#E2E8F0] transition-all duration-200" onClick={() => setShowOrderModal(false)}>Cancel</button>
+              <div className="p-6 border-t border-[#F4F5F1] flex gap-3">
+                <button className="flex-1 px-6 py-3 rounded-xl bg-[#FAFAF7] text-[#6B7280] font-medium text-[15px] hover:bg-[#F4F5F1] transition-all duration-200" onClick={() => setShowOrderModal(false)}>Cancel</button>
                 {cart.length > 0 && (
-                  <button className="flex-1 px-6 py-3 rounded-xl bg-[#1769AA] text-white font-semibold text-sm shadow-md shadow-[#1769AA]/20 hover:bg-[#2F80C0] hover:shadow-lg transition-all duration-200 disabled:opacity-50" onClick={handlePlaceOrder} disabled={processing}>{processing ? 'Placing Order...' : 'Place Order'}</button>
+                  <button className="flex-1 px-6 py-3 rounded-xl bg-[#0B342B] text-white font-medium text-[15px] shadow-md shadow-[#0B342B]/20 hover:bg-[#032A24] hover:shadow-lg transition-all duration-200 disabled:opacity-50" onClick={handlePlaceOrder} disabled={processing}>{processing ? 'Placing Order...' : 'Place Order'}</button>
                 )}
               </div>
             </div>
@@ -558,22 +600,22 @@ const Restaurants = () => {
         {/* ======================================== */}
         {showSuccessModal && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowSuccessModal(false)}>
-            <div className="bg-white rounded-3xl max-w-md w-full border border-[#E8EEF4] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <div className="p-6 border-b border-[#E8EEF4] flex justify-between items-center">
-                <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">Order Placed!</h3>
-                <button className="w-8 h-8 rounded-xl hover:bg-[#F1F7FC] transition flex items-center justify-center text-[#94A3B8] hover:text-[#1A2A3A]" onClick={() => setShowSuccessModal(false)}><CloseIcon /></button>
+            <div className="bg-white rounded-3xl max-w-md w-full border border-[#E8EEF4] shadow-2xl animate-fadeIn" onClick={(e) => e.stopPropagation()}>
+              <div className="p-6 border-b border-[#F4F5F1] flex justify-between items-center">
+                <h3 className="text-[22px] font-semibold text-[#1F2937]">Order Placed!</h3>
+                <button className="w-8 h-8 rounded-xl hover:bg-[#FAFAF7] transition flex items-center justify-center text-[#6B7280] hover:text-[#1F2937]" onClick={() => setShowSuccessModal(false)}><CloseIcon /></button>
               </div>
               <div className="p-6 text-center">
-                <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mx-auto border-4 border-emerald-200">
-                  <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-20 h-20 rounded-full bg-[#0B342B]/10 flex items-center justify-center mx-auto border-4 border-[#0B342B]/20">
+                  <svg className="w-10 h-10 text-[#0B342B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <h4 className="text-xl font-heading font-bold text-[#1A2A3A] mt-4">Your order has been placed!</h4>
-                <p className="text-sm text-[#94A3B8] mt-2">{selectedRestaurant?.business_name || selectedRestaurant?.fullname} is preparing your order.<br />You will receive a confirmation message shortly.</p>
+                <h4 className="text-[22px] font-semibold text-[#1F2937] mt-4">Your order has been placed!</h4>
+                <p className="text-[15px] text-[#6B7280] mt-2">{selectedRestaurant?.business_name || selectedRestaurant?.fullname} is preparing your order.<br />You will receive a confirmation message shortly.</p>
               </div>
-              <div className="p-6 border-t border-[#E8EEF4]">
-                <button className="w-full py-3 rounded-xl bg-[#1769AA] text-white font-semibold text-sm shadow-md shadow-[#1769AA]/20 hover:bg-[#2F80C0] hover:shadow-lg transition-all duration-200" onClick={() => setShowSuccessModal(false)}>Done</button>
+              <div className="p-6 border-t border-[#F4F5F1]">
+                <button className="w-full py-3 rounded-xl bg-[#0B342B] text-white font-medium text-[15px] shadow-md shadow-[#0B342B]/20 hover:bg-[#032A24] hover:shadow-lg transition-all duration-200" onClick={() => setShowSuccessModal(false)}>Done</button>
               </div>
             </div>
           </div>
@@ -581,9 +623,12 @@ const Restaurants = () => {
 
         {/* ===== SUCCESS TOAST ===== */}
         {success && (
-          <div className="fixed top-6 right-6 z-50 bg-emerald-600 text-white px-6 py-4 rounded-2xl shadow-lg shadow-emerald-600/30 flex items-center gap-3 animate-slideDown max-w-sm">
-            <span className="text-sm font-medium">{success}</span>
-            <button className="text-white/70 hover:text-white transition" onClick={() => setSuccess('')}><CloseIcon /></button>
+          <div className="fixed top-6 right-6 z-50 bg-[#0B342B] text-white px-6 py-4 rounded-2xl shadow-2xl shadow-[#0B342B]/30 flex items-center gap-3 animate-slideDown max-w-sm border border-[#C9A44B]/20">
+            <svg className="w-5 h-5 text-[#C9A44B] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <span className="text-[15px] font-medium">{success}</span>
+            <button className="text-white/60 hover:text-white transition ml-2 flex-shrink-0" onClick={() => setSuccess('')}><CloseIcon /></button>
           </div>
         )}
       </div>

@@ -12,6 +12,7 @@ const ImamProfile = () => {
   const [success, setSuccess] = useState('');
   const [imam, setImam] = useState(null);
   const [contributionAmount, setContributionAmount] = useState('');
+  const [successAmount, setSuccessAmount] = useState(0);
   const [contributionType, setContributionType] = useState('one-time');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -48,23 +49,35 @@ const ImamProfile = () => {
     setProcessing(true);
     setError('');
     try {
-      await pensionService.contribute({
+      const response = await pensionService.contribute({
         imam_id: imam.imam_id,
         amount: parseFloat(contributionAmount),
         frequency: contributionType
       });
       
+      // Store the actual amount before clearing
+      const paidAmount = parseFloat(contributionAmount) || 0;
+      setSuccessAmount(paidAmount);
+      
       setShowConfirmModal(false);
       setShowSuccessModal(true);
-      setContributionAmount('');
+      
+      // Refresh imam profile to update totals
       await fetchImamProfile();
-      setSuccess('Contribution successful!');
+      
+      setSuccess(`Contribution of ${formatCurrency(paidAmount)} successful!`);
       setTimeout(() => setSuccess(''), 5000);
     } catch (err) {
       setError(err.response?.data?.error || 'Contribution failed. Please try again.');
     } finally {
       setProcessing(false);
     }
+  };
+
+  const closeSuccessModal = () => {
+    setShowSuccessModal(false);
+    setContributionAmount('');
+    setSuccessAmount(0);
   };
 
   const formatCurrency = (amount) => {
@@ -84,7 +97,7 @@ const ImamProfile = () => {
   );
 
   const CheckIcon = () => (
-    <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg className="w-8 h-8 text-[#0B342B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
     </svg>
   );
@@ -116,10 +129,10 @@ const ImamProfile = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F1F7FC] p-4 md:p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-[#FAFAF7] p-4 md:p-6 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#1769AA]/10 border-t-[#1769AA] rounded-full animate-spin mx-auto" />
-          <p className="text-[#94A3B8] mt-4">Loading...</p>
+          <div className="w-12 h-12 border-4 border-[#0B342B]/10 border-t-[#0B342B] rounded-full animate-spin mx-auto" />
+          <p className="text-[#6B7280] mt-4 text-[15px]">Loading...</p>
         </div>
       </div>
     );
@@ -127,11 +140,11 @@ const ImamProfile = () => {
 
   if (!imam) {
     return (
-      <div className="min-h-screen bg-[#F1F7FC] p-4 md:p-6 flex items-center justify-center">
-        <div className="bg-white rounded-xl border border-[#FECACA] shadow-sm p-8 text-center max-w-md">
-          <p className="text-sm text-[#94A3B8]">Imam not found</p>
+      <div className="min-h-screen bg-[#FAFAF7] p-4 md:p-6 flex items-center justify-center">
+        <div className="bg-white rounded-xl border border-[#DC2626]/20 shadow-sm p-8 text-center max-w-md">
+          <p className="text-[15px] text-[#6B7280]">Imam not found</p>
           <button 
-            className="mt-4 px-6 py-2.5 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200"
+            className="mt-4 px-6 py-2.5 bg-[#0B342B] text-white font-medium rounded-xl hover:bg-[#032A24] transition-all duration-200 shadow-sm text-[15px]"
             onClick={() => navigate(-1)}
           >
             Go Back
@@ -142,44 +155,44 @@ const ImamProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F1F7FC]">
+    <div className="min-h-screen bg-[#FAFAF7]">
       {/* ===== HERO SECTION ===== */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#1769AA] via-[#2F80C0] to-[#4A9AD9] rounded-2xl mx-4 md:mx-6 lg:mx-8 mt-4 md:mt-6 p-8 md:p-12 shadow-lg shadow-[#1769AA]/20">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-2xl" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-2xl" />
+      <div className="relative overflow-hidden bg-[#0B342B] mx-4 md:mx-6 lg:mx-8 mt-4 md:mt-6 rounded-2xl p-8 md:p-12 shadow-lg shadow-[#0B342B]/10">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#C9A44B]/5 rounded-full blur-2xl" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#C9A44B]/5 rounded-full blur-2xl" />
         
         <div className="relative z-10 max-w-4xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Imam Profile</span>
-                <span className="w-px h-4 bg-white/20" />
-                <span className="text-xs font-medium text-white/50">Step 3 of 3</span>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-[13px] font-medium text-[#C9A44B] uppercase tracking-wider">Imam Profile</span>
+                <span className="w-px h-4 bg-[#C9A44B]/30" />
+                <span className="text-[13px] font-medium text-[#C9A44B]/70">Support an Imam</span>
               </div>
               <div className="flex items-center gap-4">
                 {imam.profile_image ? (
                   <img src={imam.profile_image} alt={imam.name} className="w-16 h-16 rounded-2xl object-cover border-2 border-white/20" />
                 ) : (
-                  <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-2xl font-bold text-white border border-white/10">
+                  <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-[24px] font-bold text-white border border-white/10">
                     {imam.name?.charAt(0) || 'I'}
                   </div>
                 )}
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white">{imam.name}</h1>
+                    <h1 className="text-[26px] md:text-[30px] font-semibold text-white">{imam.name}</h1>
                     {imam.verified && (
-                      <span className="inline-flex items-center gap-0.5 text-xs font-semibold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-500/20">
+                      <span className="inline-flex items-center gap-0.5 text-[13px] font-medium px-3 py-1 rounded-full bg-[#3FAF73]/20 text-[#D1FAE5] border border-[#3FAF73]/20">
                         <CheckBadgeIcon /> Verified
                       </span>
                     )}
                   </div>
-                  <p className="text-white/70 text-sm">{imam.title || 'Imam'} · {imam.mosque_name || 'No mosque assigned'}</p>
-                  <p className="text-white/50 text-sm">{imam.years_of_service || 0} years of service</p>
+                  <p className="text-white/70 text-[15px]">{imam.title || 'Imam'} · {imam.mosque_name || 'No mosque assigned'}</p>
+                  <p className="text-white/50 text-[14px]">{imam.years_of_service || 0} years of service</p>
                 </div>
               </div>
             </div>
             <button 
-              className="text-white/60 hover:text-white text-sm flex items-center gap-2 transition-colors"
+              className="text-white/60 hover:text-white text-[15px] flex items-center gap-2 transition-colors font-medium"
               onClick={() => navigate(-1)}
             >
               Go Back
@@ -191,9 +204,9 @@ const ImamProfile = () => {
       {/* ===== MAIN CONTENT - SINGLE COLUMN ===== */}
       <div className="max-w-4xl mx-auto px-4 md:px-6 py-6">
         {success && (
-          <div className="mb-4 p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-600 flex justify-between items-center">
+          <div className="mb-4 p-4 bg-white border border-[#3FAF73]/20 rounded-xl text-[15px] text-[#3FAF73] flex justify-between items-center shadow-sm">
             <span>{success}</span>
-            <button onClick={() => setSuccess('')} className="text-emerald-400 hover:text-emerald-600"><CloseIcon /></button>
+            <button onClick={() => setSuccess('')} className="text-[#3FAF73]/60 hover:text-[#3FAF73]"><CloseIcon /></button>
           </div>
         )}
 
@@ -201,32 +214,32 @@ const ImamProfile = () => {
           
           {/* Biography Section */}
           <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-6">
-            <h2 className="text-base font-bold text-[#1A2A3A] mb-3">Biography</h2>
-            <p className="text-sm text-[#5A6A7A] leading-relaxed">{imam.bio || 'No biography available.'}</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-4 border-t border-[#F1F7FC]">
+            <h2 className="text-[17px] font-semibold text-[#1F2937] mb-3">Biography</h2>
+            <p className="text-[15px] text-[#6B7280] leading-relaxed">{imam.bio || 'No biography available.'}</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-4 border-t border-[#F4F5F1]">
               <div>
-                <div className="text-xs text-[#94A3B8]">Years of Service</div>
-                <div className="text-sm font-semibold text-[#1A2A3A]">{imam.years_of_service || 0} yrs</div>
+                <div className="text-[13px] text-[#6B7280]">Years of Service</div>
+                <div className="text-[15px] font-semibold text-[#1F2937]">{imam.years_of_service || 0} yrs</div>
               </div>
               <div>
-                <div className="text-xs text-[#94A3B8]">Total Raised</div>
-                <div className="text-sm font-semibold text-[#1769AA]">{formatCurrency(imam.total_contributions || 0)}</div>
+                <div className="text-[13px] text-[#6B7280]">Total Raised</div>
+                <div className="text-[15px] font-semibold text-[#0B342B]">{formatCurrency(imam.total_contributions || 0)}</div>
               </div>
               <div>
-                <div className="text-xs text-[#94A3B8]">Supporters</div>
-                <div className="text-sm font-semibold text-[#1A2A3A]">{imam.total_supporters || 0}</div>
+                <div className="text-[13px] text-[#6B7280]">Supporters</div>
+                <div className="text-[15px] font-semibold text-[#1F2937]">{imam.total_supporters || 0}</div>
               </div>
               <div>
-                <div className="text-xs text-[#94A3B8]">Qualifications</div>
-                <div className="text-sm font-semibold text-[#1A2A3A]">{imam.qualifications?.length || 0}</div>
+                <div className="text-[13px] text-[#6B7280]">Qualifications</div>
+                <div className="text-[15px] font-semibold text-[#1F2937]">{imam.qualifications?.length || 0}</div>
               </div>
             </div>
             {imam.qualifications && imam.qualifications.length > 0 && (
               <div className="mt-3">
-                <div className="text-xs text-[#94A3B8] mb-1">Qualifications</div>
+                <div className="text-[13px] text-[#6B7280] mb-1">Qualifications</div>
                 <div className="flex flex-wrap gap-1.5">
                   {imam.qualifications.map((q, i) => (
-                    <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-[#F1F7FC] text-[#5A6A7A]">{q}</span>
+                    <span key={i} className="text-[13px] px-2 py-0.5 rounded-full bg-[#FAFAF7] text-[#6B7280] border border-[#E8EEF4]">{q}</span>
                   ))}
                 </div>
               </div>
@@ -235,23 +248,23 @@ const ImamProfile = () => {
 
           {/* Contribution Section */}
           <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-6">
-            <h2 className="text-base font-bold text-[#1A2A3A] mb-3">Support This Imam</h2>
-            <p className="text-sm text-[#94A3B8] mb-4">Contribute to their long-term welfare</p>
+            <h2 className="text-[17px] font-semibold text-[#1F2937] mb-3">Support This Imam</h2>
+            <p className="text-[15px] text-[#6B7280] mb-4">Contribute to their long-term welfare</p>
 
             <div className="mb-4">
-              <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-2">Contribution Type</label>
+              <label className="text-[13px] font-medium text-[#6B7280] block mb-2">Contribution Type</label>
               <div className="grid grid-cols-2 gap-2 max-w-sm">
                 <button
-                  className={`py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                    contributionType === 'one-time' ? 'bg-[#1769AA] text-white' : 'bg-[#F1F7FC] text-[#5A6A7A] hover:bg-[#E8EEF4]'
+                  className={`py-2.5 rounded-xl text-[15px] font-medium transition-all duration-200 ${
+                    contributionType === 'one-time' ? 'bg-[#0B342B] text-white shadow-sm' : 'bg-[#FAFAF7] text-[#6B7280] hover:bg-[#F4F5F1]'
                   }`}
                   onClick={() => setContributionType('one-time')}
                 >
                   One-Time
                 </button>
                 <button
-                  className={`py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                    contributionType === 'recurring' ? 'bg-[#1769AA] text-white' : 'bg-[#F1F7FC] text-[#5A6A7A] hover:bg-[#E8EEF4]'
+                  className={`py-2.5 rounded-xl text-[15px] font-medium transition-all duration-200 ${
+                    contributionType === 'recurring' ? 'bg-[#0B342B] text-white shadow-sm' : 'bg-[#FAFAF7] text-[#6B7280] hover:bg-[#F4F5F1]'
                   }`}
                   onClick={() => setContributionType('recurring')}
                 >
@@ -261,13 +274,13 @@ const ImamProfile = () => {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-2">Amount (KES)</label>
+              <label className="text-[13px] font-medium text-[#6B7280] block mb-2">Amount (KES)</label>
               <div className="flex flex-wrap gap-2 mb-3">
                 {quickAmounts.map((val) => (
                   <button
                     key={val}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
-                      parseFloat(contributionAmount) === val ? 'bg-[#1769AA] text-white' : 'bg-[#F1F7FC] text-[#5A6A7A] hover:bg-[#E8EEF4]'
+                    className={`px-3 py-1.5 rounded-full text-[13px] font-medium transition-all duration-200 ${
+                      parseFloat(contributionAmount) === val ? 'bg-[#0B342B] text-white shadow-sm' : 'bg-[#FAFAF7] text-[#6B7280] hover:bg-[#F4F5F1]'
                     }`}
                     onClick={() => setContributionAmount(val.toString())}
                   >
@@ -277,23 +290,23 @@ const ImamProfile = () => {
               </div>
               <input
                 type="number"
-                className="w-full max-w-sm px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                className="w-full max-w-sm px-4 py-2.5 border border-[#E8EEF4] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition-all duration-200 bg-white"
                 placeholder="Enter custom amount"
                 min="10"
                 value={contributionAmount}
                 onChange={(e) => setContributionAmount(e.target.value)}
               />
-              {error && <p className="text-sm text-[#DC2626] mt-2">{error}</p>}
+              {error && <p className="text-[15px] text-[#DC2626] mt-2">{error}</p>}
             </div>
 
             <button
-              className="w-full max-w-sm mt-4 py-3 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200 shadow-md shadow-[#1769AA]/20"
+              className="w-full max-w-sm mt-4 py-3 bg-[#0B342B] text-white font-medium rounded-xl hover:bg-[#032A24] transition-all duration-200 shadow-md shadow-[#0B342B]/20 text-[15px]"
               onClick={handleContribute}
             >
               Support Imam
             </button>
 
-            <p className="text-[10px] text-[#94A3B8] text-center mt-4">Wakala Model · 0% Riba · Transparent</p>
+            <p className="text-[12px] text-[#6B7280] text-center mt-4">Wakala Model · 0% Riba · Transparent</p>
           </div>
         </div>
       </div>
@@ -301,55 +314,55 @@ const ImamProfile = () => {
       {/* ===== CONFIRMATION MODAL ===== */}
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="p-6 border-b border-[#F1F7FC] flex justify-between items-center sticky top-0 bg-white rounded-t-2xl z-10">
-              <h3 className="text-lg font-bold text-[#1A2A3A]">Confirm Contribution</h3>
-              <button className="text-[#94A3B8] hover:text-[#1A2A3A] transition-colors" onClick={() => setShowConfirmModal(false)}>
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-fadeIn">
+            <div className="p-6 border-b border-[#F4F5F1] flex justify-between items-center sticky top-0 bg-white rounded-t-2xl z-10">
+              <h3 className="text-[22px] font-semibold text-[#1F2937]">Confirm Contribution</h3>
+              <button className="text-[#6B7280] hover:text-[#1F2937] transition-colors" onClick={() => setShowConfirmModal(false)}>
                 <CloseIcon />
               </button>
             </div>
             
             <div className="p-6 space-y-4">
               <div className="text-center">
-                <div className="text-sm text-[#94A3B8]">You are contributing to</div>
-                <div className="text-lg font-bold text-[#1A2A3A]">{imam.name}</div>
-                <div className="text-sm text-[#94A3B8]">{imam.mosque_name || 'No mosque assigned'}</div>
+                <div className="text-[15px] text-[#6B7280]">You are contributing to</div>
+                <div className="text-[17px] font-bold text-[#1F2937]">{imam.name}</div>
+                <div className="text-[15px] text-[#6B7280]">{imam.mosque_name || 'No mosque assigned'}</div>
               </div>
 
-              <div className="bg-[#F1F7FC] rounded-xl p-4 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-[#94A3B8]">Amount</span>
-                  <span className="font-semibold text-[#1769AA]">{formatCurrency(parseFloat(contributionAmount) || 0)}</span>
+              <div className="bg-[#FAFAF7] rounded-xl p-4 space-y-2 border border-[#E8EEF4]">
+                <div className="flex justify-between text-[15px]">
+                  <span className="text-[#6B7280]">Amount</span>
+                  <span className="font-semibold text-[#0B342B]">{formatCurrency(parseFloat(contributionAmount) || 0)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-[#94A3B8]">Type</span>
-                  <span className="font-semibold text-[#1A2A3A] capitalize">{contributionType}</span>
+                <div className="flex justify-between text-[15px]">
+                  <span className="text-[#6B7280]">Type</span>
+                  <span className="font-semibold text-[#1F2937] capitalize">{contributionType}</span>
                 </div>
               </div>
 
-              <div className="bg-[#F1F7FC] rounded-xl p-4 text-center">
-                <p className="text-sm text-[#5A6A7A] leading-relaxed">
+              <div className="bg-[#FAFAF7] rounded-xl p-4 text-center border border-[#E8EEF4]">
+                <p className="text-[15px] text-[#6B7280] leading-relaxed">
                   This contribution supports the long-term welfare of Imam {imam.name}. 
                   May Allah accept your generous contribution.
                 </p>
               </div>
             </div>
             
-            <div className="p-6 border-t border-[#F1F7FC] flex gap-3 sticky bottom-0 bg-white rounded-b-2xl">
+            <div className="p-6 border-t border-[#F4F5F1] flex gap-3 sticky bottom-0 bg-white rounded-b-2xl">
               <button 
-                className="flex-1 px-6 py-3 bg-white text-[#5A6A7A] font-semibold rounded-xl border border-[#E8EEF4] hover:bg-[#F1F7FC] transition-all duration-200"
+                className="flex-1 px-6 py-3 bg-white text-[#6B7280] font-medium rounded-xl border border-[#E8EEF4] hover:bg-[#FAFAF7] transition-all duration-200"
                 onClick={() => setShowConfirmModal(false)}
               >
                 Cancel
               </button>
               <button 
-                className="flex-[2] px-6 py-3 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="flex-[2] px-6 py-3 bg-[#0B342B] text-white font-medium rounded-xl hover:bg-[#032A24] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed shadow-md shadow-[#0B342B]/20"
                 onClick={confirmContribution}
                 disabled={processing}
               >
                 {processing ? (
                   <span className="flex items-center justify-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     Processing...
                   </span>
                 ) : (
@@ -364,41 +377,38 @@ const ImamProfile = () => {
       {/* ===== SUCCESS MODAL ===== */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="p-6 border-b border-[#F1F7FC] bg-[#1769AA] rounded-t-2xl">
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-fadeIn">
+            <div className="p-6 border-b border-[#F4F5F1] bg-[#0B342B] rounded-t-2xl">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-bold text-white">Contribution Successful!</h3>
-                <button className="text-white/60 hover:text-white transition-colors" onClick={() => setShowSuccessModal(false)}>
+                <h3 className="text-[22px] font-semibold text-white">Contribution Successful!</h3>
+                <button className="text-white/60 hover:text-white transition-colors" onClick={closeSuccessModal}>
                   <CloseIcon />
                 </button>
               </div>
             </div>
             
             <div className="p-6 space-y-4 text-center">
-              <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mx-auto border-4 border-emerald-200">
+              <div className="w-20 h-20 rounded-full bg-[#0B342B]/10 flex items-center justify-center mx-auto border-4 border-[#0B342B]/20">
                 <CheckIcon />
               </div>
               
               <div>
-                <div className="text-sm text-[#94A3B8]">You contributed to</div>
-                <div className="text-xl font-bold text-[#1A2A3A]">{imam.name}</div>
-                <div className="text-lg font-bold text-[#1769AA]">{formatCurrency(parseFloat(contributionAmount) || 0)}</div>
+                <div className="text-[15px] text-[#6B7280]">You contributed to</div>
+                <div className="text-[22px] font-bold text-[#1F2937]">{imam.name}</div>
+                <div className="text-[20px] font-bold text-[#0B342B]">{formatCurrency(successAmount)}</div>
               </div>
 
-              <div className="bg-[#F1F7FC] rounded-xl p-4">
-                <p className="text-sm text-[#5A6A7A] italic leading-relaxed">
+              <div className="bg-[#FAFAF7] rounded-xl p-4 border border-[#E8EEF4]">
+                <p className="text-[15px] text-[#6B7280] italic leading-relaxed">
                   "The example of those who spend their wealth in the way of Allah is like a seed of grain which grows seven spikes..." — Quran 2:261
                 </p>
               </div>
             </div>
             
-            <div className="p-6 border-t border-[#F1F7FC]">
+            <div className="p-6 border-t border-[#F4F5F1]">
               <button 
-                className="w-full px-6 py-3 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200"
-                onClick={() => {
-                  setShowSuccessModal(false);
-                  fetchImamProfile();
-                }}
+                className="w-full px-6 py-3 bg-[#0B342B] text-white font-medium rounded-xl hover:bg-[#032A24] transition-all duration-200 shadow-md shadow-[#0B342B]/20 text-[15px]"
+                onClick={closeSuccessModal}
               >
                 Done
               </button>

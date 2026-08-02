@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import Cart from './Cart';
 
@@ -7,6 +7,7 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const Ecommerce = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const token = localStorage.getItem('halalhub_token');
   
   // ===== STATE =====
@@ -53,6 +54,9 @@ const Ecommerce = () => {
   const [categories, setCategories] = useState(['All']);
   const [vendors, setVendors] = useState(['All']);
   
+  // ===== BUTCHERY MODE =====
+  const [isButcheryMode, setIsButcheryMode] = useState(false);
+  
   const priceRanges = [
     { label: 'All', value: 'All' },
     { label: 'Under KES 1,000', value: 'under-1000', min: 0, max: 1000 },
@@ -68,6 +72,27 @@ const Ecommerce = () => {
     fetchCart();
     fetchOrders();
   }, []);
+
+  // ===== HANDLE URL PARAMETERS =====
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const category = params.get('category');
+    
+    if (category === 'butchery') {
+      setIsButcheryMode(true);
+      setSelectedCategory('All');
+    } else {
+      setIsButcheryMode(false);
+      if (category) {
+        const matchedCategory = categories.find(c => c.toLowerCase() === category.toLowerCase());
+        if (matchedCategory) {
+          setSelectedCategory(matchedCategory);
+        }
+      } else {
+        setSelectedCategory('All');
+      }
+    }
+  }, [location.search, categories]);
 
   const checkAuth = () => {
     const token = localStorage.getItem('halalhub_token');
@@ -133,13 +158,19 @@ const Ecommerce = () => {
   const applyFilters = (productList = products) => {
     let filtered = [...productList];
     
+    // If butchery mode, filter by vendor_type
+    if (isButcheryMode) {
+      filtered = filtered.filter(p => p.vendor_type === 'halalbutchery');
+    }
+    
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter(p =>
         (p.name || '').toLowerCase().includes(q) ||
         (p.vendor_name || '').toLowerCase().includes(q) ||
         (p.category || '').toLowerCase().includes(q) ||
-        (p.description || '').toLowerCase().includes(q)
+        (p.description || '').toLowerCase().includes(q) ||
+        (p.meat_type || '').toLowerCase().includes(q)
       );
     }
     
@@ -182,7 +213,7 @@ const Ecommerce = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [searchQuery, selectedCategory, selectedVendor, selectedPriceRange, sortBy, products]);
+  }, [searchQuery, selectedCategory, selectedVendor, selectedPriceRange, sortBy, products, isButcheryMode]);
 
   // ===== CART FUNCTIONS =====
   const addToCart = async (product) => {
@@ -277,7 +308,6 @@ const Ecommerce = () => {
       setShowCheckoutModal(false);
       setShowSuccessModal(true);
       
-      // Clear cart immediately
       setCart([]);
       
       await fetchOrders();
@@ -321,13 +351,27 @@ const Ecommerce = () => {
 
   const getStatusBadge = (status) => {
     const colors = {
-      'completed': { bg: 'bg-emerald-50', text: 'text-emerald-700' },
-      'processing': { bg: 'bg-blue-50', text: 'text-blue-700' },
-      'shipped': { bg: 'bg-amber-50', text: 'text-amber-700' },
-      'pending': { bg: 'bg-orange-50', text: 'text-orange-700' },
-      'cancelled': { bg: 'bg-red-50', text: 'text-red-700' }
+      'completed': { bg: 'bg-[#D1FAE5]', text: 'text-[#3FAF73]' },
+      'processing': { bg: 'bg-[#DBEAFE]', text: 'text-[#3B82F6]' },
+      'shipped': { bg: 'bg-[#FEF3C7]', text: 'text-[#D97706]' },
+      'pending': { bg: 'bg-[#FEF3C7]', text: 'text-[#D97706]' },
+      'cancelled': { bg: 'bg-[#FEE2E2]', text: 'text-[#DC2626]' }
     };
-    return colors[status] || { bg: 'bg-gray-50', text: 'text-gray-700' };
+    return colors[status] || { bg: 'bg-[#F4F5F1]', text: 'text-[#6B7280]' };
+  };
+
+  const getVendorTypeLabel = (vendorType) => {
+    const labels = {
+      'halalmarket': 'Halal Market',
+      'halalbutchery': 'Halal Butchery',
+      'restaurant': 'Restaurant',
+      'halalstay': 'HalalStay'
+    };
+    return labels[vendorType] || 'Vendor';
+  };
+
+  const isButcheryProduct = (product) => {
+    return product.meat_type && product.vendor_type === 'halalbutchery';
   };
 
   // SVG Icons
@@ -344,7 +388,7 @@ const Ecommerce = () => {
   );
 
   const HeartIcon = ({ filled }) => (
-    <svg className={`w-5 h-5 ${filled ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} fill={filled ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+    <svg className={`w-5 h-5 ${filled ? 'fill-[#DC2626] text-[#DC2626]' : 'text-[#6B7280]'}`} fill={filled ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
     </svg>
   );
@@ -363,20 +407,20 @@ const Ecommerce = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F1F7FC] p-6">
+      <div className="min-h-screen bg-[#FAFAF7] p-6">
         <div className="max-w-7xl mx-auto">
           <div className="mb-6">
-            <div className="h-8 bg-[#F1F7FC] rounded-2xl w-48 animate-pulse" />
-            <div className="h-4 bg-[#F1F7FC] rounded-lg w-64 mt-2 animate-pulse" />
+            <div className="h-8 bg-[#F4F5F1] rounded-2xl w-48 animate-pulse" />
+            <div className="h-4 bg-[#F4F5F1] rounded-lg w-64 mt-2 animate-pulse" />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {[1, 2, 3, 4, 5, 6].map(i => (
               <div key={i} className="bg-white rounded-2xl overflow-hidden border border-[#E8EEF4] shadow-sm animate-pulse">
-                <div className="h-48 bg-[#F1F7FC]" />
+                <div className="h-48 bg-[#F4F5F1]" />
                 <div className="p-4 space-y-3">
-                  <div className="h-4 bg-[#F1F7FC] rounded-lg w-3/4" />
-                  <div className="h-3 bg-[#F1F7FC] rounded-lg w-1/2" />
-                  <div className="h-6 bg-[#F1F7FC] rounded-lg w-1/3" />
+                  <div className="h-4 bg-[#F4F5F1] rounded-lg w-3/4" />
+                  <div className="h-3 bg-[#F4F5F1] rounded-lg w-1/2" />
+                  <div className="h-6 bg-[#F4F5F1] rounded-lg w-1/3" />
                 </div>
               </div>
             ))}
@@ -387,73 +431,87 @@ const Ecommerce = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F1F7FC] p-4 md:p-6">
+    <div className="min-h-screen bg-[#FAFAF7] p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl md:text-3xl font-heading font-bold text-[#1A2A3A]">Halal Market</h1>
-            <p className="text-sm text-[#94A3B8] mt-0.5">Shop halal-certified products from trusted vendors</p>
+            <h1 className="text-[26px] md:text-[30px] font-semibold text-[#1F2937]">
+              {isButcheryMode ? 'Halal Butchery' : 'Halal Market'}
+            </h1>
+            <p className="text-[15px] text-[#6B7280] mt-0.5">
+              {isButcheryMode 
+                ? 'Fresh halal-certified meat from trusted butchers' 
+                : 'Shop halal-certified products from trusted vendors'}
+            </p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             {isAuthenticated && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#D1FAE5] text-[#3FAF73] text-[13px] font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#3FAF73]" />
                 {user?.fullName || 'Guest'}
               </span>
             )}
             <button
-              className="relative px-4 py-2.5 rounded-xl bg-[#1769AA] text-white font-semibold text-sm shadow-md shadow-[#1769AA]/20 hover:bg-[#2F80C0] transition"
+              className="relative px-4 py-2.5 rounded-xl bg-[#0B342B] text-white font-medium text-[15px] shadow-md shadow-[#0B342B]/20 hover:bg-[#032A24] transition"
               onClick={() => setShowCart(true)}
             >
               <span className="flex items-center gap-1.5">
                 <CartIcon />
                 Cart
                 {cart.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-bold">
+                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#DC2626] text-white text-[10px] flex items-center justify-center font-bold">
                     {getCartItemCount()}
                   </span>
                 )}
               </span>
             </button>
             {!isAuthenticated ? (
-              <button className="px-4 py-2.5 rounded-xl bg-[#1A2A3A] text-white font-semibold text-sm hover:bg-[#2A3A4A] transition" onClick={() => navigate('/register/role')}>
+              <button className="px-4 py-2.5 rounded-xl bg-[#1F2937] text-white font-medium text-[15px] hover:bg-[#374151] transition" onClick={() => navigate('/register/role')}>
                 Sign In / Register
               </button>
             ) : (
-              <>
-                <button className="px-3 py-2.5 rounded-xl bg-white border border-[#E8EEF4] text-[#5A6A7A] hover:bg-[#F1F7FC] transition text-sm" onClick={() => setShowOrderHistory(!showOrderHistory)}>
-                  Orders
-                </button>
-              </>
+              <button className="px-3 py-2.5 rounded-xl bg-white border border-[#E8EEF4] text-[#6B7280] hover:bg-[#FAFAF7] transition text-[15px] font-medium" onClick={() => setShowOrderHistory(!showOrderHistory)}>
+                Orders
+              </button>
             )}
           </div>
         </div>
 
         {error && (
-          <div className="mb-4 p-4 rounded-xl bg-red-50 border border-red-200 flex flex-wrap items-center justify-between gap-3 text-sm text-red-600">
+          <div className="mb-4 p-4 rounded-xl bg-white border border-[#DC2626]/20 flex flex-wrap items-center justify-between gap-3 text-[15px] text-[#DC2626] shadow-sm">
             <span>{error}</span>
-            <button className="px-4 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold hover:bg-red-700 transition" onClick={() => { setError(''); fetchProducts(); }}>
+            <button className="px-4 py-1.5 rounded-lg bg-[#DC2626] text-white text-[13px] font-medium hover:bg-[#B91C1C] transition" onClick={() => { setError(''); fetchProducts(); }}>
               Retry
             </button>
           </div>
         )}
 
         {/* HERO */}
-        <div className="bg-gradient-to-r from-[#1769AA] to-[#2F80C0] rounded-2xl p-6 md:p-8 mb-6 text-white relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
+        <div className="bg-[#0B342B] rounded-2xl p-6 md:p-8 mb-6 text-white relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-[#C9A44B]/5 rounded-full blur-3xl" />
           <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
-              <span className="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-semibold mb-2">Welcome to Halal Market</span>
-              <h2 className="text-2xl md:text-3xl font-heading font-bold">Shop with Peace of Mind</h2>
-              <p className="text-white/80 text-sm mt-1">100% halal-certified products from trusted sellers.</p>
+              <span className="inline-block px-3 py-1 rounded-full bg-white/20 text-[13px] font-medium mb-2">
+                {isButcheryMode ? 'Halal Butchery' : 'Welcome to Halal Market'}
+              </span>
+              <h2 className="text-[26px] md:text-[30px] font-semibold">
+                {isButcheryMode ? 'Fresh Halal Meat' : 'Shop with Peace of Mind'}
+              </h2>
+              <p className="text-white/80 text-[15px] mt-1">
+                {isButcheryMode 
+                  ? '100% halal-certified meat from trusted butchers' 
+                  : '100% halal-certified products from trusted sellers.'}
+              </p>
               <div className="flex flex-wrap gap-3 mt-3">
-                <span className="text-xs bg-white/10 px-3 py-1 rounded-full">{products.length} Products</span>
-                <span className="text-xs bg-white/10 px-3 py-1 rounded-full">100% Halal Certified</span>
-                <span className="text-xs bg-white/10 px-3 py-1 rounded-full">{categories.length - 1} Categories</span>
+                <span className="text-[13px] bg-white/10 px-3 py-1 rounded-full">{filteredProducts.length} Products</span>
+                <span className="text-[13px] bg-white/10 px-3 py-1 rounded-full">100% Halal Certified</span>
+                {isButcheryMode && (
+                  <span className="text-[13px] bg-white/10 px-3 py-1 rounded-full">Fresh Meat</span>
+                )}
               </div>
             </div>
-            <div className="text-6xl opacity-80">🛍️</div>
+            <div className="text-6xl opacity-80">{isButcheryMode ? '🥩' : '🛍️'}</div>
           </div>
         </div>
 
@@ -461,33 +519,33 @@ const Ecommerce = () => {
         <div className="bg-white rounded-2xl p-5 border border-[#E8EEF4] shadow-sm mb-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-1.5">Search</label>
+              <label className="block text-[13px] font-medium text-[#6B7280] mb-1.5">Search</label>
               <div className="relative">
-                <input type="text" className="w-full px-4 py-2.5 pl-9 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30" placeholder="Search products..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]"><SearchIcon /></span>
+                <input type="text" className="w-full px-4 py-2.5 pl-9 border border-[#E8EEF4] rounded-xl bg-white text-[#1F2937] text-[15px] placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition-all duration-200" placeholder={isButcheryMode ? "Search meat products..." : "Search products..."} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6B7280]"><SearchIcon /></span>
               </div>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-1.5">Category</label>
-              <select className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 appearance-none" value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}>
+              <label className="block text-[13px] font-medium text-[#6B7280] mb-1.5">Category</label>
+              <select className="w-full px-4 py-2.5 border border-[#E8EEF4] rounded-xl bg-white text-[#1F2937] text-[15px] focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition-all duration-200 appearance-none" value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}>
                 {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-1.5">Vendor</label>
-              <select className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 appearance-none" value={selectedVendor} onChange={(e) => setSelectedVendor(e.target.value)}>
+              <label className="block text-[13px] font-medium text-[#6B7280] mb-1.5">Vendor</label>
+              <select className="w-full px-4 py-2.5 border border-[#E8EEF4] rounded-xl bg-white text-[#1F2937] text-[15px] focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition-all duration-200 appearance-none" value={selectedVendor} onChange={(e) => setSelectedVendor(e.target.value)}>
                 {vendors.map(vendor => <option key={vendor} value={vendor}>{vendor}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-1.5">Price</label>
-              <select className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 appearance-none" value={selectedPriceRange} onChange={(e) => setSelectedPriceRange(e.target.value)}>
+              <label className="block text-[13px] font-medium text-[#6B7280] mb-1.5">Price</label>
+              <select className="w-full px-4 py-2.5 border border-[#E8EEF4] rounded-xl bg-white text-[#1F2937] text-[15px] focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition-all duration-200 appearance-none" value={selectedPriceRange} onChange={(e) => setSelectedPriceRange(e.target.value)}>
                 {priceRanges.map(range => <option key={range.value} value={range.value}>{range.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-1.5">Sort</label>
-              <select className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 appearance-none" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+              <label className="block text-[13px] font-medium text-[#6B7280] mb-1.5">Sort</label>
+              <select className="w-full px-4 py-2.5 border border-[#E8EEF4] rounded-xl bg-white text-[#1F2937] text-[15px] focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition-all duration-200 appearance-none" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
                 <option value="popular">Popular</option>
                 <option value="price-low">Price: Low to High</option>
                 <option value="price-high">Price: High to Low</option>
@@ -495,9 +553,9 @@ const Ecommerce = () => {
               </select>
             </div>
           </div>
-          <div className="flex justify-between items-center mt-4 pt-4 border-t border-[#F1F7FC]">
-            <span className="text-sm text-[#94A3B8]">{filteredProducts.length} products found</span>
-            <button className="text-sm text-[#1769AA] hover:text-[#2F80C0] transition flex items-center gap-1" onClick={fetchProducts}>
+          <div className="flex justify-between items-center mt-4 pt-4 border-t border-[#F4F5F1]">
+            <span className="text-[15px] text-[#6B7280]">{filteredProducts.length} products found</span>
+            <button className="text-[15px] text-[#0B342B] hover:text-[#032A24] transition flex items-center gap-1 font-medium" onClick={fetchProducts}>
               <RefreshIcon /> Refresh
             </button>
           </div>
@@ -507,38 +565,79 @@ const Ecommerce = () => {
         {filteredProducts.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl border border-[#E8EEF4]">
             <div className="text-5xl mb-4">🔍</div>
-            <h3 className="text-lg font-bold text-[#1A2A3A]">No products found</h3>
-            <p className="text-sm text-[#94A3B8] mt-1">Try adjusting your search or filters</p>
+            <h3 className="text-[17px] font-semibold text-[#1F2937]">No products found</h3>
+            <p className="text-[15px] text-[#6B7280] mt-1">Try adjusting your search or filters</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
-            {filteredProducts.map(p => (
-              <div key={p.id} className="bg-white rounded-2xl overflow-hidden border border-[#E8EEF4] shadow-sm hover:shadow-xl hover:shadow-[#1769AA]/5 transition-all duration-300 group cursor-pointer" onClick={() => { setSelectedProduct(p); setShowProductModal(true); }}>
-                <div className="h-48 bg-cover bg-center relative" style={{ backgroundImage: `url(${p.images?.[0] || 'https://via.placeholder.com/400x300/1769AA/fff?text=Product'})` }}>
-                  {p.badge && <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-[#1769AA] text-white text-[10px] font-semibold">{p.badge}</span>}
-                  {p.original_price && <span className="absolute top-3 right-12 px-2.5 py-1 rounded-full bg-red-500 text-white text-[10px] font-semibold">-{Math.round((1 - p.price / p.original_price) * 100)}%</span>}
-                  <button className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm hover:scale-110 transition-transform" onClick={(e) => { e.stopPropagation(); toggleWishlist(p.id); }}><HeartIcon filled={wishlist.includes(p.id)} /></button>
-                </div>
-                <div className="p-4">
-                  <div className="flex justify-between items-start">
-                    <h4 className="font-bold text-[#1A2A3A] group-hover:text-[#1769AA] transition-colors text-sm">{p.name}</h4>
-                    <span className="text-xs font-semibold text-[#C9A84C]">{getStars(p.rating)} {p.rating}</span>
+            {filteredProducts.map(p => {
+              const isButchery = p.meat_type && p.vendor_type === 'halalbutchery';
+              return (
+                <div key={p.id} className="bg-white rounded-2xl overflow-hidden border border-[#E8EEF4] shadow-sm hover:shadow-xl hover:shadow-[#0B342B]/5 transition-all duration-300 group cursor-pointer" onClick={() => { setSelectedProduct(p); setShowProductModal(true); }}>
+                  <div className="h-48 bg-cover bg-center relative" style={{ backgroundImage: `url(${p.images?.[0] || 'https://via.placeholder.com/400x300/0B342B/fff?text=Product'})` }}>
+                    {p.badge && <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-[#0B342B] text-white text-[10px] font-semibold">{p.badge}</span>}
+                    {p.original_price && <span className="absolute top-3 right-12 px-2.5 py-1 rounded-full bg-[#DC2626] text-white text-[10px] font-semibold">-{Math.round((1 - p.price / p.original_price) * 100)}%</span>}
+                    <button className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm hover:scale-110 transition-transform" onClick={(e) => { e.stopPropagation(); toggleWishlist(p.id); }}><HeartIcon filled={wishlist.includes(p.id)} /></button>
+                    {isButchery && p.meat_type && (
+                      <span className="absolute bottom-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-[#0B342B]/90 text-white border border-white/20">
+                        {p.meat_type}
+                      </span>
+                    )}
+                    {isButchery && p.cut_type && p.cut_type !== 'whole' && (
+                      <span className="absolute bottom-3 left-[90px] px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/90 text-[#1F2937] border border-white/20">
+                        {p.cut_type}
+                      </span>
+                    )}
+                    {p.vendor_type === 'halalbutchery' && (
+                      <span className="absolute bottom-3 right-3 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A]">
+                        Butchery
+                      </span>
+                    )}
                   </div>
-                  <p className="text-xs text-[#94A3B8] mt-0.5">by {p.vendor_name || p.business_name || 'Vendor'} · {p.reviews || 0} reviews</p>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">✓ Halal</span>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#F1F7FC] text-[#5A6A7A]">{p.category}</span>
-                  </div>
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#F1F7FC]">
-                    <div>
-                      <span className="font-bold text-[#1769AA] text-lg">{formatCurrency(p.price)}</span>
-                      {p.original_price && <span className="text-xs text-[#94A3B8] line-through ml-2">{formatCurrency(p.original_price)}</span>}
+                  <div className="p-4">
+                    <div className="flex justify-between items-start">
+                      <h4 className="font-semibold text-[#1F2937] group-hover:text-[#0B342B] transition-colors text-[15px]">{p.name}</h4>
+                      <span className="text-[13px] font-semibold text-[#C9A44B]">{getStars(p.rating)} {p.rating}</span>
                     </div>
-                    <button className="px-3 py-1.5 rounded-xl bg-[#1769AA] text-white text-xs font-semibold hover:bg-[#2F80C0] transition disabled:opacity-50" onClick={(e) => { e.stopPropagation(); addToCart(p); }} disabled={processing}>Add</button>
+                    <p className="text-[13px] text-[#6B7280] mt-0.5">by {p.vendor_name || p.business_name || 'Vendor'} · {p.reviews || 0} reviews</p>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      <span className="text-[12px] font-medium px-2 py-0.5 rounded-full bg-[#D1FAE5] text-[#3FAF73]">✓ Halal</span>
+                      <span className="text-[12px] font-medium px-2 py-0.5 rounded-full bg-[#FAFAF7] text-[#6B7280] border border-[#E8EEF4]">{p.category}</span>
+                      {isButchery && p.meat_type && (
+                        <span className="text-[12px] font-medium px-2 py-0.5 rounded-full bg-[#FAFAF7] text-[#6B7280] border border-[#E8EEF4]">
+                          {p.meat_type}
+                        </span>
+                      )}
+                      {isButchery && p.vendor_type === 'halalbutchery' && (
+                        <span className="text-[12px] font-medium px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A]">
+                          Butchery
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#F4F5F1]">
+                      <div>
+                        {isButchery && p.price_per_kg ? (
+                          <div>
+                            <span className="font-bold text-[#0B342B] text-[17px]">{formatCurrency(p.price_per_kg)}</span>
+                            <span className="text-[13px] text-[#6B7280]">/kg</span>
+                            {p.price && p.price > 0 && p.price !== p.price_per_kg && (
+                              <span className="text-[13px] text-[#6B7280] line-through ml-2">{formatCurrency(p.price)}</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="font-bold text-[#0B342B] text-[17px]">{formatCurrency(p.price)}</span>
+                        )}
+                        {p.original_price && !isButchery && <span className="text-[13px] text-[#6B7280] line-through ml-2">{formatCurrency(p.original_price)}</span>}
+                      </div>
+                      <button className="px-3 py-1.5 rounded-xl bg-[#0B342B] text-white text-[13px] font-medium hover:bg-[#032A24] transition disabled:opacity-50 shadow-sm" onClick={(e) => { e.stopPropagation(); addToCart(p); }} disabled={processing}>Add</button>
+                    </div>
+                    {isButchery && p.stock_kg && (
+                      <div className="text-[13px] text-[#6B7280] mt-1">Stock: {p.stock_kg} kg</div>
+                    )}
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -546,31 +645,31 @@ const Ecommerce = () => {
         {isAuthenticated && showOrderHistory && (
           <div className="bg-white rounded-2xl p-5 border border-[#E8EEF4] shadow-sm mb-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-heading font-bold text-[#1A2A3A]">Order History</h3>
-              <button className="px-3 py-1.5 rounded-xl bg-[#F1F7FC] text-[#5A6A7A] text-sm hover:bg-[#E2E8F0] transition" onClick={() => setShowOrderHistory(false)}>Close</button>
+              <h3 className="text-[17px] font-semibold text-[#1F2937]">Order History</h3>
+              <button className="px-3 py-1.5 rounded-xl bg-[#FAFAF7] text-[#6B7280] text-[15px] hover:bg-[#F4F5F1] transition font-medium" onClick={() => setShowOrderHistory(false)}>Close</button>
             </div>
             {loadingOrders ? (
-              <div className="text-center py-8 text-[#94A3B8]">Loading orders...</div>
+              <div className="text-center py-8 text-[#6B7280]">Loading orders...</div>
             ) : orders.length === 0 ? (
               <div className="text-center py-8">
                 <div className="text-4xl mb-2">📭</div>
-                <p className="text-[#1A2A3A] font-semibold">No orders yet</p>
-                <p className="text-sm text-[#94A3B8]">Start shopping to see your orders here</p>
+                <p className="text-[#1F2937] font-semibold text-[15px]">No orders yet</p>
+                <p className="text-[14px] text-[#6B7280]">Start shopping to see your orders here</p>
               </div>
             ) : (
               <div className="space-y-2">
                 {orders.map((order) => {
                   const badge = getStatusBadge(order.status);
                   return (
-                    <div key={order.id} className="flex flex-wrap items-center justify-between p-3 bg-[#F8FAFC] rounded-xl">
-                      <div className="flex items-center gap-4">
-                        <span className="font-semibold text-[#1A2A3A]">#{order.id}</span>
-                        <span className="text-sm text-[#94A3B8]">{new Date(order.order_date).toLocaleDateString()}</span>
-                        <span className="text-sm text-[#94A3B8]">{order.items?.length || 0} items</span>
+                    <div key={order.id} className="flex flex-wrap items-center justify-between gap-3 p-3 bg-[#FAFAF7] rounded-xl border border-[#E8EEF4] hover:bg-[#F4F5F1] transition-colors">
+                      <div className="flex items-center gap-4 flex-wrap">
+                        <span className="font-semibold text-[#1F2937]">#{order.id}</span>
+                        <span className="text-[14px] text-[#6B7280]">{new Date(order.order_date).toLocaleDateString()}</span>
+                        <span className="text-[14px] text-[#6B7280]">{order.items?.length || 0} items</span>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="font-bold text-[#1A2A3A]">{formatCurrency(order.total_amount)}</span>
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${badge.bg} ${badge.text}`}>{order.status}</span>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="font-bold text-[#1F2937]">{formatCurrency(order.total_amount)}</span>
+                        <span className={`px-2.5 py-1 rounded-full text-[12px] font-medium ${badge.bg} ${badge.text}`}>{order.status}</span>
                       </div>
                     </div>
                   );
@@ -583,20 +682,20 @@ const Ecommerce = () => {
         {/* STATS */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="bg-white rounded-2xl p-5 border border-[#E8EEF4] shadow-sm text-center">
-            <div className="text-2xl font-heading font-bold text-[#1A2A3A]">{products.length}</div>
-            <div className="text-xs text-[#94A3B8]">Halal Products</div>
+            <div className="text-[22px] font-semibold text-[#1F2937]">{products.length}</div>
+            <div className="text-[13px] text-[#6B7280]">Halal Products</div>
           </div>
           <div className="bg-white rounded-2xl p-5 border border-[#E8EEF4] shadow-sm text-center">
-            <div className="text-2xl font-heading font-bold text-[#1A2A3A]">{categories.length - 1}</div>
-            <div className="text-xs text-[#94A3B8]">Categories</div>
+            <div className="text-[22px] font-semibold text-[#1F2937]">{categories.length - 1}</div>
+            <div className="text-[13px] text-[#6B7280]">Categories</div>
           </div>
           <div className="bg-white rounded-2xl p-5 border border-[#E8EEF4] shadow-sm text-center">
-            <div className="text-2xl font-heading font-bold text-emerald-600">100%</div>
-            <div className="text-xs text-[#94A3B8]">Halal Certified</div>
+            <div className="text-[22px] font-semibold text-[#3FAF73]">100%</div>
+            <div className="text-[13px] text-[#6B7280]">Halal Certified</div>
           </div>
           <div className="bg-white rounded-2xl p-5 border border-[#E8EEF4] shadow-sm text-center">
-            <div className="text-2xl font-heading font-bold text-[#C9A84C]">✓</div>
-            <div className="text-xs text-[#94A3B8]">Trusted Sellers</div>
+            <div className="text-[22px] font-semibold text-[#C9A44B]">✓</div>
+            <div className="text-[13px] text-[#6B7280]">Trusted Sellers</div>
           </div>
         </div>
 
@@ -620,27 +719,49 @@ const Ecommerce = () => {
         {/* ===== PRODUCT DETAIL MODAL ===== */}
         {showProductModal && selectedProduct && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-40 p-4" onClick={() => setShowProductModal(false)}>
-            <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-[#E8EEF4] shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
-              <button className="absolute right-4 top-4 w-8 h-8 rounded-xl bg-white/90 backdrop-blur-sm flex items-center justify-center text-[#94A3B8] hover:text-[#1A2A3A] shadow-sm z-10" onClick={() => setShowProductModal(false)}><CloseIcon /></button>
+            <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-[#E8EEF4] shadow-2xl relative animate-fadeIn" onClick={(e) => e.stopPropagation()}>
+              <button className="absolute right-4 top-4 w-8 h-8 rounded-xl bg-white/90 backdrop-blur-sm flex items-center justify-center text-[#6B7280] hover:text-[#1F2937] shadow-sm z-10" onClick={() => setShowProductModal(false)}><CloseIcon /></button>
               <div className="grid grid-cols-1 md:grid-cols-2">
-                <div className="h-64 md:h-auto bg-cover bg-center rounded-t-3xl md:rounded-l-3xl md:rounded-tr-none" style={{ backgroundImage: `url(${selectedProduct.images?.[0] || 'https://via.placeholder.com/400x300/1769AA/fff?text=Product'})` }} />
+                <div className="h-64 md:h-auto bg-cover bg-center rounded-t-3xl md:rounded-l-3xl md:rounded-tr-none" style={{ backgroundImage: `url(${selectedProduct.images?.[0] || 'https://via.placeholder.com/400x300/0B342B/fff?text=Product'})` }} />
                 <div className="p-6">
-                  <h2 className="text-xl font-heading font-bold text-[#1A2A3A]">{selectedProduct.name}</h2>
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className="text-sm text-[#C9A84C]">{getStars(selectedProduct.rating)} {selectedProduct.rating}</span>
-                    <span className="text-sm text-[#94A3B8]">({selectedProduct.reviews || 0} reviews)</span>
-                    <span className="text-sm text-[#94A3B8]">by {selectedProduct.vendor_name || 'Vendor'}</span>
+                  <h2 className="text-[22px] font-semibold text-[#1F2937]">{selectedProduct.name}</h2>
+                  <div className="flex items-center gap-3 mt-1 flex-wrap">
+                    <span className="text-[15px] text-[#C9A44B]">{getStars(selectedProduct.rating)} {selectedProduct.rating}</span>
+                    <span className="text-[14px] text-[#6B7280]">({selectedProduct.reviews || 0} reviews)</span>
+                    <span className="text-[14px] text-[#6B7280]">by {selectedProduct.vendor_name || 'Vendor'}</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5 mt-3">
-                    {selectedProduct.tags?.map((tag, i) => <span key={i} className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[#F1F7FC] text-[#5A6A7A]">#{tag}</span>)}
+                    {selectedProduct.tags?.map((tag, i) => <span key={i} className="text-[12px] font-medium px-2.5 py-1 rounded-full bg-[#FAFAF7] text-[#6B7280] border border-[#E8EEF4]">#{tag}</span>)}
+                    {selectedProduct.meat_type && selectedProduct.vendor_type === 'halalbutchery' && (
+                      <>
+                        <span className="text-[12px] font-medium px-2.5 py-1 rounded-full bg-[#0B342B]/10 text-[#0B342B]">Meat: {selectedProduct.meat_type}</span>
+                        {selectedProduct.cut_type && selectedProduct.cut_type !== 'whole' && (
+                          <span className="text-[12px] font-medium px-2.5 py-1 rounded-full bg-[#0B342B]/10 text-[#0B342B]">Cut: {selectedProduct.cut_type}</span>
+                        )}
+                        <span className="text-[12px] font-medium px-2.5 py-1 rounded-full bg-[#FEF3C7] text-[#D97706]">Halal Butchery</span>
+                      </>
+                    )}
                   </div>
-                  <p className="text-sm text-[#5A6A7A] mt-3 leading-relaxed">{selectedProduct.description}</p>
+                  <p className="text-[15px] text-[#6B7280] mt-3 leading-relaxed">{selectedProduct.description}</p>
                   <div className="flex items-center gap-3 mt-4">
-                    <span className="text-2xl font-heading font-bold text-[#1769AA]">{formatCurrency(selectedProduct.price)}</span>
-                    {selectedProduct.original_price && <span className="text-sm text-[#94A3B8] line-through">{formatCurrency(selectedProduct.original_price)}</span>}
+                    {selectedProduct.meat_type && selectedProduct.vendor_type === 'halalbutchery' && selectedProduct.price_per_kg ? (
+                      <div>
+                        <span className="text-[28px] font-bold text-[#0B342B]">{formatCurrency(selectedProduct.price_per_kg)}</span>
+                        <span className="text-[14px] text-[#6B7280] ml-1">/kg</span>
+                        {selectedProduct.price && selectedProduct.price > 0 && selectedProduct.price !== selectedProduct.price_per_kg && (
+                          <span className="text-[14px] text-[#6B7280] line-through ml-2">{formatCurrency(selectedProduct.price)}</span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-[28px] font-bold text-[#0B342B]">{formatCurrency(selectedProduct.price)}</span>
+                    )}
+                    {selectedProduct.original_price && !selectedProduct.meat_type && <span className="text-[14px] text-[#6B7280] line-through">{formatCurrency(selectedProduct.original_price)}</span>}
                   </div>
+                  {selectedProduct.meat_type && selectedProduct.vendor_type === 'halalbutchery' && selectedProduct.stock_kg && (
+                    <div className="text-[14px] text-[#6B7280] mt-1">Stock: {selectedProduct.stock_kg} kg</div>
+                  )}
                   <div className="flex gap-3 mt-4">
-                    <button className="flex-1 py-3 rounded-xl bg-[#1769AA] text-white font-semibold text-sm shadow-md shadow-[#1769AA]/20 hover:bg-[#2F80C0] transition disabled:opacity-50" onClick={() => { addToCart(selectedProduct); setShowProductModal(false); }} disabled={processing}>Add to Cart</button>
+                    <button className="flex-1 py-3 rounded-xl bg-[#0B342B] text-white font-medium text-[15px] shadow-md shadow-[#0B342B]/20 hover:bg-[#032A24] transition disabled:opacity-50" onClick={() => { addToCart(selectedProduct); setShowProductModal(false); }} disabled={processing}>Add to Cart</button>
                   </div>
                 </div>
               </div>
@@ -651,30 +772,30 @@ const Ecommerce = () => {
         {/* CHECKOUT MODAL */}
         {showCheckoutModal && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowCheckoutModal(false)}>
-            <div className="bg-white rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-[#E8EEF4] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <div className="p-6 border-b border-[#E8EEF4] flex justify-between items-center">
-                <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">Order Summary</h3>
-                <button className="w-8 h-8 rounded-xl hover:bg-[#F1F7FC] transition flex items-center justify-center text-[#94A3B8] hover:text-[#1A2A3A]" onClick={() => setShowCheckoutModal(false)}><CloseIcon /></button>
+            <div className="bg-white rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-[#E8EEF4] shadow-2xl animate-fadeIn" onClick={(e) => e.stopPropagation()}>
+              <div className="p-6 border-b border-[#F4F5F1] flex justify-between items-center">
+                <h3 className="text-[22px] font-semibold text-[#1F2937]">Order Summary</h3>
+                <button className="w-8 h-8 rounded-xl hover:bg-[#FAFAF7] transition flex items-center justify-center text-[#6B7280] hover:text-[#1F2937]" onClick={() => setShowCheckoutModal(false)}><CloseIcon /></button>
               </div>
               <div className="p-6">
                 <div className="space-y-2 max-h-60 overflow-y-auto">
                   {cart.map(item => (
-                    <div key={item.id} className="flex justify-between items-center py-2 border-b border-[#F1F7FC] text-sm">
-                      <span className="text-[#1A2A3A]">{item.name} x{item.quantity}</span>
-                      <span className="font-semibold text-[#1A2A3A]">{formatCurrency((item.price || 0) * (item.quantity || 1))}</span>
+                    <div key={item.id} className="flex justify-between items-center py-2 border-b border-[#F4F5F1] text-[15px]">
+                      <span className="text-[#1F2937]">{item.name} x{item.quantity}</span>
+                      <span className="font-semibold text-[#1F2937]">{formatCurrency((item.price || 0) * (item.quantity || 1))}</span>
                     </div>
                   ))}
                 </div>
-                <div className="bg-[#F8FAFC] rounded-xl p-4 mt-4 space-y-2">
-                  <div className="flex justify-between text-sm"><span className="text-[#94A3B8]">Subtotal:</span><span className="font-semibold text-[#1A2A3A]">{formatCurrency(getCartTotal())}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-[#94A3B8]">Delivery:</span><span className="font-semibold text-[#1A2A3A]">{formatCurrency(500)}</span></div>
-                  <div className="flex justify-between text-lg font-bold border-t border-[#E2E8F0] pt-2"><span className="text-[#1A2A3A]">Total:</span><span className="text-[#1769AA]">{formatCurrency(getCartTotal() + 500)}</span></div>
+                <div className="bg-[#FAFAF7] rounded-xl p-4 mt-4 space-y-2 border border-[#E8EEF4]">
+                  <div className="flex justify-between text-[15px]"><span className="text-[#6B7280]">Subtotal:</span><span className="font-semibold text-[#1F2937]">{formatCurrency(getCartTotal())}</span></div>
+                  <div className="flex justify-between text-[15px]"><span className="text-[#6B7280]">Delivery:</span><span className="font-semibold text-[#1F2937]">{formatCurrency(500)}</span></div>
+                  <div className="flex justify-between text-[17px] font-bold border-t border-[#E8EEF4] pt-2"><span className="text-[#1F2937]">Total:</span><span className="text-[#0B342B]">{formatCurrency(getCartTotal() + 500)}</span></div>
                 </div>
-                {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 mt-4">{error}</div>}
+                {error && <div className="p-3 bg-white border border-[#DC2626]/20 rounded-xl text-[15px] text-[#DC2626] mt-4">{error}</div>}
               </div>
-              <div className="p-6 border-t border-[#E8EEF4] flex gap-3">
-                <button className="flex-1 px-6 py-3 rounded-xl bg-[#F1F7FC] text-[#5A6A7A] font-semibold text-sm hover:bg-[#E2E8F0] transition" onClick={() => setShowCheckoutModal(false)}>Cancel</button>
-                <button className="flex-1 px-6 py-3 rounded-xl bg-[#1769AA] text-white font-semibold text-sm shadow-md shadow-[#1769AA]/20 hover:bg-[#2F80C0] transition disabled:opacity-50" onClick={confirmOrder} disabled={processing}>{processing ? 'Processing...' : 'Place Order'}</button>
+              <div className="p-6 border-t border-[#F4F5F1] flex gap-3">
+                <button className="flex-1 px-6 py-3 rounded-xl bg-[#FAFAF7] text-[#6B7280] font-medium text-[15px] hover:bg-[#F4F5F1] transition" onClick={() => setShowCheckoutModal(false)}>Cancel</button>
+                <button className="flex-1 px-6 py-3 rounded-xl bg-[#0B342B] text-white font-medium text-[15px] shadow-md shadow-[#0B342B]/20 hover:bg-[#032A24] transition disabled:opacity-50" onClick={confirmOrder} disabled={processing}>{processing ? 'Processing...' : 'Place Order'}</button>
               </div>
             </div>
           </div>
@@ -683,20 +804,20 @@ const Ecommerce = () => {
         {/* SUCCESS MODAL */}
         {showSuccessModal && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowSuccessModal(false)}>
-            <div className="bg-white rounded-3xl max-w-md w-full border border-[#E8EEF4] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <div className="p-6 border-b border-[#E8EEF4] flex justify-between items-center">
-                <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">Order Placed!</h3>
-                <button className="w-8 h-8 rounded-xl hover:bg-[#F1F7FC] transition flex items-center justify-center text-[#94A3B8] hover:text-[#1A2A3A]" onClick={() => setShowSuccessModal(false)}><CloseIcon /></button>
+            <div className="bg-white rounded-3xl max-w-md w-full border border-[#E8EEF4] shadow-2xl animate-fadeIn" onClick={(e) => e.stopPropagation()}>
+              <div className="p-6 border-b border-[#F4F5F1] flex justify-between items-center">
+                <h3 className="text-[22px] font-semibold text-[#1F2937]">Order Placed!</h3>
+                <button className="w-8 h-8 rounded-xl hover:bg-[#FAFAF7] transition flex items-center justify-center text-[#6B7280] hover:text-[#1F2937]" onClick={() => setShowSuccessModal(false)}><CloseIcon /></button>
               </div>
               <div className="p-6 text-center">
                 <div className="text-6xl mb-4">🎉</div>
-                <h4 className="text-xl font-heading font-bold text-[#1A2A3A]">Order Confirmed!</h4>
-                <p className="text-sm text-[#94A3B8] mt-1">Order #{orderNumber}</p>
-                <p className="text-sm text-[#5A6A7A] mt-4 leading-relaxed">Your order has been placed successfully.</p>
+                <h4 className="text-[22px] font-semibold text-[#1F2937]">Order Confirmed!</h4>
+                <p className="text-[15px] text-[#6B7280] mt-1">Order #{orderNumber}</p>
+                <p className="text-[15px] text-[#6B7280] mt-4 leading-relaxed">Your order has been placed successfully.</p>
               </div>
-              <div className="p-6 border-t border-[#E8EEF4] flex gap-3">
-                <button className="flex-1 px-6 py-3 rounded-xl bg-[#1769AA] text-white font-semibold text-sm shadow-md shadow-[#1769AA]/20 hover:bg-[#2F80C0] transition" onClick={() => { setShowSuccessModal(false); setShowOrderHistory(true); }}>View Orders</button>
-                <button className="flex-1 px-6 py-3 rounded-xl bg-[#F1F7FC] text-[#5A6A7A] font-semibold text-sm hover:bg-[#E2E8F0] transition" onClick={() => setShowSuccessModal(false)}>Continue Shopping</button>
+              <div className="p-6 border-t border-[#F4F5F1] flex gap-3">
+                <button className="flex-1 px-6 py-3 rounded-xl bg-[#0B342B] text-white font-medium text-[15px] shadow-md shadow-[#0B342B]/20 hover:bg-[#032A24] transition" onClick={() => { setShowSuccessModal(false); setShowOrderHistory(true); }}>View Orders</button>
+                <button className="flex-1 px-6 py-3 rounded-xl bg-[#FAFAF7] text-[#6B7280] font-medium text-[15px] hover:bg-[#F4F5F1] transition" onClick={() => setShowSuccessModal(false)}>Continue Shopping</button>
               </div>
             </div>
           </div>
@@ -704,9 +825,12 @@ const Ecommerce = () => {
 
         {/* SUCCESS TOAST */}
         {success && (
-          <div className="fixed top-6 right-6 z-50 bg-emerald-600 text-white px-6 py-4 rounded-2xl shadow-lg shadow-emerald-600/30 flex items-center gap-3 animate-slideDown max-w-sm">
-            <span className="text-sm font-medium">{success}</span>
-            <button className="text-white/70 hover:text-white transition" onClick={() => setSuccess('')}>
+          <div className="fixed top-6 right-6 z-50 bg-[#0B342B] text-white px-6 py-4 rounded-2xl shadow-2xl shadow-[#0B342B]/30 flex items-center gap-3 animate-slideDown max-w-sm border border-[#C9A44B]/20">
+            <svg className="w-5 h-5 text-[#C9A44B] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <span className="text-[15px] font-medium">{success}</span>
+            <button className="text-white/60 hover:text-white transition ml-2 flex-shrink-0" onClick={() => setSuccess('')}>
               <CloseIcon />
             </button>
           </div>

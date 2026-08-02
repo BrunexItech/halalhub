@@ -78,7 +78,8 @@ router.post('/', authenticate, async (req, res) => {
   try {
     const db = await getClient();
     const userId = req.user.id;
-    const { productId, quantity = 1 } = req.body;
+    const productId = req.body.product_id || req.body.productId;
+    const quantity = req.body.quantity || 1;
 
     if (!productId) {
       return res.status(400).json({

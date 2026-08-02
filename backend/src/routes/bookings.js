@@ -42,6 +42,7 @@ router.get('/', authenticate, async (req, res) => {
     let query = `
       SELECT 
         cb.id,
+        cb.user_id,
         cb.booking_date,
         cb.booking_time,
         cb.type,
@@ -55,6 +56,7 @@ router.get('/', authenticate, async (req, res) => {
         cb.updatedat,
         cb.accepted_at,
         k.id as kadhi_id,
+        k.user_id as kadhi_user_id,
         k.name as kadhi_name,
         k.type as kadhi_type,
         k.county as kadhi_county,
@@ -148,6 +150,7 @@ router.get('/:id', authenticate, async (req, res) => {
       `
       SELECT 
         cb.id,
+        cb.user_id,
         cb.booking_date,
         cb.booking_time,
         cb.type,
@@ -161,6 +164,7 @@ router.get('/:id', authenticate, async (req, res) => {
         cb.updatedat,
         cb.accepted_at,
         k.id as kadhi_id,
+        k.user_id as kadhi_user_id,
         k.name as kadhi_name,
         k.type as kadhi_type,
         k.county as kadhi_county,
@@ -189,13 +193,8 @@ router.get('/:id', authenticate, async (req, res) => {
     const booking = result.rows[0];
 
     // Verify user has access (either they booked it or they are the kadhi)
-    const kadhiCheck = await db.query(
-      'SELECT id FROM kadhis WHERE user_id = $1',
-      [userId]
-    );
-
-    const isKadhi = kadhiCheck.rows.length > 0 && kadhiCheck.rows[0].id === booking.kadhi_id;
     const isClient = booking.user_id === userId;
+    const isKadhi = booking.kadhi_user_id === userId;
 
     if (!isKadhi && !isClient) {
       return res.status(403).json({
@@ -260,6 +259,27 @@ router.post('/', authenticate, async (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'This kadhi is currently not available'
+      });
+    }
+
+    // ============================================================
+    // DUPLICATE BOOKING CHECK
+    // Check if this kadhi already has a booking at this date and time
+    // ============================================================
+    const duplicateCheck = await db.query(
+      `SELECT id, status FROM consultation_bookings 
+       WHERE kadhi_id = $1 
+       AND booking_date = $2 
+       AND booking_time = $3 
+       AND status != 'cancelled' 
+       AND status != 'completed'`,
+      [kadhiId, bookingDate, bookingTime]
+    );
+
+    if (duplicateCheck.rows.length > 0) {
+      return res.status(409).json({
+        success: false,
+        error: 'This time slot is already booked. Please select a different time.'
       });
     }
 
@@ -575,6 +595,7 @@ router.get('/room/:roomName', authenticate, async (req, res) => {
       `
       SELECT 
         cb.id,
+        cb.user_id,
         cb.booking_date,
         cb.booking_time,
         cb.type,
@@ -584,6 +605,7 @@ router.get('/room/:roomName', authenticate, async (req, res) => {
         cb.user_name,
         cb.user_email,
         k.id as kadhi_id,
+        k.user_id as kadhi_user_id,
         k.name as kadhi_name,
         k.type as kadhi_type,
         k.county as kadhi_county
@@ -602,11 +624,7 @@ router.get('/room/:roomName', authenticate, async (req, res) => {
     }
 
     const booking = result.rows[0];
-    const kadhiCheck = await db.query(
-      'SELECT id FROM kadhis WHERE user_id = $1',
-      [userId]
-    );
-    const isKadhi = kadhiCheck.rows.length > 0 && kadhiCheck.rows[0].id === booking.kadhi_id;
+    const isKadhi = booking.kadhi_user_id === userId;
     const isClient = booking.user_id === userId;
 
     if (!isKadhi && !isClient) {

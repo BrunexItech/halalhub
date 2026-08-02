@@ -1,1 +1,14 @@
 @import "tailwindcss";
+
+@layer base {
+  textarea,
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input:not([type]) {
+    direction: ltr !important;
+    unicode-bidi: plaintext !important;
+    text-align: left !important;
+  }
+}

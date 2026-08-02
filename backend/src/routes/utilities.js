@@ -2,6 +2,8 @@ const router = require('express').Router();
 const { authenticate } = require('../middleware/auth');
 const { Client } = require('pg');
 const crypto = require('crypto');
+const virtualAccountService = require('../services/virtual-account.service');
+const bankClient = require('../services/bank-client');
 
 // Database connection
 let client;
@@ -219,94 +221,100 @@ router.post('/pay', authenticate, async (req, res) => {
     
     const amountNum = parseFloat(amount);
     
+    // ============================================================
+    // VIRTUAL ACCOUNT FLOW - REPLACES OLD WALLET SYSTEM
+    // ============================================================
+    
+    // 1. Get user's virtual account
+    const userAccount = await virtualAccountService.getUserAccount(userId);
+    
+    if (!userAccount) {
+      return res.status(404).json({
+        success: false,
+        error: 'Virtual account not found. Please contact support.'
+      });
+    }
+    
+    // 2. Check if user has enough balance
+    if (userAccount.balance < amountNum) {
+      return res.status(400).json({
+        success: false,
+        error: `Insufficient balance. Available: KES ${userAccount.balance.toLocaleString()}`
+      });
+    }
+    
     // Begin transaction
     await db.query('BEGIN');
     
-    // Get user's current wallet balance with FOR UPDATE lock
-    const balanceResult = await db.query(
-      'SELECT walletbalance FROM users WHERE id = $1 FOR UPDATE',
-      [userId]
-    );
-    
-    if (balanceResult.rows.length === 0) {
-      await db.query('ROLLBACK');
-      return res.status(404).json({
-        success: false,
-        error: 'User not found'
+    try {
+      // 3. Generate transaction reference
+      const ref = 'UTIL-' + Date.now().toString(36).toUpperCase() + 
+                  crypto.randomBytes(4).toString('hex').toUpperCase();
+      
+      const paymentId = 'pay-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
+      const receiptNumber = 'RCP-' + ref.slice(0, 10);
+      
+      // 4. DEDUCT FROM VIRTUAL ACCOUNT using virtualAccountService
+      // This uses bank-client which handles the actual transfer
+      await virtualAccountService.processTransfer(
+        userId,                                    // User ID
+        userAccount.account_number,               // From account (user's virtual account)
+        process.env.BANK_MASTER_ACCOUNT || 'HALALHUB-MASTER-001',  // To account (master account)
+        amountNum,                                // Amount
+        `Utility payment - ${providerId}`         // Description
+      );
+      
+      // 5. Insert payment record
+      await db.query(
+        `INSERT INTO utility_payments 
+         (id, user_id, provider_id, account_number, amount, transaction_ref, 
+          status, payment_method, receipt_number, paid_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())`,
+        [paymentId, userId, providerId, accountNumber, amountNum, ref, 'completed', paymentMethod, receiptNumber]
+      );
+      
+      // 6. Record in transactions table for audit
+      const txId = 'txn-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
+      await db.query(
+        `INSERT INTO transactions (id, user_id, type, amount, status, reference, description)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [txId, userId, 'utility', -amountNum, 'success', ref, `Utility payment - ${providerId}`]
+      );
+      
+      // 7. Get updated balance
+      const updatedAccount = await virtualAccountService.getUserAccount(userId);
+      const newBalance = updatedAccount?.balance || 0;
+      
+      await db.query('COMMIT');
+      
+      console.log(`[Utility Payment] ${ref} - KES ${amountNum} by user ${userId} using virtual account ${userAccount.account_number}`);
+      
+      // 8. Return response
+      res.json({
+        success: true,
+        message: 'Utility payment successful',
+        data: {
+          transactionRef: ref,
+          amount: amountNum,
+          balance: newBalance,
+          receiptNumber: receiptNumber,
+          paymentId: paymentId,
+          paidAt: new Date().toISOString(),
+          accountNumber: userAccount.account_number
+        }
       });
-    }
-    
-    const currentBalance = balanceResult.rows[0].walletbalance;
-    
-    if (currentBalance < amountNum) {
+      
+    } catch (err) {
       await db.query('ROLLBACK');
-      return res.status(400).json({
-        success: false,
-        error: `Insufficient wallet balance. Available: KES ${currentBalance.toLocaleString()}`
-      });
+      throw err;
     }
-    
-    // Generate transaction reference
-    const ref = 'UTIL-' + Date.now().toString(36).toUpperCase() + 
-                crypto.randomBytes(4).toString('hex').toUpperCase();
-    
-    const paymentId = 'pay-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
-    const receiptNumber = 'RCP-' + ref.slice(0, 10);
-    
-    // Deduct from wallet
-    await db.query(
-      'UPDATE users SET walletbalance = walletbalance - $1, updatedat = NOW() WHERE id = $2',
-      [amountNum, userId]
-    );
-    
-    // Insert payment record
-    await db.query(
-      `INSERT INTO utility_payments 
-       (id, user_id, provider_id, account_number, amount, transaction_ref, 
-        status, payment_method, receipt_number, paid_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())`,
-      [paymentId, userId, providerId, accountNumber, amountNum, ref, 'completed', paymentMethod, receiptNumber]
-    );
-    
-    // Also record in transactions table for consistency
-    const txId = 'txn-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
-    await db.query(
-      `INSERT INTO transactions (id, user_id, type, amount, status, reference, description)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [txId, userId, 'utility', -amountNum, 'success', ref, 'Utility payment']
-    );
-    
-    // Get new balance
-    const newBalanceResult = await db.query(
-      'SELECT walletbalance FROM users WHERE id = $1',
-      [userId]
-    );
-    
-    const newBalance = newBalanceResult.rows[0].walletbalance;
-    
-    await db.query('COMMIT');
-    
-    console.log(`Utility payment: ${ref} - KES ${amountNum} by user ${userId}`);
-    
-    res.json({
-      success: true,
-      message: 'Utility payment successful',
-      data: {
-        transactionRef: ref,
-        amount: amountNum,
-        balance: newBalance,
-        receiptNumber: receiptNumber,
-        paymentId: paymentId,
-        paidAt: new Date().toISOString()
-      }
-    });
     
   } catch (error) {
     await db.query('ROLLBACK');
     console.error('Utility payment error:', error);
     res.status(500).json({
       success: false,
-      error: 'Payment failed. Please try again.'
+      error: error.message || 'Payment failed. Please try again.'
     });
   }
 });

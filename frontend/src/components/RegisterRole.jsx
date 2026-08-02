@@ -5,177 +5,141 @@ const RegisterRole = () => {
   const navigate = useNavigate();
   const [hovered, setHovered] = useState(null);
 
+  const RoleCard = ({ id, title, description, icon, features, onClick }) => (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(id)}
+      onMouseLeave={() => setHovered(null)}
+      className={`w-full p-4 rounded-xl border-2 transition-all duration-500 text-left group ${
+        hovered === id 
+          ? 'border-[#C9A44B] bg-[#0B342B] shadow-2xl shadow-black/30 -translate-y-0.5' 
+          : 'border-[rgba(201,164,75,0.18)] hover:border-[#C9A44B]/40 hover:bg-[#0B342B]/50'
+      }`}
+    >
+      <div className="flex items-start gap-4">
+        <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-base font-bold transition-all duration-500 flex-shrink-0 ${
+          hovered === id 
+            ? 'bg-gradient-to-br from-[#C9A44B] to-[#E1C16B] text-[#032A24] shadow-lg shadow-[#C9A44B]/20' 
+            : 'bg-[#0B342B] text-[#C9A44B] border border-[rgba(201,164,75,0.18)]'
+        }`}>
+          {icon}
+        </div>
+        <div className="flex-1">
+          <div className="text-sm font-bold text-[#F7F6F1]">{title}</div>
+          <div className="text-xs text-[#B7C0BA] mt-0.5">{description}</div>
+          <div className="flex gap-1.5 mt-2 flex-wrap">
+            {features.map((feature, idx) => (
+              <span key={idx} className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-[#0B342B] text-[#B7C0BA] border border-[rgba(201,164,75,0.18)]">
+                {feature}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className={`text-[#C9A44B] transition-all duration-500 ${
+          hovered === id ? 'translate-x-0.5 opacity-100' : 'opacity-0'
+        }`}>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+      </div>
+    </button>
+  );
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F1F7FC] px-4 py-8">
-      <div className="w-full max-w-md mx-auto">
-        {/* Single Card - Clean & Centered */}
-        <div className="bg-white rounded-2xl shadow-xl shadow-[#1769AA]/5 p-8 lg:p-10 w-full border border-[#E8EEF4]">
+    <div className="min-h-screen flex items-center justify-center bg-[#032A24] px-4 py-8">
+      <div className="w-full max-w-[400px] mx-auto">
+        <div className="bg-[#183B33] rounded-2xl shadow-2xl shadow-black/30 p-6 md:p-8 w-full border border-[rgba(201,164,75,0.18)] relative overflow-hidden">
           
-          {/* Brand Header */}
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-[#1769AA] flex items-center justify-center">
-                <span className="text-white text-lg font-bold">H</span>
+          <div className="absolute -top-16 -right-16 w-48 h-48 bg-[#C9A44B]/5 rounded-full blur-3xl" />
+          <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-[#C9A44B]/5 rounded-full blur-3xl" />
+          
+          <div className="relative z-10">
+            {/* Logo */}
+            <div className="text-center mb-6">
+              <div className="flex items-center justify-center gap-2.5 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C9A44B] to-[#E1C16B] flex items-center justify-center shadow-lg shadow-[#C9A44B]/20">
+                  <span className="text-[#032A24] text-lg font-bold">H</span>
+                </div>
+                <span className="text-xl font-bold text-[#F7F6F1] tracking-tight">HalalHub</span>
               </div>
-              <span className="text-2xl font-bold text-[#1A2A3A]">HalalHub</span>
+              <p className="text-[9px] font-medium text-[#C9A44B] tracking-[0.2em] uppercase">Choose Your Role</p>
             </div>
-            <p className="text-sm text-[#94A3B8] mt-1">Choose your account type</p>
-          </div>
 
-          {/* Tab Navigation */}
-          <div className="flex gap-1 bg-[#F1F7FC] rounded-xl p-1.5 mb-8">
-            <button
-              onClick={() => navigate('/')}
-              className="flex-1 py-3 rounded-lg text-sm font-semibold text-[#5A6A7A] hover:text-[#1A2A3A] transition"
-            >
-              Sign In
-            </button>
-            <button className="flex-1 py-3 rounded-lg text-sm font-semibold bg-[#1769AA] text-white shadow-md shadow-[#1769AA]/20">
-              Register
-            </button>
-          </div>
-
-          <h2 className="text-xl font-bold text-[#1A2A3A]">Choose Your Role</h2>
-          <p className="text-[#94A3B8] text-sm mt-1">Select how you want to use HalalHub</p>
-
-          <div className="mt-6 space-y-4">
-            {/* Client Role */}
-            <button
-              onClick={() => navigate('/register/client')}
-              onMouseEnter={() => setHovered('client')}
-              onMouseLeave={() => setHovered(null)}
-              className={`w-full p-5 rounded-xl border-2 transition-all duration-300 text-left group ${
-                hovered === 'client' 
-                  ? 'border-[#1769AA] bg-[#F1F7FC] shadow-lg shadow-[#1769AA]/10 -translate-y-0.5' 
-                  : 'border-[#E2E8F0] hover:border-[#1769AA]/40 hover:bg-[#F8FAFC]'
-              }`}
-            >
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold transition-all duration-300 ${
-                  hovered === 'client' 
-                    ? 'bg-[#1769AA] text-white shadow-md shadow-[#1769AA]/20' 
-                    : 'bg-[#F1F7FC] text-[#1769AA]'
-                }`}>
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <div className="font-bold text-[#1A2A3A]">Client</div>
-                  <div className="text-sm text-[#94A3B8]">Access services as a customer</div>
-                  <div className="flex gap-2 mt-1.5 flex-wrap">
-                    <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[#EFF6FF] text-[#1769AA]">Payments</span>
-                    <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[#EFF6FF] text-[#1769AA]">Zakat</span>
-                    <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[#EFF6FF] text-[#1769AA]">HalalStay</span>
-                  </div>
-                </div>
-                <div className={`text-[#1769AA] transition-all duration-300 ${
-                  hovered === 'client' ? 'translate-x-1 opacity-100' : 'opacity-0'
-                }`}>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
-              </div>
-            </button>
-
-            {/* Vendor Role */}
-            <button
-              onClick={() => navigate('/register/vendor')}
-              onMouseEnter={() => setHovered('vendor')}
-              onMouseLeave={() => setHovered(null)}
-              className={`w-full p-5 rounded-xl border-2 transition-all duration-300 text-left group ${
-                hovered === 'vendor' 
-                  ? 'border-[#1769AA] bg-[#F1F7FC] shadow-lg shadow-[#1769AA]/10 -translate-y-0.5' 
-                  : 'border-[#E2E8F0] hover:border-[#1769AA]/40 hover:bg-[#F8FAFC]'
-              }`}
-            >
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold transition-all duration-300 ${
-                  hovered === 'vendor' 
-                    ? 'bg-[#1769AA] text-white shadow-md shadow-[#1769AA]/20' 
-                    : 'bg-[#F1F7FC] text-[#1769AA]'
-                }`}>
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12zM6 10h2v2H6zm0 4h8v2H6zm10 0h2v2h-2zm-6-4h8v2h-8z"/>
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <div className="font-bold text-[#1A2A3A]">Vendor</div>
-                  <div className="text-sm text-[#94A3B8]">Register your business</div>
-                  <div className="flex gap-2 mt-1.5 flex-wrap">
-                    <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[#F0FDF4] text-[#16A34A]">Halal Certified</span>
-                    <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[#EFF6FF] text-[#1769AA]">Sell Products</span>
-                  </div>
-                </div>
-                <div className={`text-[#1769AA] transition-all duration-300 ${
-                  hovered === 'vendor' ? 'translate-x-1 opacity-100' : 'opacity-0'
-                }`}>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
-              </div>
-            </button>
-
-            {/* Religious Leader Role */}
-            <button
-              onClick={() => navigate('/register/imam')}
-              onMouseEnter={() => setHovered('religious')}
-              onMouseLeave={() => setHovered(null)}
-              className={`w-full p-5 rounded-xl border-2 transition-all duration-300 text-left group ${
-                hovered === 'religious' 
-                  ? 'border-[#1769AA] bg-[#F1F7FC] shadow-lg shadow-[#1769AA]/10 -translate-y-0.5' 
-                  : 'border-[#E2E8F0] hover:border-[#1769AA]/40 hover:bg-[#F8FAFC]'
-              }`}
-            >
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold transition-all duration-300 ${
-                  hovered === 'religious' 
-                    ? 'bg-[#1769AA] text-white shadow-md shadow-[#1769AA]/20' 
-                    : 'bg-[#F1F7FC] text-[#1769AA]'
-                }`}>
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm1-13h-2v6l5.25 3.15L17 12.23l-4-2.37V7z"/>
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <div className="font-bold text-[#1A2A3A]">Religious Leader</div>
-                  <div className="text-sm text-[#94A3B8]">Register as Imam or Kadhi</div>
-                  <div className="flex gap-2 mt-1.5 flex-wrap">
-                    <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[#FEF3C7] text-[#D97706]">Pension</span>
-                    <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[#EFF6FF] text-[#1769AA]">Consultations</span>
-                    <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[#F0FDF4] text-[#16A34A]">Verified</span>
-                  </div>
-                </div>
-                <div className={`text-[#1769AA] transition-all duration-300 ${
-                  hovered === 'religious' ? 'translate-x-1 opacity-100' : 'opacity-0'
-                }`}>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
-              </div>
-            </button>
-          </div>
-
-          {/* Footer */}
-          <div className="mt-7 pt-6 border-t border-[#F1F7FC] text-center">
-            <p className="text-sm text-[#5A6A7A]">
-              Already have an account?{' '}
+            {/* Tabs */}
+            <div className="flex gap-1 bg-[#0B342B] rounded-xl p-1 mb-6">
               <button
                 onClick={() => navigate('/')}
-                className="font-semibold text-[#1769AA] hover:text-[#2F80C0] transition"
+                className="flex-1 py-2.5 rounded-lg text-xs font-semibold text-[#B7C0BA] hover:text-[#F7F6F1] transition-all duration-300"
               >
                 Sign In
               </button>
-            </p>
-          </div>
+              <button className="flex-1 py-2.5 rounded-lg text-xs font-semibold bg-[#C9A44B] text-[#032A24] shadow-lg shadow-[#C9A44B]/20 transition-all duration-300">
+                Register
+              </button>
+            </div>
 
-          <div className="mt-4">
-            <p className="text-center text-xs text-[#94A3B8] tracking-wider">
-              Secure · Encrypted · No Riba
-            </p>
+            <h2 className="text-lg font-bold text-[#F7F6F1]">Choose Your Role</h2>
+            <p className="text-[#B7C0BA] text-xs mt-1">Select how you want to use HalalHub</p>
+
+            <div className="mt-4 space-y-3">
+              <RoleCard
+                id="client"
+                title="Client"
+                description="Access services as a customer"
+                icon={
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  </svg>
+                }
+                features={['Payments', 'Zakat', 'HalalStay']}
+                onClick={() => navigate('/register/client')}
+              />
+
+              <RoleCard
+                id="vendor"
+                title="Vendor"
+                description="Register your business"
+                icon={
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12zM6 10h2v2H6zm0 4h8v2H6zm10 0h2v2h-2zm-6-4h8v2h-8z"/>
+                  </svg>
+                }
+                features={['Halal Certified', 'Sell Products']}
+                onClick={() => navigate('/register/vendor')}
+              />
+
+              <RoleCard
+                id="religious"
+                title="Religious Leader"
+                description="Register as Imam or Kadhi"
+                icon={
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm1-13h-2v6l5.25 3.15L17 12.23l-4-2.37V7z"/>
+                  </svg>
+                }
+                features={['Pension', 'Consultations', 'Verified']}
+                onClick={() => navigate('/register/imam')}
+              />
+            </div>
+
+            <div className="mt-6 pt-5 border-t border-[rgba(201,164,75,0.18)] text-center">
+              <p className="text-xs text-[#B7C0BA]">
+                Already have an account?{' '}
+                <button
+                  onClick={() => navigate('/')}
+                  className="font-semibold text-[#C9A44B] hover:text-[#E1C16B] transition"
+                >
+                  Sign In
+                </button>
+              </p>
+            </div>
+
+            <div className="mt-3">
+              <p className="text-center text-[9px] text-[#B7C0BA]/60 tracking-wider">
+                Secure · Encrypted · No Riba
+              </p>
+            </div>
           </div>
         </div>
       </div>

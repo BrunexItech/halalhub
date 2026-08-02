@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { cartService } from '../services/api';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const Cart = ({ 
   cart, 
   setCart, 
@@ -24,13 +26,14 @@ const Cart = ({
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
   const [localProcessing, setLocalProcessing] = useState(false);
-
-  const getDeliveryFee = () => {
-    return getCartTotal() > 5000 ? 0 : 500;
-  };
+  const [orderSummary, setOrderSummary] = useState({
+    itemCount: 0,
+    subtotal: 0,
+    total: 0
+  });
 
   const getTotal = () => {
-    return getCartTotal() + getDeliveryFee();
+    return getCartTotal();
   };
 
   const handleCheckoutClick = () => {
@@ -50,31 +53,56 @@ const Cart = ({
     setLocalProcessing(true);
     setError('');
     try {
-      // Create order
-      const orderResponse = await fetch('/api/orders', {
+      const token = localStorage.getItem('halalhub_token');
+      
+      // Get vendor_id from first cart item
+      const vendorId = cart[0]?.vendor_id || cart[0]?.vendorId || cart[0]?.vendor?.id;
+      
+      // Build items array correctly for backend
+      const orderItems = cart.map(item => ({
+        product_id: item.product_id || item.id,
+        name: item.name || item.product_name || 'Product',
+        price: item.price || 0,
+        quantity: item.quantity || 1
+      }));
+
+      const subtotal = getCartTotal();
+      const total = getTotal();
+
+      const orderData = {
+        vendor_id: vendorId,
+        items: orderItems,
+        subtotal: subtotal,
+        delivery_fee: 0,
+        total_amount: total,
+        delivery_address: 'Nairobi CBD',
+        delivery_type: 'delivery',
+        special_instructions: ''
+      };
+
+      // Store order summary before clearing cart
+      setOrderSummary({
+        itemCount: getCartItemCount(),
+        subtotal: subtotal,
+        total: total
+      });
+
+      const response = await fetch(`${API_BASE}/client/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('halalhub_token')}`
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          items: cart.map(item => ({
-            productId: item.product_id || item.id,
-            quantity: item.quantity,
-            price: item.price
-          })),
-          subtotal: getCartTotal(),
-          deliveryFee: getDeliveryFee(),
-          total: getTotal()
-        })
+        body: JSON.stringify(orderData)
       });
 
-      if (!orderResponse.ok) {
-        throw new Error('Order creation failed');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Order creation failed');
       }
 
-      const orderData = await orderResponse.json();
-      const newOrderNumber = orderData.orderNumber || 'ORD' + Date.now().toString().slice(-8);
+      const orderDataResponse = await response.json();
+      const newOrderNumber = orderDataResponse.orderId || orderDataResponse.orderNumber || 'ORD' + Date.now().toString().slice(-8);
       setOrderNumber(newOrderNumber);
 
       // Clear cart from database using API
@@ -90,14 +118,14 @@ const Cart = ({
       setTimeout(() => setSuccess(''), 5000);
     } catch (err) {
       console.error('Order error:', err);
-      setError(err.response?.data?.error || 'Order failed. Please try again.');
+      setError(err.response?.data?.error || err.message || 'Order failed. Please try again.');
     } finally {
       setLocalProcessing(false);
     }
   };
 
   const continueShopping = () => {
-    navigate('/ecommerce');
+    navigate('/market');
   };
 
   const clearCart = async () => {
@@ -121,7 +149,7 @@ const Cart = ({
   );
 
   const CheckIcon = () => (
-    <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg className="w-8 h-8 text-[#0B342B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
     </svg>
   );
@@ -146,7 +174,7 @@ const Cart = ({
         className="w-16 h-16 rounded-lg bg-cover bg-center flex-shrink-0 border border-[#E8EEF4]" 
         style={{ 
           backgroundImage: imgUrl ? `url(${imgUrl})` : 'none', 
-          backgroundColor: imgUrl ? 'transparent' : '#F1F7FC' 
+          backgroundColor: imgUrl ? 'transparent' : '#FAFAF7' 
         }} 
       />
     );
@@ -160,25 +188,25 @@ const Cart = ({
     <>
       {/* Cart Overlay */}
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
-        <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
-          <div className="p-6 border-b border-[#F1F7FC] flex justify-between items-center sticky top-0 bg-white rounded-t-2xl z-10">
+        <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-fadeIn" onClick={(e) => e.stopPropagation()}>
+          <div className="p-6 border-b border-[#F4F5F1] flex justify-between items-center sticky top-0 bg-white rounded-t-2xl z-10">
             <div>
-              <h2 className="text-xl font-heading font-bold text-[#1A2A3A]">Shopping Cart</h2>
+              <h2 className="text-[22px] font-semibold text-[#1F2937]">Shopping Cart</h2>
               {cart.length > 0 && (
-                <p className="text-sm text-[#94A3B8] mt-0.5">{getCartItemCount()} items · {formatCurrency(getCartTotal())}</p>
+                <p className="text-[14px] text-[#6B7280] mt-0.5">{getCartItemCount()} items · {formatCurrency(getCartTotal())}</p>
               )}
             </div>
             <div className="flex items-center gap-2">
               {cart.length > 0 && (
                 <button 
-                  className="px-3 py-1.5 text-sm font-medium text-[#5A6A7A] hover:text-[#DC2626] transition-colors"
+                  className="px-3 py-1.5 text-[14px] font-medium text-[#6B7280] hover:text-[#DC2626] transition-colors"
                   onClick={clearCart}
                 >
                   Clear Cart
                 </button>
               )}
               <button 
-                className="w-8 h-8 rounded-xl hover:bg-[#F1F7FC] transition flex items-center justify-center text-[#94A3B8] hover:text-[#1A2A3A]"
+                className="w-8 h-8 rounded-xl hover:bg-[#FAFAF7] transition flex items-center justify-center text-[#6B7280] hover:text-[#1F2937]"
                 onClick={onClose}
               >
                 <CloseIcon />
@@ -187,16 +215,16 @@ const Cart = ({
           </div>
 
           {error && (
-            <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 flex justify-between items-center">
+            <div className="mx-6 mt-4 p-3 bg-white border border-[#DC2626]/20 rounded-xl text-[15px] text-[#DC2626] flex justify-between items-center shadow-sm">
               <span>{error}</span>
-              <button className="text-red-400 hover:text-red-600" onClick={() => setError('')}><CloseIcon /></button>
+              <button className="text-[#DC2626]/60 hover:text-[#DC2626]" onClick={() => setError('')}><CloseIcon /></button>
             </div>
           )}
 
           {success && (
-            <div className="mx-6 mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-600 flex justify-between items-center">
+            <div className="mx-6 mt-4 p-3 bg-white border border-[#3FAF73]/20 rounded-xl text-[15px] text-[#3FAF73] flex justify-between items-center shadow-sm">
               <span>{success}</span>
-              <button className="text-emerald-400 hover:text-emerald-600" onClick={() => setSuccess('')}><CloseIcon /></button>
+              <button className="text-[#3FAF73]/60 hover:text-[#3FAF73]" onClick={() => setSuccess('')}><CloseIcon /></button>
             </div>
           )}
 
@@ -204,10 +232,10 @@ const Cart = ({
             {cart.length === 0 ? (
               <div className="text-center py-12">
                 <EmptyCartIcon />
-                <h3 className="text-xl font-bold text-[#1A2A3A] mt-4 mb-2">Your cart is empty</h3>
-                <p className="text-sm text-[#94A3B8] mb-6">Browse our halal products and add items you love</p>
+                <h3 className="text-[22px] font-semibold text-[#1F2937] mt-4 mb-2">Your cart is empty</h3>
+                <p className="text-[15px] text-[#6B7280] mb-6">Browse our halal products and add items you love</p>
                 <button 
-                  className="px-6 py-2.5 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200"
+                  className="px-6 py-2.5 bg-[#0B342B] text-white font-medium rounded-xl hover:bg-[#032A24] transition-all duration-200 shadow-md shadow-[#0B342B]/20 text-[15px]"
                   onClick={continueShopping}
                 >
                   Start Shopping
@@ -220,16 +248,16 @@ const Cart = ({
                   {cart.map((item) => (
                     <div 
                       key={item.id} 
-                      className="bg-[#F8FAFC] rounded-xl p-4 hover:shadow-md transition-all duration-200"
+                      className="bg-[#FAFAF7] rounded-xl p-4 hover:shadow-md transition-all duration-200 border border-[#E8EEF4]"
                     >
                       <div className="flex flex-wrap items-center gap-4">
                         <div className="flex-1 min-w-[150px]">
                           <div className="flex items-start gap-3">
                             <ProductImage image={item.image || item.images} name={item.name} />
                             <div>
-                              <h4 className="font-semibold text-[#1A2A3A] text-sm">{item.name}</h4>
-                              <p className="text-xs text-[#94A3B8]">{item.vendor_name || item.business_name || 'Vendor'}</p>
-                              <p className="text-sm font-semibold text-[#1769AA] mt-1">
+                              <h4 className="font-semibold text-[#1F2937] text-[15px]">{item.name}</h4>
+                              <p className="text-[13px] text-[#6B7280]">{item.vendor_name || item.business_name || 'Vendor'}</p>
+                              <p className="text-[15px] font-semibold text-[#0B342B] mt-1">
                                 {formatCurrency(item.price)}
                               </p>
                             </div>
@@ -237,19 +265,19 @@ const Cart = ({
                         </div>
 
                         <div className="flex items-center gap-3 ml-auto">
-                          <div className="flex items-center border border-[#E2E8F0] rounded-lg overflow-hidden">
+                          <div className="flex items-center border border-[#E8EEF4] rounded-lg overflow-hidden bg-white">
                             <button
-                              className="w-8 h-8 flex items-center justify-center text-[#5A6A7A] hover:bg-[#F1F7FC] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                              className="w-8 h-8 flex items-center justify-center text-[#6B7280] hover:bg-[#FAFAF7] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                               onClick={() => updateQuantity(item.id, item.quantity - 1)}
                               disabled={localProcessing}
                             >
                               −
                             </button>
-                            <span className="w-8 text-center text-sm font-medium text-[#1A2A3A]">
+                            <span className="w-8 text-center text-[15px] font-medium text-[#1F2937]">
                               {item.quantity}
                             </span>
                             <button
-                              className="w-8 h-8 flex items-center justify-center text-[#5A6A7A] hover:bg-[#F1F7FC] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                              className="w-8 h-8 flex items-center justify-center text-[#6B7280] hover:bg-[#FAFAF7] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                               onClick={() => updateQuantity(item.id, item.quantity + 1)}
                               disabled={localProcessing}
                             >
@@ -258,11 +286,11 @@ const Cart = ({
                           </div>
 
                           <div className="text-right">
-                            <div className="text-sm font-bold text-[#1A2A3A]">
+                            <div className="text-[15px] font-bold text-[#1F2937]">
                               {formatCurrency(item.price * item.quantity)}
                             </div>
                             <button
-                              className="text-xs text-[#94A3B8] hover:text-[#DC2626] transition-colors"
+                              className="text-[13px] text-[#6B7280] hover:text-[#DC2626] transition-colors"
                               onClick={() => removeFromCart(item.id)}
                               disabled={localProcessing}
                             >
@@ -275,38 +303,27 @@ const Cart = ({
                   ))}
                 </div>
 
-                {/* Order Summary */}
+                {/* Order Summary - No Delivery Fee */}
                 <div className="lg:col-span-1">
-                  <div className="bg-[#F8FAFC] rounded-xl p-6 sticky top-6">
-                    <h4 className="text-base font-bold text-[#1A2A3A] mb-4">Order Summary</h4>
+                  <div className="bg-[#FAFAF7] rounded-xl p-6 sticky top-6 border border-[#E8EEF4]">
+                    <h4 className="text-[17px] font-semibold text-[#1F2937] mb-4">Order Summary</h4>
                     
                     <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-[#5A6A7A]">Subtotal ({getCartItemCount()} items)</span>
-                        <span className="font-semibold text-[#1A2A3A]">{formatCurrency(getCartTotal())}</span>
+                      <div className="flex justify-between text-[15px]">
+                        <span className="text-[#6B7280]">Subtotal ({getCartItemCount()} items)</span>
+                        <span className="font-semibold text-[#1F2937]">{formatCurrency(getCartTotal())}</span>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-[#5A6A7A]">Delivery Fee</span>
-                        <span className="font-semibold text-[#1A2A3A]">
-                          {getDeliveryFee() === 0 ? 'FREE' : formatCurrency(getDeliveryFee())}
-                        </span>
-                      </div>
-                      {getDeliveryFee() === 0 && getCartTotal() > 0 && (
-                        <div className="text-xs text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg text-center">
-                          Free delivery on orders over KES 5,000
-                        </div>
-                      )}
                       
-                      <div className="border-t border-[#E2E8F0] pt-3 mt-2">
+                      <div className="border-t border-[#E8EEF4] pt-3 mt-2">
                         <div className="flex justify-between">
-                          <span className="text-base font-bold text-[#1A2A3A]">Total</span>
-                          <span className="text-lg font-bold text-[#1769AA]">{formatCurrency(getTotal())}</span>
+                          <span className="text-[17px] font-bold text-[#1F2937]">Total</span>
+                          <span className="text-[22px] font-bold text-[#0B342B]">{formatCurrency(getTotal())}</span>
                         </div>
                       </div>
                     </div>
 
                     <button
-                      className="w-full mt-4 py-3 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200 shadow-md shadow-[#1769AA]/20 disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="w-full mt-4 py-3 bg-[#0B342B] text-white font-medium rounded-xl hover:bg-[#032A24] transition-all duration-200 shadow-md shadow-[#0B342B]/20 disabled:opacity-60 disabled:cursor-not-allowed text-[15px]"
                       onClick={handleCheckoutClick}
                       disabled={localProcessing || cart.length === 0}
                     >
@@ -321,12 +338,12 @@ const Cart = ({
                     </button>
 
                     {cart.length === 0 && (
-                      <p className="text-xs text-red-500 text-center mt-2">
+                      <p className="text-[13px] text-[#DC2626] text-center mt-2">
                         Your cart is empty. Add items to proceed.
                       </p>
                     )}
 
-                    <p className="text-[10px] text-[#94A3B8] text-center mt-3">
+                    <p className="text-[12px] text-[#6B7280] text-center mt-3">
                       Secure payment · Halal certified
                     </p>
                   </div>
@@ -340,20 +357,20 @@ const Cart = ({
       {/* ===== CHECKOUT MODAL ===== */}
       {showCheckoutModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowCheckoutModal(false)}>
-          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b border-[#F1F7FC] flex justify-between items-center sticky top-0 bg-white rounded-t-2xl z-10">
-              <h3 className="text-lg font-bold text-[#1A2A3A]">Confirm Order</h3>
-              <button className="text-[#94A3B8] hover:text-[#1A2A3A] transition-colors" onClick={() => setShowCheckoutModal(false)}>
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-fadeIn" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b border-[#F4F5F1] flex justify-between items-center sticky top-0 bg-white rounded-t-2xl z-10">
+              <h3 className="text-[22px] font-semibold text-[#1F2937]">Confirm Order</h3>
+              <button className="text-[#6B7280] hover:text-[#1F2937] transition-colors" onClick={() => setShowCheckoutModal(false)}>
                 <CloseIcon />
               </button>
             </div>
             
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-5">
               {cart.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-[#94A3B8]">Your cart is empty.</p>
+                  <p className="text-[#6B7280]">Your cart is empty.</p>
                   <button 
-                    className="mt-4 px-6 py-2.5 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200"
+                    className="mt-4 px-6 py-2.5 bg-[#0B342B] text-white font-medium rounded-xl hover:bg-[#032A24] transition-all duration-200 shadow-sm text-[15px]"
                     onClick={() => setShowCheckoutModal(false)}
                   >
                     Continue Shopping
@@ -363,55 +380,51 @@ const Cart = ({
                 <>
                   <div className="space-y-2">
                     {cart.map(item => (
-                      <div key={item.id} className="flex justify-between text-sm border-b border-[#F1F7FC] pb-2">
-                        <span className="text-[#1A2A3A]">{item.name} <span className="text-[#94A3B8]">×{item.quantity}</span></span>
-                        <span className="font-semibold text-[#1A2A3A]">{formatCurrency(item.price * item.quantity)}</span>
+                      <div key={item.id} className="flex justify-between text-[15px] border-b border-[#F4F5F1] pb-2">
+                        <span className="text-[#1F2937]">{item.name} <span className="text-[#6B7280]">×{item.quantity}</span></span>
+                        <span className="font-semibold text-[#1F2937]">{formatCurrency(item.price * item.quantity)}</span>
                       </div>
                     ))}
                   </div>
 
-                  <div className="bg-[#F8FAFC] rounded-xl p-4 space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#94A3B8]">Subtotal</span>
-                      <span className="font-semibold text-[#1A2A3A]">{formatCurrency(getCartTotal())}</span>
+                  <div className="bg-[#FAFAF7] rounded-xl p-4 space-y-2 border border-[#E8EEF4]">
+                    <div className="flex justify-between text-[15px]">
+                      <span className="text-[#6B7280]">Subtotal</span>
+                      <span className="font-semibold text-[#1F2937]">{formatCurrency(getCartTotal())}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#94A3B8]">Delivery</span>
-                      <span className="font-semibold text-[#1A2A3A]">{getDeliveryFee() === 0 ? 'FREE' : formatCurrency(getDeliveryFee())}</span>
-                    </div>
-                    <div className="flex justify-between text-sm pt-2 border-t border-[#E2E8F0]">
-                      <span className="font-semibold text-[#1A2A3A]">Total</span>
-                      <span className="font-bold text-[#1769AA]">{formatCurrency(getTotal())}</span>
+                    <div className="flex justify-between text-[17px] font-bold pt-2 border-t border-[#E8EEF4]">
+                      <span className="text-[#1F2937]">Total</span>
+                      <span className="text-[#0B342B]">{formatCurrency(getTotal())}</span>
                     </div>
                   </div>
 
-                  <div className="bg-blue-50 rounded-xl p-4 text-center">
-                    <p className="text-sm text-blue-700 leading-relaxed">
+                  <div className="bg-[#DBEAFE] rounded-xl p-4 text-center border border-[#BFDBFE]">
+                    <p className="text-[15px] text-[#3B82F6] leading-relaxed">
                       Payment will be processed via M-Pesa. A confirmation will be sent to your phone.
                     </p>
                   </div>
                 </>
               )}
 
-              {error && <p className="text-sm text-[#DC2626]">{error}</p>}
+              {error && <p className="text-[15px] text-[#DC2626]">{error}</p>}
             </div>
             
-            <div className="p-6 border-t border-[#F1F7FC] flex gap-3 sticky bottom-0 bg-white rounded-b-2xl">
+            <div className="p-6 border-t border-[#F4F5F1] flex gap-3 sticky bottom-0 bg-white rounded-b-2xl">
               <button 
-                className="flex-1 px-6 py-3 bg-white text-[#5A6A7A] font-semibold rounded-xl border border-[#E8EEF4] hover:bg-[#F1F7FC] transition-all duration-200"
+                className="flex-1 px-6 py-3 bg-white text-[#6B7280] font-medium rounded-xl border border-[#E8EEF4] hover:bg-[#FAFAF7] transition-all duration-200"
                 onClick={() => setShowCheckoutModal(false)}
               >
                 Cancel
               </button>
               {cart.length > 0 && (
                 <button 
-                  className="flex-[2] px-6 py-3 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="flex-[2] px-6 py-3 bg-[#0B342B] text-white font-medium rounded-xl hover:bg-[#032A24] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed shadow-md shadow-[#0B342B]/20"
                   onClick={confirmOrder}
                   disabled={localProcessing || cart.length === 0}
                 >
                   {localProcessing ? (
                     <span className="flex items-center justify-center gap-2">
-                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       Processing...
                     </span>
                   ) : (
@@ -427,10 +440,10 @@ const Cart = ({
       {/* ===== SUCCESS MODAL ===== */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowSuccessModal(false)}>
-          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b border-[#F1F7FC] bg-[#1769AA] rounded-t-2xl">
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-fadeIn" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b border-[#F4F5F1] bg-[#0B342B] rounded-t-2xl">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-bold text-white">Order Placed!</h3>
+                <h3 className="text-[22px] font-semibold text-white">Order Placed!</h3>
                 <button className="text-white/60 hover:text-white transition-colors" onClick={() => setShowSuccessModal(false)}>
                   <CloseIcon />
                 </button>
@@ -438,39 +451,39 @@ const Cart = ({
             </div>
             
             <div className="p-6 space-y-4 text-center">
-              <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mx-auto border-4 border-emerald-200">
+              <div className="w-20 h-20 rounded-full bg-[#0B342B]/10 flex items-center justify-center mx-auto border-4 border-[#0B342B]/20">
                 <CheckIcon />
               </div>
               
               <div>
-                <div className="text-sm text-[#94A3B8]">Your order has been confirmed</div>
-                <div className="text-xl font-bold text-[#1A2A3A]">Order #{orderNumber}</div>
+                <div className="text-[15px] text-[#6B7280]">Your order has been confirmed</div>
+                <div className="text-[22px] font-bold text-[#1F2937]">Order #{orderNumber}</div>
               </div>
 
-              <div className="bg-[#F8FAFC] rounded-xl p-4 space-y-2 text-left">
-                <div className="flex justify-between text-sm">
-                  <span className="text-[#94A3B8]">Items</span>
-                  <span className="font-semibold text-[#1A2A3A]">{getCartItemCount()} products</span>
+              <div className="bg-[#FAFAF7] rounded-xl p-4 space-y-2 text-left border border-[#E8EEF4]">
+                <div className="flex justify-between text-[15px]">
+                  <span className="text-[#6B7280]">Items</span>
+                  <span className="font-semibold text-[#1F2937]">{orderSummary.itemCount || getCartItemCount()} products</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-[#94A3B8]">Total</span>
-                  <span className="font-bold text-[#1769AA]">{formatCurrency(getTotal())}</span>
+                <div className="flex justify-between text-[17px] font-bold pt-2 border-t border-[#E8EEF4]">
+                  <span className="text-[#1F2937]">Total</span>
+                  <span className="font-bold text-[#0B342B]">{formatCurrency(orderSummary.total || getTotal())}</span>
                 </div>
               </div>
 
-              <div className="bg-[#F1F7FC] rounded-xl p-4">
-                <p className="text-sm text-[#5A6A7A] italic leading-relaxed">
+              <div className="bg-[#FAFAF7] rounded-xl p-4 border border-[#E8EEF4]">
+                <p className="text-[15px] text-[#6B7280] italic leading-relaxed">
                   "The example of those who spend their wealth in the way of Allah is like a seed of grain which grows seven spikes..." — Quran 2:261
                 </p>
               </div>
             </div>
             
-            <div className="p-6 border-t border-[#F1F7FC]">
+            <div className="p-6 border-t border-[#F4F5F1]">
               <button 
-                className="w-full px-6 py-3 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200"
+                className="w-full px-6 py-3 bg-[#0B342B] text-white font-medium rounded-xl hover:bg-[#032A24] transition-all duration-200 shadow-md shadow-[#0B342B]/20 text-[15px]"
                 onClick={() => {
                   setShowSuccessModal(false);
-                  navigate('/ecommerce');
+                  navigate('/market');
                 }}
               >
                 Continue Shopping

@@ -56,7 +56,7 @@ const SelectMosque = () => {
   };
 
   const getMosqueImage = (name) => {
-    return `https://via.placeholder.com/400x200/1769AA/fff?text=${encodeURIComponent(name)}`;
+    return `https://via.placeholder.com/400x200/0B342B/fff?text=${encodeURIComponent(name)}`;
   };
 
   // SVG Icons
@@ -87,39 +87,39 @@ const SelectMosque = () => {
 
   if (loading && mosques.length === 0) {
     return (
-      <div className="min-h-screen bg-[#F1F7FC] p-4 md:p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-[#FAFAF7] p-4 md:p-6 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#1769AA]/10 border-t-[#1769AA] rounded-full animate-spin mx-auto" />
-          <p className="text-[#94A3B8] mt-4">Loading mosques...</p>
+          <div className="w-12 h-12 border-4 border-[#0B342B]/10 border-t-[#0B342B] rounded-full animate-spin mx-auto" />
+          <p className="text-[#6B7280] mt-4 text-[15px]">Loading mosques...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F1F7FC]">
+    <div className="min-h-screen bg-[#FAFAF7]">
       {/* ===== HERO SECTION ===== */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#1769AA] via-[#2F80C0] to-[#4A9AD9] rounded-2xl mx-4 md:mx-6 lg:mx-8 mt-4 md:mt-6 p-8 md:p-12 shadow-lg shadow-[#1769AA]/20">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-2xl" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-2xl" />
+      <div className="relative overflow-hidden bg-[#0B342B] mx-4 md:mx-6 lg:mx-8 mt-4 md:mt-6 rounded-2xl p-8 md:p-12 shadow-lg shadow-[#0B342B]/10">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#C9A44B]/5 rounded-full blur-2xl" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#C9A44B]/5 rounded-full blur-2xl" />
         
         <div className="relative z-10 max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Select a Mosque</span>
-                <span className="w-px h-4 bg-white/20" />
-                <span className="text-xs font-medium text-white/50">Step 1 of 3</span>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-[13px] font-medium text-[#C9A44B] uppercase tracking-wider">Select a Mosque</span>
+                <span className="w-px h-4 bg-[#C9A44B]/30" />
+                <span className="text-[13px] font-medium text-[#C9A44B]/70">Step 1 of 3</span>
               </div>
-              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white leading-tight">
+              <h1 className="text-[26px] md:text-[30px] font-semibold text-white leading-tight">
                 Find a Mosque in Your Community
               </h1>
-              <p className="text-white/70 text-sm mt-2 max-w-lg">
+              <p className="text-white/70 text-[15px] mt-3 max-w-lg leading-relaxed">
                 Choose a mosque to view its Imams and start supporting their long-term welfare.
               </p>
             </div>
             <button 
-              className="text-white/60 hover:text-white text-sm flex items-center gap-2 transition-colors"
+              className="text-white/60 hover:text-white text-[15px] flex items-center gap-2 transition-colors font-medium"
               onClick={() => navigate('/pension')}
             >
               Back to Program
@@ -131,10 +131,10 @@ const SelectMosque = () => {
       {/* ===== MAIN CONTENT ===== */}
       <div className="max-w-5xl mx-auto px-4 md:px-6 py-6">
         {error && (
-          <div className="mb-4 p-4 bg-[#FEF2F2] border border-[#FECACA] rounded-xl flex flex-wrap items-center justify-between gap-3">
-            <span className="text-sm text-[#DC2626]">{error}</span>
+          <div className="mb-4 p-4 bg-white border border-[#DC2626]/20 rounded-xl flex flex-wrap items-center justify-between gap-3 shadow-sm">
+            <span className="text-[15px] text-[#DC2626]">{error}</span>
             <button 
-              className="px-4 py-1.5 bg-[#DC2626] text-white text-xs font-semibold rounded-lg hover:bg-[#B91C1C] transition-colors"
+              className="px-4 py-1.5 bg-[#DC2626] text-white text-[13px] font-medium rounded-lg hover:bg-[#B91C1C] transition-colors"
               onClick={fetchMosques}
             >
               Retry
@@ -146,22 +146,22 @@ const SelectMosque = () => {
         <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-4 md:p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">Search</label>
+              <label className="text-[13px] font-medium text-[#6B7280] block mb-1.5">Search</label>
               <div className="relative">
                 <input
                   type="text"
-                  className="w-full px-4 py-2.5 pl-9 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                  className="w-full px-4 py-2.5 pl-9 border border-[#E8EEF4] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition-all duration-200 bg-white"
                   placeholder="Search by mosque or imam..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]"><SearchIcon /></span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6B7280]"><SearchIcon /></span>
               </div>
             </div>
             <div>
-              <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">County</label>
+              <label className="text-[13px] font-medium text-[#6B7280] block mb-1.5">County</label>
               <select
-                className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                className="w-full px-4 py-2.5 border border-[#E8EEF4] rounded-xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition-all duration-200 bg-white appearance-none"
                 value={selectedCounty}
                 onChange={(e) => setSelectedCounty(e.target.value)}
               >
@@ -174,49 +174,49 @@ const SelectMosque = () => {
         </div>
 
         {/* Results Count */}
-        <div className="text-sm text-[#94A3B8] mb-4">
+        <div className="text-[15px] text-[#6B7280] mb-4">
           {mosques.length} mosque{mosques.length !== 1 ? 's' : ''} found
         </div>
 
         {/* Mosque List */}
         {mosques.length === 0 ? (
-          <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-12 text-center">
-            <p className="text-sm text-[#94A3B8]">No mosques found. Try adjusting your search.</p>
+          <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-16 text-center">
+            <p className="text-[15px] text-[#6B7280]">No mosques found. Try adjusting your search.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {mosques.map((mosque) => (
               <div 
                 key={mosque.id} 
-                className="bg-white rounded-xl overflow-hidden border border-[#E8EEF4] shadow-sm hover:border-[#1769AA] hover:shadow-md transition-all duration-200 cursor-pointer group"
+                className="bg-white rounded-xl overflow-hidden border border-[#E8EEF4] shadow-sm hover:border-[#0B342B] hover:shadow-md transition-all duration-200 cursor-pointer group"
                 onClick={() => navigate(`/mosque/${mosque.id}`)}
               >
                 <div className="h-32 bg-cover bg-center relative" style={{ backgroundImage: `url(${getMosqueImage(mosque.name)})` }}>
-                  <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-[12px] font-medium bg-[#D1FAE5] text-[#3FAF73] border border-[#A7F3D0]">
                     Verified
                   </span>
                   {mosque.imam_verified && (
-                    <span className="absolute bottom-3 left-3 text-xs font-semibold px-2 py-1 rounded-full bg-white/90 backdrop-blur-sm text-[#1A2A3A] border border-white/20">
+                    <span className="absolute bottom-3 left-3 text-[13px] font-medium px-2 py-1 rounded-full bg-white/90 backdrop-blur-sm text-[#1F2937] border border-white/20">
                       Imam Verified
                     </span>
                   )}
                 </div>
                 <div className="p-5">
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between gap-3">
                     <div className="flex-1">
-                      <h3 className="font-bold text-[#1A2A3A] group-hover:text-[#1769AA] transition-colors">{mosque.name}</h3>
-                      <p className="text-sm text-[#94A3B8] flex items-center gap-1 mt-1">
+                      <h3 className="font-bold text-[#1F2937] group-hover:text-[#0B342B] transition-colors text-[15px]">{mosque.name}</h3>
+                      <p className="text-[14px] text-[#6B7280] flex items-center gap-1 mt-1">
                         <LocationIcon /> {mosque.county || 'County not specified'}
                       </p>
-                      <p className="text-sm text-[#5A6A7A] mt-2 flex items-center gap-1">
+                      <p className="text-[14px] text-[#6B7280] mt-2 flex items-center gap-1">
                         <UserIcon /> Imam: {mosque.imam_name || 'No Imam Assigned'}
                       </p>
                       {mosque.imam_title && (
-                        <p className="text-xs text-[#94A3B8]">{mosque.imam_title}</p>
+                        <p className="text-[13px] text-[#6B7280]">{mosque.imam_title}</p>
                       )}
                     </div>
                     <button 
-                      className="px-4 py-2 bg-[#1769AA] text-white text-sm font-semibold rounded-lg hover:bg-[#2F80C0] transition-all duration-200 ml-4 flex items-center gap-1"
+                      className="px-4 py-2 bg-[#0B342B] text-white text-[14px] font-medium rounded-lg hover:bg-[#032A24] transition-all duration-200 shadow-sm flex items-center gap-1 flex-shrink-0"
                       onClick={(e) => { e.stopPropagation(); navigate(`/mosque/${mosque.id}`); }}
                     >
                       View <ChevronIcon />

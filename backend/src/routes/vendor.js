@@ -116,7 +116,7 @@ router.get('/dashboard-stats', async (req, res) => {
         (SELECT COALESCE(SUM(total_rooms), 0) FROM listings WHERE vendor_id = $1 AND is_active = true) as total_rooms,
         (SELECT COALESCE(SUM(available_rooms), 0) FROM listings WHERE vendor_id = $1 AND is_active = true) as available_rooms
       `;
-    } else if (businessType === 'restaurant' || businessType === 'halalmarket') {
+    } else if (businessType === 'restaurant' || businessType === 'halalmarket' || businessType === 'halalbutchery') {
       statsQuery += `
         (SELECT COUNT(*) FROM orders WHERE vendor_id = $1) as total_orders,
         (SELECT COUNT(*) FROM bookings WHERE vendor_id = $1) as total_bookings,
@@ -320,7 +320,7 @@ router.get('/products', async (req, res) => {
 });
 
 // ============================================================
-// 6. CREATE PRODUCT
+// 6. CREATE PRODUCT (with Butchery fields)
 // ============================================================
 router.post('/products', async (req, res) => {
   try {
@@ -337,21 +337,48 @@ router.post('/products', async (req, res) => {
       images,
       tags,
       is_halal,
-      is_active
+      is_active,
+      // Butchery fields
+      meat_type,
+      cut_type,
+      price_per_kg,
+      stock_kg
     } = req.body;
 
     if (!name || !category || !price) {
       return res.status(400).json({ error: 'Name, category, and price are required' });
     }
 
+    // Get vendor business type
+    const vendorTypeResult = await db.query(`
+      SELECT business_type FROM vendor_profiles WHERE user_id = $1
+    `, [userId]);
+    
+    const businessType = vendorTypeResult.rows[0]?.business_type || '';
+
     const id = uuidv4();
-    await db.query(`
-      INSERT INTO products (
-        id, vendor_id, name, description, category, price, 
-        original_price, stock, unit, images, tags, 
-        is_halal, is_active, createdat, updatedat
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
-    `, [id, userId, name, description, category, price, original_price || null, stock || 0, unit || 'piece', images || [], tags || [], is_halal !== false, is_active !== false]);
+    
+    // If vendor is a butchery, use butchery fields
+    if (businessType === 'halalbutchery') {
+      await db.query(`
+        INSERT INTO products (
+          id, vendor_id, name, description, category, price, 
+          original_price, stock, unit, images, tags, 
+          is_halal, is_active, 
+          meat_type, cut_type, price_per_kg, stock_kg,
+          createdat, updatedat
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW(), NOW())
+      `, [id, userId, name, description, category, price, original_price || null, stock || 0, unit || 'piece', images || [], tags || [], is_halal !== false, is_active !== false, meat_type || 'beef', cut_type || 'whole', price_per_kg || 0, stock_kg || 0]);
+    } else {
+      // Regular product for other vendors
+      await db.query(`
+        INSERT INTO products (
+          id, vendor_id, name, description, category, price, 
+          original_price, stock, unit, images, tags, 
+          is_halal, is_active, createdat, updatedat
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
+      `, [id, userId, name, description, category, price, original_price || null, stock || 0, unit || 'piece', images || [], tags || [], is_halal !== false, is_active !== false]);
+    }
 
     res.json({ success: true, message: 'Product created successfully', productId: id });
 
@@ -362,7 +389,7 @@ router.post('/products', async (req, res) => {
 });
 
 // ============================================================
-// 7. UPDATE PRODUCT
+// 7. UPDATE PRODUCT (with Butchery fields)
 // ============================================================
 router.put('/products/:productId', async (req, res) => {
   try {
@@ -380,11 +407,16 @@ router.put('/products/:productId', async (req, res) => {
       images,
       tags,
       is_halal,
-      is_active
+      is_active,
+      // Butchery fields
+      meat_type,
+      cut_type,
+      price_per_kg,
+      stock_kg
     } = req.body;
 
     const check = await db.query(
-      'SELECT id FROM products WHERE id = $1 AND vendor_id = $2',
+      'SELECT id, vendor_id FROM products WHERE id = $1 AND vendor_id = $2',
       [productId, userId]
     );
 
@@ -392,22 +424,54 @@ router.put('/products/:productId', async (req, res) => {
       return res.status(404).json({ error: 'Product not found' });
     }
 
-    await db.query(`
-      UPDATE products SET
-        name = COALESCE($1, name),
-        description = COALESCE($2, description),
-        category = COALESCE($3, category),
-        price = COALESCE($4, price),
-        original_price = COALESCE($5, original_price),
-        stock = COALESCE($6, stock),
-        unit = COALESCE($7, unit),
-        images = COALESCE($8, images),
-        tags = COALESCE($9, tags),
-        is_halal = COALESCE($10, is_halal),
-        is_active = COALESCE($11, is_active),
-        updatedat = NOW()
-      WHERE id = $12 AND vendor_id = $13
-    `, [name, description, category, price, original_price, stock, unit, images, tags, is_halal, is_active, productId, userId]);
+    // Get vendor business type
+    const vendorTypeResult = await db.query(`
+      SELECT business_type FROM vendor_profiles WHERE user_id = $1
+    `, [userId]);
+    
+    const businessType = vendorTypeResult.rows[0]?.business_type || '';
+
+    // If vendor is a butchery, include butchery fields
+    if (businessType === 'halalbutchery') {
+      await db.query(`
+        UPDATE products SET
+          name = COALESCE($1, name),
+          description = COALESCE($2, description),
+          category = COALESCE($3, category),
+          price = COALESCE($4, price),
+          original_price = COALESCE($5, original_price),
+          stock = COALESCE($6, stock),
+          unit = COALESCE($7, unit),
+          images = COALESCE($8, images),
+          tags = COALESCE($9, tags),
+          is_halal = COALESCE($10, is_halal),
+          is_active = COALESCE($11, is_active),
+          meat_type = COALESCE($12, meat_type),
+          cut_type = COALESCE($13, cut_type),
+          price_per_kg = COALESCE($14, price_per_kg),
+          stock_kg = COALESCE($15, stock_kg),
+          updatedat = NOW()
+        WHERE id = $16 AND vendor_id = $17
+      `, [name, description, category, price, original_price, stock, unit, images, tags, is_halal, is_active, meat_type, cut_type, price_per_kg, stock_kg, productId, userId]);
+    } else {
+      // Regular product update
+      await db.query(`
+        UPDATE products SET
+          name = COALESCE($1, name),
+          description = COALESCE($2, description),
+          category = COALESCE($3, category),
+          price = COALESCE($4, price),
+          original_price = COALESCE($5, original_price),
+          stock = COALESCE($6, stock),
+          unit = COALESCE($7, unit),
+          images = COALESCE($8, images),
+          tags = COALESCE($9, tags),
+          is_halal = COALESCE($10, is_halal),
+          is_active = COALESCE($11, is_active),
+          updatedat = NOW()
+        WHERE id = $12 AND vendor_id = $13
+      `, [name, description, category, price, original_price, stock, unit, images, tags, is_halal, is_active, productId, userId]);
+    }
 
     res.json({ success: true, message: 'Product updated successfully' });
 
@@ -444,7 +508,7 @@ router.delete('/products/:productId', async (req, res) => {
 });
 
 // ============================================================
-// 9. GET VENDOR ORDERS (FIXED - shows item names)
+// 9. GET VENDOR ORDERS
 // ============================================================
 router.get('/orders', async (req, res) => {
   try {
@@ -746,7 +810,7 @@ router.get('/listings', async (req, res) => {
 });
 
 // ============================================================
-// 14. CREATE LISTING (with max_guests_per_room)
+// 14. CREATE LISTING
 // ============================================================
 router.post('/listings', async (req, res) => {
   try {
@@ -802,7 +866,7 @@ router.post('/listings', async (req, res) => {
 });
 
 // ============================================================
-// 15. UPDATE LISTING (with max_guests_per_room)
+// 15. UPDATE LISTING
 // ============================================================
 router.put('/listings/:listingId', async (req, res) => {
   try {
@@ -1333,6 +1397,302 @@ router.get('/listings/:listingId/blocked-dates', async (req, res) => {
   } catch (err) {
     console.error('Error fetching blocked dates:', err.message);
     res.status(500).json({ error: 'Failed to fetch blocked dates' });
+  }
+});
+
+// ============================================================
+// HAJJ PACKAGE MANAGEMENT (Vendor only)
+// ============================================================
+
+// GET vendor's Hajj packages
+router.get('/hajj/packages', authenticate, authorize('vendor'), async (req, res) => {
+  try {
+    const db = await getClient();
+    const userId = req.user.id;
+
+    const result = await db.query(`
+      SELECT 
+        p.*,
+        (SELECT COUNT(*) FROM hajj_bookings WHERE package_id = p.id) as total_bookings,
+        (SELECT COUNT(*) FROM hajj_bookings WHERE package_id = p.id AND status = 'pending') as pending_bookings,
+        (SELECT COUNT(*) FROM hajj_bookings WHERE package_id = p.id AND status = 'confirmed') as confirmed_bookings,
+        (SELECT COUNT(*) FROM hajj_bookings WHERE package_id = p.id AND status = 'completed') as completed_bookings
+      FROM hajj_packages p
+      WHERE p.vendor_id = $1
+      ORDER BY p.createdat DESC
+    `, [userId]);
+
+    res.json({
+      success: true,
+      packages: result.rows,
+      total: result.rows.length
+    });
+  } catch (err) {
+    console.error('Error fetching vendor Hajj packages:', err.message);
+    res.status(500).json({ error: 'Failed to fetch packages' });
+  }
+});
+
+// CREATE Hajj package (Vendor only)
+router.post('/hajj/packages', authenticate, authorize('vendor'), async (req, res) => {
+  try {
+    const db = await getClient();
+    const userId = req.user.id;
+    const {
+      name,
+      type,
+      description,
+      duration_days,
+      price,
+      includes,
+      excludes,
+      images,
+      available_slots,
+      is_active,
+      is_featured
+    } = req.body;
+
+    if (!name || !type || !price || !duration_days) {
+      return res.status(400).json({
+        error: 'Name, type, price, and duration are required'
+      });
+    }
+
+    if (!['hajj', 'umrah'].includes(type)) {
+      return res.status(400).json({ error: 'Type must be "hajj" or "umrah"' });
+    }
+
+    // Check if vendor is approved
+    const vendorCheck = await db.query(
+      'SELECT vendor_status FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (vendorCheck.rows[0]?.vendor_status !== 'approved') {
+      return res.status(403).json({ error: 'Vendor not approved' });
+    }
+
+    const packageId = 'hajj-' + Date.now().toString(36) + uuidv4().slice(0, 8);
+
+    await db.query(`
+      INSERT INTO hajj_packages (
+        id, vendor_id, name, type, description, duration_days,
+        price, includes, excludes, images, available_slots,
+        is_active, is_featured, source, createdat, updatedat
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'halalhub', NOW(), NOW())
+    `, [
+      packageId,
+      userId,
+      name,
+      type,
+      description || null,
+      duration_days,
+      price,
+      includes || [],
+      excludes || [],
+      images || [],
+      available_slots || 50,
+      is_active !== false,
+      is_featured || false
+    ]);
+
+    res.status(201).json({
+      success: true,
+      message: 'Package created successfully',
+      packageId: packageId
+    });
+
+  } catch (err) {
+    console.error('Error creating Hajj package:', err.message);
+    res.status(500).json({ error: 'Failed to create package' });
+  }
+});
+
+// UPDATE Hajj package (Vendor only)
+router.put('/hajj/packages/:packageId', authenticate, authorize('vendor'), async (req, res) => {
+  try {
+    const db = await getClient();
+    const userId = req.user.id;
+    const packageId = req.params.packageId;
+    const {
+      name,
+      type,
+      description,
+      duration_days,
+      price,
+      includes,
+      excludes,
+      images,
+      available_slots,
+      is_active,
+      is_featured
+    } = req.body;
+
+    const check = await db.query(
+      'SELECT id FROM hajj_packages WHERE id = $1 AND vendor_id = $2',
+      [packageId, userId]
+    );
+
+    if (check.rows.length === 0) {
+      return res.status(404).json({ error: 'Package not found' });
+    }
+
+    if (type && !['hajj', 'umrah'].includes(type)) {
+      return res.status(400).json({ error: 'Type must be "hajj" or "umrah"' });
+    }
+
+    await db.query(`
+      UPDATE hajj_packages SET
+        name = COALESCE($1, name),
+        type = COALESCE($2, type),
+        description = COALESCE($3, description),
+        duration_days = COALESCE($4, duration_days),
+        price = COALESCE($5, price),
+        includes = COALESCE($6, includes),
+        excludes = COALESCE($7, excludes),
+        images = COALESCE($8, images),
+        available_slots = COALESCE($9, available_slots),
+        is_active = COALESCE($10, is_active),
+        is_featured = COALESCE($11, is_featured),
+        updatedat = NOW()
+      WHERE id = $12 AND vendor_id = $13
+    `, [
+      name,
+      type,
+      description,
+      duration_days,
+      price,
+      includes,
+      excludes,
+      images,
+      available_slots,
+      is_active,
+      is_featured,
+      packageId,
+      userId
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Package updated successfully'
+    });
+
+  } catch (err) {
+    console.error('Error updating Hajj package:', err.message);
+    res.status(500).json({ error: 'Failed to update package' });
+  }
+});
+
+// DELETE Hajj package (Vendor only)
+router.delete('/hajj/packages/:packageId', authenticate, authorize('vendor'), async (req, res) => {
+  try {
+    const db = await getClient();
+    const userId = req.user.id;
+    const packageId = req.params.packageId;
+
+    const result = await db.query(
+      'DELETE FROM hajj_packages WHERE id = $1 AND vendor_id = $2 RETURNING id',
+      [packageId, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Package not found' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Package deleted successfully'
+    });
+
+  } catch (err) {
+    console.error('Error deleting Hajj package:', err.message);
+    res.status(500).json({ error: 'Failed to delete package' });
+  }
+});
+
+// GET vendor's Hajj bookings
+router.get('/hajj/bookings', authenticate, authorize('vendor'), async (req, res) => {
+  try {
+    const db = await getClient();
+    const userId = req.user.id;
+    const { status, limit = 100 } = req.query;
+
+    let query = `
+      SELECT 
+        b.*,
+        p.name as package_name,
+        p.type as package_type,
+        u.fullname as client_name,
+        u.phone as client_phone,
+        u.email as client_email
+      FROM hajj_bookings b
+      JOIN hajj_packages p ON b.package_id = p.id
+      JOIN users u ON b.user_id = u.id
+      WHERE p.vendor_id = $1
+    `;
+    const params = [userId];
+    let paramIndex = 2;
+
+    if (status && status !== 'all') {
+      query += ` AND b.status = $${paramIndex}`;
+      params.push(status);
+      paramIndex++;
+    }
+
+    query += ` ORDER BY b.booking_date DESC LIMIT $${paramIndex}`;
+    params.push(parseInt(limit));
+
+    const result = await db.query(query, params);
+
+    res.json({
+      success: true,
+      bookings: result.rows,
+      total: result.rows.length
+    });
+
+  } catch (err) {
+    console.error('Error fetching vendor Hajj bookings:', err.message);
+    res.status(500).json({ error: 'Failed to fetch bookings' });
+  }
+});
+
+// GET vendor's Hajj stats
+router.get('/hajj/stats', authenticate, authorize('vendor'), async (req, res) => {
+  try {
+    const db = await getClient();
+    const userId = req.user.id;
+
+    const result = await db.query(`
+      SELECT 
+        (SELECT COUNT(*) FROM hajj_packages WHERE vendor_id = $1 AND is_active = true) as total_packages,
+        (SELECT COUNT(*) FROM hajj_bookings b
+         JOIN hajj_packages p ON b.package_id = p.id
+         WHERE p.vendor_id = $1 AND b.status = 'pending') as pending_bookings,
+        (SELECT COUNT(*) FROM hajj_bookings b
+         JOIN hajj_packages p ON b.package_id = p.id
+         WHERE p.vendor_id = $1 AND b.status = 'confirmed') as confirmed_bookings,
+        (SELECT COUNT(*) FROM hajj_bookings b
+         JOIN hajj_packages p ON b.package_id = p.id
+         WHERE p.vendor_id = $1 AND b.status = 'completed') as completed_bookings,
+        (SELECT COALESCE(SUM(b.total_price), 0) FROM hajj_bookings b
+         JOIN hajj_packages p ON b.package_id = p.id
+         WHERE p.vendor_id = $1 AND b.status = 'completed') as total_revenue
+    `, [userId]);
+
+    res.json({
+      success: true,
+      stats: {
+        totalPackages: parseInt(result.rows[0].total_packages) || 0,
+        pendingBookings: parseInt(result.rows[0].pending_bookings) || 0,
+        confirmedBookings: parseInt(result.rows[0].confirmed_bookings) || 0,
+        completedBookings: parseInt(result.rows[0].completed_bookings) || 0,
+        totalRevenue: parseInt(result.rows[0].total_revenue) || 0
+      }
+    });
+
+  } catch (err) {
+    console.error('Error fetching vendor Hajj stats:', err.message);
+    res.status(500).json({ error: 'Failed to fetch vendor stats' });
   }
 });
 

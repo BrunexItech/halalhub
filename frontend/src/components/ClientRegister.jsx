@@ -10,7 +10,6 @@ const ClientRegister = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
-  // OTP state
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
@@ -20,14 +19,12 @@ const ClientRegister = () => {
   const inputRefs = useRef([]);
   const otpTimerRef = useRef(null);
   
-  // Location data
   const [counties, setCounties] = useState([]);
   const [subCounties, setSubCounties] = useState([]);
   const [wards, setWards] = useState([]);
   const [loadingLocations, setLoadingLocations] = useState(true);
   const [locationError, setLocationError] = useState('');
 
-  // Form data
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -42,7 +39,6 @@ const ClientRegister = () => {
     wardName: ''
   });
 
-  // Fetch counties on mount
   useEffect(() => {
     const fetchCounties = async () => {
       try {
@@ -60,7 +56,6 @@ const ClientRegister = () => {
     fetchCounties();
   }, []);
 
-  // Fetch sub-counties when county changes
   useEffect(() => {
     if (formData.countyName) {
       const fetchSubs = async () => {
@@ -87,7 +82,6 @@ const ClientRegister = () => {
     }
   }, [formData.countyName]);
 
-  // Fetch wards when sub-county changes
   useEffect(() => {
     if (formData.countyName && formData.subCountyName) {
       const fetchWards = async () => {
@@ -110,7 +104,6 @@ const ClientRegister = () => {
     }
   }, [formData.countyName, formData.subCountyName]);
 
-  // Cleanup OTP timer
   useEffect(() => {
     return () => {
       if (otpTimerRef.current) {
@@ -160,7 +153,6 @@ const ClientRegister = () => {
     });
   };
 
-  // OTP handlers
   const handleOtpChange = (index, value) => {
     if (!/^\d*$/.test(value)) return;
     const newOtp = [...otp];
@@ -209,9 +201,6 @@ const ClientRegister = () => {
         email: formData.email 
       });
       
-      console.log('OTP Response:', response.data); // Debug log
-      
-      // Handle different response structures
       const otp = response.data?.otp || response.data?.data?.otp;
       
       if (otp) {
@@ -223,7 +212,6 @@ const ClientRegister = () => {
         setSuccess('Verification code sent');
         setTimeout(() => setSuccess(''), 3000);
         
-        // Focus on first OTP input
         setTimeout(() => {
           if (inputRefs.current[0]) {
             inputRefs.current[0].focus();
@@ -307,7 +295,6 @@ const ClientRegister = () => {
     setLoading(true);
     setError('');
     try {
-      // Verify OTP with backend
       const verifyResponse = await authService.verifyRegistrationOtp({
         phone: formData.phone,
         otp: otpString
@@ -319,18 +306,16 @@ const ClientRegister = () => {
         return;
       }
       
-      // OTP verified, proceed with registration
-     // OTP verified, proceed with registration
-    await authService.registerClient({
-      fullName: formData.fullName,
-      phone: formData.phone,
-      email: formData.email,
-      nationalId: formData.nationalId,
-      pin: formData.pin,
-      region: formData.countyName,
-      subCounty: formData.subCountyName,
-      ward: formData.wardName
-    });
+      await authService.registerClient({
+        fullName: formData.fullName,
+        phone: formData.phone,
+        email: formData.email,
+        nationalId: formData.nationalId,
+        pin: formData.pin,
+        region: formData.countyName,
+        subCounty: formData.subCountyName,
+        ward: formData.wardName
+      });
       
       setStep(5);
       setSuccess('Registration complete!');
@@ -344,23 +329,23 @@ const ClientRegister = () => {
   const renderStepIndicator = () => {
     const current = step > 4 ? 4 : step;
     return (
-      <div className="flex items-center justify-center gap-0 py-4">
+      <div className="flex items-center justify-center gap-0 py-3">
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="flex items-center">
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold transition-all duration-300 ${
+            <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition-all duration-500 ${
               i <= current 
-                ? 'bg-[#1769AA] text-white shadow-md shadow-[#1769AA]/25' 
-                : 'bg-[#F1F7FC] text-[#94A3B8]'
+                ? 'bg-[#C9A44B] text-[#032A24] shadow-md shadow-[#C9A44B]/20' 
+                : 'bg-[#0B342B] text-[#B7C0BA]'
             }`}>
               {i < current ? (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
                 </svg>
               ) : i}
             </div>
             {i < 4 && (
-              <div className={`w-8 h-0.5 transition-all duration-300 ${
-                i < current ? 'bg-[#1769AA]' : 'bg-[#E2E8F0]'
+              <div className={`w-6 h-0.5 transition-all duration-500 ${
+                i < current ? 'bg-[#C9A44B]' : 'bg-[rgba(201,164,75,0.18)]'
               }`} />
             )}
           </div>
@@ -373,42 +358,38 @@ const ClientRegister = () => {
     switch (step) {
       case 1:
         return (
-          <div className="space-y-4 animate-fadeIn">
-            <div className="mb-2">
-              <h3 className="text-lg font-bold text-[#1A2A3A]">Personal Information</h3>
-              <p className="text-sm text-[#94A3B8]">Tell us about yourself</p>
+          <div className="space-y-3 animate-fadeIn">
+            <div className="mb-1.5">
+              <h3 className="text-base font-bold text-[#F7F6F1]">Personal Information</h3>
+              <p className="text-xs text-[#B7C0BA]">Tell us about yourself</p>
             </div>
             
-            <div>
-              <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-2">
-                Full Name *
-              </label>
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
               <input
-                className="w-full px-5 py-3.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                className="relative w-full px-4 py-2.5 bg-[#0B342B] border border-[rgba(201,164,75,0.18)] rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/30 focus:border-[#C9A44B] transition-all duration-300"
                 name="fullName"
                 value={formData.fullName}
                 onChange={handleChange}
-                placeholder="e.g., Abdullahi Mohamed"
+                placeholder="Full Name *"
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-2">
-                County *
-              </label>
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
               {loadingLocations ? (
-                <div className="w-full px-5 py-3.5 border border-[#E2E8F0] rounded-xl bg-[#F8FAFC] text-[#94A3B8] text-sm">Loading counties...</div>
+                <div className="relative w-full px-4 py-2.5 bg-[#0B342B] border border-[rgba(201,164,75,0.18)] rounded-xl text-[#B7C0BA] text-sm">Loading counties...</div>
               ) : locationError ? (
-                <div className="w-full px-5 py-3.5 border border-[#FECACA] rounded-xl bg-[#FEF2F2] text-[#DC2626] text-sm">{locationError}</div>
+                <div className="relative w-full px-4 py-2.5 bg-[#0B342B] border border-[#DC2626]/30 rounded-xl text-[#DC2626] text-sm">{locationError}</div>
               ) : (
                 <select
-                  className="w-full px-5 py-3.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200 appearance-none"
+                  className="relative w-full px-4 py-2.5 bg-[#0B342B] border border-[rgba(201,164,75,0.18)] rounded-xl text-[#F7F6F1] text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/30 focus:border-[#C9A44B] transition-all duration-300 appearance-none"
                   value={formData.county ? `${formData.county}|${formData.countyName}` : ''}
                   onChange={handleCountyChange}
                 >
-                  <option value="">Select your county</option>
+                  <option value="" className="bg-[#0B342B]">Select your county *</option>
                   {counties.map((county) => (
-                    <option key={county.id} value={`${county.id}|${county.name}`}>
+                    <option key={county.id} value={`${county.id}|${county.name}`} className="bg-[#0B342B]">
                       {county.name}
                     </option>
                   ))}
@@ -417,18 +398,16 @@ const ClientRegister = () => {
             </div>
 
             {formData.county && (
-              <div>
-                <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-2">
-                  Sub-County *
-                </label>
+              <div className="relative group">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
                 <select
-                  className="w-full px-5 py-3.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200 appearance-none"
+                  className="relative w-full px-4 py-2.5 bg-[#0B342B] border border-[rgba(201,164,75,0.18)] rounded-xl text-[#F7F6F1] text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/30 focus:border-[#C9A44B] transition-all duration-300 appearance-none"
                   value={formData.subCounty ? `${formData.subCounty}|${formData.subCountyName}` : ''}
                   onChange={handleSubCountyChange}
                 >
-                  <option value="">Select your sub-county</option>
+                  <option value="" className="bg-[#0B342B]">Select your sub-county *</option>
                   {subCounties.map((sub) => (
-                    <option key={sub.id} value={`${sub.id}|${sub.name}`}>
+                    <option key={sub.id} value={`${sub.id}|${sub.name}`} className="bg-[#0B342B]">
                       {sub.name}
                     </option>
                   ))}
@@ -437,18 +416,16 @@ const ClientRegister = () => {
             )}
 
             {formData.subCounty && (
-              <div>
-                <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-2">
-                  Ward *
-                </label>
+              <div className="relative group">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
                 <select
-                  className="w-full px-5 py-3.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200 appearance-none"
+                  className="relative w-full px-4 py-2.5 bg-[#0B342B] border border-[rgba(201,164,75,0.18)] rounded-xl text-[#F7F6F1] text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/30 focus:border-[#C9A44B] transition-all duration-300 appearance-none"
                   value={formData.ward ? `${formData.ward}|${formData.wardName}` : ''}
                   onChange={handleWardChange}
                 >
-                  <option value="">Select your ward</option>
+                  <option value="" className="bg-[#0B342B]">Select your ward *</option>
                   {wards.map((ward) => (
-                    <option key={ward.id} value={`${ward.id}|${ward.name}`}>
+                    <option key={ward.id} value={`${ward.id}|${ward.name}`} className="bg-[#0B342B]">
                       {ward.name}
                     </option>
                   ))}
@@ -460,35 +437,31 @@ const ClientRegister = () => {
 
       case 2:
         return (
-          <div className="space-y-4 animate-fadeIn">
-            <div className="mb-2">
-              <h3 className="text-lg font-bold text-[#1A2A3A]">Contact Information</h3>
-              <p className="text-sm text-[#94A3B8]">How can we reach you?</p>
+          <div className="space-y-3 animate-fadeIn">
+            <div className="mb-1.5">
+              <h3 className="text-base font-bold text-[#F7F6F1]">Contact Information</h3>
+              <p className="text-xs text-[#B7C0BA]">How can we reach you?</p>
             </div>
             
-            <div>
-              <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-2">
-                Phone Number *
-              </label>
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
               <input
-                className="w-full px-5 py-3.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                className="relative w-full px-4 py-2.5 bg-[#0B342B] border border-[rgba(201,164,75,0.18)] rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/30 focus:border-[#C9A44B] transition-all duration-300"
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
-                placeholder="+2547XXXXXXXX"
+                placeholder="Phone Number *"
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-2">
-                Email *
-              </label>
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
               <input
-                className="w-full px-5 py-3.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                className="relative w-full px-4 py-2.5 bg-[#0B342B] border border-[rgba(201,164,75,0.18)] rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/30 focus:border-[#C9A44B] transition-all duration-300"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                placeholder="email@example.com"
+                placeholder="Email Address *"
               />
             </div>
           </div>
@@ -496,72 +469,71 @@ const ClientRegister = () => {
 
       case 3:
         return (
-          <div className="space-y-4 animate-fadeIn">
-            <div className="mb-2">
-              <h3 className="text-lg font-bold text-[#1A2A3A]">ID & Security</h3>
-              <p className="text-sm text-[#94A3B8]">Verify your identity</p>
+          <div className="space-y-3 animate-fadeIn">
+            <div className="mb-1.5">
+              <h3 className="text-base font-bold text-[#F7F6F1]">ID & Security</h3>
+              <p className="text-xs text-[#B7C0BA]">Verify your identity</p>
             </div>
             
-            <div>
-              <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-2">
-                National ID *
-              </label>
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
               <input
-                className="w-full px-5 py-3.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                className="relative w-full px-4 py-2.5 bg-[#0B342B] border border-[rgba(201,164,75,0.18)] rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/30 focus:border-[#C9A44B] transition-all duration-300"
                 name="nationalId"
                 value={formData.nationalId}
                 onChange={handleChange}
-                placeholder="e.g., 12345678"
+                placeholder="National ID *"
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-2">
-                Create PIN *
-              </label>
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
               <input
-                className="w-full px-5 py-3.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                className="relative w-full px-4 py-2.5 bg-[#0B342B] border border-[rgba(201,164,75,0.18)] rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/30 focus:border-[#C9A44B] transition-all duration-300"
                 type="password"
                 name="pin"
                 value={formData.pin}
                 onChange={handleChange}
-                placeholder="4-digit PIN"
+                placeholder="Create PIN *"
                 maxLength="6"
               />
-              <p className="text-xs text-[#94A3B8] mt-2">PIN must be at least 4 digits</p>
+              <p className="text-[10px] text-[#B7C0BA]/60 mt-1.5">PIN must be at least 4 digits</p>
             </div>
           </div>
         );
 
       case 4:
         return (
-          <div className="space-y-4 animate-fadeIn">
-            <div className="mb-2">
-              <h3 className="text-lg font-bold text-[#1A2A3A]">Verify Your Identity</h3>
-              <p className="text-sm text-[#94A3B8]">Enter the 6-digit code</p>
+          <div className="space-y-3 animate-fadeIn">
+            <div className="mb-1.5">
+              <h3 className="text-base font-bold text-[#F7F6F1]">Verify Your Identity</h3>
+              <p className="text-xs text-[#B7C0BA]">Enter the 6-digit code</p>
             </div>
 
-            {/* OTP Display Box - Shows only after OTP is sent */}
             {otpSent && (
-              <div className="bg-[#F1F7FC] rounded-xl p-4 border border-[#E8EEF4]">
+              <div className="bg-[#0B342B] rounded-xl p-3 border border-[rgba(201,164,75,0.18)]">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">🔐</span>
+                  <div className="flex items-center gap-2.5">
+                    <div className="text-[#C9A44B]">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    </div>
                     <div>
-                      <span className="text-sm font-medium text-[#5A6A7A]">Your OTP Code</span>
-                      <div className="text-2xl font-mono font-bold text-[#1769AA] tracking-widest mt-0.5">
+                      <span className="text-[10px] font-medium text-[#B7C0BA]">Your OTP Code</span>
+                      <div className="text-lg font-mono font-bold text-[#C9A44B] tracking-widest mt-0.5">
                         {otpCode || '••••••'}
                       </div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className={`text-sm font-semibold ${otpExpirySeconds <= 10 ? 'text-red-600' : 'text-[#5A6A7A]'}`}>
+                    <div className={`text-xs font-semibold ${otpExpirySeconds <= 10 ? 'text-[#DC2626]' : 'text-[#B7C0BA]'}`}>
                       {otpExpirySeconds > 0 ? `${otpExpirySeconds}s` : 'Expired'}
                     </div>
-                    <div className="w-20 h-1 bg-[#E8EEF4] rounded-full mt-1 overflow-hidden">
+                    <div className="w-16 h-1 bg-[#0B342B] rounded-full mt-1 overflow-hidden border border-[rgba(201,164,75,0.18)]">
                       <div 
                         className={`h-full rounded-full transition-all duration-1000 ${
-                          otpExpirySeconds <= 10 ? 'bg-red-600' : 'bg-[#1769AA]'
+                          otpExpirySeconds <= 10 ? 'bg-[#DC2626]' : 'bg-[#C9A44B]'
                         }`}
                         style={{ width: `${(otpExpirySeconds / 30) * 100}%` }}
                       />
@@ -569,13 +541,12 @@ const ClientRegister = () => {
                   </div>
                 </div>
                 {otpExpirySeconds === 0 && (
-                  <p className="text-xs text-red-600 mt-2">OTP expired. Click "Resend Code" below.</p>
+                  <p className="text-[10px] text-[#DC2626] mt-1.5">OTP expired. Click "Resend Code" below.</p>
                 )}
               </div>
             )}
 
-            {/* OTP Input Fields */}
-            <div className="flex gap-3 justify-center py-2">
+            <div className="flex gap-2 justify-center py-1">
               {otp.map((digit, index) => (
                 <input
                   key={index}
@@ -584,7 +555,7 @@ const ClientRegister = () => {
                   inputMode="numeric"
                   maxLength="1"
                   value={digit}
-                  className="w-12 h-14 text-center text-xl font-semibold border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
+                  className="w-11 h-13 text-center text-base font-bold bg-[#0B342B] border border-[rgba(201,164,75,0.18)] rounded-xl text-[#F7F6F1] focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/30 focus:border-[#C9A44B] transition-all duration-300"
                   onChange={(e) => handleOtpChange(index, e.target.value)}
                   onKeyDown={(e) => handleOtpKeyDown(index, e)}
                   required
@@ -592,17 +563,16 @@ const ClientRegister = () => {
               ))}
             </div>
 
-            {/* Send / Resend OTP Controls */}
             <div className="flex justify-between items-center">
-              <span className="text-xs text-[#94A3B8]">
+              <span className="text-[10px] text-[#B7C0BA]/60">
                 {otpSent ? 'Enter the code above' : 'Click "Send Code" to receive OTP'}
               </span>
               <button
                 type="button"
-                className={`text-xs font-semibold transition ${
+                className={`text-[10px] font-semibold transition ${
                   otpSent 
-                    ? `text-[#1769AA] hover:text-[#2F80C0]`
-                    : 'text-[#1769AA] hover:text-[#2F80C0]'
+                    ? 'text-[#C9A44B] hover:text-[#E1C16B]'
+                    : 'text-[#C9A44B] hover:text-[#E1C16B]'
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
                 onClick={otpSent ? handleResendOtp : handleSendOtp}
                 disabled={(otpSent && resendTimer > 0) || loading}
@@ -617,20 +587,20 @@ const ClientRegister = () => {
 
       case 5:
         return (
-          <div className="text-center py-6 animate-fadeIn">
-            <div className="w-20 h-20 rounded-xl bg-[#F0FDF4] flex items-center justify-center mx-auto mb-4 border border-[#BBF7D0]">
-              <svg className="w-10 h-10 text-[#16A34A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="text-center py-6 animate-scaleIn">
+            <div className="w-16 h-16 rounded-xl bg-[#0B342B] flex items-center justify-center mx-auto mb-4 border border-[#3FAF73]/30">
+              <svg className="w-8 h-8 text-[#3FAF73]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h3 className="text-2xl font-bold text-[#1A2A3A]">Registration Complete!</h3>
-            <p className="text-[#5A6A7A] mt-2 leading-relaxed">
+            <h3 className="text-xl font-bold text-[#F7F6F1]">Registration Complete!</h3>
+            <p className="text-[#B7C0BA] text-sm mt-2 leading-relaxed">
               Your account has been created successfully.<br />
               Welcome to HalalHub, {formData.fullName}!
             </p>
             <button
               onClick={() => navigate('/')}
-              className="mt-6 px-8 py-3.5 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] hover:shadow-lg hover:shadow-[#1769AA]/25 transition-all duration-200"
+              className="mt-6 px-6 py-2.5 bg-gradient-to-r from-[#C9A44B] to-[#E1C16B] text-[#032A24] font-semibold text-sm rounded-xl hover:shadow-2xl hover:shadow-[#C9A44B]/30 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
             >
               Login Now
             </button>
@@ -643,41 +613,41 @@ const ClientRegister = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F1F7FC] px-4 py-8">
-      <div className="flex flex-col lg:flex-row max-w-5xl w-full bg-white rounded-3xl shadow-xl shadow-[#1769AA]/5 border border-[#E8EEF4] overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-[#032A24] px-4 py-8">
+      <div className="flex flex-col lg:flex-row max-w-4xl w-full bg-[#183B33] rounded-2xl shadow-2xl shadow-black/30 border border-[rgba(201,164,75,0.18)] overflow-hidden relative">
+        
+        <div className="absolute -top-16 -right-16 w-48 h-48 bg-[#C9A44B]/5 rounded-full blur-3xl" />
+        <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-[#C9A44B]/5 rounded-full blur-3xl" />
 
         {/* LEFT: Branding Section */}
-        <div className="w-full lg:w-1/2 bg-[#1769AA] p-8 lg:p-12 flex items-center justify-center relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
-          
-          <div className="relative z-10 text-center text-white">
+        <div className="w-full lg:w-2/5 bg-gradient-to-br from-[#032A24] to-[#0B342B] p-6 lg:p-8 flex items-center justify-center relative overflow-hidden">
+          <div className="relative z-10 text-center">
             <div className="mb-6">
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                  <span className="text-2xl font-bold text-white">H</span>
+              <div className="flex items-center justify-center gap-2.5 mb-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#C9A44B] to-[#E1C16B] flex items-center justify-center shadow-lg shadow-[#C9A44B]/20">
+                  <span className="text-xl font-bold text-[#032A24]">H</span>
                 </div>
               </div>
-              <div className="text-2xl font-bold tracking-tight">HalalHub</div>
-              <div className="text-xs text-white/60 tracking-[0.15em] uppercase mt-1">Sharia-Compliant Fintech</div>
+              <div className="text-2xl font-bold text-[#F7F6F1] tracking-tight">HalalHub</div>
+              <div className="text-[9px] font-medium text-[#C9A44B] tracking-[0.2em] uppercase mt-1">Sharia-Compliant Fintech</div>
             </div>
 
-            <h1 className="text-3xl lg:text-4xl font-bold mt-4">Create Your Account</h1>
-            <p className="text-white/70 mt-2 max-w-sm mx-auto">
+            <h1 className="text-2xl lg:text-3xl font-bold text-[#F7F6F1]">Create Your Account</h1>
+            <p className="text-[#B7C0BA] text-sm mt-1.5 max-w-sm mx-auto">
               Join the community and access Sharia-compliant financial services
             </p>
 
-            <div className="mt-8 space-y-3">
-              <div className="flex items-center justify-center gap-3 text-sm text-white/80">
-                <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-white/20 text-white text-xs font-bold">✓</span>
+            <div className="mt-6 space-y-2">
+              <div className="flex items-center justify-center gap-2.5 text-xs text-[#B7C0BA]">
+                <span className="flex items-center justify-center w-5 h-5 rounded-lg bg-[#C9A44B]/20 text-[#C9A44B] text-[10px] font-bold">✓</span>
                 <span>Halal-Certified Platform</span>
               </div>
-              <div className="flex items-center justify-center gap-3 text-sm text-white/80">
-                <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-white/20 text-white text-xs font-bold">✓</span>
+              <div className="flex items-center justify-center gap-2.5 text-xs text-[#B7C0BA]">
+                <span className="flex items-center justify-center w-5 h-5 rounded-lg bg-[#C9A44B]/20 text-[#C9A44B] text-[10px] font-bold">✓</span>
                 <span>Secure &amp; Encrypted</span>
               </div>
-              <div className="flex items-center justify-center gap-3 text-sm text-white/80">
-                <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-white/20 text-white text-xs font-bold">✓</span>
+              <div className="flex items-center justify-center gap-2.5 text-xs text-[#B7C0BA]">
+                <span className="flex items-center justify-center w-5 h-5 rounded-lg bg-[#C9A44B]/20 text-[#C9A44B] text-[10px] font-bold">✓</span>
                 <span>No Riba Guarantee</span>
               </div>
             </div>
@@ -685,13 +655,13 @@ const ClientRegister = () => {
         </div>
 
         {/* RIGHT: Registration Form */}
-        <div className="w-full lg:w-1/2 p-8 lg:p-12 bg-white flex items-center">
-          <div className="w-full max-w-sm mx-auto">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-[#1A2A3A]">
+        <div className="w-full lg:w-3/5 p-6 lg:p-8 bg-[#183B33] flex items-center">
+          <div className="w-full max-w-sm mx-auto relative z-10">
+            <div className="mb-4">
+              <h2 className="text-xl font-bold text-[#F7F6F1]">
                 {step > 4 ? 'Complete!' : `Step ${step} of 4`}
               </h2>
-              <p className="text-sm text-[#94A3B8] mt-1">
+              <p className="text-xs text-[#B7C0BA] mt-0.5">
                 {step > 4 ? 'Your account is ready' : 'Fill in your details to continue'}
               </p>
             </div>
@@ -699,34 +669,34 @@ const ClientRegister = () => {
             {step <= 4 && renderStepIndicator()}
 
             {error && (
-              <div className="mb-4 p-4 bg-[#FEF2F2] border border-[#FECACA] rounded-xl flex items-center justify-between text-sm text-[#DC2626]">
+              <div className="mb-3 p-3 bg-[#0B342B] border border-[#DC2626]/30 rounded-xl flex items-center justify-between text-xs text-[#DC2626] animate-slideDown">
                 <span>{error}</span>
                 <button onClick={() => setError('')} className="text-[#DC2626]/60 hover:text-[#DC2626] transition">✕</button>
               </div>
             )}
 
             {success && step === 5 && (
-              <div className="mb-4 p-4 bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl text-sm text-[#16A34A]">
+              <div className="mb-3 p-3 bg-[#0B342B] border border-[#3FAF73]/30 rounded-xl text-xs text-[#3FAF73] animate-slideDown">
                 {success}
               </div>
             )}
 
-            <div className="py-2">
+            <div className="py-1">
               {renderStep()}
             </div>
 
             {step >= 1 && step < 4 && (
-              <div className="flex gap-3 mt-6">
+              <div className="flex gap-2.5 mt-5">
                 {step > 1 && (
                   <button
-                    className="flex-1 px-6 py-3.5 rounded-xl bg-[#F1F7FC] text-[#5A6A7A] font-semibold text-sm hover:bg-[#E2E8F0] transition-all duration-200"
+                    className="flex-1 px-4 py-2.5 rounded-xl bg-[#0B342B] text-[#B7C0BA] font-semibold text-xs hover:bg-[#12342D] transition-all duration-300"
                     onClick={handleBack}
                   >
                     Back
                   </button>
                 )}
                 <button
-                  className={`${step > 1 ? 'flex-[2]' : 'flex-1'} px-6 py-3.5 rounded-xl bg-[#1769AA] text-white font-semibold text-sm shadow-md shadow-[#1769AA]/20 hover:bg-[#2F80C0] hover:shadow-lg hover:shadow-[#1769AA]/30 transition-all duration-200`}
+                  className={`${step > 1 ? 'flex-[2]' : 'flex-1'} px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#C9A44B] to-[#E1C16B] text-[#032A24] font-semibold text-xs shadow-md shadow-[#C9A44B]/20 hover:shadow-lg hover:shadow-[#C9A44B]/30 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]`}
                   onClick={handleNext}
                 >
                   Continue
@@ -735,21 +705,21 @@ const ClientRegister = () => {
             )}
 
             {step === 4 && (
-              <div className="flex gap-3 mt-6">
+              <div className="flex gap-2.5 mt-5">
                 <button
-                  className="flex-1 px-6 py-3.5 rounded-xl bg-[#F1F7FC] text-[#5A6A7A] font-semibold text-sm hover:bg-[#E2E8F0] transition-all duration-200"
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-[#0B342B] text-[#B7C0BA] font-semibold text-xs hover:bg-[#12342D] transition-all duration-300"
                   onClick={handleBack}
                 >
                   Back
                 </button>
                 <button
-                  className="flex-[2] px-6 py-3.5 rounded-xl bg-[#1769AA] text-white font-semibold text-sm shadow-md shadow-[#1769AA]/20 hover:bg-[#2F80C0] hover:shadow-lg hover:shadow-[#1769AA]/30 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="flex-[2] px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#C9A44B] to-[#E1C16B] text-[#032A24] font-semibold text-xs shadow-md shadow-[#C9A44B]/20 hover:shadow-lg hover:shadow-[#C9A44B]/30 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
                   onClick={handleVerifyOtp}
                   disabled={loading}
                 >
                   {loading ? (
-                    <span className="flex items-center justify-center gap-3">
-                      <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-4 h-4 border-2 border-[#032A24]/30 border-t-[#032A24] rounded-full animate-spin" />
                       Verifying...
                     </span>
                   ) : (
@@ -759,12 +729,12 @@ const ClientRegister = () => {
               </div>
             )}
 
-            <div className="mt-6 pt-6 border-t border-[#F1F7FC] text-center">
-              <p className="text-sm text-[#5A6A7A]">
+            <div className="mt-5 pt-4 border-t border-[rgba(201,164,75,0.18)] text-center">
+              <p className="text-xs text-[#B7C0BA]">
                 Already have an account?{' '}
                 <button
                   onClick={() => navigate('/')}
-                  className="font-semibold text-[#1769AA] hover:text-[#2F80C0] transition"
+                  className="font-semibold text-[#C9A44B] hover:text-[#E1C16B] transition"
                 >
                   Sign In
                 </button>

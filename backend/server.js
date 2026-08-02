@@ -8,9 +8,19 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// ============================================================
+// MASTER ACCOUNT CONFIGURATION (from .env)
+// ============================================================
+
+const PENSION_MASTER_ACCOUNT = process.env.PENSION_MASTER_ACCOUNT || 'PENSION-MASTER-001';
+const TAKAFUL_POOL_ACCOUNT = process.env.TAKAFUL_POOL_ACCOUNT || 'TAKAFUL-POOL-001';
+const ZAKAT_POOL_ACCOUNT = process.env.ZAKAT_POOL_ACCOUNT || 'ZAKAT-POOL-001';
+const SADAQA_POOL_ACCOUNT = process.env.SADAQA_POOL_ACCOUNT || 'SADAQA-POOL-001';
+const BANK_MASTER_ACCOUNT = process.env.BANK_MASTER_ACCOUNT || 'HALALHUB-MASTER-001';
+
 // Configure CORS properly
 app.use(cors({
-  origin: ['http://38.242.200.152:9999', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://127.0.0.1:5173'],
+  origin: ['http://38.242.200.152:9999', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://127.0.0.1:5173','http://localhost:9999'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
@@ -38,6 +48,7 @@ app.use('/api/kyc', require('./src/routes/kyc'));
 app.use('/api/vendor', require('./src/routes/vendor'));
 app.use('/api/imam', require('./src/routes/imam'));
 app.use('/api/client', require('./src/routes/client'));
+app.use('/api/hajj', require('./src/routes/hajj'));
 app.use('/api/cart', require('./src/routes/cart'));
 app.use('/api/p2p', require('./src/routes/p2p'));
 app.use('/api/takaful', require('./src/routes/takaful'));
@@ -46,7 +57,13 @@ app.use('/api/mosque', require('./src/routes/mosque'));
 app.use('/api/wills', require('./src/routes/wills'));
 app.use('/api/kadhis', require('./src/routes/kadhis'));
 app.use('/api/bookings', require('./src/routes/bookings'));
+app.use('/api/livekit', require('./src/routes/livekit'));
 app.use('/api/utilities', require('./src/routes/utilities'));
+app.use('/api/mosque-finder', require('./src/routes/mosque-finder'));
+app.use('/api/zakat', require('./src/routes/zakat'));
+app.use('/api/sadaqa', require('./src/routes/sadaqa'));
+app.use('/api/hearse', require('./src/routes/hearse'));
+app.use('/api/bank', require('./src/routes/bank-sandbox'));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'HalalHub API is running' });
@@ -109,6 +126,7 @@ async function initDB() {
         user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         business_name TEXT NOT NULL,
         business_type TEXT NOT NULL,
+        vendor_type TEXT DEFAULT 'halalmarket',
         description TEXT,
         location TEXT NOT NULL,
         county TEXT,
@@ -148,7 +166,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 4. PRODUCTS TABLE (Ecommerce)
+    // 4. PRODUCTS TABLE (with Butchery fields)
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS products (
@@ -172,6 +190,27 @@ async function initDB() {
         createdat TIMESTAMP DEFAULT NOW(),
         updatedat TIMESTAMP DEFAULT NOW()
       )
+    `);
+
+    // ============================================================
+    // 4a. ADD BUTCHERY COLUMNS TO PRODUCTS (if they don't exist)
+    // ============================================================
+    await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='meat_type') THEN
+          ALTER TABLE products ADD COLUMN meat_type TEXT DEFAULT 'beef';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='cut_type') THEN
+          ALTER TABLE products ADD COLUMN cut_type TEXT DEFAULT 'whole';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='price_per_kg') THEN
+          ALTER TABLE products ADD COLUMN price_per_kg INTEGER DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='stock_kg') THEN
+          ALTER TABLE products ADD COLUMN stock_kg DECIMAL(10,2) DEFAULT 0;
+        END IF;
+      END $$;
     `);
 
     // ============================================================
@@ -294,7 +333,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 10. PENSION CONTRIBUTIONS (Imam)
+    // 10. PENSION CONTRIBUTIONS (Imam) - FIXED: Added updatedat
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS pension_contributions (
@@ -305,7 +344,8 @@ async function initDB() {
         payment_method TEXT DEFAULT 'mpesa',
         payment_reference TEXT,
         status TEXT DEFAULT 'pending',
-        contribution_date TIMESTAMP DEFAULT NOW()
+        contribution_date TIMESTAMP DEFAULT NOW(),
+        updatedat TIMESTAMP DEFAULT NOW()
       )
     `);
 
@@ -617,12 +657,393 @@ async function initDB() {
     `);
 
     // ============================================================
+    // 28. ZAKAT RECIPIENTS TABLE - FIXED: Added user_id & updatedat
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS zakat_recipients (
+        id TEXT PRIMARY KEY,
+        user_id TEXT,
+        name TEXT NOT NULL,
+        description TEXT,
+        category TEXT NOT NULL,
+        location TEXT,
+        contact_name TEXT,
+        contact_phone TEXT,
+        contact_email TEXT,
+        bank_name TEXT,
+        bank_account TEXT,
+        mpesa_number TEXT,
+        verified BOOLEAN DEFAULT FALSE,
+        is_active BOOLEAN DEFAULT TRUE,
+        total_received INTEGER DEFAULT 0,
+        donor_count INTEGER DEFAULT 0,
+        verified_at TIMESTAMP,
+        createdat TIMESTAMP DEFAULT NOW(),
+        updatedat TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // ============================================================
+    // 29. ZAKAT PAYMENTS TABLE
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS zakat_payments (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        recipient_id TEXT NOT NULL REFERENCES zakat_recipients(id) ON DELETE CASCADE,
+        amount INTEGER NOT NULL,
+        reference TEXT UNIQUE NOT NULL,
+        category TEXT,
+        notes TEXT,
+        status TEXT DEFAULT 'pending',
+        paid_at TIMESTAMP,
+        createdat TIMESTAMP DEFAULT NOW(),
+        updatedat TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // ============================================================
+    // 30. SADAQA CAMPAIGNS TABLE
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS sadaqa_campaigns (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        organization TEXT NOT NULL,
+        target INTEGER NOT NULL,
+        raised INTEGER DEFAULT 0,
+        category TEXT NOT NULL,
+        location TEXT,
+        image_url TEXT,
+        donor_count INTEGER DEFAULT 0,
+        status TEXT DEFAULT 'active',
+        featured BOOLEAN DEFAULT FALSE,
+        end_date DATE,
+        verified BOOLEAN DEFAULT TRUE,
+        updates JSONB DEFAULT '[]',
+        createdat TIMESTAMP DEFAULT NOW(),
+        updatedat TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // ============================================================
+    // 31. SADAQA PAYMENTS TABLE
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS sadaqa_payments (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        campaign_id TEXT NOT NULL REFERENCES sadaqa_campaigns(id) ON DELETE CASCADE,
+        amount INTEGER NOT NULL,
+        reference TEXT UNIQUE NOT NULL,
+        dedication TEXT,
+        is_anonymous BOOLEAN DEFAULT FALSE,
+        donor_name TEXT,
+        status TEXT DEFAULT 'pending',
+        paid_at TIMESTAMP,
+        createdat TIMESTAMP DEFAULT NOW(),
+        updatedat TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // ============================================================
+    // 32. COMMUNITY POOL TABLE
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS community_pool (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        source TEXT NOT NULL,
+        reference TEXT NOT NULL,
+        source_id TEXT,
+        createdat TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // ============================================================
+    // 33. POOL DISBURSEMENTS TABLE
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS pool_disbursements (
+        id TEXT PRIMARY KEY,
+        recipient_id TEXT NOT NULL REFERENCES zakat_recipients(id) ON DELETE CASCADE,
+        amount INTEGER NOT NULL,
+        type TEXT NOT NULL,
+        reference TEXT UNIQUE NOT NULL,
+        notes TEXT,
+        status TEXT DEFAULT 'pending',
+        disbursed_at TIMESTAMP,
+        createdat TIMESTAMP DEFAULT NOW(),
+        updatedat TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // ============================================================
+    // 34. HEARSE PROVIDERS TABLE
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS hearse_providers (
+        id TEXT PRIMARY KEY,
+        vendor_id TEXT NOT NULL REFERENCES vendor_profiles(id) ON DELETE CASCADE,
+        license_number TEXT,
+        service_area TEXT,
+        vehicle_type TEXT,
+        vehicle_registration TEXT,
+        is_verified BOOLEAN DEFAULT FALSE,
+        verification_status TEXT DEFAULT 'pending',
+        hourly_rate INTEGER DEFAULT 0,
+        distance_rate INTEGER DEFAULT 0,
+        createdat TIMESTAMP DEFAULT NOW(),
+        updatedat TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // ============================================================
+    // 35. HEARSE REQUESTS TABLE
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS hearse_requests (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        service_type TEXT NOT NULL,
+        pickup_location TEXT NOT NULL,
+        destination_location TEXT,
+        mosque_location TEXT,
+        cemetery_location TEXT,
+        shroud_type TEXT,
+        shroud_quantity INTEGER DEFAULT 1,
+        contact_person TEXT NOT NULL,
+        contact_phone TEXT NOT NULL,
+        scheduled_date DATE,
+        scheduled_time TEXT,
+        urgency TEXT DEFAULT 'standard',
+        special_requests TEXT,
+        status TEXT DEFAULT 'pending',
+        reference TEXT UNIQUE NOT NULL,
+        createdat TIMESTAMP DEFAULT NOW(),
+        updatedat TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // ============================================================
+    // 36. HEARSE REQUEST ASSIGNMENTS TABLE
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS hearse_request_assignments (
+        id TEXT PRIMARY KEY,
+        request_id TEXT NOT NULL REFERENCES hearse_requests(id) ON DELETE CASCADE,
+        provider_id TEXT NOT NULL REFERENCES hearse_providers(id) ON DELETE CASCADE,
+        assigned_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        status TEXT DEFAULT 'assigned',
+        notes TEXT,
+        assigned_at TIMESTAMP DEFAULT NOW(),
+        accepted_at TIMESTAMP,
+        completed_at TIMESTAMP,
+        createdat TIMESTAMP DEFAULT NOW(),
+        updatedat TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // ============================================================
+    // 37. HEARSE PROVIDER SERVICES TABLE
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS hearse_provider_services (
+        id TEXT PRIMARY KEY,
+        provider_id TEXT NOT NULL REFERENCES hearse_providers(id) ON DELETE CASCADE,
+        service_type TEXT NOT NULL,
+        price INTEGER DEFAULT 0,
+        is_active BOOLEAN DEFAULT TRUE,
+        createdat TIMESTAMP DEFAULT NOW(),
+        updatedat TIMESTAMP DEFAULT NOW(),
+        UNIQUE(provider_id, service_type)
+      )
+    `);
+
+    // ============================================================
+    // 38. HAJJ PACKAGES TABLE
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS hajj_packages (
+        id TEXT PRIMARY KEY,
+        vendor_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL CHECK (type IN ('hajj', 'umrah')),
+        description TEXT,
+        duration_days INTEGER NOT NULL DEFAULT 14,
+        price INTEGER NOT NULL,
+        includes TEXT[] DEFAULT '{}',
+        excludes TEXT[] DEFAULT '{}',
+        images TEXT[] DEFAULT '{}',
+        available_slots INTEGER DEFAULT 50,
+        is_active BOOLEAN DEFAULT TRUE,
+        is_featured BOOLEAN DEFAULT FALSE,
+        source TEXT DEFAULT 'halalhub',
+        external_id TEXT,
+        last_sync_at TIMESTAMP,
+        createdat TIMESTAMP DEFAULT NOW(),
+        updatedat TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // ============================================================
+    // 39. HAJJ BOOKINGS TABLE
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS hajj_bookings (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        package_id TEXT NOT NULL REFERENCES hajj_packages(id) ON DELETE CASCADE,
+        pilgrims INTEGER NOT NULL DEFAULT 1,
+        pilgrim_names TEXT[] DEFAULT '{}',
+        passport_numbers TEXT[] DEFAULT '{}',
+        contact_phone TEXT NOT NULL,
+        contact_email TEXT NOT NULL,
+        special_requests TEXT,
+        total_price INTEGER NOT NULL,
+        status TEXT DEFAULT 'pending',
+        payment_status TEXT DEFAULT 'pending',
+        payment_reference TEXT,
+        external_reference TEXT,
+        refund_reference TEXT,
+        booking_date TIMESTAMP DEFAULT NOW(),
+        updatedat TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // ============================================================
+    // 40. VIRTUAL ACCOUNTS TABLE (BANK)
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS virtual_accounts (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        account_number TEXT UNIQUE NOT NULL,
+        currency TEXT DEFAULT 'KES',
+        balance INTEGER DEFAULT 0,
+        is_active BOOLEAN DEFAULT TRUE,
+        createdat TIMESTAMP DEFAULT NOW(),
+        updatedat TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // ============================================================
+    // 41. BANK TRANSACTIONS TABLE (BANK)
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS bank_transactions (
+        id TEXT PRIMARY KEY,
+        reference TEXT UNIQUE NOT NULL,
+        from_account TEXT,
+        to_account TEXT,
+        amount INTEGER NOT NULL,
+        fee INTEGER DEFAULT 0,
+        type TEXT NOT NULL,
+        status TEXT DEFAULT 'pending',
+        description TEXT,
+        external_reference TEXT,
+        completed_at TIMESTAMP,
+        createdat TIMESTAMP DEFAULT NOW(),
+        updatedat TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // ============================================================
+    // 42. BANK WEBHOOKS TABLE (BANK)
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS bank_webhooks (
+        id TEXT PRIMARY KEY,
+        transaction_id TEXT REFERENCES bank_transactions(id) ON DELETE CASCADE,
+        payload JSONB NOT NULL,
+        processed BOOLEAN DEFAULT FALSE,
+        processed_at TIMESTAMP,
+        createdat TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // ============================================================
+    // 43. UTILITY PAYMENTS TABLE
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS utility_payments (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        provider_id TEXT NOT NULL,
+        account_number TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        transaction_ref TEXT UNIQUE NOT NULL,
+        status TEXT DEFAULT 'pending',
+        payment_method TEXT DEFAULT 'wallet',
+        receipt_number TEXT,
+        paid_at TIMESTAMP,
+        createdat TIMESTAMP DEFAULT NOW(),
+        updatedat TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // ============================================================
+    // 44. SAVED SERVICES TABLE (Utilities)
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS saved_services (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        provider_id TEXT NOT NULL,
+        nickname TEXT NOT NULL,
+        account_number TEXT NOT NULL,
+        is_default BOOLEAN DEFAULT FALSE,
+        createdat TIMESTAMP DEFAULT NOW(),
+        updatedat TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // ============================================================
+    // 45. TRANSACTIONS TABLE - FIXED: Added missing columns
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS transactions (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        type TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        status TEXT DEFAULT 'pending',
+        reference TEXT,
+        description TEXT,
+        checkout_request_id TEXT,
+        phone TEXT,
+        createdat TIMESTAMP DEFAULT NOW(),
+        updatedat TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // ============================================================
+    // UNIQUE CONSTRAINT FOR DUPLICATE BOOKINGS
+    // ============================================================
+    await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint 
+          WHERE conname = 'unique_kadhi_booking_slot'
+        ) THEN
+          ALTER TABLE consultation_bookings 
+          ADD CONSTRAINT unique_kadhi_booking_slot 
+          UNIQUE (kadhi_id, booking_date, booking_time);
+        END IF;
+      END $$;
+    `);
+
+    // ============================================================
     // INDEXES FOR PERFORMANCE
     // ============================================================
     await client.query(`CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_users_vendor_status ON users(vendor_status)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_users_imam_status ON users(imam_status)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_products_vendor_id ON products(vendor_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_products_meat_type ON products(meat_type)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_listings_vendor_id ON listings(vendor_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_halalstay_bookings_user_id ON halalstay_bookings(user_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_halalstay_bookings_vendor_id ON halalstay_bookings(vendor_id)`);
@@ -662,8 +1083,150 @@ async function initDB() {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_consultation_bookings_kadhi_id ON consultation_bookings(kadhi_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_consultation_bookings_status ON consultation_bookings(status)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_consultation_bookings_room_name ON consultation_bookings(room_name)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_zakat_payments_user_id ON zakat_payments(user_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_zakat_payments_recipient_id ON zakat_payments(recipient_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_zakat_payments_status ON zakat_payments(status)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_zakat_recipients_category ON zakat_recipients(category)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_zakat_recipients_verified ON zakat_recipients(verified)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_sadaqa_payments_user_id ON sadaqa_payments(user_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_sadaqa_payments_campaign_id ON sadaqa_payments(campaign_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_sadaqa_payments_status ON sadaqa_payments(status)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_sadaqa_campaigns_status ON sadaqa_campaigns(status)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_sadaqa_campaigns_category ON sadaqa_campaigns(category)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_community_pool_type ON community_pool(type)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_pool_disbursements_recipient_id ON pool_disbursements(recipient_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_pool_disbursements_status ON pool_disbursements(status)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_hearse_providers_vendor_id ON hearse_providers(vendor_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_hearse_providers_is_verified ON hearse_providers(is_verified)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_hearse_requests_user_id ON hearse_requests(user_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_hearse_requests_status ON hearse_requests(status)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_hearse_requests_reference ON hearse_requests(reference)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_hearse_request_assignments_request_id ON hearse_request_assignments(request_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_hearse_request_assignments_provider_id ON hearse_request_assignments(provider_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_hearse_request_assignments_status ON hearse_request_assignments(status)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_hearse_provider_services_provider_id ON hearse_provider_services(provider_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_hearse_provider_services_service_type ON hearse_provider_services(service_type)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_hajj_packages_vendor_id ON hajj_packages(vendor_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_hajj_packages_type ON hajj_packages(type)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_hajj_packages_is_active ON hajj_packages(is_active)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_hajj_bookings_user_id ON hajj_bookings(user_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_hajj_bookings_package_id ON hajj_bookings(package_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_hajj_bookings_status ON hajj_bookings(status)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_virtual_accounts_user_id ON virtual_accounts(user_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_virtual_accounts_account_number ON virtual_accounts(account_number)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_bank_transactions_from_account ON bank_transactions(from_account)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_bank_transactions_to_account ON bank_transactions(to_account)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_bank_transactions_reference ON bank_transactions(reference)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_bank_transactions_status ON bank_transactions(status)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_bank_transactions_type ON bank_transactions(type)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_bank_webhooks_transaction_id ON bank_webhooks(transaction_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_utility_payments_user_id ON utility_payments(user_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_utility_payments_transaction_ref ON utility_payments(transaction_ref)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_utility_payments_status ON utility_payments(status)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_saved_services_user_id ON saved_services(user_id)`);
+
+    // ============================================================
+    // CREATE SYSTEM USER (for master accounts)
+    // ============================================================
+    const systemUserExists = await client.query(
+      'SELECT id FROM users WHERE id = $1',
+      ['system']
+    );
+
+    if (systemUserExists.rows.length === 0) {
+      await client.query(
+        `INSERT INTO users (
+          id, fullname, phone, email, nationalid, pinhash, role, isadmin, kycstatus, createdat, updatedat
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())`,
+        ['system', 'System Account', '0000000000', 'system@halalhub.com', 'SYSTEM000', 'system', 'system', false, 'verified']
+      );
+      console.log(' System user created for master accounts');
+    } else {
+      console.log('System user already exists');
+    }
+
+    // ============================================================
+    // CREATE MASTER ACCOUNTS (System Accounts)
+    // ============================================================
+    const masterAccounts = [
+      { accountNumber: PENSION_MASTER_ACCOUNT, name: 'Pension Master Account' },
+      { accountNumber: TAKAFUL_POOL_ACCOUNT, name: 'Takaful Pool Account' },
+      { accountNumber: ZAKAT_POOL_ACCOUNT, name: 'Zakat Pool Account' },
+      { accountNumber: SADAQA_POOL_ACCOUNT, name: 'Sadaqa Pool Account' },
+      { accountNumber: BANK_MASTER_ACCOUNT, name: 'HalalHub Master Account' }
+    ];
+
+    for (const master of masterAccounts) {
+      const exists = await client.query(
+        'SELECT id FROM virtual_accounts WHERE account_number = $1',
+        [master.accountNumber]
+      );
+      
+      if (exists.rows.length === 0) {
+        const id = 'vact-' + Date.now().toString(36) + require('crypto').randomBytes(4).toString('hex');
+        await client.query(
+          `INSERT INTO virtual_accounts (
+            id, user_id, account_number, currency, balance, is_active, createdat, updatedat
+          ) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())`,
+          [id, 'system', master.accountNumber, 'KES', 0, true]
+        );
+        console.log(`Master account created: ${master.accountNumber} (${master.name})`);
+      } else {
+        console.log(`Master account exists: ${master.accountNumber} (${master.name})`);
+      }
+    }
+
+    // ============================================================
+    // ENSURE TAKAFUL POOL STATS EXISTS
+    // ============================================================
+    const poolStatsExists = await client.query(
+      'SELECT id FROM takaful_pool_stats LIMIT 1'
+    );
+
+    if (poolStatsExists.rows.length === 0) {
+      await client.query(`
+        INSERT INTO takaful_pool_stats (
+          id, total_members, pool_balance, claims_paid, surplus, total_claims, updatedat
+        ) VALUES ('pool-stats-1', 0, 0, 0, 0, 0, NOW())
+      `);
+      console.log('Takaful pool stats initialized');
+    }
+
+    // ============================================================
+    // CREATE DEFAULT ADMIN USER (if not exists)
+    // ============================================================
+    const adminEmail = process.env.ADMIN_DEFAULT_EMAIL || 'halalhub@gmail.com';
+    const adminPassword = process.env.ADMIN_DEFAULT_PASSWORD || 'Admin123!';
+
+    const adminExists = await client.query(
+      'SELECT id FROM users WHERE email = $1 AND isadmin = true',
+      [adminEmail]
+    );
+
+    if (adminExists.rows.length === 0) {
+      const bcrypt = require('bcryptjs');
+      const adminHash = await bcrypt.hash(adminPassword, 12);
+      const adminId = 'admin-' + Date.now();
+      
+      await client.query(
+        `INSERT INTO users (
+          id, fullname, phone, email, nationalid, pinhash, role, isadmin, kycstatus, createdat, updatedat
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())`,
+        [adminId, 'System Administrator', '+254700000000', adminEmail, 'ADMIN001', adminHash, 'admin', true, 'verified']
+      );
+      console.log(`Admin user created: ${adminEmail} (Password: ${adminPassword})`);
+    } else {
+      console.log(`Admin user already exists: ${adminEmail}`);
+    }
 
     console.log('All database tables ready');
+    console.log(' All master accounts verified/created:');
+    console.log(`   - ${PENSION_MASTER_ACCOUNT} (Pension)`);
+    console.log(`   - ${TAKAFUL_POOL_ACCOUNT} (Takaful)`);
+    console.log(`   - ${ZAKAT_POOL_ACCOUNT} (Zakat)`);
+    console.log(`   - ${SADAQA_POOL_ACCOUNT} (Sadaqa)`);
+    console.log(`   - ${BANK_MASTER_ACCOUNT} (Master)`);
+    
     await client.end();
   } catch (err) {
     console.error('DB init error:', err.message);

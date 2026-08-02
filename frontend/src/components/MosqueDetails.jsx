@@ -40,7 +40,7 @@ const MosqueDetails = () => {
   };
 
   const getMosqueImage = (name) => {
-    return `https://via.placeholder.com/800x400/1769AA/fff?text=${encodeURIComponent(name)}`;
+    return `https://via.placeholder.com/800x400/0B342B/fff?text=${encodeURIComponent(name)}`;
   };
 
   // SVG Icons
@@ -77,10 +77,10 @@ const MosqueDetails = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F1F7FC] p-4 md:p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-[#FAFAF7] p-4 md:p-6 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#1769AA]/10 border-t-[#1769AA] rounded-full animate-spin mx-auto" />
-          <p className="text-[#94A3B8] mt-4">Loading...</p>
+          <div className="w-12 h-12 border-4 border-[#0B342B]/10 border-t-[#0B342B] rounded-full animate-spin mx-auto" />
+          <p className="text-[#6B7280] mt-4 text-[15px]">Loading...</p>
         </div>
       </div>
     );
@@ -88,11 +88,11 @@ const MosqueDetails = () => {
 
   if (!mosque) {
     return (
-      <div className="min-h-screen bg-[#F1F7FC] p-4 md:p-6 flex items-center justify-center">
-        <div className="bg-white rounded-xl border border-[#FECACA] shadow-sm p-8 text-center max-w-md">
-          <p className="text-sm text-[#94A3B8]">Mosque not found</p>
+      <div className="min-h-screen bg-[#FAFAF7] p-4 md:p-6 flex items-center justify-center">
+        <div className="bg-white rounded-xl border border-[#DC2626]/20 shadow-sm p-8 text-center max-w-md">
+          <p className="text-[15px] text-[#6B7280]">Mosque not found</p>
           <button 
-            className="mt-4 px-6 py-2.5 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200"
+            className="mt-4 px-6 py-2.5 bg-[#0B342B] text-white font-medium rounded-xl hover:bg-[#032A24] transition-all duration-200 shadow-sm text-[15px]"
             onClick={() => navigate('/select-mosque')}
           >
             Back to Mosques
@@ -103,35 +103,35 @@ const MosqueDetails = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F1F7FC]">
+    <div className="min-h-screen bg-[#FAFAF7]">
       {/* ===== HERO SECTION ===== */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#1769AA] via-[#2F80C0] to-[#4A9AD9] rounded-2xl mx-4 md:mx-6 lg:mx-8 mt-4 md:mt-6 p-8 md:p-12 shadow-lg shadow-[#1769AA]/20">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-2xl" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-2xl" />
+      <div className="relative overflow-hidden bg-[#0B342B] mx-4 md:mx-6 lg:mx-8 mt-4 md:mt-6 rounded-2xl p-8 md:p-12 shadow-lg shadow-[#0B342B]/10">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#C9A44B]/5 rounded-full blur-2xl" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#C9A44B]/5 rounded-full blur-2xl" />
         
         <div className="relative z-10 max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Mosque Details</span>
-                <span className="w-px h-4 bg-white/20" />
-                <span className="text-xs font-medium text-white/50">Step 2 of 3</span>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-[13px] font-medium text-[#C9A44B] uppercase tracking-wider">Mosque Details</span>
+                <span className="w-px h-4 bg-[#C9A44B]/30" />
+                <span className="text-[13px] font-medium text-[#C9A44B]/70">Step 2 of 3</span>
               </div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white">{mosque.name}</h1>
-                <span className="text-xs px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-500/20">Verified</span>
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="text-[26px] md:text-[30px] font-semibold text-white">{mosque.name}</h1>
+                <span className="text-[13px] px-3 py-1 rounded-full bg-[#3FAF73]/20 text-[#D1FAE5] border border-[#3FAF73]/20 font-medium">Verified</span>
               </div>
-              <p className="text-white/70 text-sm mt-2 flex items-center gap-1">
+              <p className="text-white/70 text-[15px] mt-2 flex items-center gap-1">
                 <LocationIcon /> {mosque.county || 'County not specified'} · {mosque.location || 'Location not specified'}
               </p>
               {mosque.imam && (
-                <p className="text-white/60 text-sm mt-1 flex items-center gap-1">
+                <p className="text-white/60 text-[14px] mt-1 flex items-center gap-1">
                   <UserIcon /> Imam: {mosque.imam.name || 'No Imam Assigned'}
                 </p>
               )}
             </div>
             <button 
-              className="text-white/60 hover:text-white text-sm flex items-center gap-2 transition-colors"
+              className="text-white/60 hover:text-white text-[15px] flex items-center gap-2 transition-colors font-medium"
               onClick={() => navigate('/select-mosque')}
             >
               Back to Mosques
@@ -143,10 +143,10 @@ const MosqueDetails = () => {
       {/* ===== MAIN CONTENT ===== */}
       <div className="max-w-5xl mx-auto px-4 md:px-6 py-6">
         {error && (
-          <div className="mb-4 p-4 bg-[#FEF2F2] border border-[#FECACA] rounded-xl flex flex-wrap items-center justify-between gap-3">
-            <span className="text-sm text-[#DC2626]">{error}</span>
+          <div className="mb-4 p-4 bg-white border border-[#DC2626]/20 rounded-xl flex flex-wrap items-center justify-between gap-3 shadow-sm">
+            <span className="text-[15px] text-[#DC2626]">{error}</span>
             <button 
-              className="px-4 py-1.5 bg-[#DC2626] text-white text-xs font-semibold rounded-lg hover:bg-[#B91C1C] transition-colors"
+              className="px-4 py-1.5 bg-[#DC2626] text-white text-[13px] font-medium rounded-lg hover:bg-[#B91C1C] transition-colors"
               onClick={fetchMosqueDetails}
             >
               Retry
@@ -157,34 +157,34 @@ const MosqueDetails = () => {
         {/* Mosque Description */}
         <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-6 mb-6">
           {mosque.imam && (
-            <div className="flex items-center gap-4 mb-4 pb-4 border-b border-[#F1F7FC]">
+            <div className="flex items-center gap-4 mb-4 pb-4 border-b border-[#F4F5F1]">
               {mosque.imam.image ? (
                 <img src={mosque.imam.image} alt={mosque.imam.name} className="w-16 h-16 rounded-xl object-cover" />
               ) : (
-                <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-[#1769AA] to-[#2F80C0] flex items-center justify-center text-white font-bold text-2xl">
+                <div className="w-16 h-16 rounded-xl bg-[#0B342B] flex items-center justify-center text-white font-bold text-[24px]">
                   {mosque.imam.name?.charAt(0) || 'I'}
                 </div>
               )}
               <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-[#1A2A3A]">{mosque.imam.name || 'No Imam Assigned'}</span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-[#1F2937]">{mosque.imam.name || 'No Imam Assigned'}</span>
                   {mosque.imam.verified && (
-                    <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span className="inline-flex items-center gap-0.5 text-[12px] font-medium px-2 py-0.5 rounded-full bg-[#D1FAE5] text-[#3FAF73] border border-[#A7F3D0]">
                       <CheckIcon /> Verified
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-[#94A3B8]">{mosque.imam.title || 'Imam'}</p>
-                <p className="text-sm text-[#94A3B8]">{mosque.imam.yearsOfService || 0} years of service</p>
+                <p className="text-[14px] text-[#6B7280]">{mosque.imam.title || 'Imam'}</p>
+                <p className="text-[14px] text-[#6B7280]">{mosque.imam.yearsOfService || 0} years of service</p>
                 {mosque.imam.totalContributions > 0 && (
-                  <p className="text-sm text-[#1769AA] flex items-center gap-1">
+                  <p className="text-[14px] text-[#0B342B] flex items-center gap-1 font-medium">
                     <MoneyIcon /> {formatCurrency(mosque.imam.totalContributions)} raised
                   </p>
                 )}
               </div>
             </div>
           )}
-          <p className="text-sm text-[#5A6A7A] leading-relaxed">
+          <p className="text-[15px] text-[#6B7280] leading-relaxed">
             {mosque.imam?.bio || 'No description available for this mosque.'}
           </p>
         </div>
@@ -192,51 +192,51 @@ const MosqueDetails = () => {
         {/* Imams Section */}
         <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-[#1A2A3A]">Imams at This Mosque</h2>
-            <span className="text-sm text-[#94A3B8]">{imams.length} imams</span>
+            <h2 className="text-[17px] font-semibold text-[#1F2937]">Imams at This Mosque</h2>
+            <span className="text-[14px] text-[#6B7280]">{imams.length} imams</span>
           </div>
           
           {imams.length === 0 ? (
-            <p className="text-sm text-[#94A3B8] text-center py-8">No imams registered at this mosque</p>
+            <p className="text-[15px] text-[#6B7280] text-center py-8">No imams registered at this mosque</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {imams.map((imam) => (
                 <div 
                   key={imam.imam_id} 
-                  className="border border-[#E8EEF4] rounded-xl p-5 hover:border-[#1769AA] hover:shadow-md transition-all duration-200 cursor-pointer group"
+                  className="border border-[#E8EEF4] rounded-xl p-5 hover:border-[#0B342B] hover:shadow-md transition-all duration-200 cursor-pointer group bg-white"
                   onClick={() => navigate(`/imam/${imam.imam_id}`)}
                 >
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between gap-3">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         {imam.profile_image ? (
                           <img src={imam.profile_image} alt={imam.name} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
                         ) : (
-                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#1769AA] to-[#2F80C0] flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                          <div className="w-12 h-12 rounded-xl bg-[#0B342B] flex items-center justify-center text-white font-bold text-[18px] flex-shrink-0">
                             {imam.name?.charAt(0) || 'I'}
                           </div>
                         )}
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-bold text-[#1A2A3A] group-hover:text-[#1769AA] transition-colors">{imam.name}</h3>
+                            <h3 className="font-bold text-[#1F2937] group-hover:text-[#0B342B] transition-colors text-[15px]">{imam.name}</h3>
                             {imam.verified && (
-                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <span className="text-[12px] font-medium px-2 py-0.5 rounded-full bg-[#D1FAE5] text-[#3FAF73] border border-[#A7F3D0]">
                                 Verified
                               </span>
                             )}
                           </div>
-                          <p className="text-sm text-[#94A3B8]">{imam.title || 'Imam'}</p>
+                          <p className="text-[14px] text-[#6B7280]">{imam.title || 'Imam'}</p>
                         </div>
                       </div>
-                      <p className="text-sm text-[#5A6A7A] mt-2">{imam.years_of_service || 0} years of service</p>
+                      <p className="text-[14px] text-[#6B7280] mt-2">{imam.years_of_service || 0} years of service</p>
                       {imam.total_contributions > 0 && (
-                        <p className="text-sm text-[#1769AA] mt-1 flex items-center gap-1">
+                        <p className="text-[14px] text-[#0B342B] mt-1 flex items-center gap-1 font-medium">
                           <MoneyIcon /> {formatCurrency(imam.total_contributions)} raised
                         </p>
                       )}
                     </div>
                     <button 
-                      className="px-4 py-2 bg-[#1769AA] text-white text-sm font-semibold rounded-lg hover:bg-[#2F80C0] transition-all duration-200 ml-4 flex items-center gap-1 flex-shrink-0"
+                      className="px-4 py-2 bg-[#0B342B] text-white text-[14px] font-medium rounded-lg hover:bg-[#032A24] transition-all duration-200 shadow-sm flex items-center gap-1 flex-shrink-0"
                       onClick={(e) => { e.stopPropagation(); navigate(`/imam/${imam.imam_id}`); }}
                     >
                       Support <ChevronIcon />
