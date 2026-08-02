@@ -333,7 +333,7 @@ const AuthScreen = ({ onLogin }) => {
                           inputMode="numeric"
                           maxLength="1"
                           value={digit}
-                          className="w-10 h-12 text-center text-base font-semibold bg-[#0B342B] border border-[rgba(201,164,75,0.18)] rounded-xl text-[#F7F6F1] focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/30 focus:border-[#C9A44B] transition-all duration-300"
+                          className="w-10 h-12 text-center text-base font-semibold bg-[#0B342B] border border-[rgba(201,164,75,0.18)] rounded-xl text-[#F7F6F1] focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/30 focus:border-[#C9A44B] transition-all duration-300 flex items-center justify-center"
                           onChange={(e) => handleOtpChange(index, e.target.value)}
                           onKeyDown={(e) => handleOtpKeyDown(index, e)}
                           required
