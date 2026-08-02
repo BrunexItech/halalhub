@@ -47,10 +47,8 @@ services:
     build:
       context: ./frontend
       args:
-        VITE_API_URL: ${VITE_API_URL}
-        VITE_LIVEKIT_URL: ${VITE_LIVEKIT_URL}
-    env_file:
-      - ./frontend/.env
+        VITE_API_URL: "https://38.242.200.152/api"
+        VITE_LIVEKIT_URL: "wss://38.242.200.152"
     container_name: halalhub_frontend
     ports:
       - "9999:80"
