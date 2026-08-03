@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { mosqueFinderService } from '../services/api';
 
 // Import Leaflet and OpenStreetMap components
 import L from 'leaflet';
@@ -113,21 +112,24 @@ const MosqueFinder = () => {
     findNearbyMosques(lat, lon);
   };
 
-  // ===== FIND NEARBY MOSQUES USING API =====
+  // ===== FIND NEARBY MOSQUES =====
   const findNearbyMosques = async (lat, lon, radius = searchRadius) => {
     setIsLoadingMosques(true);
     setError('');
     
     try {
-      const response = await mosqueFinderService.getNearbyMosques({
-        lat: lat,
-        lon: lon,
-        radius: radius,
-        search: searchQuery || ''
-      });
+      const response = await fetch(
+        `/api/mosque-finder/nearby?lat=${lat}&lon=${lon}&radius=${radius}&search=${encodeURIComponent(searchQuery || '')}`
+      );
 
-      if (response.data.success) {
-        const data = response.data.data;
+      if (!response.ok) {
+        throw new Error('Failed to fetch mosques');
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        const data = result.data;
         const mosquesData = data.mosques || [];
         setMosques(mosquesData);
         clearMarkers();
@@ -143,7 +145,6 @@ const MosqueFinder = () => {
           }
         }
 
-        // Show success message with source info
         if (data.source) {
           const dbCount = data.source.database || 0;
           const osmCount = data.source.osm || 0;
@@ -157,12 +158,12 @@ const MosqueFinder = () => {
           setTimeout(() => setSuccess(''), 5000);
         }
       } else {
-        setError(response.data.error || 'Failed to find mosques');
+        setError(result.error || 'Failed to find mosques');
       }
       
     } catch (err) {
       console.error('API error:', err);
-      setError(err.response?.data?.error || 'Failed to find mosques. Please try again.');
+      setError('Failed to find mosques. Please try again.');
     } finally {
       setIsLoadingMosques(false);
     }
@@ -414,7 +415,7 @@ const MosqueFinder = () => {
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-[13px] font-medium text-[#C9A44B] uppercase tracking-wider">Mosque Finder</span>
                 <span className="w-px h-4 bg-[#C9A44B]/30" />
-                <span className="text-[13px] font-medium text-[#C9A44B]/70">Verified + OpenStreetMap</span>
+                <span className="text-[13px] font-medium text-[#C9A44B]/70">OSM + HalalHub Verified</span>
               </div>
               <h1 className="text-[26px] md:text-[30px] font-semibold text-white leading-tight">
                 Find Mosques Near You
