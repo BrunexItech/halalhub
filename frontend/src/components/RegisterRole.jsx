@@ -49,7 +49,7 @@ const RegisterRole = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#032A24] px-4 py-8">
       <div className="w-full max-w-[400px] mx-auto">
-        <div className="bg-[#183B33] rounded-2xl shadow-2xl shadow-black/30 p-6 md:p-8 w-full border border-[rgba(201,164,75,0.18)] relative overflow-hidden">
+        <div className="bg-[#0B342B] rounded-3xl shadow-2xl shadow-black/30 p-6 md:p-8 w-full border border-[#C9A44B]/30 relative overflow-hidden">
           
           <div className="absolute -top-16 -right-16 w-48 h-48 bg-[#C9A44B]/5 rounded-full blur-3xl" />
           <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-[#C9A44B]/5 rounded-full blur-3xl" />
@@ -57,30 +57,31 @@ const RegisterRole = () => {
           <div className="relative z-10">
             {/* Logo */}
             <div className="text-center mb-6">
-              <div className="flex items-center justify-center gap-2.5 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C9A44B] to-[#E1C16B] flex items-center justify-center shadow-lg shadow-[#C9A44B]/20">
-                  <span className="text-[#032A24] text-lg font-bold">H</span>
-                </div>
-                <span className="text-xl font-bold text-[#F7F6F1] tracking-tight">HalalHub</span>
+              <div className="flex items-center justify-center mb-2">
+                <img 
+                  src="/itqaan_logo.png" 
+                  alt="Itqaan" 
+                  className="h-16 w-auto object-contain"
+                />
               </div>
               <p className="text-[9px] font-medium text-[#C9A44B] tracking-[0.2em] uppercase">Choose Your Role</p>
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-1 bg-[#0B342B] rounded-xl p-1 mb-6">
+            <div className="flex gap-1 bg-[#032A24] rounded-xl p-1 mb-6">
               <button
                 onClick={() => navigate('/')}
                 className="flex-1 py-2.5 rounded-lg text-xs font-semibold text-[#B7C0BA] hover:text-[#F7F6F1] transition-all duration-300"
               >
                 Sign In
               </button>
-              <button className="flex-1 py-2.5 rounded-lg text-xs font-semibold bg-[#C9A44B] text-[#032A24] shadow-lg shadow-[#C9A44B]/20 transition-all duration-300">
+              <button className="flex-1 py-2.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-[#C9A44B] to-[#E1C16B] text-[#032A24] shadow-lg shadow-[#C9A44B]/30 transition-all duration-300">
                 Register
               </button>
             </div>
 
             <h2 className="text-lg font-bold text-[#F7F6F1]">Choose Your Role</h2>
-            <p className="text-[#B7C0BA] text-xs mt-1">Select how you want to use HalalHub</p>
+            <p className="text-[#B7C0BA] text-xs mt-1">Select how you want to use Itqaan</p>
 
             <div className="mt-4 space-y-3">
               <RoleCard
@@ -123,7 +124,7 @@ const RegisterRole = () => {
               />
             </div>
 
-            <div className="mt-6 pt-5 border-t border-[rgba(201,164,75,0.18)] text-center">
+            <div className="mt-6 pt-5 border-t border-[#C9A44B]/20 text-center">
               <p className="text-xs text-[#B7C0BA]">
                 Already have an account?{' '}
                 <button
@@ -136,7 +137,7 @@ const RegisterRole = () => {
             </div>
 
             <div className="mt-3">
-              <p className="text-center text-[9px] text-[#B7C0BA]/60 tracking-wider">
+              <p className="text-center text-[9px] text-[#C9A44B]/40 tracking-wider">
                 Secure · Encrypted · No Riba
               </p>
             </div>
