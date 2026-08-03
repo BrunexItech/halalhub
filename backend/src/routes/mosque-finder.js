@@ -21,28 +21,16 @@ async function getClient() {
 }
 
 // ============================================================
-// HELPER: FETCH FROM OPENSTREETMAP (OSM)
+// HELPER: FETCH FROM OPENSTREETMAP (OSM) - Using Nominatim
 // ============================================================
 async function fetchFromOSM(lat, lon, radius = 5000) {
-  const overpassQuery = `
-    [out:json];
-    (
-      node["amenity"="place_of_worship"]["religion"="muslim"](around:${radius},${lat},${lon});
-      node["amenity"="mosque"](around:${radius},${lat},${lon});
-      way["amenity"="place_of_worship"]["religion"="muslim"](around:${radius},${lat},${lon});
-      way["amenity"="mosque"](around:${radius},${lat},${lon});
-      relation["amenity"="place_of_worship"]["religion"="muslim"](around:${radius},${lat},${lon});
-      relation["amenity"="mosque"](around:${radius},${lat},${lon});
-    );
-    out center;
-  `;
+  // Use Nominatim API instead of Overpass (simpler and more reliable)
+  const url = `https://nominatim.openstreetmap.org/search?format=json&q=mosque&lat=${lat}&lon=${lon}&radius=${radius / 1000}&limit=20&addressdetails=1`;
 
-  const response = await fetch('https://overpass-api.de/api/interpreter', {
-    method: 'POST',
-    body: overpassQuery,
+  const response = await fetch(url, {
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
+      'User-Agent': 'HalalHub/1.0'
+    }
   });
 
   if (!response.ok) {
@@ -51,55 +39,30 @@ async function fetchFromOSM(lat, lon, radius = 5000) {
 
   const data = await response.json();
 
-  return data.elements
-    .filter(el => el.tags && el.tags.name)
+  return data
+    .filter(el => el.class === 'amenity' || el.type === 'religious')
     .map(el => {
-      let lat, lon;
-      if (el.type === 'node') {
-        lat = el.lat;
-        lon = el.lon;
-      } else if (el.type === 'way' || el.type === 'relation') {
-        lat = el.center?.lat || el.lat || 0;
-        lon = el.center?.lon || el.lon || 0;
-      }
-
-      const address = el.tags['addr:street'] ||
-        el.tags['addr:place'] ||
-        el.tags['addr:city'] ||
-        el.tags['addr:full'] ||
-        el.tags['description'] ||
-        '';
-
-      const facilities = [];
-      if (el.tags['wudu'] || el.tags['ablution']) facilities.push('Wudu Area');
-      if (el.tags['parking'] || el.tags['parking:street'] === 'yes') facilities.push('Parking');
-      if (el.tags['women'] === 'yes' || el.tags['women:area'] === 'yes') facilities.push('Women Section');
-      if (el.tags['wheelchair'] === 'yes') facilities.push('Wheelchair Accessible');
-      if (el.tags['school'] === 'yes' || el.tags['madrasa'] === 'yes') facilities.push('Madrasa');
-      if (el.tags['library'] === 'yes') facilities.push('Library');
-      if (el.tags['kitchen'] === 'yes') facilities.push('Kitchen Facilities');
-      if (el.tags['toilets'] === 'yes') facilities.push('Toilets');
-      if (el.tags['shower'] === 'yes') facilities.push('Shower Facilities');
+      const address = el.display_name || '';
+      const city = el.address?.city || el.address?.town || el.address?.village || '';
 
       return {
-        id: `osm-${el.id}`,
-        name: el.tags.name || 'Unnamed Mosque',
-        lat: lat,
-        lon: lon,
+        id: `osm-${el.osm_id}`,
+        name: el.display_name.split(',')[0] || 'Mosque',
+        lat: parseFloat(el.lat),
+        lon: parseFloat(el.lon),
         address: address,
-        city: el.tags['addr:city'] || el.tags['addr:town'] || '',
-        phone: el.tags.phone || el.tags['contact:phone'] || '',
-        website: el.tags.website || el.tags['contact:website'] || '',
-        openingHours: el.tags.opening_hours || '',
-        facilities: facilities,
+        city: city,
+        phone: '',
+        website: '',
+        openingHours: '',
+        facilities: ['Prayer Hall'],
         source: 'osm',
-        osmId: el.id,
+        osmId: el.osm_id,
         verified: false,
         isActive: true,
         imam_name: null
       };
-    })
-    .filter(m => m.lat && m.lon);
+    });
 }
 
 // ============================================================
@@ -336,7 +299,6 @@ router.get('/:id', async (req, res) => {
     }
 
     // For OSM IDs, we need to return a generic response
-    // Since we don't store OSM data permanently
     return res.status(404).json({
       success: false,
       error: 'OSM mosque details not available. Please search again.'
