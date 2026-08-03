@@ -47,8 +47,8 @@ services:
     build:
       context: ./frontend
       args:
-        VITE_API_URL: "https://38.242.200.152/api"
-        VITE_LIVEKIT_URL: "wss://38.242.200.152"
+        VITE_API_URL: "https://itqaan.co.ke/api"
+        VITE_LIVEKIT_URL: "wss://itqaan.co.ke"
     container_name: halalhub_frontend
     ports:
       - "9999:80"

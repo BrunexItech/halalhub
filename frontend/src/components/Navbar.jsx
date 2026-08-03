@@ -66,7 +66,7 @@ const Navbar = ({ user, onLogout }) => {
       children: [
         { path: '/ecommerce', label: 'HalalMarket' },
         { path: '/ecommerce?category=butchery', label: 'Halal Butchery' },
-        { path: '/restaurants', label: 'Restaurants' },
+        { path: '/restaurants', label: 'Halal Restaurants' },
       ]
     };
 
@@ -92,9 +92,9 @@ const Navbar = ({ user, onLogout }) => {
       children: [
         { path: '/hajj', label: 'Hajj & Umrah' },
         { path: '/hearse', label: 'Hearse & Shroud' },
-        { path: '/mosque-finder', label: 'Mosques' },
+        { path: '/mosque-finder', label: 'Find a Mosque' },
         { path: '/wills', label: 'Digital Wills' },
-        { path: '/kadhis', label: 'Kadhis' },
+        { path: '/kadhis', label: 'Kadhis & Scholars' },
         { path: '/about', label: 'About' },
       ]
     };
