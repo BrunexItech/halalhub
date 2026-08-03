@@ -321,7 +321,7 @@ const Dashboard = ({ user }) => {
         </div>
       )}
 
-      {/* ===== HALALHUB CARD ===== */}
+      {/* ===== ITQAAN CARD ===== */}
       <div className="mb-4 sm:mb-5">
         <div className="relative overflow-hidden bg-gradient-to-br from-[#0B342B] via-[#12342D] to-[#032A24] rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-xl shadow-black/10 border border-[rgba(201,164,75,0.15)]">
           <div className="absolute -top-20 -right-20 w-48 h-48 bg-[#C9A44B]/5 rounded-full blur-3xl" />
@@ -336,13 +336,11 @@ const Dashboard = ({ user }) => {
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#C9A44B] to-[#E1C16B] flex items-center justify-center shadow-lg shadow-[#C9A44B]/20">
-                  <span className="text-[#032A24] text-xs font-bold">H</span>
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-[#F7F6F1] tracking-tight">HalalHub</span>
-                  <span className="block text-[6px] font-medium text-[#C9A44B] tracking-[0.15em] uppercase">Premium</span>
-                </div>
+                <img 
+                  src="/itqaan_logo.png" 
+                  alt="Itqaan" 
+                  className="h-7 w-auto object-contain"
+                />
               </div>
               <span className="text-[6px] sm:text-[7px] font-medium text-[#C9A44B] uppercase tracking-[0.15em] border border-[rgba(201,164,75,0.2)] px-1.5 py-0.5 rounded-full">
                 Sharia-Compliant
@@ -360,7 +358,7 @@ const Dashboard = ({ user }) => {
               <div>
                 <span className="text-[7px] text-[#B7C0BA]/50 block uppercase tracking-wider">Cardholder</span>
                 <span className="text-[9px] sm:text-[10px] font-semibold text-[#F7F6F1] uppercase tracking-wider">
-                  {user?.fullName || 'HalalHub User'}
+                  {user?.fullName || 'Itqaan User'}
                 </span>
               </div>
               <div className="text-right">
@@ -651,7 +649,7 @@ const Dashboard = ({ user }) => {
               <div className="text-center py-8">
                 <div className="text-4xl text-[#E5E7EB] mb-3">—</div>
                 <h4 className="text-xs sm:text-sm font-semibold text-[#1F2937]">No transactions yet</h4>
-                <p className="text-[9px] sm:text-[10px] text-[#6B7280] mt-1">Start using HalalHub to see your activity</p>
+                <p className="text-[9px] sm:text-[10px] text-[#6B7280] mt-1">Start using Itqaan to see your activity</p>
               </div>
             ) : (
               <>

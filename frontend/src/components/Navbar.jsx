@@ -81,24 +81,6 @@ const Navbar = ({ user, onLogout }) => {
       isCategory: false
     };
 
-    const servicesItems = {
-      label: 'Services',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-        </svg>
-      ),
-      isCategory: true,
-      children: [
-        { path: '/hajj', label: 'Hajj & Umrah' },
-        { path: '/hearse', label: 'Hearse & Shroud' },
-        { path: '/mosque-finder', label: 'Find a Mosque' },
-        { path: '/wills', label: 'Digital Wills' },
-        { path: '/kadhis', label: 'Kadhis & Scholars' },
-        { path: '/about', label: 'About' },
-      ]
-    };
-
     const utilitiesItem = { 
       path: '/utilities', 
       label: 'Utilities',
@@ -111,23 +93,41 @@ const Navbar = ({ user, onLogout }) => {
       isCategory: false
     };
 
+    const servicesItems = {
+      label: 'Services',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+      ),
+      isCategory: true,
+      children: [
+        { path: '/hajj', label: 'Hajj & Umrah' },
+        { path: '/hearse', label: 'Free Hearse & Shroud' },
+        { path: '/mosque-finder', label: 'Find a Mosque' },
+        { path: '/wills', label: 'Digital Wills' },
+        { path: '/kadhis', label: 'Dial a Scholar' },
+        { path: '/about', label: 'About' },
+      ]
+    };
+
     let items = [dashboardItem];
 
     if (role === 'client') {
       items.push(islamicFinanceItems);
       items.push(ecommerceItems);
       items.push(halalStayItem);
-      items.push(servicesItems);
       items.push(utilitiesItem);
+      items.push(servicesItems);
     } else if (role === 'vendor') {
       items.push(ecommerceItems);
       items.push(halalStayItem);
-      items.push(servicesItems);
       items.push(utilitiesItem);
+      items.push(servicesItems);
     } else if (role === 'imam') {
       items.push(islamicFinanceItems);
-      items.push(servicesItems);
       items.push(utilitiesItem);
+      items.push(servicesItems);
     }
 
     return items;
@@ -324,24 +324,20 @@ const Navbar = ({ user, onLogout }) => {
         {/* Logo Section */}
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} px-4 py-5 border-b border-[rgba(201,164,75,0.18)]`}>
           <div 
-            className={`flex items-center gap-2.5 cursor-pointer ${isCollapsed ? 'justify-center' : ''}`}
+            className={`flex items-center cursor-pointer ${isCollapsed ? 'justify-center' : ''}`}
             onClick={() => handleNavigation('/dashboard')}
             role="button"
             tabIndex={0}
             onKeyDown={(e) => e.key === 'Enter' && handleNavigation('/dashboard')}
           >
             <div className="relative flex-shrink-0">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#C9A44B] to-[#E1C16B] flex items-center justify-center shadow-lg shadow-[#C9A44B]/20">
-                <span className="text-[#032A24] text-base font-bold">H</span>
-              </div>
+              <img 
+                src="/itqaan_logo.png" 
+                alt="Itqaan" 
+                className="h-8 w-auto object-contain"
+              />
               <div className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#3FAF73] border-2 border-[#032A24] animate-pulse" />
             </div>
-            {!isCollapsed && (
-              <div>
-                <span className="block font-bold text-lg text-[#F7F6F1] tracking-tight">HalalHub</span>
-                <span className="block text-[8px] font-medium text-[#C9A44B] tracking-[0.2em] uppercase">Sharia-Compliant</span>
-              </div>
-            )}
           </div>
           {!isCollapsed && (
             <button
@@ -473,20 +469,18 @@ const Navbar = ({ user, onLogout }) => {
           {/* Mobile Drawer Header */}
           <div className="flex items-center justify-between px-4 py-5 border-b border-[rgba(201,164,75,0.18)]">
             <div 
-              className="flex items-center gap-2.5 cursor-pointer"
+              className="flex items-center cursor-pointer"
               onClick={() => {
                 setIsMobileMenuOpen(false);
                 handleNavigation('/dashboard');
               }}
             >
               <div className="relative flex-shrink-0">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#C9A44B] to-[#E1C16B] flex items-center justify-center shadow-lg shadow-[#C9A44B]/20">
-                  <span className="text-[#032A24] text-base font-bold">H</span>
-                </div>
-              </div>
-              <div>
-                <span className="block font-bold text-lg text-[#F7F6F1] tracking-tight">HalalHub</span>
-                <span className="block text-[8px] font-medium text-[#C9A44B] tracking-[0.2em] uppercase">Sharia-Compliant</span>
+                <img 
+                  src="/itqaan_logo.png" 
+                  alt="Itqaan" 
+                  className="h-8 w-auto object-contain"
+                />
               </div>
             </div>
             <button
@@ -591,12 +585,11 @@ const Navbar = ({ user, onLogout }) => {
             onClick={() => handleNavigation('/dashboard')}
           >
             <div className="relative flex-shrink-0">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#C9A44B] to-[#E1C16B] flex items-center justify-center">
-                <span className="text-[#032A24] text-sm font-bold">H</span>
-              </div>
-            </div>
-            <div>
-              <span className="block font-bold text-base text-[#F7F6F1] tracking-tight">HalalHub</span>
+              <img 
+                src="/itqaan_logo.png" 
+                alt="Itqaan" 
+                className="h-8 w-auto object-contain"
+              />
             </div>
           </div>
           <button

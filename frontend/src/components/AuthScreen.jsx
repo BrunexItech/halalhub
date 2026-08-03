@@ -201,7 +201,7 @@ const AuthScreen = ({ onLogin }) => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#032A24] px-4 py-8">
       <div className="w-full max-w-[400px] mx-auto">
-        <div className="bg-[#183B33] rounded-2xl shadow-2xl shadow-black/30 p-6 md:p-8 w-full border border-[rgba(201,164,75,0.18)] relative overflow-hidden">
+        <div className="bg-[#0B342B] rounded-3xl shadow-2xl shadow-black/30 p-6 md:p-8 w-full border border-[#C9A44B]/30 relative overflow-hidden">
           
           {/* Subtle decorative elements */}
           <div className="absolute -top-16 -right-16 w-48 h-48 bg-[#C9A44B]/5 rounded-full blur-3xl" />
@@ -210,18 +210,18 @@ const AuthScreen = ({ onLogin }) => {
           <div className="relative z-10">
             {/* Logo */}
             <div className="text-center mb-6">
-              <div className="flex items-center justify-center gap-2.5 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C9A44B] to-[#E1C16B] flex items-center justify-center shadow-lg shadow-[#C9A44B]/20">
-                  <span className="text-[#032A24] text-lg font-bold">H</span>
-                </div>
-                <span className="text-xl font-bold text-[#F7F6F1] tracking-tight">HalalHub</span>
+              <div className="flex items-center justify-center mb-2">
+                <img 
+                  src="/itqaan_logo.png" 
+                  alt="Itqaan" 
+                  className="h-16 w-auto object-contain"
+                />
               </div>
-              <p className="text-[9px] font-medium text-[#C9A44B] tracking-[0.2em] uppercase">Sharia-Compliant Fintech</p>
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-1 bg-[#0B342B] rounded-xl p-1 mb-6">
-              <button className="flex-1 py-2.5 rounded-lg text-xs font-semibold bg-[#C9A44B] text-[#032A24] shadow-lg shadow-[#C9A44B]/20 transition-all duration-300">
+            <div className="flex gap-1 bg-[#032A24] rounded-xl p-1 mb-6">
+              <button className="flex-1 py-2.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-[#C9A44B] to-[#E1C16B] text-[#032A24] shadow-lg shadow-[#C9A44B]/30 transition-all duration-300">
                 Sign In
               </button>
               <button
@@ -234,26 +234,26 @@ const AuthScreen = ({ onLogin }) => {
 
             {/* Error/Success Messages */}
             {error && (
-              <div className="mb-4 p-3 bg-[#0B342B] border border-[rgba(201,164,75,0.18)] rounded-xl text-xs text-[#F7F6F1] flex justify-between items-center animate-slideDown">
+              <div className="mb-4 p-3 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-xs text-[#F7F6F1] flex justify-between items-center animate-slideDown">
                 <span>{error}</span>
                 <button onClick={() => setError('')} className="text-[#B7C0BA]/60 hover:text-[#B7C0BA] transition">✕</button>
               </div>
             )}
 
             {success && (
-              <div className="mb-4 p-3 bg-[#0B342B] border border-[#3FAF73]/30 rounded-xl text-xs text-[#3FAF73] animate-slideDown">
+              <div className="mb-4 p-3 bg-[#032A24] border border-[#3FAF73]/30 rounded-xl text-xs text-[#3FAF73] animate-slideDown">
                 {success}
               </div>
             )}
 
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label className="block text-[10px] font-semibold text-[#B7C0BA] uppercase tracking-wider mb-1.5">
+                <label className="block text-[10px] font-semibold text-[#FFFFFF] uppercase tracking-wider mb-1.5">
                   Phone Number
                 </label>
                 <input
                   type="tel"
-                  className="w-full px-4 py-2.5 bg-[#0B342B] border border-[rgba(201,164,75,0.18)] rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/30 focus:border-[#C9A44B] transition-all duration-300"
+                  className="w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+254 7XX XXX XXX"
@@ -263,13 +263,13 @@ const AuthScreen = ({ onLogin }) => {
               </div>
 
               <div>
-                <label className="block text-[10px] font-semibold text-[#B7C0BA] uppercase tracking-wider mb-1.5">
+                <label className="block text-[10px] font-semibold text-[#FFFFFF] uppercase tracking-wider mb-1.5">
                   PIN
                 </label>
                 <div className="relative">
                   <input
                     type={showPin ? 'text' : 'password'}
-                    className="w-full px-4 py-2.5 bg-[#0B342B] border border-[rgba(201,164,75,0.18)] rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/30 focus:border-[#C9A44B] transition-all duration-300 pr-12"
+                    className="w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 pr-12"
                     value={pin}
                     onChange={(e) => setPin(e.target.value)}
                     placeholder="••••••"
@@ -288,27 +288,27 @@ const AuthScreen = ({ onLogin }) => {
 
               {otpSent && (
                 <div className="space-y-3 pt-1">
-                  <div className="bg-[#0B342B] rounded-xl p-3 border border-[rgba(201,164,75,0.18)]">
+                  <div className="bg-[#032A24] rounded-xl p-3 border border-[#C9A44B]/30">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
                         <div className="text-[#C9A44B]">
                           <LockIcon />
                         </div>
                         <div>
-                          <span className="text-[10px] font-medium text-[#B7C0BA]">Your OTP Code</span>
-                          <div className="text-lg font-mono font-bold text-[#C9A44B] tracking-widest mt-0.5">
+                          <span className="text-[10px] font-medium text-[#C9A44B]">Your OTP Code</span>
+                          <div className="text-lg font-mono font-bold text-[#E1C16B] tracking-widest mt-0.5">
                             {otpCode || '••••••'}
                           </div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className={`text-xs font-semibold ${otpExpirySeconds <= 10 ? 'text-[#DC2626]' : 'text-[#B7C0BA]'}`}>
+                        <div className={`text-xs font-semibold ${otpExpirySeconds <= 10 ? 'text-[#DC2626]' : 'text-[#C9A44B]'}`}>
                           {otpExpirySeconds > 0 ? formatTime(otpExpirySeconds) : 'Expired'}
                         </div>
-                        <div className="w-16 h-1 bg-[#0B342B] rounded-full mt-1 overflow-hidden border border-[rgba(201,164,75,0.18)]">
+                        <div className="w-16 h-1 bg-[#032A24] rounded-full mt-1 overflow-hidden border border-[#C9A44B]/30">
                           <div 
                             className={`h-full rounded-full transition-all duration-1000 ${
-                              otpExpirySeconds <= 10 ? 'bg-[#DC2626]' : 'bg-[#C9A44B]'
+                              otpExpirySeconds <= 10 ? 'bg-[#DC2626]' : 'bg-gradient-to-r from-[#C9A44B] to-[#E1C16B]'
                             }`}
                             style={{ width: `${(otpExpirySeconds / 30) * 100}%` }}
                           />
@@ -321,7 +321,7 @@ const AuthScreen = ({ onLogin }) => {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-semibold text-[#B7C0BA] uppercase tracking-wider mb-2">
+                    <label className="block text-[10px] font-semibold text-[#FFFFFF] uppercase tracking-wider mb-2">
                       Enter Verification Code
                     </label>
                     <div className="flex gap-2 justify-center">
@@ -333,10 +333,27 @@ const AuthScreen = ({ onLogin }) => {
                           inputMode="numeric"
                           maxLength="1"
                           value={digit}
-                          className="w-10 h-12 text-center text-base font-semibold bg-[#0B342B] border border-[rgba(201,164,75,0.18)] rounded-xl text-[#F7F6F1] focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/30 focus:border-[#C9A44B] transition-all duration-300 flex items-center justify-center [caret-color:#C9A44B]"
+                          className="w-10 h-12 rounded-xl text-[#F7F6F1] text-base font-semibold focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300"
                           onChange={(e) => handleOtpChange(index, e.target.value)}
                           onKeyDown={(e) => handleOtpKeyDown(index, e)}
                           required
+                          style={{
+                            backgroundColor: '#032A24',
+                            border: '1px solid rgba(201, 164, 75, 0.3)',
+                            textAlign: 'center',
+                            caretColor: '#C9A44B',
+                            padding: 0,
+                            margin: 0,
+                            textIndent: 0,
+                            lineHeight: '48px',
+                            height: '48px',
+                            width: '40px',
+                            display: 'inline-block',
+                            boxSizing: 'border-box',
+                            WebkitTextFillColor: '#F7F6F1',
+                            MozOsxFontSmoothing: 'grayscale',
+                            fontVariantNumeric: 'tabular-nums'
+                          }}
                         />
                       ))}
                     </div>
@@ -357,7 +374,7 @@ const AuthScreen = ({ onLogin }) => {
 
               <button
                 type="submit"
-                className="w-full py-2.5 bg-gradient-to-r from-[#C9A44B] to-[#E1C16B] text-[#032A24] font-semibold text-sm rounded-xl hover:shadow-lg hover:shadow-[#C9A44B]/30 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full py-2.5 bg-gradient-to-r from-[#C9A44B] to-[#E1C16B] text-[#032A24] font-semibold text-sm rounded-xl hover:shadow-lg hover:shadow-[#C9A44B]/40 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
                 disabled={loading}
               >
                 {loading ? (
@@ -371,8 +388,8 @@ const AuthScreen = ({ onLogin }) => {
               </button>
             </form>
 
-            <div className="mt-6 pt-5 border-t border-[rgba(201,164,75,0.18)]">
-              <p className="text-center text-[9px] text-[#B7C0BA]/60 tracking-wider">
+            <div className="mt-6 pt-5 border-t border-[#C9A44B]/20">
+              <p className="text-center text-[9px] text-[#C9A44B]/40 tracking-wider">
                 Secure · Encrypted · No Riba
               </p>
             </div>
