@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { mosqueFinderService } from '../services/api';
 
 // Import Leaflet and OpenStreetMap components
 import L from 'leaflet';
@@ -112,67 +113,56 @@ const MosqueFinder = () => {
     findNearbyMosques(lat, lon);
   };
 
-  // ===== FIND NEARBY MOSQUES USING Time.Now API =====
+  // ===== FIND NEARBY MOSQUES USING API =====
   const findNearbyMosques = async (lat, lon, radius = searchRadius) => {
     setIsLoadingMosques(true);
     setError('');
     
     try {
-      // Use the free Time.Now API
-      const response = await fetch(
-        `https://time.now/mosques/api/mosques?lat=${lat}&lon=${lon}&radius=${radius}&limit=20`
-      );
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch mosque data');
-      }
-      
-      const data = await response.json();
-      
-      // Transform API response to match our format
-      const transformedMosques = data.map((item, index) => ({
-        id: `mosque-${index}-${Date.now()}`,
-        name: item.name || 'Unnamed Mosque',
-        address: item.address || '',
-        lat: item.lat || 0,
-        lon: item.lon || 0,
-        distance: item.distance_km || 0,
-        city: item.city_slug ? item.city_slug.replace(/-/g, ' ') : '',
-        verified: true,
-        source: 'database',
-        facilities: ['Prayer Hall', 'Wudu Area'],
-        website: item.url || '',
-        phone: '',
-        imam_name: '',
-        openingHours: '',
-        osmId: null
-      }));
-      
-      // Filter out mosques with invalid coordinates
-      const validMosques = transformedMosques.filter(m => m.lat && m.lon);
-      
-      setMosques(validMosques);
-      clearMarkers();
-      
-      if (validMosques.length > 0) {
-        addMarkers(validMosques, lat, lon);
-        setSuccess(`${validMosques.length} mosques found nearby`);
+      const response = await mosqueFinderService.getNearbyMosques({
+        lat: lat,
+        lon: lon,
+        radius: radius,
+        search: searchQuery || ''
+      });
+
+      if (response.data.success) {
+        const data = response.data.data;
+        const mosquesData = data.mosques || [];
+        setMosques(mosquesData);
+        clearMarkers();
         
-        if (mapRef.current) {
-          const bounds = validMosques.map(m => [m.lat, m.lon]);
+        if (mosquesData.length > 0) {
+          addMarkers(mosquesData, lat, lon);
+        }
+        
+        if (mapRef.current && mosquesData.length > 0) {
+          const bounds = mosquesData.map(m => [m.lat, m.lon]);
           if (bounds.length > 0) {
             mapRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
           }
         }
+
+        // Show success message with source info
+        if (data.source) {
+          const dbCount = data.source.database || 0;
+          const osmCount = data.source.osm || 0;
+          if (dbCount > 0) {
+            setSuccess(`${dbCount} verified mosques found`);
+          } else if (osmCount > 0) {
+            setSuccess(`${osmCount} mosques found from OpenStreetMap`);
+          } else {
+            setSuccess('No mosques found in this area');
+          }
+          setTimeout(() => setSuccess(''), 5000);
+        }
       } else {
-        setSuccess('No mosques found in this area. Try expanding the radius.');
+        setError(response.data.error || 'Failed to find mosques');
       }
-      
-      setTimeout(() => setSuccess(''), 5000);
       
     } catch (err) {
       console.error('API error:', err);
-      setError('Failed to find mosques. Please try again.');
+      setError(err.response?.data?.error || 'Failed to find mosques. Please try again.');
     } finally {
       setIsLoadingMosques(false);
     }
@@ -240,7 +230,8 @@ const MosqueFinder = () => {
           <strong class="text-sm text-[#1F2937] block">${mosque.name}</strong>
           ${mosque.distance ? `<span class="text-[#0B342B] font-medium text-xs">${mosque.distance.toFixed(1)} km away</span>` : ''}
           ${mosque.address ? `<br><span class="text-[#6B7280] text-xs">${mosque.address}</span>` : ''}
-          ${mosque.verified ? '<br><span class="text-xs text-[#3FAF73]">✓ Verified</span>' : ''}
+          ${mosque.verified ? '<br><span class="text-xs text-[#3FAF73]">✓ Verified</span>' : '<br><span class="text-xs text-[#6B7280]">OSM Data</span>'}
+          ${mosque.imam_name ? `<br><span class="text-xs text-[#6B7280]">Imam: ${mosque.imam_name}</span>` : ''}
           <br><button onclick="window.selectMosque('${mosque.id}')" class="mt-2 px-3 py-1 bg-[#0B342B] text-white text-xs font-medium rounded-lg hover:bg-[#032A24] transition-colors cursor-pointer border-none">View Details</button>
         </div>
       `;
@@ -423,13 +414,13 @@ const MosqueFinder = () => {
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-[13px] font-medium text-[#C9A44B] uppercase tracking-wider">Mosque Finder</span>
                 <span className="w-px h-4 bg-[#C9A44B]/30" />
-                <span className="text-[13px] font-medium text-[#C9A44B]/70">Powered by Time.Now</span>
+                <span className="text-[13px] font-medium text-[#C9A44B]/70">Verified + OpenStreetMap</span>
               </div>
               <h1 className="text-[26px] md:text-[30px] font-semibold text-white leading-tight">
                 Find Mosques Near You
               </h1>
               <p className="text-white/70 text-[15px] mt-3 max-w-lg leading-relaxed">
-                Discover verified mosques and community centers near your location. Data provided by Time.Now.
+                Discover verified mosques and community centers. Data from HalalHub database and OpenStreetMap.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
@@ -556,7 +547,7 @@ const MosqueFinder = () => {
               className="w-full h-[400px] md:h-[500px] lg:h-[600px] rounded-xl overflow-hidden border border-[#E8EEF4] shadow-sm"
             />
             <div className="text-[13px] text-[#6B7280] mt-3 text-center">
-              Data © Time.Now · Click on the map to search for mosques at that location
+              Data © OpenStreetMap contributors · Click on the map to search for mosques at that location
             </div>
           </div>
 
@@ -691,6 +682,9 @@ const MosqueFinder = () => {
                           {formatDistance(mosque.distance)} away
                         </p>
                       )}
+                      {mosque.imam_name && (
+                        <p className="text-[14px] text-[#6B7280] mt-1">Imam: {mosque.imam_name}</p>
+                      )}
                       <div className="flex flex-wrap gap-2 mt-4">
                         <button
                           className="flex-1 px-3 py-2 bg-[#0B342B] text-white text-[13px] font-medium rounded-xl hover:bg-[#032A24] transition-colors shadow-sm"
@@ -718,20 +712,6 @@ const MosqueFinder = () => {
             )}
           </div>
         )}
-
-        {/* ===== FOOTER ATTRIBUTION (Required by Time.Now) ===== */}
-        <div className="mt-6 text-center text-[13px] text-[#6B7280]">
-          <a 
-            href="https://time.now" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="hover:text-[#0B342B] transition-colors"
-          >
-            Mosque data by Time.Now
-          </a>
-          <span className="mx-2">·</span>
-          <span>Data © OpenStreetMap contributors</span>
-        </div>
       </div>
 
       {/* ===== MOSQUE DETAILS MODAL ===== */}
@@ -788,6 +768,12 @@ const MosqueFinder = () => {
                     <span className="font-semibold text-[#1F2937] text-right max-w-[60%] truncate">{selectedMosque.website}</span>
                   </div>
                 )}
+                {selectedMosque.openingHours && (
+                  <div className="flex justify-between text-[15px]">
+                    <span className="text-[#6B7280]">Opening Hours</span>
+                    <span className="font-semibold text-[#1F2937] text-right max-w-[60%]">{selectedMosque.openingHours}</span>
+                  </div>
+                )}
                 {selectedMosque.imam_name && (
                   <div className="flex justify-between text-[15px] pt-3 border-t border-[#E8EEF4]">
                     <span className="text-[#6B7280]">Imam</span>
@@ -797,7 +783,7 @@ const MosqueFinder = () => {
                 <div className="flex justify-between text-[15px] pt-3 border-t border-[#E8EEF4]">
                   <span className="text-[#6B7280]">Source</span>
                   <span className="font-semibold text-[#1F2937]">
-                    {selectedMosque.verified ? 'Time.Now Verified' : 'OpenStreetMap'}
+                    {selectedMosque.verified ? 'HalalHub Verified' : 'OpenStreetMap'}
                   </span>
                 </div>
               </div>
@@ -834,7 +820,8 @@ const MosqueFinder = () => {
 
               <div className="bg-[#FAFAF7] rounded-xl p-3 border border-[#E8EEF4]">
                 <p className="text-[13px] text-[#6B7280]">
-                  {selectedMosque.verified ? 'Data provided by Time.Now' : 'Data provided by OpenStreetMap'}
+                  {selectedMosque.verified ? 'Verified by HalalHub' : 'Data provided by OpenStreetMap'}
+                  {selectedMosque.osmId && ` · OSM ID: ${selectedMosque.osmId}`}
                 </p>
               </div>
             </div>
