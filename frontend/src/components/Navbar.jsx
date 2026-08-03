@@ -5,11 +5,9 @@ const Navbar = ({ user, onLogout }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileUserMenuOpen, setIsMobileUserMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const dropdownRefs = useRef({});
   const userMenuRef = useRef(null);
   const mobileUserMenuRef = useRef(null);
   const mobileMenuRef = useRef(null);
@@ -37,17 +35,19 @@ const Navbar = ({ user, onLogout }) => {
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
         </svg>
-      )
+      ),
+      isCategory: false
     };
 
-    const islamicFinanceDropdown = {
+    const islamicFinanceItems = {
       label: 'Islamic Finance',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v1m0 4v1m0-1c-1.11 0-2.08-.402-2.599-1M12 12c-1.11 0-2.08-.402-2.599-1" />
         </svg>
       ),
-      dropdown: [
+      isCategory: true,
+      children: [
         { path: '/zakat', label: 'Zakat' },
         { path: '/sadaqa', label: 'Sadaqa' },
         { path: '/takaful', label: 'Takaful' },
@@ -55,38 +55,41 @@ const Navbar = ({ user, onLogout }) => {
       ]
     };
 
-    const ecommerceDropdown = {
+    const ecommerceItems = {
       label: 'Ecommerce',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
         </svg>
       ),
-      dropdown: [
+      isCategory: true,
+      children: [
         { path: '/ecommerce', label: 'HalalMarket' },
         { path: '/ecommerce?category=butchery', label: 'Halal Butchery' },
         { path: '/restaurants', label: 'Restaurants' },
       ]
     };
 
-    const halalStayItem = {
+    const halalStayItem = { 
       path: '/halalstay', 
       label: 'HalalStay',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
         </svg>
-      )
+      ),
+      isCategory: false
     };
 
-    const servicesDropdown = {
+    const servicesItems = {
       label: 'Services',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
         </svg>
       ),
-      dropdown: [
+      isCategory: true,
+      children: [
         { path: '/hajj', label: 'Hajj & Umrah' },
         { path: '/hearse', label: 'Hearse & Shroud' },
         { path: '/mosque-finder', label: 'Mosques' },
@@ -96,7 +99,7 @@ const Navbar = ({ user, onLogout }) => {
       ]
     };
 
-    const utilitiesItem = {
+    const utilitiesItem = { 
       path: '/utilities', 
       label: 'Utilities',
       icon: (
@@ -104,25 +107,26 @@ const Navbar = ({ user, onLogout }) => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
-      )
+      ),
+      isCategory: false
     };
 
     let items = [dashboardItem];
 
     if (role === 'client') {
-      items.push(islamicFinanceDropdown);
-      items.push(ecommerceDropdown);
+      items.push(islamicFinanceItems);
+      items.push(ecommerceItems);
       items.push(halalStayItem);
-      items.push(servicesDropdown);
+      items.push(servicesItems);
       items.push(utilitiesItem);
     } else if (role === 'vendor') {
-      items.push(ecommerceDropdown);
+      items.push(ecommerceItems);
       items.push(halalStayItem);
-      items.push(servicesDropdown);
+      items.push(servicesItems);
       items.push(utilitiesItem);
     } else if (role === 'imam') {
-      items.push(islamicFinanceDropdown);
-      items.push(servicesDropdown);
+      items.push(islamicFinanceItems);
+      items.push(servicesItems);
       items.push(utilitiesItem);
     }
 
@@ -134,12 +138,7 @@ const Navbar = ({ user, onLogout }) => {
     return location.pathname === path || location.pathname.startsWith(path + '/');
   }, [location.pathname]);
 
-  const hasActiveChild = useCallback((dropdown) => {
-    return dropdown?.some(item => isActive(item.path));
-  }, [isActive]);
-
   const closeAllMenus = useCallback(() => {
-    setOpenDropdown(null);
     setIsMobileMenuOpen(false);
     setIsUserMenuOpen(false);
     setIsMobileUserMenuOpen(false);
@@ -153,21 +152,13 @@ const Navbar = ({ user, onLogout }) => {
     });
   }, [navigate, closeAllMenus]);
 
-  const toggleDropdown = useCallback((label) => {
-    setOpenDropdown(prev => prev === label ? null : label);
-    setIsUserMenuOpen(false);
-    setIsMobileUserMenuOpen(false);
-  }, []);
-
   const toggleUserMenu = useCallback(() => {
     setIsUserMenuOpen(prev => !prev);
-    setOpenDropdown(null);
     setIsMobileUserMenuOpen(false);
   }, []);
 
   const toggleMobileUserMenu = useCallback(() => {
     setIsMobileUserMenuOpen(prev => !prev);
-    setOpenDropdown(null);
     setIsUserMenuOpen(false);
   }, []);
 
@@ -188,13 +179,6 @@ const Navbar = ({ user, onLogout }) => {
         return;
       }
 
-      if (openDropdown) {
-        const dropdownElement = dropdownRefs.current[openDropdown];
-        if (dropdownElement && !dropdownElement.contains(event.target)) {
-          setOpenDropdown(null);
-        }
-      }
-
       if (isUserMenuOpen && userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setIsUserMenuOpen(false);
       }
@@ -213,7 +197,7 @@ const Navbar = ({ user, onLogout }) => {
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [openDropdown, isUserMenuOpen, isMobileUserMenuOpen, isMobileMenuOpen]);
+  }, [isUserMenuOpen, isMobileUserMenuOpen, isMobileMenuOpen]);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -254,72 +238,53 @@ const Navbar = ({ user, onLogout }) => {
   }, []);
 
   const renderNavItem = (item, index, isMobile = false) => {
-    if (item.dropdown) {
+    // Category with children (always visible)
+    if (item.isCategory) {
       return (
-        <div 
-          key={index} 
-          className="relative"
-          ref={(el) => {
-            if (item.dropdown) {
-              dropdownRefs.current[item.label] = el;
-            }
-          }}
-        >
-          <button
-            onClick={() => toggleDropdown(item.label)}
-            aria-expanded={openDropdown === item.label}
-            aria-haspopup="true"
-            className={`group w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 font-bold ${
-              openDropdown === item.label || hasActiveChild(item.dropdown)
-                ? 'text-[#C9A44B] bg-[#183B33]' 
-                : 'text-[#B7C0BA] hover:text-[#F7F6F1] hover:bg-[#12342D]'
-            } ${isCollapsed && !isMobile ? 'justify-center px-2' : ''}`}
-            title={isCollapsed && !isMobile ? item.label : ''}
-          >
-            <span className={`flex-shrink-0 ${openDropdown === item.label || hasActiveChild(item.dropdown) ? 'text-[#C9A44B]' : 'text-[#B7C0BA] group-hover:text-[#F7F6F1]'}`}>
+        <div key={index} className="mb-1">
+          {/* Category Header - Bold */}
+          <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-bold text-[#C9A44B] ${isCollapsed && !isMobile ? 'justify-center px-2' : ''}`}>
+            <span className="flex-shrink-0 text-[#C9A44B]">
               {item.icon}
             </span>
             {(!isCollapsed || isMobile) && (
-              <>
-                <span className="flex-1 text-left font-medium text-sm">{item.label}</span>
-                <svg className={`w-4 h-4 transition-transform duration-200 ${openDropdown === item.label ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 9l-7 7-7-7" />
-                </svg>
-              </>
+              <span className="flex-1 text-left text-sm">{item.label}</span>
             )}
-          </button>
-          {openDropdown === item.label && (!isCollapsed || isMobile) && (
-            <div 
-              className={`${isMobile ? 'relative' : 'absolute top-full left-0 mt-1.5 min-w-[200px]'} bg-[#0B342B] rounded-xl border border-[rgba(201,164,75,0.18)] py-1.5 z-50 animate-slideDown shadow-xl ${isMobile ? 'ml-8 pl-3 border-l-2 border-[rgba(201,164,75,0.18)]' : ''}`}
-              role="menu"
-            >
-              {!isMobile && (
-                <div className="absolute -top-1 left-6 w-3 h-3 bg-[#0B342B] border-t border-l border-[rgba(201,164,75,0.18)] rotate-45" />
-              )}
-              {item.dropdown.map((sub, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => {
-                    setOpenDropdown(null);
-                    if (isMobile) setIsMobileMenuOpen(false);
-                    handleNavigation(sub.path);
-                  }}
-                  className={`w-full text-left px-4 py-2.5 text-sm transition-all duration-150 ${
-                    isActive(sub.path) 
-                      ? 'text-[#C9A44B] bg-[#183B33] font-medium border-r-2 border-[#C9A44B]' 
-                      : 'text-[#B7C0BA] hover:text-[#F7F6F1] hover:bg-[#12342D]'
-                  }`}
-                  role="menuitem"
-                >
-                  {sub.label}
-                </button>
-              ))}
-            </div>
-          )}
+          </div>
+          
+          {/* Children - Always Visible */}
+          <div className={`${isCollapsed && !isMobile ? '' : 'ml-2 pl-2 border-l-2 border-[rgba(201,164,75,0.18)]'}`}>
+            {item.children.map((child, childIndex) => (
+              <button
+                key={childIndex}
+                onClick={() => {
+                  if (isMobile) setIsMobileMenuOpen(false);
+                  handleNavigation(child.path);
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${
+                  isActive(child.path) 
+                    ? 'text-[#C9A44B] bg-[#183B33]' 
+                    : 'text-[#B7C0BA] hover:text-[#F7F6F1] hover:bg-[#12342D]'
+                } ${isCollapsed && !isMobile ? 'justify-center px-2' : ''}`}
+                title={isCollapsed && !isMobile ? child.label : ''}
+              >
+                {(!isCollapsed || isMobile) && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#B7C0BA]/30 flex-shrink-0" />
+                )}
+                {(!isCollapsed || isMobile) && (
+                  <span className="flex-1 text-left text-sm font-medium">{child.label}</span>
+                )}
+                {isActive(child.path) && !isCollapsed && !isMobile && (
+                  <span className="w-1 h-6 rounded-full bg-[#C9A44B]" />
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       );
     }
 
+    // Single item (no children)
     return (
       <button
         key={index}
@@ -338,7 +303,7 @@ const Navbar = ({ user, onLogout }) => {
           {item.icon}
         </span>
         {(!isCollapsed || isMobile) && (
-          <span className="flex-1 text-left font-medium text-sm">{item.label}</span>
+          <span className="flex-1 text-left text-sm">{item.label}</span>
         )}
         {isActive(item.path) && !isCollapsed && !isMobile && (
           <span className="w-1 h-6 rounded-full bg-[#C9A44B]" />
