@@ -14,14 +14,14 @@ const Zakat = () => {
   // Wallet balance
   const [balance, setBalance] = useState(0);
   
-  // Zakat calculation fields
-  const [cash, setCash] = useState(500000);
-  const [gold, setGold] = useState(150000);
-  const [silver, setSilver] = useState(20000);
-  const [business, setBusiness] = useState(80000);
-  const [investments, setInvestments] = useState(50000);
-  const [receivables, setReceivables] = useState(0);
-  const [liabilities, setLiabilities] = useState(100000);
+  // Zakat calculation fields - ALL EMPTY BY DEFAULT
+  const [cash, setCash] = useState('');
+  const [gold, setGold] = useState('');
+  const [silver, setSilver] = useState('');
+  const [business, setBusiness] = useState('');
+  const [investments, setInvestments] = useState('');
+  const [receivables, setReceivables] = useState('');
+  const [liabilities, setLiabilities] = useState('');
   const [nisabType, setNisabType] = useState('silver');
   
   // Calculation results
@@ -156,8 +156,12 @@ const Zakat = () => {
   };
 
   const handleFieldChange = (setter) => (e) => {
-    const value = parseFloat(e.target.value) || 0;
-    setter(value);
+    const value = e.target.value;
+    setter(value === '' ? '' : parseFloat(value));
+  };
+
+  const handleFieldFocus = (e) => {
+    e.target.select();
   };
 
   const applyPreset = (preset) => {
@@ -223,7 +227,7 @@ const Zakat = () => {
       currency: 'KES',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
-    }).format(amount);
+    }).format(amount || 0);
   };
 
   const formatDate = (dateString) => {
@@ -275,12 +279,6 @@ const Zakat = () => {
     </svg>
   );
 
-  const WalletIcon = () => (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-    </svg>
-  );
-
   const SpinnerIcon = () => (
     <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -292,9 +290,6 @@ const Zakat = () => {
     <div className="min-h-screen bg-[#FAFAF7] p-2 sm:p-4 md:p-5 lg:p-6">
       <div className="max-w-6xl mx-auto">
         
-        {/* ===== HEADER ===== */}
-        
-
         {/* ===== HERO SECTION ===== */}
         <div className="relative overflow-hidden bg-gradient-to-br from-[#0B342B] via-[#12342D] to-[#032A24] rounded-xl sm:rounded-2xl p-5 sm:p-6 md:p-8 shadow-xl shadow-black/10 border border-[rgba(201,164,75,0.15)] mb-5">
           <div className="absolute top-0 right-0 w-48 h-48 bg-[#C9A44B]/5 rounded-full blur-3xl" />
@@ -376,15 +371,17 @@ const Zakat = () => {
                 ))}
               </div>
 
-              {/* Form Fields */}
+              {/* Form Fields - EMPTY BY DEFAULT */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider block mb-1">Cash & Savings</label>
                   <input 
                     className="w-full px-3 py-2 bg-[#FAFAF7] border border-[rgba(11,52,43,0.12)] rounded-lg text-sm text-[#1F2937] focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/30 focus:border-[#C9A44B] transition-all duration-200"
                     type="number" 
-                    value={cash} 
+                    value={cash === 0 ? '' : cash}
                     onChange={handleFieldChange(setCash)}
+                    onFocus={handleFieldFocus}
+                    placeholder="0"
                     min="0"
                     step="1000"
                   />
@@ -394,8 +391,10 @@ const Zakat = () => {
                   <input 
                     className="w-full px-3 py-2 bg-[#FAFAF7] border border-[rgba(11,52,43,0.12)] rounded-lg text-sm text-[#1F2937] focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/30 focus:border-[#C9A44B] transition-all duration-200"
                     type="number" 
-                    value={gold} 
+                    value={gold === 0 ? '' : gold}
                     onChange={handleFieldChange(setGold)}
+                    onFocus={handleFieldFocus}
+                    placeholder="0"
                     min="0"
                     step="1000"
                   />
@@ -405,8 +404,10 @@ const Zakat = () => {
                   <input 
                     className="w-full px-3 py-2 bg-[#FAFAF7] border border-[rgba(11,52,43,0.12)] rounded-lg text-sm text-[#1F2937] focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/30 focus:border-[#C9A44B] transition-all duration-200"
                     type="number" 
-                    value={silver} 
+                    value={silver === 0 ? '' : silver}
                     onChange={handleFieldChange(setSilver)}
+                    onFocus={handleFieldFocus}
+                    placeholder="0"
                     min="0"
                     step="1000"
                   />
@@ -416,8 +417,10 @@ const Zakat = () => {
                   <input 
                     className="w-full px-3 py-2 bg-[#FAFAF7] border border-[rgba(11,52,43,0.12)] rounded-lg text-sm text-[#1F2937] focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/30 focus:border-[#C9A44B] transition-all duration-200"
                     type="number" 
-                    value={business} 
+                    value={business === 0 ? '' : business}
                     onChange={handleFieldChange(setBusiness)}
+                    onFocus={handleFieldFocus}
+                    placeholder="0"
                     min="0"
                     step="1000"
                   />
@@ -427,8 +430,10 @@ const Zakat = () => {
                   <input 
                     className="w-full px-3 py-2 bg-[#FAFAF7] border border-[rgba(11,52,43,0.12)] rounded-lg text-sm text-[#1F2937] focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/30 focus:border-[#C9A44B] transition-all duration-200"
                     type="number" 
-                    value={investments} 
+                    value={investments === 0 ? '' : investments}
                     onChange={handleFieldChange(setInvestments)}
+                    onFocus={handleFieldFocus}
+                    placeholder="0"
                     min="0"
                     step="1000"
                   />
@@ -438,8 +443,10 @@ const Zakat = () => {
                   <input 
                     className="w-full px-3 py-2 bg-[#FAFAF7] border border-[rgba(11,52,43,0.12)] rounded-lg text-sm text-[#1F2937] focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/30 focus:border-[#C9A44B] transition-all duration-200"
                     type="number" 
-                    value={receivables} 
+                    value={receivables === 0 ? '' : receivables}
                     onChange={handleFieldChange(setReceivables)}
+                    onFocus={handleFieldFocus}
+                    placeholder="0"
                     min="0"
                     step="1000"
                   />
@@ -449,8 +456,10 @@ const Zakat = () => {
                   <input 
                     className="w-full px-3 py-2 bg-[#FAFAF7] border border-[rgba(11,52,43,0.12)] rounded-lg text-sm text-[#1F2937] focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/30 focus:border-[#C9A44B] transition-all duration-200"
                     type="number" 
-                    value={liabilities} 
+                    value={liabilities === 0 ? '' : liabilities}
                     onChange={handleFieldChange(setLiabilities)}
+                    onFocus={handleFieldFocus}
+                    placeholder="0"
                     min="0"
                     step="1000"
                   />
@@ -741,6 +750,16 @@ const Zakat = () => {
         }
         .animate-slideDown {
           animation: slideDown 0.3s ease-out forwards;
+        }
+
+        /* Remove number input spinners */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        input[type="number"] {
+          -moz-appearance: textfield;
         }
       `}</style>
     </div>
