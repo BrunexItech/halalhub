@@ -329,7 +329,6 @@ router.post('/bookings', async (req, res) => {
       return res.status(400).json({ error: 'Listing ID, check-in, and check-out are required' });
     }
 
-    // Get listing details
     const listing = await db.query(
       'SELECT vendor_id, price_per_night, total_rooms, available_rooms, min_stay, max_advance_days, max_guests_per_room FROM listings WHERE id = $1 AND is_active = true',
       [listing_id]
@@ -346,7 +345,6 @@ router.post('/bookings', async (req, res) => {
       return res.status(400).json({ error: 'Not enough rooms available for this property' });
     }
 
-    // Calculate nights and total price
     const checkInDate = new Date(check_in);
     const checkOutDate = new Date(check_out);
     const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
@@ -372,7 +370,6 @@ router.post('/bookings', async (req, res) => {
       });
     }
 
-    // Validate guests per room
     const maxGuestsPerRoom = listingData.max_guests_per_room || 2;
     const maxAllowedGuests = roomsToBook * maxGuestsPerRoom;
 
@@ -388,11 +385,6 @@ router.post('/bookings', async (req, res) => {
 
     const totalPrice = listingData.price_per_night * roomsToBook * nights;
 
-    // ============================================================
-    // VIRTUAL ACCOUNT PAYMENT FLOW
-    // ============================================================
-
-    // 1. Get client's virtual account
     const clientAccount = await virtualAccountService.getUserAccount(userId);
 
     if (!clientAccount) {
@@ -401,14 +393,12 @@ router.post('/bookings', async (req, res) => {
       });
     }
 
-    // 2. Check if client has enough balance
     if (clientAccount.balance < totalPrice) {
       return res.status(400).json({
         error: `Insufficient balance. Available: KES ${clientAccount.balance.toLocaleString()}, Required: KES ${totalPrice.toLocaleString()}`
       });
     }
 
-    // 3. Get vendor's virtual account
     const vendorAccount = await virtualAccountService.getUserAccount(listingData.vendor_id);
 
     if (!vendorAccount) {
@@ -417,7 +407,6 @@ router.post('/bookings', async (req, res) => {
       });
     }
 
-    // Check if dates are blocked by vendor
     const blockedDatesCheck = await db.query(`
       SELECT date FROM listing_availability 
       WHERE listing_id = $1 AND date BETWEEN $2 AND $3 AND is_available = false
@@ -427,7 +416,6 @@ router.post('/bookings', async (req, res) => {
       return res.status(400).json({ error: 'Selected dates are not available' });
     }
 
-    // Check if availability records exist for this listing
     const availabilityExists = await db.query(`
       SELECT COUNT(*) FROM listing_availability WHERE listing_id = $1
     `, [listing_id]);
@@ -451,7 +439,6 @@ router.post('/bookings', async (req, res) => {
     await db.query('BEGIN');
 
     try {
-      // 4. Transfer payment from client to vendor via virtual accounts
       await virtualAccountService.processTransfer(
         userId,
         clientAccount.account_number,
@@ -460,7 +447,6 @@ router.post('/bookings', async (req, res) => {
         `HalalStay booking - ${bookingId}`
       );
 
-      // 5. Create booking record
       await db.query(`
         INSERT INTO bookings (
           id, listing_id, user_id, vendor_id, check_in, check_out,
@@ -469,7 +455,6 @@ router.post('/bookings', async (req, res) => {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'confirmed', $9, NOW(), 'completed', $10)
       `, [bookingId, listing_id, userId, listingData.vendor_id, check_in, check_out, guests, totalPrice, special_requests || null, transactionRef]);
 
-      // 6. Update available rooms
       await db.query(`
         UPDATE listings 
         SET available_rooms = available_rooms - $1,
@@ -478,7 +463,6 @@ router.post('/bookings', async (req, res) => {
         WHERE id = $2
       `, [roomsToBook, listing_id]);
 
-      // 7. Update vendor stats
       await db.query(`
         UPDATE vendor_profiles
         SET total_orders = total_orders + 1,
@@ -487,7 +471,6 @@ router.post('/bookings', async (req, res) => {
         WHERE user_id = $2
       `, [totalPrice, listingData.vendor_id]);
 
-      // 8. Create notification for vendor
       const vendorNotifId = 'notif-' + Date.now().toString(36) + uuidv4().slice(0, 8);
       await db.query(`
         INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
@@ -501,7 +484,6 @@ router.post('/bookings', async (req, res) => {
         `/vendor/bookings`
       ]);
 
-      // 9. Create notification for client
       const clientNotifId = 'notif-' + Date.now().toString(36) + uuidv4().slice(0, 8);
       await db.query(`
         INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
@@ -517,7 +499,6 @@ router.post('/bookings', async (req, res) => {
 
       await db.query('COMMIT');
 
-      // Get updated client balance
       const updatedClientAccount = await virtualAccountService.getUserAccount(userId);
 
       res.json({
@@ -578,194 +559,241 @@ router.get('/bookings', async (req, res) => {
 });
 
 // ============================================================
-// 10. GET ALL IMAMS (Public)
+// 10. GET ALL LEADERS (Public - For Pension Support)
 // ============================================================
-router.get('/imams', async (req, res) => {
+router.get('/leaders', async (req, res) => {
   try {
     const db = await getClient();
-    const { limit = 50 } = req.query;
+    const { leader_type, limit = 50 } = req.query;
 
-    const result = await db.query(`
+    let query = `
       SELECT 
-        u.id, u.fullname, u.profile_image, u.bio,
-        i.id as imam_id, i.title, i.mosque_name, i.mosque_location, i.mosque_county,
-        i.qualifications, i.years_of_service, i.is_verified,
-        pb.total_contributions, pb.total_supporters
-      FROM users u
-      JOIN imams i ON u.id = i.user_id
-      LEFT JOIN pension_balances pb ON i.id = pb.imam_id
-      WHERE u.role = 'imam' AND u.imam_status = 'approved' AND i.is_verified = true
-      ORDER BY pb.total_supporters DESC
-      LIMIT ${parseInt(limit)}
-    `);
+        l.id,
+        l.user_id,
+        l.leader_type,
+        l.name,
+        l.title,
+        l.location,
+        l.county,
+        l.mosque_name,
+        l.qualifications,
+        l.years_of_service,
+        l.is_verified,
+        l.is_public,
+        l.share_link,
+        u.profile_image,
+        u.bio,
+        lp.total_contributions,
+        lp.total_supporters
+      FROM leaders l
+      JOIN users u ON l.user_id = u.id
+      LEFT JOIN leader_pension_balances lp ON l.id = lp.leader_id
+      WHERE l.is_public = true AND l.status = 'approved'
+    `;
+    const params = [];
+    let paramIndex = 1;
 
-    res.json({ success: true, imams: result.rows });
-
-  } catch (err) {
-    console.error('Error fetching imams:', err.message);
-    res.status(500).json({ error: 'Failed to fetch imams' });
-  }
-});
-
-// ============================================================
-// 11. GET IMAM BY ID (Public)
-// ============================================================
-router.get('/imams/:imamId', async (req, res) => {
-  try {
-    const db = await getClient();
-    const imamId = req.params.imamId;
-
-    const result = await db.query(`
-      SELECT 
-        u.id, u.fullname, u.profile_image, u.bio, u.phone, u.email,
-        i.id as imam_id, i.title, i.mosque_name, i.mosque_location, i.mosque_county,
-        i.qualifications, i.years_of_service, i.is_verified,
-        pb.total_contributions, pb.total_supporters
-      FROM users u
-      JOIN imams i ON u.id = i.user_id
-      LEFT JOIN pension_balances pb ON i.id = pb.imam_id
-      WHERE u.id = $1 AND u.role = 'imam' AND u.imam_status = 'approved'
-    `, [imamId]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Imam not found' });
+    if (leader_type) {
+      query += ` AND l.leader_type = $${paramIndex}`;
+      params.push(leader_type);
+      paramIndex++;
     }
 
-    res.json({ success: true, imam: result.rows[0] });
+    query += ` ORDER BY lp.total_supporters DESC NULLS LAST, u.fullname ASC LIMIT ${parseInt(limit)}`;
+
+    const result = await db.query(query, params);
+
+    res.json({ success: true, leaders: result.rows });
 
   } catch (err) {
-    console.error('Error fetching imam:', err.message);
-    res.status(500).json({ error: 'Failed to fetch imam' });
+    console.error('Error fetching leaders:', err.message);
+    res.status(500).json({ error: 'Failed to fetch leaders' });
   }
 });
 
 // ============================================================
-// 12. CREATE ORDER (Ecommerce) WITH PAYMENT
+// 11. GET LEADER BY ID (Public - For Pension Support)
 // ============================================================
-router.post('/orders', async (req, res) => {
+router.get('/leaders/:id', async (req, res) => {
+  try {
+    const db = await getClient();
+    const leaderId = req.params.id;
+
+    const result = await db.query(`
+      SELECT 
+        l.id,
+        l.user_id,
+        l.leader_type,
+        l.name,
+        l.title,
+        l.location,
+        l.county,
+        l.mosque_name,
+        l.mosque_location,
+        l.qualifications,
+        l.years_of_service,
+        l.is_verified,
+        l.is_public,
+        l.share_link,
+        u.profile_image,
+        u.bio,
+        u.phone,
+        u.email,
+        lp.total_contributions,
+        lp.total_supporters
+      FROM leaders l
+      JOIN users u ON l.user_id = u.id
+      LEFT JOIN leader_pension_balances lp ON l.id = lp.leader_id
+      WHERE l.id = $1 AND l.is_public = true AND l.status = 'approved'
+    `, [leaderId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Leader not found' });
+    }
+
+    res.json({ success: true, leader: result.rows[0] });
+
+  } catch (err) {
+    console.error('Error fetching leader:', err.message);
+    res.status(500).json({ error: 'Failed to fetch leader' });
+  }
+});
+
+// ============================================================
+// 12. SUPPORT LEADER (Contribute to their pension)
+// ============================================================
+router.post('/support-leader', async (req, res) => {
   const db = await getClient();
 
   try {
     const userId = req.user.id;
-    const {
-      vendor_id,
-      items,
-      subtotal,
-      delivery_fee,
-      delivery_address,
-      delivery_type,
-      special_instructions
-    } = req.body;
+    const { leader_id, amount, frequency = 'once' } = req.body;
 
-    if (!vendor_id || !items || !subtotal) {
-      return res.status(400).json({ error: 'Vendor ID, items, and subtotal are required' });
+    if (!leader_id) {
+      return res.status(400).json({ error: 'Leader ID is required' });
     }
 
-    const totalAmount = subtotal + (delivery_fee || 0);
+    if (!amount || parseInt(amount) < 10) {
+      return res.status(400).json({ error: 'Minimum contribution is KES 10' });
+    }
 
-    // ============================================================
-    // VIRTUAL ACCOUNT PAYMENT FLOW FOR ORDERS
-    // ============================================================
+    const contributionAmount = parseInt(amount);
 
-    // 1. Get client's virtual account
-    const clientAccount = await virtualAccountService.getUserAccount(userId);
+    const leaderCheck = await db.query(`
+      SELECT l.id, l.user_id, u.fullname 
+      FROM leaders l
+      JOIN users u ON l.user_id = u.id
+      WHERE l.id = $1 AND l.is_public = true AND l.status = 'approved'
+    `, [leader_id]);
 
-    if (!clientAccount) {
-      return res.status(404).json({
-        error: 'Virtual account not found. Please contact support.'
+    if (leaderCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Leader not found or not accepting contributions' });
+    }
+
+    const leader = leaderCheck.rows[0];
+
+    const userAccount = await virtualAccountService.getUserAccount(userId);
+
+    if (!userAccount) {
+      return res.status(404).json({ 
+        error: 'Virtual account not found. Please contact support.' 
       });
     }
 
-    // 2. Check if client has enough balance
-    if (clientAccount.balance < totalAmount) {
-      return res.status(400).json({
-        error: `Insufficient balance. Available: KES ${clientAccount.balance.toLocaleString()}, Required: KES ${totalAmount.toLocaleString()}`
+    if (userAccount.balance < contributionAmount) {
+      return res.status(400).json({ 
+        error: 'Insufficient balance',
+        balance: userAccount.balance,
+        required: contributionAmount
       });
     }
 
-    // 3. Get vendor's virtual account
-    const vendorAccount = await virtualAccountService.getUserAccount(vendor_id);
+    const PENSION_MASTER_ACCOUNT = process.env.PENSION_MASTER_ACCOUNT || 'PENSION-MASTER-001';
 
-    if (!vendorAccount) {
-      return res.status(404).json({
-        error: 'Vendor virtual account not found. Please contact support.'
+    const masterAccount = await virtualAccountService.getAccountByNumber(PENSION_MASTER_ACCOUNT);
+
+    if (!masterAccount) {
+      console.error('[Pension] Master account not found:', PENSION_MASTER_ACCOUNT);
+      return res.status(500).json({ 
+        error: 'Pension master account not configured. Please contact support.' 
       });
     }
-
-    const orderId = 'ord-' + Date.now();
-    const transactionRef = 'PAY-' + Date.now().toString(36).toUpperCase() + uuidv4().slice(0, 6).toUpperCase();
 
     await db.query('BEGIN');
 
     try {
-      // 4. Transfer payment from client to vendor
       await virtualAccountService.processTransfer(
         userId,
-        clientAccount.account_number,
-        vendorAccount.account_number,
-        totalAmount,
-        `Order - ${orderId}`
+        userAccount.account_number,
+        PENSION_MASTER_ACCOUNT,
+        contributionAmount,
+        `Pension contribution for leader (${leader_id})`
       );
 
-      // 5. Create order
+      const contributionId = 'pcont-' + Date.now().toString(36) + require('crypto').randomBytes(4).toString('hex');
       await db.query(`
-        INSERT INTO orders (
-          id, user_id, vendor_id, items, subtotal, delivery_fee, total_amount,
-          delivery_address, delivery_type, special_instructions, status,
-          payment_status, payment_reference, order_date
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending', 'completed', $11, NOW())
-      `, [orderId, userId, vendor_id, JSON.stringify(items), subtotal, delivery_fee || 0, totalAmount, delivery_address || null, delivery_type || 'delivery', special_instructions || null, transactionRef]);
+        INSERT INTO leader_pension_contributions (
+          id, leader_id, user_id, amount, payment_method, status, contribution_date, is_self_contribution
+        ) VALUES ($1, $2, $3, $4, 'wallet', 'pending', NOW(), false)
+      `, [contributionId, leader_id, userId, contributionAmount]);
 
-      // 6. Update vendor stats
       await db.query(`
-        UPDATE vendor_profiles
-        SET total_orders = total_orders + 1,
-            total_revenue = total_revenue + $1,
+        UPDATE leader_pension_balances 
+        SET total_contributions = total_contributions + $1,
             updatedat = NOW()
-        WHERE user_id = $2
-      `, [totalAmount, vendor_id]);
+        WHERE leader_id = $2
+      `, [contributionAmount, leader_id]);
 
-      // 7. Create notification for vendor
-      const vendorNotifId = 'notif-' + Date.now().toString(36) + uuidv4().slice(0, 8);
+      const existingSupporter = await db.query(
+        'SELECT id FROM leader_supporters WHERE leader_id = $1 AND user_id = $2',
+        [leader_id, userId]
+      );
+
+      if (existingSupporter.rows.length > 0) {
+        await db.query(
+          'UPDATE leader_supporters SET amount = amount + $1, frequency = $2, updatedat = NOW() WHERE id = $3',
+          [contributionAmount, frequency || 'once', existingSupporter.rows[0].id]
+        );
+      } else {
+        const supporterId = 'supp-' + Date.now().toString(36) + require('crypto').randomBytes(4).toString('hex');
+        await db.query(`
+          INSERT INTO leader_supporters (id, leader_id, user_id, amount, frequency, status, createdat, updatedat)
+          VALUES ($1, $2, $3, $4, $5, 'active', NOW(), NOW())
+        `, [supporterId, leader_id, userId, contributionAmount, frequency || 'once']);
+
+        await db.query(`
+          UPDATE leader_pension_balances 
+          SET total_supporters = total_supporters + 1,
+              updatedat = NOW()
+          WHERE leader_id = $1
+        `, [leader_id]);
+      }
+
+      const notificationId = 'notif-' + Date.now().toString(36) + require('crypto').randomBytes(4).toString('hex');
       await db.query(`
         INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
         VALUES ($1, $2, $3, $4, $5, $6, NOW())
       `, [
-        vendorNotifId,
-        vendor_id,
-        'New Order Received',
-        `You have a new order! KES ${totalAmount.toLocaleString()} has been deposited to your virtual account.`,
-        'order',
-        `/vendor/orders`
-      ]);
-
-      // 8. Create notification for client
-      const clientNotifId = 'notif-' + Date.now().toString(36) + uuidv4().slice(0, 8);
-      await db.query(`
-        INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
-        VALUES ($1, $2, $3, $4, $5, $6, NOW())
-      `, [
-        clientNotifId,
-        userId,
-        'Order Placed',
-        `Your order has been placed. KES ${totalAmount.toLocaleString()} has been deducted from your virtual account.`,
-        'order',
-        `/client/orders`
+        notificationId,
+        leader.user_id,
+        'New Pension Contribution',
+        `A supporter has contributed KES ${contributionAmount.toLocaleString()} to your pension fund. Pending approval.`,
+        'pension',
+        `/leader-dashboard`
       ]);
 
       await db.query('COMMIT');
 
-      // Get updated client balance
-      const updatedClientAccount = await virtualAccountService.getUserAccount(userId);
+      const updatedAccount = await virtualAccountService.getUserAccount(userId);
 
       res.json({
         success: true,
-        message: 'Order placed and payment processed successfully',
-        orderId: orderId,
-        totalAmount: totalAmount,
-        payment_reference: transactionRef,
-        new_balance: updatedClientAccount?.balance || 0,
-        payment_status: 'completed'
+        message: 'Contribution recorded successfully. Pending admin approval.',
+        contribution_id: contributionId,
+        new_balance: updatedAccount?.balance || 0,
+        amount: contributionAmount,
+        leader_name: leader.fullname || 'Leader',
+        status: 'pending'
       });
 
     } catch (err) {
@@ -774,108 +802,15 @@ router.post('/orders', async (req, res) => {
     }
 
   } catch (err) {
-    await db.query('ROLLBACK');
-    console.error('Error creating order:', err.message);
-    res.status(500).json({ error: err.message || 'Failed to create order' });
+    console.error('Error supporting leader:', err.message);
+    res.status(500).json({ error: 'Failed to support leader' });
   }
 });
 
 // ============================================================
-// 13. GET USER ORDERS
+// 13. GET SUPPORTED LEADERS (Client)
 // ============================================================
-router.get('/orders', async (req, res) => {
-  try {
-    const db = await getClient();
-    const userId = req.user.id;
-
-    const result = await db.query(`
-      SELECT 
-        o.*,
-        u.fullname as vendor_name,
-        u.business_name
-      FROM orders o
-      JOIN users u ON o.vendor_id = u.id
-      WHERE o.user_id = $1
-      ORDER BY o.order_date DESC
-    `, [userId]);
-
-    res.json({ success: true, orders: result.rows });
-
-  } catch (err) {
-    console.error('Error fetching orders:', err.message);
-    res.status(500).json({ error: 'Failed to fetch orders' });
-  }
-});
-
-// ============================================================
-// 14. SUPPORT IMAM (Add to supporters)
-// ============================================================
-router.post('/support-imam', async (req, res) => {
-  try {
-    const db = await getClient();
-    const userId = req.user.id;
-    const { imam_id, amount, frequency } = req.body;
-
-    if (!imam_id) {
-      return res.status(400).json({ error: 'Imam ID is required' });
-    }
-
-    const userCheck = await db.query(
-      'SELECT role FROM users WHERE id = $1',
-      [userId]
-    );
-
-    if (userCheck.rows[0]?.role !== 'client') {
-      return res.status(403).json({ error: 'Only clients can support imams' });
-    }
-
-    const imamCheck = await db.query(`
-      SELECT i.id FROM imams i
-      JOIN users u ON i.user_id = u.id
-      WHERE i.id = $1 AND u.imam_status = 'approved'
-    `, [imam_id]);
-
-    if (imamCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Approved imam not found' });
-    }
-
-    const existing = await db.query(
-      'SELECT id FROM supporters WHERE imam_id = $1 AND user_id = $2',
-      [imam_id, userId]
-    );
-
-    if (existing.rows.length > 0) {
-      await db.query(
-        'UPDATE supporters SET amount = $1, frequency = $2, updatedat = NOW() WHERE id = $3',
-        [amount || 0, frequency || 'once', existing.rows[0].id]
-      );
-    } else {
-      const supportId = 'supp-' + Date.now();
-      await db.query(`
-        INSERT INTO supporters (id, imam_id, user_id, amount, frequency, status, createdat, updatedat)
-        VALUES ($1, $2, $3, $4, $5, 'active', NOW(), NOW())
-      `, [supportId, imam_id, userId, amount || 0, frequency || 'once']);
-
-      await db.query(`
-        UPDATE pension_balances 
-        SET total_supporters = total_supporters + 1,
-            updatedat = NOW()
-        WHERE imam_id = $1
-      `, [imam_id]);
-    }
-
-    res.json({ success: true, message: 'Support added successfully' });
-
-  } catch (err) {
-    console.error('Error supporting imam:', err.message);
-    res.status(500).json({ error: 'Failed to support imam' });
-  }
-});
-
-// ============================================================
-// 15. GET SUPPORTED IMAMS (Client)
-// ============================================================
-router.get('/supported-imams', async (req, res) => {
+router.get('/supported-leaders', async (req, res) => {
   try {
     const db = await getClient();
     const userId = req.user.id;
@@ -883,13 +818,14 @@ router.get('/supported-imams', async (req, res) => {
     const result = await db.query(`
       SELECT 
         s.*,
-        u.fullname as imam_name,
+        u.fullname as leader_name,
         u.profile_image,
-        i.mosque_name,
-        i.mosque_location
-      FROM supporters s
-      JOIN imams i ON s.imam_id = i.id
-      JOIN users u ON i.user_id = u.id
+        l.leader_type,
+        l.mosque_name,
+        l.location
+      FROM leader_supporters s
+      JOIN leaders l ON s.leader_id = l.id
+      JOIN users u ON l.user_id = u.id
       WHERE s.user_id = $1 AND s.status = 'active'
       ORDER BY s.createdat DESC
     `, [userId]);
@@ -897,13 +833,74 @@ router.get('/supported-imams', async (req, res) => {
     res.json({ success: true, supported: result.rows });
 
   } catch (err) {
-    console.error('Error fetching supported imams:', err.message);
-    res.status(500).json({ error: 'Failed to fetch supported imams' });
+    console.error('Error fetching supported leaders:', err.message);
+    res.status(500).json({ error: 'Failed to fetch supported leaders' });
   }
 });
 
 // ============================================================
-// 16. GET MOSQUES (Public)
+// 14. GET ALL LEADERS FOR CONSULTATION (Public)
+// ============================================================
+router.get('/consultation-leaders', async (req, res) => {
+  try {
+    const db = await getClient();
+    const { leader_type, county, limit = 50 } = req.query;
+
+    let query = `
+      SELECT 
+        l.id,
+        l.user_id,
+        l.leader_type,
+        l.name,
+        l.title,
+        l.location,
+        l.county,
+        l.qualifications as expertise,
+        l.consultation_fee as fee,
+        l.years_of_service as experience,
+        l.bio,
+        l.is_verified as verified,
+        l.consultation_types,
+        l.available_for_consultation as available,
+        u.fullname as name,
+        u.profile_image,
+        u.email,
+        u.phone
+      FROM leaders l
+      JOIN users u ON l.user_id = u.id
+      WHERE l.available_for_consultation = true 
+        AND l.status = 'approved'
+        AND u.role = 'leader'
+    `;
+    const params = [];
+    let paramIndex = 1;
+
+    if (leader_type && leader_type !== 'all') {
+      query += ` AND l.leader_type = $${paramIndex}`;
+      params.push(leader_type);
+      paramIndex++;
+    }
+
+    if (county && county !== 'All') {
+      query += ` AND l.county = $${paramIndex}`;
+      params.push(county);
+      paramIndex++;
+    }
+
+    query += ` ORDER BY l.is_verified DESC, l.rating DESC NULLS LAST, u.fullname ASC LIMIT ${parseInt(limit)}`;
+
+    const result = await db.query(query, params);
+
+    res.json({ success: true, leaders: result.rows });
+
+  } catch (err) {
+    console.error('Error fetching consultation leaders:', err.message);
+    res.status(500).json({ error: 'Failed to fetch consultation leaders' });
+  }
+});
+
+// ============================================================
+// 15. GET MOSQUES (Public)
 // ============================================================
 router.get('/mosques', async (req, res) => {
   try {
@@ -911,10 +908,10 @@ router.get('/mosques', async (req, res) => {
     const { county, limit = 50 } = req.query;
 
     let query = `
-      SELECT m.*, u.fullname as imam_name
+      SELECT m.*, u.fullname as leader_name
       FROM mosques m
-      LEFT JOIN imams i ON m.imam_id = i.id
-      LEFT JOIN users u ON i.user_id = u.id
+      LEFT JOIN leaders l ON m.leader_id = l.id
+      LEFT JOIN users u ON l.user_id = u.id
       WHERE 1=1
     `;
     const params = [];
@@ -939,7 +936,7 @@ router.get('/mosques', async (req, res) => {
 });
 
 // ============================================================
-// 17. GET RESTAURANT MENU ITEMS (Public)
+// 16. GET RESTAURANT MENU ITEMS (Public)
 // ============================================================
 router.get('/menu-items', async (req, res) => {
   try {
@@ -980,7 +977,7 @@ router.get('/menu-items', async (req, res) => {
 });
 
 // ============================================================
-// 18. GET ALL HAJJ PACKAGES (Public)
+// 17. GET ALL HAJJ PACKAGES (Public)
 // ============================================================
 router.get('/hajj/packages', async (req, res) => {
   try {
@@ -1050,7 +1047,7 @@ router.get('/hajj/packages', async (req, res) => {
 });
 
 // ============================================================
-// 19. GET HAJJ PACKAGE BY ID (Public)
+// 18. GET HAJJ PACKAGE BY ID (Public)
 // ============================================================
 router.get('/hajj/packages/:packageId', async (req, res) => {
   try {
@@ -1089,7 +1086,7 @@ router.get('/hajj/packages/:packageId', async (req, res) => {
 });
 
 // ============================================================
-// 20. CREATE HAJJ BOOKING (Client only) WITH PAYMENT
+// 19. CREATE HAJJ BOOKING (Client only) WITH PAYMENT
 // ============================================================
 router.post('/hajj/book', async (req, res) => {
   const db = await getClient();
@@ -1116,7 +1113,6 @@ router.post('/hajj/book', async (req, res) => {
       return res.status(400).json({ error: 'At least 1 pilgrim is required' });
     }
 
-    // Get package details
     const packageResult = await db.query(`
       SELECT vendor_id, name, price, available_slots, type
       FROM hajj_packages
@@ -1135,11 +1131,6 @@ router.post('/hajj/book', async (req, res) => {
 
     const totalPrice = pkg.price * pilgrims;
 
-    // ============================================================
-    // VIRTUAL ACCOUNT PAYMENT FLOW FOR HAJJ BOOKING
-    // ============================================================
-
-    // 1. Get client's virtual account
     const clientAccount = await virtualAccountService.getUserAccount(userId);
 
     if (!clientAccount) {
@@ -1148,14 +1139,12 @@ router.post('/hajj/book', async (req, res) => {
       });
     }
 
-    // 2. Check if client has enough balance
     if (clientAccount.balance < totalPrice) {
       return res.status(400).json({
         error: `Insufficient balance. Available: KES ${clientAccount.balance.toLocaleString()}, Required: KES ${totalPrice.toLocaleString()}`
       });
     }
 
-    // 3. Get vendor's virtual account
     const vendorAccount = await virtualAccountService.getUserAccount(pkg.vendor_id);
 
     if (!vendorAccount) {
@@ -1170,7 +1159,6 @@ router.post('/hajj/book', async (req, res) => {
     await db.query('BEGIN');
 
     try {
-      // 4. Transfer payment from client to vendor
       await virtualAccountService.processTransfer(
         userId,
         clientAccount.account_number,
@@ -1179,7 +1167,6 @@ router.post('/hajj/book', async (req, res) => {
         `Hajj booking - ${bookingId}`
       );
 
-      // 5. Create booking
       await db.query(`
         INSERT INTO hajj_bookings (
           id, user_id, package_id, pilgrims, pilgrim_names,
@@ -1201,20 +1188,17 @@ router.post('/hajj/book', async (req, res) => {
         transactionRef
       ]);
 
-      // 6. Update available slots
       await db.query(`
         UPDATE hajj_packages
         SET available_slots = available_slots - $1, updatedat = NOW()
         WHERE id = $2
       `, [pilgrims, package_id]);
 
-      // 7. Get user details for notification
       const userResult = await db.query(
         'SELECT fullname, phone FROM users WHERE id = $1',
         [userId]
       );
 
-      // 8. Notification for vendor
       const vendorNotifId = 'notif-' + Date.now().toString(36) + uuidv4().slice(0, 8);
       await db.query(`
         INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
@@ -1228,7 +1212,6 @@ router.post('/hajj/book', async (req, res) => {
         `/vendor/hajj-bookings`
       ]);
 
-      // 9. Notification for client
       const clientNotifId = 'notif-' + Date.now().toString(36) + uuidv4().slice(0, 8);
       await db.query(`
         INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
@@ -1244,7 +1227,6 @@ router.post('/hajj/book', async (req, res) => {
 
       await db.query('COMMIT');
 
-      // Get updated client balance
       const updatedClientAccount = await virtualAccountService.getUserAccount(userId);
 
       res.status(201).json({
@@ -1271,7 +1253,7 @@ router.post('/hajj/book', async (req, res) => {
 });
 
 // ============================================================
-// 21. GET USER HAJJ BOOKINGS (Client only)
+// 20. GET USER HAJJ BOOKINGS (Client only)
 // ============================================================
 router.get('/hajj/bookings', async (req, res) => {
   try {
@@ -1320,7 +1302,7 @@ router.get('/hajj/bookings', async (req, res) => {
 });
 
 // ============================================================
-// 22. GET HAJJ BOOKING BY ID (Client only)
+// 21. GET HAJJ BOOKING BY ID (Client only)
 // ============================================================
 router.get('/hajj/bookings/:bookingId', async (req, res) => {
   try {
@@ -1365,7 +1347,7 @@ router.get('/hajj/bookings/:bookingId', async (req, res) => {
 });
 
 // ============================================================
-// 23. CANCEL HAJJ BOOKING (Client only - within 24 hours)
+// 22. CANCEL HAJJ BOOKING (Client only - within 24 hours)
 // ============================================================
 router.put('/hajj/bookings/:bookingId/cancel', async (req, res) => {
   const db = await getClient();
@@ -1396,7 +1378,6 @@ router.put('/hajj/bookings/:bookingId/cancel', async (req, res) => {
       return res.status(400).json({ error: 'Cannot cancel a completed booking' });
     }
 
-    // Check if within 24 hours of booking creation
     const bookingDate = new Date(booking.booking_date);
     const now = new Date();
     const hoursDiff = (now - bookingDate) / (1000 * 60 * 60);
@@ -1405,7 +1386,6 @@ router.put('/hajj/bookings/:bookingId/cancel', async (req, res) => {
       return res.status(400).json({ error: 'Cancellations only allowed within 24 hours of booking' });
     }
 
-    // Get client's virtual account for refund
     const clientAccount = await virtualAccountService.getUserAccount(userId);
 
     if (!clientAccount) {
@@ -1414,7 +1394,6 @@ router.put('/hajj/bookings/:bookingId/cancel', async (req, res) => {
       });
     }
 
-    // Get vendor's virtual account
     const vendorAccount = await virtualAccountService.getUserAccount(booking.vendor_id);
 
     if (!vendorAccount) {
@@ -1429,7 +1408,6 @@ router.put('/hajj/bookings/:bookingId/cancel', async (req, res) => {
     await db.query('BEGIN');
 
     try {
-      // 1. Refund from vendor back to client (reverse transfer)
       await virtualAccountService.processTransfer(
         booking.vendor_id,
         vendorAccount.account_number,
@@ -1438,7 +1416,6 @@ router.put('/hajj/bookings/:bookingId/cancel', async (req, res) => {
         `Hajj booking refund - ${bookingId}`
       );
 
-      // 2. Update booking status
       await db.query(`
         UPDATE hajj_bookings
         SET status = 'cancelled',
@@ -1448,7 +1425,6 @@ router.put('/hajj/bookings/:bookingId/cancel', async (req, res) => {
         WHERE id = $3
       `, [reason || 'No reason provided', transactionRef, bookingId]);
 
-      // 3. Restore available slots
       await db.query(`
         UPDATE hajj_packages
         SET available_slots = available_slots + $1, updatedat = NOW()

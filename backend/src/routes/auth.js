@@ -25,8 +25,27 @@ async function getClient() {
 
 const otpStore = new Map();
 
+// Leader types
+const LEADER_TYPES = [
+  'islamic_scholar',
+  'imam',
+  'adhan_caller',
+  'ustadh',
+  'ustadha',
+  'kadhi'
+];
+
+const LEADER_TYPE_LABELS = {
+  'islamic_scholar': 'Islamic Scholar',
+  'imam': 'Imam',
+  'adhan_caller': 'Adhan Caller',
+  'ustadh': 'Ustadh',
+  'ustadha': 'Ustadha',
+  'kadhi': 'Kadhi'
+};
+
 // ============================================================
-// REGISTRATION OTP ENDPOINTS
+// REGISTRATION OTP ENDPOINTS (PUBLIC - No Auth Required)
 // ============================================================
 
 router.post('/send-registration-otp', async (req, res) => {
@@ -110,13 +129,12 @@ const createVirtualAccount = async (userId) => {
     return account;
   } catch (err) {
     console.error('[Auth] Failed to create virtual account:', err.message);
-    // Don't throw - registration should succeed even if account creation fails
     return null;
   }
 };
 
 // ============================================================
-// 1. CLIENT REGISTRATION (with Virtual Account)
+// 1. CLIENT REGISTRATION (PUBLIC - No Auth Required)
 // ============================================================
 router.post('/register-client', async (req, res) => {
   try {
@@ -138,23 +156,19 @@ router.post('/register-client', async (req, res) => {
     await db.query('BEGIN');
     
     try {
-      // Create user
       await db.query(
         `INSERT INTO users (id, fullname, phone, email, nationalid, pinhash, role, region, sub_county, ward, kycstatus)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending')`,
         [userId, fullName, phone, email, nationalId, pinHash, 'client', region || '', subCounty || '', ward || '']
       );
       
-      // Commit user creation first
       await db.query('COMMIT');
       
-      // Create virtual account AFTER user is committed
       await createVirtualAccount(userId);
       
       otpStore.delete(`reg_${phone}`);
       otpStore.delete(`reg_${phone}_verified`);
       
-      // Get virtual account balance
       const account = await virtualAccountService.getUserAccount(userId);
       const balance = account?.balance || 0;
       
@@ -195,7 +209,7 @@ router.post('/register-client', async (req, res) => {
 });
 
 // ============================================================
-// 2. VENDOR REGISTRATION (with Virtual Account)
+// 2. VENDOR REGISTRATION (PUBLIC - No Auth Required)
 // ============================================================
 router.post('/register-vendor', async (req, res) => {
   try {
@@ -234,7 +248,6 @@ router.post('/register-vendor', async (req, res) => {
     const vendorId = 'vendor-' + Date.now();
     const profileId = 'profile-' + Date.now();
     
-    // Determine vendor type (default to businessType if vendorType not provided)
     const vendorTypeValue = vendorType || businessType || 'halalmarket';
     
     await db.query('BEGIN');
@@ -279,16 +292,13 @@ router.post('/register-vendor', async (req, res) => {
         true
       ]);
       
-      // Commit vendor creation first
       await db.query('COMMIT');
       
-      // Create virtual account AFTER vendor is committed
       await createVirtualAccount(vendorId);
       
       otpStore.delete(`reg_${phone}`);
       otpStore.delete(`reg_${phone}_verified`);
       
-      // Get virtual account balance
       const account = await virtualAccountService.getUserAccount(vendorId);
       const balance = account?.balance || 0;
       
@@ -318,26 +328,57 @@ router.post('/register-vendor', async (req, res) => {
 });
 
 // ============================================================
-// 3. RELIGIOUS LEADER REGISTRATION (with Virtual Account)
+// 3. LEADER REGISTRATION (PUBLIC - No Auth Required)
 // ============================================================
-router.post('/register-imam', async (req, res) => {
+router.post('/register-leader', async (req, res) => {
   try {
     const { 
-      fullName, phone, email, nationalId, pin, 
-      title, subRole, mosqueName, mosqueLocation, mosqueCounty, qualifications, yearsOfService,
-      region, subCounty, ward, termsAccepted 
+      fullName, 
+      phone, 
+      email, 
+      nationalId, 
+      pin, 
+      leaderType,
+      location,
+      region,
+      subCounty,
+      ward,
+      mosqueName,
+      mosqueLocation,
+      qualifications, 
+      yearsOfService,
+      bio,
+      institution,
+      consultationFee,
+      consultationTypes,
+      availableForConsultation,
+      termsAccepted 
     } = req.body;
     
     if (!fullName || !phone || !email || !nationalId || !pin) {
       return res.status(400).json({ error: 'All fields are required' });
     }
     
-    if (!mosqueName || !mosqueLocation) {
-      return res.status(400).json({ error: 'Mosque name and location are required' });
+    if (!leaderType || !LEADER_TYPES.includes(leaderType)) {
+      return res.status(400).json({ 
+        error: 'Valid leader type is required. Types: ' + LEADER_TYPES.join(', ')
+      });
     }
     
-    if (!subRole || !['imam', 'kadhi'].includes(subRole)) {
-      return res.status(400).json({ error: 'Please select a valid sub-role (Imam or Kadhi)' });
+    if (!location) {
+      return res.status(400).json({ error: 'Location is required' });
+    }
+    
+    if (!region) {
+      return res.status(400).json({ error: 'County is required' });
+    }
+    
+    if (!subCounty) {
+      return res.status(400).json({ error: 'Sub-county is required' });
+    }
+    
+    if (!ward) {
+      return res.status(400).json({ error: 'Ward is required' });
     }
     
     if (!termsAccepted) {
@@ -351,8 +392,12 @@ router.post('/register-imam', async (req, res) => {
     
     const db = await getClient();
     const pinHash = await bcrypt.hash(pin, 12);
-    const imamId = 'imam-' + Date.now();
-    const imamProfileId = 'imamprof-' + Date.now();
+    const leaderId = 'leader-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
+    const leaderProfileId = 'lprof-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
+    const shareLink = 'leader-' + Date.now().toString(36) + crypto.randomBytes(6).toString('hex');
+    
+    // Auto-generate title from leader type
+    const finalTitle = LEADER_TYPE_LABELS[leaderType] || leaderType;
     
     await db.query('BEGIN');
     
@@ -360,88 +405,64 @@ router.post('/register-imam', async (req, res) => {
       await db.query(
         `INSERT INTO users (
           id, fullname, phone, email, nationalid, pinhash, role, region, sub_county, ward, 
-          imam_status, kycstatus
+          leader_status, kycstatus
          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending', 'pending')`,
-        [imamId, fullName, phone, email, nationalId, pinHash, 'imam', region || '', subCounty || '', ward || '']
+        [leaderId, fullName, phone, email, nationalId, pinHash, 'leader', region, subCounty, ward]
       );
       
       await db.query(`
-        INSERT INTO imams (
-          id, user_id, title, sub_role, mosque_name, mosque_location, mosque_county, 
-          qualifications, years_of_service, status, createdat, updatedat
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending', NOW(), NOW())
+        INSERT INTO leaders (
+          id, user_id, leader_type, name, title, location, region, sub_county, ward,
+          mosque_name, mosque_location,
+          qualifications, years_of_service, bio, institution,
+          consultation_fee, consultation_types, available_for_consultation,
+          is_verified, status, is_public, share_link, createdat, updatedat
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, false, 'pending', false, $19, NOW(), NOW())
       `, [
-        imamProfileId, 
-        imamId, 
-        title || 'Imam', 
-        subRole, 
-        mosqueName, 
-        mosqueLocation, 
-        mosqueCounty || '', 
+        leaderProfileId, 
+        leaderId, 
+        leaderType, 
+        fullName,
+        finalTitle, 
+        location,
+        region,
+        subCounty,
+        ward,
+        mosqueName || null,
+        mosqueLocation || null,
         qualifications || [], 
-        parseInt(yearsOfService) || 0
-      ]);
-      
-      // Create mosque entry
-      const mosqueId = 'mosque-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
-      await db.query(`
-        INSERT INTO mosques (
-          id, name, location, county, imam_id, createdat, updatedat
-        ) VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
-      `, [
-        mosqueId,
-        mosqueName,
-        mosqueLocation,
-        mosqueCounty || '',
-        imamProfileId
+        parseInt(yearsOfService) || 0, 
+        bio || null,
+        institution || null,
+        parseInt(consultationFee) || 0,
+        consultationTypes || ['video'],
+        availableForConsultation !== false,
+        shareLink
       ]);
       
       await db.query(`
-        INSERT INTO pension_balances (imam_id, total_contributions, total_supporters)
+        INSERT INTO leader_pension_balances (leader_id, total_contributions, total_supporters)
         VALUES ($1, 0, 0)
-      `, [imamProfileId]);
+      `, [leaderProfileId]);
       
-      // If subRole is kadhi, also create entry in kadhis table
-      if (subRole === 'kadhi') {
-        const kadhiId = 'kadhi-' + Date.now();
-        await db.query(`
-          INSERT INTO kadhis (
-            id, user_id, name, type, county, expertise, experience, bio, institution, available, createdat, updatedat
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
-        `, [
-          kadhiId,
-          imamId,
-          fullName,
-          'kadhi',
-          mosqueCounty || '',
-          qualifications || [],
-          parseInt(yearsOfService) || 0,
-          req.body.bio || '',
-          req.body.institution || '',
-          true
-        ]);
-      }
-      
-      // Commit religious leader creation first
       await db.query('COMMIT');
       
-      // Create virtual account AFTER leader is committed
-      await createVirtualAccount(imamId);
+      await createVirtualAccount(leaderId);
       
       otpStore.delete(`reg_${phone}`);
       otpStore.delete(`reg_${phone}_verified`);
       
-      // Get virtual account balance
-      const account = await virtualAccountService.getUserAccount(imamId);
+      const account = await virtualAccountService.getUserAccount(leaderId);
       const balance = account?.balance || 0;
+      
+      const leaderTypeLabel = LEADER_TYPE_LABELS[leaderType] || leaderType;
       
       res.status(201).json({
         success: true,
-        message: `${
-          subRole === 'kadhi' ? 'Kadhi' : 'Imam'
-        } application submitted successfully! Awaiting admin approval.`,
-        imamId: imamId,
-        subRole: subRole,
+        message: `${leaderTypeLabel} application submitted successfully! Awaiting admin approval.`,
+        leaderId: leaderId,
+        leaderType: leaderType,
+        shareLink: shareLink,
         status: 'pending',
         balance: balance,
         accountNumber: account?.account_number || null
@@ -456,14 +477,14 @@ router.post('/register-imam', async (req, res) => {
     if (err.code === '23505') {
       res.status(409).json({ error: 'Phone, email, or national ID already registered' });
     } else {
-      console.error('Religious leader registration error:', err.message);
+      console.error('Leader registration error:', err.message);
       res.status(500).json({ error: err.message });
     }
   }
 });
 
 // ============================================================
-// 4. LOGIN - Step 1 (Send OTP)
+// 4. LOGIN - Step 1 (Send OTP) - PUBLIC - No Auth Required
 // ============================================================
 router.post('/login-step1', async (req, res) => {
   const { phone } = req.body;
@@ -507,7 +528,7 @@ router.post('/login-step1', async (req, res) => {
 });
 
 // ============================================================
-// 5. LOGIN - Step 2 (Verify OTP and PIN)
+// 5. LOGIN - Step 2 (Verify OTP and PIN) - PUBLIC - No Auth Required
 // ============================================================
 router.post('/login-step2', async (req, res) => {
   try {
@@ -533,14 +554,15 @@ router.post('/login-step2', async (req, res) => {
     
     const db = await getClient();
     
-    // ============================================================
-    // UPDATED: Remove walletbalance from query - get from virtual account
-    // ============================================================
     const result = await db.query(
-      `SELECT u.id, u.fullname, u.phone, u.email, u.role, u.pinhash, u.vendor_status, u.imam_status, u.kycstatus,
-              vp.vendor_type
+      `SELECT u.id, u.fullname, u.phone, u.email, u.role, u.pinhash, u.vendor_status, u.leader_status, u.kycstatus,
+              vp.vendor_type,
+              l.leader_type,
+              l.share_link,
+              l.is_public
        FROM users u
        LEFT JOIN vendor_profiles vp ON u.id = vp.user_id
+       LEFT JOIN leaders l ON u.id = l.user_id
        WHERE u.phone = $1`,
       [phone]
     );
@@ -558,39 +580,33 @@ router.post('/login-step2', async (req, res) => {
     }
     
     let statusWarning = null;
-    let subRole = null;
     let vendorType = user.vendor_type || null;
+    let leaderType = user.leader_type || null;
+    let shareLink = user.share_link || null;
+    let isPublic = user.is_public || false;
     
     if (user.role === 'vendor' && user.vendor_status !== 'approved') {
       statusWarning = `Vendor account status: ${user.vendor_status}`;
     }
     
-    if (user.role === 'imam' && user.imam_status !== 'approved') {
-      statusWarning = `Religious leader account status: ${user.imam_status}`;
-    }
-    
-    // Get sub_role if user is an imam
-    if (user.role === 'imam') {
-      const imamResult = await db.query(
-        'SELECT sub_role FROM imams WHERE user_id = $1',
-        [user.id]
-      );
-      if (imamResult.rows.length > 0) {
-        subRole = imamResult.rows[0].sub_role || 'imam';
-      }
+    if (user.role === 'leader' && user.leader_status !== 'approved') {
+      statusWarning = `Leader account status: ${user.leader_status}`;
     }
     
     otpStore.delete(`login_${phone}`);
     
-    // ============================================================
-    // GET VIRTUAL ACCOUNT BALANCE
-    // ============================================================
     const account = await virtualAccountService.getUserAccount(user.id);
     const balance = account?.balance || 0;
     const accountNumber = account?.account_number || null;
     
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, subRole: subRole, vendorType: vendorType },
+      { 
+        id: user.id, 
+        email: user.email, 
+        role: user.role,
+        leaderType: leaderType,
+        vendorType: vendorType
+      },
       process.env.JWT_SECRET || 'halalhub_sharia_2025',
       { expiresIn: '7d' }
     );
@@ -605,13 +621,15 @@ router.post('/login-step2', async (req, res) => {
         phone: user.phone,
         email: user.email,
         role: user.role,
-        subRole: subRole,
+        leaderType: leaderType,
         vendorType: vendorType,
-        vendorStatus: user.vendor_status || 'pending',
-        imamStatus: user.imam_status || 'pending',
+        vendorStatus: user.vendor_status || null,
+        leaderStatus: user.leader_status || null,
         kycStatus: user.kycstatus || 'pending',
         balance: balance,
-        accountNumber: accountNumber
+        accountNumber: accountNumber,
+        shareLink: shareLink,
+        isPublic: isPublic
       },
       statusWarning: statusWarning
     });
@@ -622,28 +640,29 @@ router.post('/login-step2', async (req, res) => {
 });
 
 // ============================================================
-// 6. GET CURRENT USER
+// 6. GET CURRENT USER - PROTECTED (Requires Authentication)
 // ============================================================
+const { authenticate, authorize } = require('../middleware/auth');
+
+// All routes below this line require authentication
+router.use(authenticate);
+
 router.get('/me', async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-      return res.status(401).json({ error: 'No token provided' });
-    }
-    
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'halalhub_sharia_2025');
     const db = await getClient();
+    const userId = req.user.id;
     
-    // ============================================================
-    // UPDATED: Remove walletbalance from query - get from virtual account
-    // ============================================================
     const result = await db.query(
-      `SELECT u.id, u.fullname, u.phone, u.email, u.role, u.vendor_status, u.imam_status, u.kycstatus,
-              vp.vendor_type
+      `SELECT u.id, u.fullname, u.phone, u.email, u.role, u.vendor_status, u.leader_status, u.kycstatus,
+              vp.vendor_type,
+              l.leader_type,
+              l.share_link,
+              l.is_public
        FROM users u
        LEFT JOIN vendor_profiles vp ON u.id = vp.user_id
+       LEFT JOIN leaders l ON u.id = l.user_id
        WHERE u.id = $1`,
-      [decoded.id]
+      [userId]
     );
     
     if (result.rows.length === 0) {
@@ -651,21 +670,7 @@ router.get('/me', async (req, res) => {
     }
     
     const user = result.rows[0];
-    let subRole = null;
     
-    if (user.role === 'imam') {
-      const imamResult = await db.query(
-        'SELECT sub_role FROM imams WHERE user_id = $1',
-        [user.id]
-      );
-      if (imamResult.rows.length > 0) {
-        subRole = imamResult.rows[0].sub_role || 'imam';
-      }
-    }
-    
-    // ============================================================
-    // GET VIRTUAL ACCOUNT BALANCE
-    // ============================================================
     const account = await virtualAccountService.getUserAccount(user.id);
     const balance = account?.balance || 0;
     const accountNumber = account?.account_number || null;
@@ -678,13 +683,15 @@ router.get('/me', async (req, res) => {
         phone: user.phone,
         email: user.email,
         role: user.role,
-        subRole: subRole,
+        leaderType: user.leader_type || null,
         vendorType: user.vendor_type || null,
-        vendorStatus: user.vendor_status || 'pending',
-        imamStatus: user.imam_status || 'pending',
+        vendorStatus: user.vendor_status || null,
+        leaderStatus: user.leader_status || null,
         kycStatus: user.kycstatus || 'pending',
         balance: balance,
-        accountNumber: accountNumber
+        accountNumber: accountNumber,
+        shareLink: user.share_link || null,
+        isPublic: user.is_public || false
       } 
     });
   } catch (err) {

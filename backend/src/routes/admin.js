@@ -22,6 +22,16 @@ async function getClient() {
   return client;
 }
 
+// Leader types
+const LEADER_TYPES = [
+  'islamic_scholar',
+  'imam',
+  'adhan_caller',
+  'ustadh',
+  'ustadha',
+  'kadhi'
+];
+
 // ============================================================
 // 1. ADMIN LOGIN (No auth required - MUST BE FIRST)
 // ============================================================
@@ -76,7 +86,7 @@ router.use(authenticate);
 router.use(authorize('admin'));
 
 // ============================================================
-// 2. ADMIN DASHBOARD STATS (UPDATED with Butchery and Hajj)
+// 2. ADMIN DASHBOARD STATS (UPDATED with Leaders)
 // ============================================================
 router.get('/stats', async (req, res) => {
   try {
@@ -86,10 +96,10 @@ router.get('/stats', async (req, res) => {
       SELECT 
         (SELECT COUNT(*) FROM users) as total_users,
         (SELECT COUNT(*) FROM users WHERE role = 'vendor') as total_vendors,
-        (SELECT COUNT(*) FROM users WHERE role = 'imam') as total_imams,
+        (SELECT COUNT(*) FROM users WHERE role = 'leader') as total_leaders,
         (SELECT COUNT(*) FROM users WHERE role = 'client') as total_clients,
         (SELECT COUNT(*) FROM users WHERE vendor_status = 'pending') as pending_vendors,
-        (SELECT COUNT(*) FROM users WHERE imam_status = 'pending') as pending_imams,
+        (SELECT COUNT(*) FROM users WHERE leader_status = 'pending') as pending_leaders,
         (SELECT COUNT(*) FROM users WHERE kycstatus = 'pending') as pending_kyc,
         (SELECT COUNT(*) FROM orders) as total_orders,
         (SELECT COUNT(*) FROM bookings) as total_bookings,
@@ -106,10 +116,30 @@ router.get('/stats', async (req, res) => {
         (SELECT COUNT(*) FROM hajj_packages) as total_hajj_packages,
         (SELECT COUNT(*) FROM hajj_bookings) as total_hajj_bookings,
         (SELECT COUNT(*) FROM hajj_bookings WHERE status = 'pending') as pending_hajj_bookings,
-        (SELECT COUNT(*) FROM products WHERE meat_type IS NOT NULL) as total_butchery_products
+        (SELECT COUNT(*) FROM products WHERE meat_type IS NOT NULL) as total_butchery_products,
+        (SELECT COUNT(*) FROM leaders WHERE status = 'pending') as pending_leader_profiles
     `);
     
-    res.json({ success: true, stats: stats.rows[0] });
+    // Get leader type breakdown
+    const leaderBreakdown = await db.query(`
+      SELECT leader_type, COUNT(*) as count 
+      FROM leaders 
+      WHERE status = 'approved' 
+      GROUP BY leader_type
+    `);
+    
+    const leaderTypeStats = {};
+    leaderBreakdown.rows.forEach(row => {
+      leaderTypeStats[row.leader_type] = parseInt(row.count);
+    });
+    
+    res.json({ 
+      success: true, 
+      stats: {
+        ...stats.rows[0],
+        leaderTypeStats: leaderTypeStats
+      }
+    });
 
   } catch (err) {
     console.error('Error fetching admin stats:', err.message);
@@ -118,23 +148,25 @@ router.get('/stats', async (req, res) => {
 });
 
 // ============================================================
-// 3. GET ALL USERS (with filters including sub_role)
+// 3. GET ALL USERS (with filters including leader_type)
 // ============================================================
 router.get('/users', async (req, res) => {
   try {
     const db = await getClient();
-    const { role, status, sub_role, limit = 100 } = req.query;
+    const { role, status, leader_type, limit = 100 } = req.query;
     
     let query = `
       SELECT 
         u.*,
-        i.sub_role as imam_sub_role,
-        i.mosque_name,
-        i.mosque_location,
-        i.is_verified as imam_verified,
-        i.status as imam_profile_status
+        l.leader_type,
+        l.share_link,
+        l.is_public,
+        l.mosque_name,
+        l.mosque_location,
+        l.is_verified as leader_verified,
+        l.status as leader_profile_status
       FROM users u
-      LEFT JOIN imams i ON u.id = i.user_id
+      LEFT JOIN leaders l ON u.id = l.user_id
     `;
     const params = [];
     const conditions = [];
@@ -145,13 +177,13 @@ router.get('/users', async (req, res) => {
     }
     
     if (status) {
-      conditions.push(`(u.vendor_status = $${params.length + 1} OR u.imam_status = $${params.length + 1})`);
+      conditions.push(`(u.vendor_status = $${params.length + 1} OR u.leader_status = $${params.length + 1})`);
       params.push(status);
     }
     
-    if (sub_role) {
-      conditions.push(`i.sub_role = $${params.length + 1}`);
-      params.push(sub_role);
+    if (leader_type) {
+      conditions.push(`l.leader_type = $${params.length + 1}`);
+      params.push(leader_type);
     }
     
     if (conditions.length > 0) {
@@ -178,13 +210,15 @@ router.get('/users/:id', async (req, res) => {
     const result = await db.query(`
       SELECT 
         u.*,
-        i.sub_role as imam_sub_role,
-        i.mosque_name,
-        i.mosque_location,
-        i.is_verified as imam_verified,
-        i.status as imam_profile_status
+        l.leader_type,
+        l.share_link,
+        l.is_public,
+        l.mosque_name,
+        l.mosque_location,
+        l.is_verified as leader_verified,
+        l.status as leader_profile_status
       FROM users u
-      LEFT JOIN imams i ON u.id = i.user_id
+      LEFT JOIN leaders l ON u.id = l.user_id
       WHERE u.id = $1
     `, [req.params.id]);
     
@@ -250,7 +284,7 @@ router.delete('/users/:id', async (req, res) => {
 });
 
 // ============================================================
-// 6.5 UPDATE KYC STATUS
+// 7. UPDATE KYC STATUS
 // ============================================================
 router.put('/users/:id/kyc', async (req, res) => {
   try {
@@ -295,7 +329,7 @@ router.put('/users/:id/kyc', async (req, res) => {
 });
 
 // ============================================================
-// 7. GET PENDING VENDORS
+// 8. GET PENDING VENDORS
 // ============================================================
 router.get('/pending-vendors', async (req, res) => {
   try {
@@ -318,7 +352,7 @@ router.get('/pending-vendors', async (req, res) => {
 });
 
 // ============================================================
-// 8. APPROVE OR REJECT VENDOR
+// 9. APPROVE OR REJECT VENDOR
 // ============================================================
 router.put('/vendors/:id/verify', async (req, res) => {
   try {
@@ -382,34 +416,45 @@ router.put('/vendors/:id/verify', async (req, res) => {
 });
 
 // ============================================================
-// 9. GET PENDING IMAMS (including Kadhis)
+// 10. GET PENDING LEADERS (All 6 types)
 // ============================================================
-router.get('/pending-imams', async (req, res) => {
+router.get('/pending-leaders', async (req, res) => {
   try {
     const db = await getClient();
-    const result = await db.query(`
-      SELECT u.*, u.id as user_id, i.*
-      FROM users u
-      JOIN imams i ON u.id = i.user_id
-      WHERE u.role = 'imam' AND u.imam_status = 'pending'
-      ORDER BY u.createdat DESC
-    `);
+    const { leader_type } = req.query;
     
-    res.json({ success: true, imams: result.rows });
+    let query = `
+      SELECT u.*, u.id as user_id, l.*
+      FROM users u
+      JOIN leaders l ON u.id = l.user_id
+      WHERE u.role = 'leader' AND u.leader_status = 'pending'
+    `;
+    const params = [];
+    
+    if (leader_type && LEADER_TYPES.includes(leader_type)) {
+      query += ` AND l.leader_type = $1`;
+      params.push(leader_type);
+    }
+    
+    query += ' ORDER BY u.createdat DESC';
+    
+    const result = await db.query(query, params);
+    
+    res.json({ success: true, leaders: result.rows });
     
   } catch (err) {
-    console.error('Error fetching pending imams:', err.message);
+    console.error('Error fetching pending leaders:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
 // ============================================================
-// 10. APPROVE OR REJECT IMAM (also handles Kadhi)
+// 11. APPROVE OR REJECT LEADER
 // ============================================================
-router.put('/imams/:id/verify', async (req, res) => {
+router.put('/leaders/:id/verify', async (req, res) => {
   try {
     const db = await getClient();
-    const imamId = req.params.id;
+    const leaderId = req.params.id;
     const { status, admin_notes } = req.body;
     
     if (!status || !['approved', 'rejected'].includes(status)) {
@@ -418,71 +463,64 @@ router.put('/imams/:id/verify', async (req, res) => {
     
     const result = await db.query(`
       UPDATE users SET 
-        imam_status = $1,
-        imam_approved_at = CASE WHEN $1 = 'approved' THEN NOW() ELSE NULL END,
+        leader_status = $1,
+        leader_approved_at = CASE WHEN $1 = 'approved' THEN NOW() ELSE NULL END,
         kycstatus = CASE WHEN $1 = 'approved' THEN 'verified' ELSE 'rejected' END,
         updatedat = NOW()
-      WHERE id = $2 AND role = 'imam'
+      WHERE id = $2 AND role = 'leader'
       RETURNING id, fullname, email
-    `, [status, imamId]);
+    `, [status, leaderId]);
     
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Imam not found' });
+      return res.status(404).json({ error: 'Leader not found' });
     }
+    
+    // Get leader type for message
+    const leaderInfo = await db.query(
+      'SELECT leader_type FROM leaders WHERE user_id = $1',
+      [leaderId]
+    );
+    
+    const leaderType = leaderInfo.rows[0]?.leader_type || 'Leader';
+    const leaderTypeLabel = leaderType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
     
     await db.query(`
-      UPDATE imams 
-      SET is_verified = $1, status = $2, admin_notes = $3, verified_at = CASE WHEN $1 = true THEN NOW() ELSE NULL END,
+      UPDATE leaders 
+      SET is_verified = $1, 
+          status = $2, 
+          admin_notes = $3, 
+          verified_at = CASE WHEN $1 = true THEN NOW() ELSE NULL END,
           updatedat = NOW()
       WHERE user_id = $4
-    `, [status === 'approved', status, admin_notes || null, imamId]);
-    
-    // If approved and sub_role is kadhi, also update kadhis table
-    if (status === 'approved') {
-      const imamResult = await db.query(`
-        SELECT sub_role FROM imams WHERE user_id = $1
-      `, [imamId]);
-      
-      if (imamResult.rows.length > 0 && imamResult.rows[0].sub_role === 'kadhi') {
-        await db.query(`
-          UPDATE kadhis SET available = true, verified = true WHERE user_id = $1
-        `, [imamId]);
-      }
-    }
-    
-    const roleLabel = await db.query(`
-      SELECT sub_role FROM imams WHERE user_id = $1
-    `, [imamId]);
-    
-    const label = roleLabel.rows.length > 0 && roleLabel.rows[0].sub_role === 'kadhi' ? 'Kadhi' : 'Imam';
+    `, [status === 'approved', status, admin_notes || null, leaderId]);
     
     const notificationId = uuidv4();
     await db.query(`
       INSERT INTO notifications (id, user_id, title, message, type, createdat)
-      VALUES ($1, $2, $3, $4, 'imam_verification', NOW())
+      VALUES ($1, $2, $3, $4, 'leader_verification', NOW())
     `, [
       notificationId, 
-      imamId, 
-      status === 'approved' ? `${label} Application Approved` : `${label} Application Rejected`,
+      leaderId, 
+      status === 'approved' ? `${leaderTypeLabel} Application Approved` : `${leaderTypeLabel} Application Rejected`,
       status === 'approved' 
-        ? `Your ${label.toLowerCase()} application has been approved. You can now manage your profile and serve the community.` 
-        : `Your ${label.toLowerCase()} application has been rejected. ${admin_notes || 'Please contact support for more details.'}`
+        ? `Your ${leaderTypeLabel.toLowerCase()} application has been approved. You can now access your dashboard and share your support link.` 
+        : `Your ${leaderTypeLabel.toLowerCase()} application has been rejected. ${admin_notes || 'Please contact support for more details.'}`
     ]);
     
     res.json({ 
       success: true, 
-      message: `${label} ${status} successfully`,
-      imam: result.rows[0]
+      message: `${leaderTypeLabel} ${status} successfully`,
+      leader: result.rows[0]
     });
     
   } catch (err) {
-    console.error('Error verifying imam:', err.message);
+    console.error('Error verifying leader:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
 // ============================================================
-// 11. GET ALL VENDORS
+// 12. GET ALL VENDORS
 // ============================================================
 router.get('/vendors', async (req, res) => {
   try {
@@ -514,44 +552,44 @@ router.get('/vendors', async (req, res) => {
 });
 
 // ============================================================
-// 12. GET ALL IMAMS (including Kadhis with sub_role filter)
+// 13. GET ALL LEADERS
 // ============================================================
-router.get('/imams', async (req, res) => {
+router.get('/leaders', async (req, res) => {
   try {
     const db = await getClient();
-    const { status, sub_role } = req.query;
+    const { status, leader_type } = req.query;
     
     let query = `
-      SELECT u.*, i.*
+      SELECT u.*, l.*
       FROM users u
-      JOIN imams i ON u.id = i.user_id
-      WHERE u.role = 'imam'
+      JOIN leaders l ON u.id = l.user_id
+      WHERE u.role = 'leader'
     `;
     const params = [];
     
     if (status) {
-      query += ` AND u.imam_status = $${params.length + 1}`;
+      query += ` AND u.leader_status = $${params.length + 1}`;
       params.push(status);
     }
     
-    if (sub_role) {
-      query += ` AND i.sub_role = $${params.length + 1}`;
-      params.push(sub_role);
+    if (leader_type && LEADER_TYPES.includes(leader_type)) {
+      query += ` AND l.leader_type = $${params.length + 1}`;
+      params.push(leader_type);
     }
     
     query += ' ORDER BY u.createdat DESC';
     
     const result = await db.query(query, params);
-    res.json({ success: true, imams: result.rows });
+    res.json({ success: true, leaders: result.rows });
     
   } catch (err) {
-    console.error('Error fetching imams:', err.message);
+    console.error('Error fetching leaders:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
 // ============================================================
-// 13. GET ALL TRANSACTIONS
+// 14. GET ALL TRANSACTIONS
 // ============================================================
 router.get('/transactions', async (req, res) => {
   try {
@@ -633,7 +671,7 @@ router.get('/transactions', async (req, res) => {
 });
 
 // ============================================================
-// 14. GET TRANSACTION BY ID
+// 15. GET TRANSACTION BY ID
 // ============================================================
 router.get('/transactions/:id', async (req, res) => {
   try {
@@ -658,7 +696,7 @@ router.get('/transactions/:id', async (req, res) => {
 });
 
 // ============================================================
-// 15. GET ALL ORDERS
+// 16. GET ALL ORDERS
 // ============================================================
 router.get('/orders', async (req, res) => {
   try {
@@ -695,7 +733,7 @@ router.get('/orders', async (req, res) => {
 });
 
 // ============================================================
-// 16. GET ALL BOOKINGS (HalalStay bookings)
+// 17. GET ALL BOOKINGS (HalalStay bookings)
 // ============================================================
 router.get('/bookings', async (req, res) => {
   try {
@@ -733,12 +771,12 @@ router.get('/bookings', async (req, res) => {
 });
 
 // ============================================================
-// 17. GET CONSULTATION BOOKINGS (Kadhi bookings)
+// 18. GET CONSULTATION BOOKINGS (Leader bookings)
 // ============================================================
 router.get('/consultations', async (req, res) => {
   try {
     const db = await getClient();
-    const { status, kadhi_id, limit = 100 } = req.query;
+    const { status, leader_id, limit = 100 } = req.query;
     
     let query = `
       SELECT 
@@ -746,12 +784,15 @@ router.get('/consultations', async (req, res) => {
         u.fullname as user_name,
         u.email as user_email,
         u.phone as user_phone,
-        k.name as kadhi_name,
-        k.type as kadhi_type,
-        k.county as kadhi_county
+        l.leader_type,
+        l.title as leader_title,
+        l.location as leader_location,
+        l.county as leader_county,
+        leader_user.fullname as leader_name
       FROM consultation_bookings cb
       LEFT JOIN users u ON cb.user_id = u.id
-      LEFT JOIN kadhis k ON cb.kadhi_id = k.id
+      LEFT JOIN leaders l ON cb.leader_id = l.id
+      LEFT JOIN users leader_user ON l.user_id = leader_user.id
       WHERE 1=1
     `;
     const params = [];
@@ -761,9 +802,9 @@ router.get('/consultations', async (req, res) => {
       params.push(status);
     }
     
-    if (kadhi_id) {
-      query += ` AND cb.kadhi_id = $${params.length + 1}`;
-      params.push(kadhi_id);
+    if (leader_id) {
+      query += ` AND cb.leader_id = $${params.length + 1}`;
+      params.push(leader_id);
     }
     
     query += ` ORDER BY cb.booking_date DESC, cb.booking_time DESC LIMIT ${parseInt(limit)}`;
@@ -782,7 +823,7 @@ router.get('/consultations', async (req, res) => {
 });
 
 // ============================================================
-// 18. GET CONSULTATION STATS
+// 19. GET CONSULTATION STATS
 // ============================================================
 router.get('/consultations/stats', async (req, res) => {
   try {
@@ -813,7 +854,7 @@ router.get('/consultations/stats', async (req, res) => {
 });
 
 // ============================================================
-// 19. GET SYSTEM OVERVIEW (UPDATED with Butchery and Hajj)
+// 20. GET SYSTEM OVERVIEW
 // ============================================================
 router.get('/overview', async (req, res) => {
   try {
@@ -823,7 +864,7 @@ router.get('/overview', async (req, res) => {
       SELECT 
         (SELECT COUNT(*) FROM users) as total_users,
         (SELECT COUNT(*) FROM users WHERE role = 'vendor' AND vendor_status = 'approved') as active_vendors,
-        (SELECT COUNT(*) FROM users WHERE role = 'imam' AND imam_status = 'approved') as active_imams,
+        (SELECT COUNT(*) FROM users WHERE role = 'leader' AND leader_status = 'approved') as active_leaders,
         (SELECT COUNT(*) FROM products) as total_products,
         (SELECT COUNT(*) FROM listings) as total_listings,
         (SELECT COUNT(*) FROM orders WHERE status = 'pending') as pending_orders,
@@ -831,7 +872,7 @@ router.get('/overview', async (req, res) => {
         (SELECT COUNT(*) FROM consultation_bookings WHERE status = 'pending') as pending_consultations,
         (SELECT COUNT(*) FROM reviews) as total_reviews,
         (SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE status = 'completed') as total_revenue,
-        (SELECT COALESCE(SUM(total_contributions), 0) FROM pension_balances) as total_pension_fund,
+        (SELECT COALESCE(SUM(total_contributions), 0) FROM leader_pension_balances) as total_pension_fund,
         (SELECT COUNT(*) FROM hajj_packages) as total_hajj_packages,
         (SELECT COUNT(*) FROM hajj_bookings) as total_hajj_bookings,
         (SELECT COUNT(*) FROM products WHERE meat_type IS NOT NULL) as total_butchery_products
@@ -846,7 +887,7 @@ router.get('/overview', async (req, res) => {
 });
 
 // ============================================================
-// 20. GET USER TRANSACTIONS
+// 21. GET USER TRANSACTIONS
 // ============================================================
 router.get('/users/:userId/transactions', async (req, res) => {
   try {
@@ -872,7 +913,7 @@ router.get('/users/:userId/transactions', async (req, res) => {
 });
 
 // ============================================================
-// 21. GET ALL MOSQUES (Admin)
+// 22. GET ALL MOSQUES (Admin)
 // ============================================================
 router.get('/mosques', async (req, res) => {
   try {
@@ -892,12 +933,13 @@ router.get('/mosques', async (req, res) => {
         u.fullname as imam_name,
         u.id as imam_user_id,
         u.profile_image as imam_image,
-        i.id as imam_profile_id,
-        i.title as imam_title,
-        i.is_verified as imam_verified
+        l.id as leader_profile_id,
+        l.title as leader_title,
+        l.is_verified as leader_verified,
+        l.leader_type
       FROM mosques m
-      LEFT JOIN imams i ON m.imam_id = i.id
-      LEFT JOIN users u ON i.user_id = u.id
+      LEFT JOIN leaders l ON m.imam_id = l.id
+      LEFT JOIN users u ON l.user_id = u.id
       WHERE 1=1
     `;
     const params = [];
@@ -932,7 +974,7 @@ router.get('/mosques', async (req, res) => {
 });
 
 // ============================================================
-// 22. ADD MOSQUE (Admin)
+// 23. ADD MOSQUE (Admin)
 // ============================================================
 router.post('/mosques', async (req, res) => {
   try {
@@ -943,7 +985,7 @@ router.post('/mosques', async (req, res) => {
       county,
       latitude,
       longitude,
-      imam_id
+      leader_id
     } = req.body;
     
     if (!name || !location) {
@@ -959,22 +1001,22 @@ router.post('/mosques', async (req, res) => {
       return res.status(409).json({ error: 'Mosque already exists at this location' });
     }
     
-    if (imam_id) {
-      const imamCheck = await db.query(
-        'SELECT id FROM imams WHERE id = $1',
-        [imam_id]
+    if (leader_id) {
+      const leaderCheck = await db.query(
+        'SELECT id FROM leaders WHERE id = $1',
+        [leader_id]
       );
-      if (imamCheck.rows.length === 0) {
-        return res.status(404).json({ error: 'Imam not found' });
+      if (leaderCheck.rows.length === 0) {
+        return res.status(404).json({ error: 'Leader not found' });
       }
     }
     
-    const mosqueId = 'mosque-' + Date.now();
+    const mosqueId = 'mosque-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
     await db.query(`
       INSERT INTO mosques (
         id, name, location, county, latitude, longitude, imam_id, createdat, updatedat
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-    `, [mosqueId, name, location, county, latitude || null, longitude || null, imam_id || null]);
+    `, [mosqueId, name, location, county, latitude || null, longitude || null, leader_id || null]);
     
     res.status(201).json({
       success: true,
@@ -989,7 +1031,7 @@ router.post('/mosques', async (req, res) => {
 });
 
 // ============================================================
-// 23. UPDATE MOSQUE (Admin)
+// 24. UPDATE MOSQUE (Admin)
 // ============================================================
 router.put('/mosques/:id', async (req, res) => {
   try {
@@ -1001,7 +1043,7 @@ router.put('/mosques/:id', async (req, res) => {
       county,
       latitude,
       longitude,
-      imam_id
+      leader_id
     } = req.body;
     
     const check = await db.query(
@@ -1023,7 +1065,7 @@ router.put('/mosques/:id', async (req, res) => {
         imam_id = COALESCE($6, imam_id),
         updatedat = NOW()
       WHERE id = $7
-    `, [name, location, county, latitude, longitude, imam_id, mosqueId]);
+    `, [name, location, county, latitude, longitude, leader_id, mosqueId]);
     
     res.json({
       success: true,
@@ -1037,7 +1079,7 @@ router.put('/mosques/:id', async (req, res) => {
 });
 
 // ============================================================
-// 24. DELETE MOSQUE (Admin)
+// 25. DELETE MOSQUE (Admin)
 // ============================================================
 router.delete('/mosques/:id', async (req, res) => {
   try {
@@ -1065,7 +1107,7 @@ router.delete('/mosques/:id', async (req, res) => {
 });
 
 // ============================================================
-// 25. GET MOSQUE STATS (Admin)
+// 26. GET MOSQUE STATS (Admin)
 // ============================================================
 router.get('/mosques/stats', async (req, res) => {
   try {
@@ -1075,7 +1117,7 @@ router.get('/mosques/stats', async (req, res) => {
       SELECT 
         COUNT(*) as total_mosques,
         COUNT(DISTINCT county) as total_counties,
-        COUNT(DISTINCT imam_id) as total_imams_assigned,
+        COUNT(DISTINCT imam_id) as total_leaders_assigned,
         COUNT(CASE WHEN latitude IS NOT NULL AND longitude IS NOT NULL THEN 1 END) as with_coordinates
       FROM mosques
     `);
@@ -1085,7 +1127,7 @@ router.get('/mosques/stats', async (req, res) => {
       stats: {
         totalMosques: parseInt(result.rows[0].total_mosques) || 0,
         totalCounties: parseInt(result.rows[0].total_counties) || 0,
-        totalImamsAssigned: parseInt(result.rows[0].total_imams_assigned) || 0,
+        totalLeadersAssigned: parseInt(result.rows[0].total_leaders_assigned) || 0,
         withCoordinates: parseInt(result.rows[0].with_coordinates) || 0
       }
     });
@@ -1097,7 +1139,7 @@ router.get('/mosques/stats', async (req, res) => {
 });
 
 // ============================================================
-// 26. GET ALL HEARSE REQUESTS (Admin)
+// 27. GET ALL HEARSE REQUESTS (Admin)
 // ============================================================
 router.get('/hearse/requests', async (req, res) => {
   try {
@@ -1158,7 +1200,7 @@ router.get('/hearse/requests', async (req, res) => {
 });
 
 // ============================================================
-// 27. GET ALL HEARSE PROVIDERS (Admin)
+// 28. GET ALL HEARSE PROVIDERS (Admin)
 // ============================================================
 router.get('/hearse/providers', async (req, res) => {
   try {
@@ -1222,7 +1264,7 @@ router.get('/hearse/providers', async (req, res) => {
 });
 
 // ============================================================
-// 28. VERIFY HEARSE PROVIDER (Admin)
+// 29. VERIFY HEARSE PROVIDER (Admin)
 // ============================================================
 router.put('/hearse/providers/:id/verify', async (req, res) => {
   try {
@@ -1280,7 +1322,7 @@ router.put('/hearse/providers/:id/verify', async (req, res) => {
 });
 
 // ============================================================
-// 29. ASSIGN HEARSE REQUEST (Admin)
+// 30. ASSIGN HEARSE REQUEST (Admin)
 // ============================================================
 router.post('/hearse/assign', async (req, res) => {
   try {
@@ -1372,7 +1414,7 @@ router.post('/hearse/assign', async (req, res) => {
 });
 
 // ============================================================
-// 30. GET ALL BUTCHERY VENDORS (Admin)
+// 31. GET ALL BUTCHERY VENDORS (Admin)
 // ============================================================
 router.get('/butchery/vendors', async (req, res) => {
   try {
@@ -1432,7 +1474,7 @@ router.get('/butchery/vendors', async (req, res) => {
 });
 
 // ============================================================
-// 31. GET ALL BUTCHERY PRODUCTS (Admin)
+// 32. GET ALL BUTCHERY PRODUCTS (Admin)
 // ============================================================
 router.get('/butchery/products', async (req, res) => {
   try {
@@ -1491,7 +1533,7 @@ router.get('/butchery/products', async (req, res) => {
 });
 
 // ============================================================
-// 32. UPDATE BUTCHERY PRODUCT STATUS (Admin)
+// 33. UPDATE BUTCHERY PRODUCT STATUS (Admin)
 // ============================================================
 router.put('/butchery/products/:id/status', async (req, res) => {
   try {
@@ -1527,7 +1569,40 @@ router.put('/butchery/products/:id/status', async (req, res) => {
 });
 
 // ============================================================
-// 33. GET ALL HAJJ PACKAGES (Admin)
+// 34. GET BUTCHERY STATS (Admin)
+// ============================================================
+router.get('/butchery/stats', async (req, res) => {
+  try {
+    const db = await getClient();
+
+    const result = await db.query(`
+      SELECT 
+        (SELECT COUNT(*) FROM users u
+         JOIN vendor_profiles vp ON u.id = vp.user_id
+         WHERE u.role = 'vendor' AND vp.business_type = 'halalbutchery') as total_butchers,
+        (SELECT COUNT(*) FROM users u
+         JOIN vendor_profiles vp ON u.id = vp.user_id
+         WHERE u.role = 'vendor' AND vp.business_type = 'halalbutchery' AND u.vendor_status = 'approved') as active_butchers,
+        (SELECT COUNT(*) FROM users u
+         JOIN vendor_profiles vp ON u.id = vp.user_id
+         WHERE u.role = 'vendor' AND vp.business_type = 'halalbutchery' AND u.vendor_status = 'pending') as pending_butchers,
+        (SELECT COUNT(*) FROM products WHERE meat_type IS NOT NULL) as total_meat_products,
+        (SELECT COUNT(*) FROM products WHERE meat_type IS NOT NULL AND is_active = true) as active_meat_products
+      FROM users
+    `);
+
+    res.json({
+      success: true,
+      stats: result.rows[0]
+    });
+  } catch (err) {
+    console.error('Error fetching butchery stats:', err.message);
+    res.status(500).json({ error: 'Failed to fetch butchery stats' });
+  }
+});
+
+// ============================================================
+// 35. GET ALL HAJJ PACKAGES (Admin)
 // ============================================================
 router.get('/hajj/packages', async (req, res) => {
   try {
@@ -1589,7 +1664,7 @@ router.get('/hajj/packages', async (req, res) => {
 });
 
 // ============================================================
-// 34. UPDATE HAJJ PACKAGE STATUS (Admin)
+// 36. UPDATE HAJJ PACKAGE STATUS (Admin)
 // ============================================================
 router.put('/hajj/packages/:id/status', async (req, res) => {
   try {
@@ -1625,7 +1700,7 @@ router.put('/hajj/packages/:id/status', async (req, res) => {
 });
 
 // ============================================================
-// 35. GET ALL HAJJ BOOKINGS (Admin)
+// 37. GET ALL HAJJ BOOKINGS (Admin)
 // ============================================================
 router.get('/hajj/bookings', async (req, res) => {
   try {
@@ -1691,7 +1766,7 @@ router.get('/hajj/bookings', async (req, res) => {
 });
 
 // ============================================================
-// 36. CANCEL HAJJ BOOKING (Admin)
+// 38. CANCEL HAJJ BOOKING (Admin)
 // ============================================================
 router.put('/hajj/bookings/:id/cancel', async (req, res) => {
   try {
@@ -1737,7 +1812,6 @@ router.put('/hajj/bookings/:id/cancel', async (req, res) => {
         WHERE id = $2
       `, [booking.pilgrims, booking.package_id]);
 
-      // Notification for client
       const notificationId = uuidv4();
       await db.query(`
         INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
@@ -1770,7 +1844,7 @@ router.put('/hajj/bookings/:id/cancel', async (req, res) => {
 });
 
 // ============================================================
-// 37. GET HAJJ STATS (Admin)
+// 39. GET HAJJ STATS (Admin)
 // ============================================================
 router.get('/hajj/stats', async (req, res) => {
   try {
@@ -1797,39 +1871,6 @@ router.get('/hajj/stats', async (req, res) => {
   } catch (err) {
     console.error('Error fetching Hajj stats:', err.message);
     res.status(500).json({ error: 'Failed to fetch Hajj stats' });
-  }
-});
-
-// ============================================================
-// 38. GET BUTCHERY STATS (Admin)
-// ============================================================
-router.get('/butchery/stats', async (req, res) => {
-  try {
-    const db = await getClient();
-
-    const result = await db.query(`
-      SELECT 
-        (SELECT COUNT(*) FROM users u
-         JOIN vendor_profiles vp ON u.id = vp.user_id
-         WHERE u.role = 'vendor' AND vp.business_type = 'halalbutchery') as total_butchers,
-        (SELECT COUNT(*) FROM users u
-         JOIN vendor_profiles vp ON u.id = vp.user_id
-         WHERE u.role = 'vendor' AND vp.business_type = 'halalbutchery' AND u.vendor_status = 'approved') as active_butchers,
-        (SELECT COUNT(*) FROM users u
-         JOIN vendor_profiles vp ON u.id = vp.user_id
-         WHERE u.role = 'vendor' AND vp.business_type = 'halalbutchery' AND u.vendor_status = 'pending') as pending_butchers,
-        (SELECT COUNT(*) FROM products WHERE meat_type IS NOT NULL) as total_meat_products,
-        (SELECT COUNT(*) FROM products WHERE meat_type IS NOT NULL AND is_active = true) as active_meat_products
-      FROM users
-    `);
-
-    res.json({
-      success: true,
-      stats: result.rows[0]
-    });
-  } catch (err) {
-    console.error('Error fetching butchery stats:', err.message);
-    res.status(500).json({ error: 'Failed to fetch butchery stats' });
   }
 });
 

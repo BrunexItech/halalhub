@@ -2,6 +2,7 @@ const router = require('express').Router();
 const { authenticate } = require('../middleware/auth');
 const { Client } = require('pg');
 const crypto = require('crypto');
+const virtualAccountService = require('../services/virtual-account.service');
 
 // Database connection
 let client;
@@ -23,7 +24,7 @@ async function getClient() {
 // ============================================================
 // 1. GET ALL BOOKINGS (Authenticated)
 // - For clients: returns bookings they made
-// - For kadhis: returns bookings assigned to them
+// - For leaders: returns bookings assigned to them
 // ============================================================
 router.get('/', authenticate, async (req, res) => {
   try {
@@ -33,9 +34,9 @@ router.get('/', authenticate, async (req, res) => {
     const offset = parseInt(req.query.offset) || 0;
     const status = req.query.status;
 
-    // First, check if the user is a kadhi
-    const kadhiCheck = await db.query(
-      'SELECT id FROM kadhis WHERE user_id = $1',
+    // First, check if the user is a leader
+    const leaderCheck = await db.query(
+      'SELECT id FROM leaders WHERE user_id = $1',
       [userId]
     );
 
@@ -55,25 +56,37 @@ router.get('/', authenticate, async (req, res) => {
         cb.createdat,
         cb.updatedat,
         cb.accepted_at,
-        k.id as kadhi_id,
-        k.user_id as kadhi_user_id,
-        k.name as kadhi_name,
-        k.type as kadhi_type,
-        k.county as kadhi_county,
-        k.rating as kadhi_rating,
-        k.verified as kadhi_verified
+        cb.payment_status,
+        cb.payment_reference,
+        cb.amount,
+        l.id as leader_id,
+        l.user_id as leader_user_id,
+        l.leader_type,
+        u.fullname as leader_name,
+        u.profile_image,
+        l.title as leader_title,
+        l.location as leader_location,
+        l.county as leader_county,
+        l.consultation_fee,
+        l.is_verified as leader_verified,
+        l.institution as leader_institution,
+        l.qualifications as leader_qualifications,
+        l.years_of_service as leader_experience,
+        l.bio as leader_bio,
+        l.consultation_types
       FROM consultation_bookings cb
-      JOIN kadhis k ON cb.kadhi_id = k.id
+      JOIN leaders l ON cb.leader_id = l.id
+      JOIN users u ON l.user_id = u.id
       WHERE 1=1
     `;
     const params = [];
     let paramIndex = 1;
 
-    // If user is a kadhi, show bookings assigned to them
-    if (kadhiCheck.rows.length > 0) {
-      const kadhiId = kadhiCheck.rows[0].id;
-      query += ` AND cb.kadhi_id = $${paramIndex}`;
-      params.push(kadhiId);
+    // If user is a leader, show bookings assigned to them
+    if (leaderCheck.rows.length > 0) {
+      const leaderId = leaderCheck.rows[0].id;
+      query += ` AND cb.leader_id = $${paramIndex}`;
+      params.push(leaderId);
       paramIndex++;
     } else {
       // Otherwise, show bookings made by the user
@@ -101,10 +114,10 @@ router.get('/', authenticate, async (req, res) => {
     const countParams = [];
     let countIndex = 1;
 
-    if (kadhiCheck.rows.length > 0) {
-      const kadhiId = kadhiCheck.rows[0].id;
-      countQuery += ` AND cb.kadhi_id = $${countIndex}`;
-      countParams.push(kadhiId);
+    if (leaderCheck.rows.length > 0) {
+      const leaderId = leaderCheck.rows[0].id;
+      countQuery += ` AND cb.leader_id = $${countIndex}`;
+      countParams.push(leaderId);
       countIndex++;
     } else {
       countQuery += ` AND cb.user_id = $${countIndex}`;
@@ -163,21 +176,27 @@ router.get('/:id', authenticate, async (req, res) => {
         cb.createdat,
         cb.updatedat,
         cb.accepted_at,
-        k.id as kadhi_id,
-        k.user_id as kadhi_user_id,
-        k.name as kadhi_name,
-        k.type as kadhi_type,
-        k.county as kadhi_county,
-        k.fee as kadhi_fee,
-        k.rating as kadhi_rating,
-        k.reviews as kadhi_reviews,
-        k.experience as kadhi_experience,
-        k.bio as kadhi_bio,
-        k.languages as kadhi_languages,
-        k.verified as kadhi_verified,
-        k.institution as kadhi_institution
+        cb.payment_status,
+        cb.payment_reference,
+        cb.amount,
+        l.id as leader_id,
+        l.user_id as leader_user_id,
+        l.leader_type,
+        u.fullname as leader_name,
+        u.profile_image,
+        l.title as leader_title,
+        l.location as leader_location,
+        l.county as leader_county,
+        l.consultation_fee,
+        l.is_verified as leader_verified,
+        l.institution as leader_institution,
+        l.qualifications as leader_qualifications,
+        l.years_of_service as leader_experience,
+        l.bio as leader_bio,
+        l.consultation_types
       FROM consultation_bookings cb
-      JOIN kadhis k ON cb.kadhi_id = k.id
+      JOIN leaders l ON cb.leader_id = l.id
+      JOIN users u ON l.user_id = u.id
       WHERE cb.id = $1
       `,
       [id]
@@ -192,11 +211,11 @@ router.get('/:id', authenticate, async (req, res) => {
 
     const booking = result.rows[0];
 
-    // Verify user has access (either they booked it or they are the kadhi)
+    // Verify user has access (either they booked it or they are the leader)
     const isClient = booking.user_id === userId;
-    const isKadhi = booking.kadhi_user_id === userId;
+    const isLeader = booking.leader_user_id === userId;
 
-    if (!isKadhi && !isClient) {
+    if (!isLeader && !isClient) {
       return res.status(403).json({
         success: false,
         error: 'You do not have permission to view this booking'
@@ -225,7 +244,7 @@ router.post('/', authenticate, async (req, res) => {
     const db = await getClient();
     const userId = req.user.id;
     const {
-      kadhiId,
+      leaderId,
       bookingDate,
       bookingTime,
       type = 'video',
@@ -235,45 +254,46 @@ router.post('/', authenticate, async (req, res) => {
       userEmail
     } = req.body;
 
-    if (!kadhiId || !bookingDate || !bookingTime || !topic) {
+    if (!leaderId || !bookingDate || !bookingTime || !topic) {
       return res.status(400).json({
         success: false,
-        error: 'Kadhi, date, time, and topic are required'
+        error: 'Leader, date, time, and topic are required'
       });
     }
 
-    // Check if kadhi exists and is available
-    const kadhiCheck = await db.query(
-      'SELECT id, name, available FROM kadhis WHERE id = $1',
-      [kadhiId]
+    // Check if leader exists and is available for consultation
+    const leaderCheck = await db.query(
+      `SELECT l.id, l.user_id, l.leader_type, l.consultation_fee, l.available_for_consultation, 
+              u.fullname as leader_name
+       FROM leaders l
+       JOIN users u ON l.user_id = u.id
+       WHERE l.id = $1 AND l.status = 'approved'`,
+      [leaderId]
     );
 
-    if (kadhiCheck.rows.length === 0) {
+    if (leaderCheck.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        error: 'Kadhi not found'
+        error: 'Leader not found'
       });
     }
 
-    if (!kadhiCheck.rows[0].available) {
+    if (!leaderCheck.rows[0].available_for_consultation) {
       return res.status(400).json({
         success: false,
-        error: 'This kadhi is currently not available'
+        error: 'This leader is currently not available for consultations'
       });
     }
 
-    // ============================================================
-    // DUPLICATE BOOKING CHECK
-    // Check if this kadhi already has a booking at this date and time
-    // ============================================================
+    // Check if this leader already has a booking at this date and time
     const duplicateCheck = await db.query(
       `SELECT id, status FROM consultation_bookings 
-       WHERE kadhi_id = $1 
+       WHERE leader_id = $1 
        AND booking_date = $2 
        AND booking_time = $3 
        AND status != 'cancelled' 
        AND status != 'completed'`,
-      [kadhiId, bookingDate, bookingTime]
+      [leaderId, bookingDate, bookingTime]
     );
 
     if (duplicateCheck.rows.length > 0) {
@@ -284,20 +304,45 @@ router.post('/', authenticate, async (req, res) => {
     }
 
     // Generate unique room name for video calls
-    const roomName = `halalhub-kadhi-${kadhiId}-${Date.now().toString(36)}`;
+    const roomName = `halalhub-consultation-${leaderId}-${Date.now().toString(36)}`;
+    const consultationFee = parseInt(leaderCheck.rows[0].consultation_fee) || 0;
+
+    // ============================================================
+    // CHECK USER BALANCE BEFORE CREATING BOOKING
+    // ============================================================
+    const clientAccount = await virtualAccountService.getUserAccount(userId);
     
+    if (!clientAccount) {
+      return res.status(404).json({
+        success: false,
+        error: 'Virtual account not found. Please contact support.'
+      });
+    }
+
+    console.log(`[Booking] Client balance: ${clientAccount.balance}, Fee: ${consultationFee}`);
+
+    if (clientAccount.balance < consultationFee) {
+      return res.status(400).json({
+        success: false,
+        error: `Insufficient balance. You have KES ${clientAccount.balance.toLocaleString()} but need KES ${consultationFee.toLocaleString()}. Please top up your wallet.`,
+        balance: clientAccount.balance,
+        required: consultationFee
+      });
+    }
+    // ============================================================
+
     const bookingId = 'bkg-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
 
     await db.query(
       `INSERT INTO consultation_bookings (
-        id, user_id, kadhi_id, booking_date, booking_time, type, 
-        topic, notes, status, room_name, user_name, user_email,
-        createdat, updatedat
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())`,
+        id, user_id, leader_id, booking_date, booking_time, type, 
+        topic, notes, status, room_name, user_name, user_email, amount,
+        payment_status, createdat, updatedat
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'pending', NOW(), NOW())`,
       [
         bookingId,
         userId,
-        kadhiId,
+        leaderId,
         bookingDate,
         bookingTime,
         type,
@@ -306,43 +351,60 @@ router.post('/', authenticate, async (req, res) => {
         'pending',
         type === 'video' ? roomName : null,
         userName || null,
-        userEmail || null
+        userEmail || null,
+        consultationFee
       ]
     );
 
-    // Create notification for the kadhi
-    const kadhiUserId = await db.query(
-      'SELECT user_id FROM kadhis WHERE id = $1',
-      [kadhiId]
-    );
+    // Create notification for the leader
+    const leaderUserId = leaderCheck.rows[0].user_id;
+    const leaderName = leaderCheck.rows[0].leader_name || 'Leader';
 
-    if (kadhiUserId.rows.length > 0) {
+    if (leaderUserId) {
       const notificationId = 'notif-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
       await db.query(
         `INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
          VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
         [
           notificationId,
-          kadhiUserId.rows[0].user_id,
+          leaderUserId,
           'New Consultation Booking',
           `A new consultation has been booked with you for ${bookingDate} at ${bookingTime}. Please accept or reject.`,
           'booking',
-          `/kadhi-dashboard`
+          `/leader-dashboard`
         ]
       );
     }
+
+    // Create notification for client
+    const clientNotifId = 'notif-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
+    await db.query(
+      `INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+      [
+        clientNotifId,
+        userId,
+        'Consultation Booked',
+        `Your consultation with ${leaderName} has been booked for ${bookingDate} at ${bookingTime}. Waiting for leader to confirm.`,
+        'booking',
+        `/consultations/${bookingId}`
+      ]
+    );
 
     res.status(201).json({
       success: true,
       message: 'Consultation booked successfully',
       data: {
         id: bookingId,
-        kadhiName: kadhiCheck.rows[0].name,
+        leaderName: leaderName,
+        leaderType: leaderCheck.rows[0].leader_type,
         bookingDate: bookingDate,
         bookingTime: bookingTime,
         type: type,
         roomName: type === 'video' ? roomName : null,
-        status: 'pending'
+        status: 'pending',
+        amount: consultationFee,
+        payment_status: 'pending'
       }
     });
 
@@ -356,7 +418,7 @@ router.post('/', authenticate, async (req, res) => {
 });
 
 // ============================================================
-// 4. UPDATE BOOKING (Authenticated - Client or Kadhi)
+// 4. UPDATE BOOKING (Authenticated - Client or Leader)
 // ============================================================
 router.put('/:id', authenticate, async (req, res) => {
   try {
@@ -374,7 +436,10 @@ router.put('/:id', authenticate, async (req, res) => {
 
     // Check if booking exists and get current status
     const checkResult = await db.query(
-      'SELECT cb.*, k.user_id as kadhi_user_id FROM consultation_bookings cb JOIN kadhis k ON cb.kadhi_id = k.id WHERE cb.id = $1',
+      `SELECT cb.*, l.user_id as leader_user_id 
+       FROM consultation_bookings cb 
+       JOIN leaders l ON cb.leader_id = l.id 
+       WHERE cb.id = $1`,
       [id]
     );
 
@@ -386,18 +451,18 @@ router.put('/:id', authenticate, async (req, res) => {
     }
 
     const booking = checkResult.rows[0];
-    const isKadhi = booking.kadhi_user_id === userId;
+    const isLeader = booking.leader_user_id === userId;
     const isClient = booking.user_id === userId;
 
-    if (!isKadhi && !isClient) {
+    if (!isLeader && !isClient) {
       return res.status(403).json({
         success: false,
         error: 'You do not have permission to update this booking'
       });
     }
 
-    // If kadhi is updating status
-    if (isKadhi && status) {
+    // If leader is updating status
+    if (isLeader && status) {
       // Only allow specific status changes
       const validStatuses = ['confirmed', 'cancelled', 'completed'];
       if (!validStatuses.includes(status)) {
@@ -407,47 +472,199 @@ router.put('/:id', authenticate, async (req, res) => {
         });
       }
 
-      // If confirming, set accepted_at
+      // If confirming, process payment
       if (status === 'confirmed') {
+        // Check if payment is required and not yet paid
+        if (booking.amount > 0 && booking.payment_status !== 'paid') {
+          // Process payment from client's wallet
+          try {
+            // ============================================================
+            // CHECK CLIENT BALANCE BEFORE DEDUCTING
+            // ============================================================
+            const clientAccount = await virtualAccountService.getUserAccount(booking.user_id);
+            
+            if (!clientAccount) {
+              return res.status(404).json({
+                success: false,
+                error: 'Client virtual account not found. Please contact support.'
+              });
+            }
+
+            console.log(`[Booking Confirm] Client balance: ${clientAccount.balance}, Required: ${booking.amount}`);
+
+            if (clientAccount.balance < booking.amount) {
+              return res.status(400).json({
+                success: false,
+                error: `Client has insufficient balance. Available: KES ${clientAccount.balance.toLocaleString()}, Required: KES ${booking.amount.toLocaleString()}. Please ask the client to top up their wallet.`
+              });
+            }
+            // ============================================================
+
+            // Get leader's virtual account
+            const leaderAccount = await virtualAccountService.getUserAccount(booking.leader_user_id);
+            
+            if (!leaderAccount) {
+              return res.status(404).json({
+                success: false,
+                error: 'Leader virtual account not found. Please contact support.'
+              });
+            }
+
+            // Transfer payment from client to leader
+            const transferResult = await virtualAccountService.processTransfer(
+              booking.user_id,
+              clientAccount.account_number,
+              leaderAccount.account_number,
+              booking.amount,
+              `Consultation booking payment - ${id}`
+            );
+
+            console.log(`[Booking Confirm] Transfer completed: ${transferResult.data?.reference}`);
+
+            // Update payment status
+            const paymentRef = 'PAY-' + Date.now().toString(36).toUpperCase() + crypto.randomBytes(4).toString('hex').toUpperCase();
+            await db.query(
+              `UPDATE consultation_bookings 
+               SET payment_status = 'paid', 
+                   payment_reference = $1,
+                   updatedat = NOW()
+               WHERE id = $2`,
+              [paymentRef, id]
+            );
+
+          } catch (paymentError) {
+            console.error('Payment error:', paymentError);
+            return res.status(500).json({
+              success: false,
+              error: `Payment processing failed: ${paymentError.message || 'Please try again.'}`
+            });
+          }
+        }
+
+        // Update booking status
         await db.query(
           `UPDATE consultation_bookings 
            SET status = $1, accepted_at = NOW(), updatedat = NOW() 
            WHERE id = $2`,
           [status, id]
         );
-      } else {
+
+        // Create notification for client
+        const notificationId = 'notif-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
+        await db.query(
+          `INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
+           VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+          [
+            notificationId,
+            booking.user_id,
+            'Consultation Confirmed',
+            `Your consultation has been confirmed. Payment of KES ${booking.amount.toLocaleString()} has been processed. You can now join the call.`,
+            'booking',
+            `/consultations/${id}`
+          ]
+        );
+
+        res.json({
+          success: true,
+          message: 'Booking confirmed successfully',
+          data: {
+            status: 'confirmed',
+            payment_status: 'paid'
+          }
+        });
+        return;
+      }
+
+      // For completed status
+      if (status === 'completed') {
         await db.query(
           `UPDATE consultation_bookings 
            SET status = $1, updatedat = NOW() 
            WHERE id = $2`,
           [status, id]
         );
+
+        // Create notification for client
+        const notificationId = 'notif-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
+        await db.query(
+          `INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
+           VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+          [
+            notificationId,
+            booking.user_id,
+            'Consultation Completed',
+            `Your consultation has been marked as completed. Thank you for using HalalHub.`,
+            'booking',
+            `/consultations/${id}`
+          ]
+        );
+
+        res.json({
+          success: true,
+          message: 'Booking completed successfully'
+        });
+        return;
       }
 
-      // Create notification for client
-      const notificationId = 'notif-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
-      await db.query(
-        `INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
-         VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
-        [
-          notificationId,
-          booking.user_id,
-          status === 'confirmed' ? 'Consultation Confirmed' : status === 'cancelled' ? 'Consultation Cancelled' : 'Consultation Completed',
-          status === 'confirmed' 
-            ? `Your consultation has been confirmed. You can now join the video call.`
-            : status === 'cancelled' 
-              ? `Your consultation has been cancelled. Please contact the kadhi for more information.`
-              : `Your consultation has been marked as completed. Thank you for using HalalHub.`,
-          'booking',
-          `/kadhis`
-        ]
-      );
+      // For cancelled status
+      if (status === 'cancelled') {
+        // If cancelled, refund the client if they paid
+        if (booking.payment_status === 'paid') {
+          try {
+            const clientAccount = await virtualAccountService.getUserAccount(booking.user_id);
+            const leaderAccount = await virtualAccountService.getUserAccount(booking.leader_user_id);
 
-      res.json({
-        success: true,
-        message: `Booking ${status} successfully`
-      });
-      return;
+            if (clientAccount && leaderAccount) {
+              // Refund from leader back to client
+              await virtualAccountService.processTransfer(
+                booking.leader_user_id,
+                leaderAccount.account_number,
+                clientAccount.account_number,
+                booking.amount,
+                `Refund for cancelled consultation - ${id}`
+              );
+
+              await db.query(
+                `UPDATE consultation_bookings 
+                 SET payment_status = 'refunded', updatedat = NOW()
+                 WHERE id = $1`,
+                [id]
+              );
+            }
+          } catch (refundError) {
+            console.error('Refund error:', refundError);
+            // Continue even if refund fails, admin can handle manually
+          }
+        }
+
+        await db.query(
+          `UPDATE consultation_bookings 
+           SET status = $1, updatedat = NOW() 
+           WHERE id = $2`,
+          [status, id]
+        );
+
+        // Create notification for client
+        const notificationId = 'notif-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
+        await db.query(
+          `INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
+           VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+          [
+            notificationId,
+            booking.user_id,
+            'Consultation Cancelled',
+            `Your consultation has been cancelled. ${booking.payment_status === 'paid' ? 'A refund has been issued.' : ''}`,
+            'booking',
+            `/consultations/${id}`
+          ]
+        );
+
+        res.json({
+          success: true,
+          message: 'Booking cancelled successfully'
+        });
+        return;
+      }
     }
 
     // Client can only update notes and topic (not status)
@@ -525,7 +742,10 @@ router.put('/:id/cancel', authenticate, async (req, res) => {
 
     // Check if booking exists and belongs to user
     const checkResult = await db.query(
-      'SELECT cb.*, k.user_id as kadhi_user_id FROM consultation_bookings cb JOIN kadhis k ON cb.kadhi_id = k.id WHERE cb.id = $1',
+      `SELECT cb.*, l.user_id as leader_user_id 
+       FROM consultation_bookings cb 
+       JOIN leaders l ON cb.leader_id = l.id 
+       WHERE cb.id = $1`,
       [id]
     );
 
@@ -546,6 +766,34 @@ router.put('/:id/cancel', authenticate, async (req, res) => {
       });
     }
 
+    // If booking was paid, process refund
+    if (booking.payment_status === 'paid') {
+      try {
+        const clientAccount = await virtualAccountService.getUserAccount(booking.user_id);
+        const leaderAccount = await virtualAccountService.getUserAccount(booking.leader_user_id);
+
+        if (clientAccount && leaderAccount) {
+          await virtualAccountService.processTransfer(
+            booking.leader_user_id,
+            leaderAccount.account_number,
+            clientAccount.account_number,
+            booking.amount,
+            `Refund for cancelled consultation - ${id}`
+          );
+
+          await db.query(
+            `UPDATE consultation_bookings 
+             SET payment_status = 'refunded', updatedat = NOW()
+             WHERE id = $1`,
+            [id]
+          );
+        }
+      } catch (refundError) {
+        console.error('Refund error:', refundError);
+        // Continue even if refund fails, admin can handle manually
+      }
+    }
+
     await db.query(
       `UPDATE consultation_bookings 
        SET status = 'cancelled', updatedat = NOW() 
@@ -553,18 +801,18 @@ router.put('/:id/cancel', authenticate, async (req, res) => {
       [id]
     );
 
-    // Create notification for kadhi
+    // Create notification for leader
     const notificationId = 'notif-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
     await db.query(
       `INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
        VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
       [
         notificationId,
-        booking.kadhi_user_id,
+        booking.leader_user_id,
         'Consultation Cancelled by Client',
         `A consultation has been cancelled by the client.`,
         'booking',
-        `/kadhi-dashboard`
+        `/leader-dashboard`
       ]
     );
 
@@ -604,13 +852,18 @@ router.get('/room/:roomName', authenticate, async (req, res) => {
         cb.room_name,
         cb.user_name,
         cb.user_email,
-        k.id as kadhi_id,
-        k.user_id as kadhi_user_id,
-        k.name as kadhi_name,
-        k.type as kadhi_type,
-        k.county as kadhi_county
+        cb.payment_status,
+        cb.payment_reference,
+        l.id as leader_id,
+        l.user_id as leader_user_id,
+        l.leader_type,
+        u.fullname as leader_name,
+        l.title as leader_title,
+        l.location as leader_location,
+        l.county as leader_county
       FROM consultation_bookings cb
-      JOIN kadhis k ON cb.kadhi_id = k.id
+      JOIN leaders l ON cb.leader_id = l.id
+      JOIN users u ON l.user_id = u.id
       WHERE cb.room_name = $1
       `,
       [roomName]
@@ -624,10 +877,10 @@ router.get('/room/:roomName', authenticate, async (req, res) => {
     }
 
     const booking = result.rows[0];
-    const isKadhi = booking.kadhi_user_id === userId;
+    const isLeader = booking.leader_user_id === userId;
     const isClient = booking.user_id === userId;
 
-    if (!isKadhi && !isClient) {
+    if (!isLeader && !isClient) {
       return res.status(403).json({
         success: false,
         error: 'You do not have permission to view this booking'
@@ -649,22 +902,22 @@ router.get('/room/:roomName', authenticate, async (req, res) => {
 });
 
 // ============================================================
-// 7. GET BOOKING STATS (Authenticated - Kadhi only)
+// 7. GET BOOKING STATS (Authenticated - Leader only)
 // ============================================================
 router.get('/stats/summary', authenticate, async (req, res) => {
   try {
     const db = await getClient();
     const userId = req.user.id;
 
-    // Check if user is a kadhi
-    const kadhiCheck = await db.query(
-      'SELECT id FROM kadhis WHERE user_id = $1',
+    // Check if user is a leader
+    const leaderCheck = await db.query(
+      'SELECT id, leader_type FROM leaders WHERE user_id = $1',
       [userId]
     );
 
     let result;
-    if (kadhiCheck.rows.length > 0) {
-      const kadhiId = kadhiCheck.rows[0].id;
+    if (leaderCheck.rows.length > 0) {
+      const leaderId = leaderCheck.rows[0].id;
       result = await db.query(
         `
         SELECT 
@@ -672,13 +925,17 @@ router.get('/stats/summary', authenticate, async (req, res) => {
           COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
           COUNT(CASE WHEN status = 'confirmed' THEN 1 END) as confirmed,
           COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed,
-          COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled
+          COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled,
+          COUNT(CASE WHEN payment_status = 'paid' THEN 1 END) as paid,
+          COUNT(CASE WHEN payment_status = 'pending' THEN 1 END) as payment_pending,
+          COALESCE(SUM(CASE WHEN payment_status = 'paid' AND status = 'completed' THEN amount ELSE 0 END), 0) as total_earned
         FROM consultation_bookings
-        WHERE kadhi_id = $1
+        WHERE leader_id = $1
         `,
-        [kadhiId]
+        [leaderId]
       );
     } else {
+      // For clients, show their booking stats
       result = await db.query(
         `
         SELECT 
@@ -686,7 +943,10 @@ router.get('/stats/summary', authenticate, async (req, res) => {
           COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
           COUNT(CASE WHEN status = 'confirmed' THEN 1 END) as confirmed,
           COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed,
-          COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled
+          COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled,
+          COUNT(CASE WHEN payment_status = 'paid' THEN 1 END) as paid,
+          COUNT(CASE WHEN payment_status = 'pending' THEN 1 END) as payment_pending,
+          0 as total_earned
         FROM consultation_bookings
         WHERE user_id = $1
         `,
@@ -701,8 +961,13 @@ router.get('/stats/summary', authenticate, async (req, res) => {
         pending: parseInt(result.rows[0].pending) || 0,
         confirmed: parseInt(result.rows[0].confirmed) || 0,
         completed: parseInt(result.rows[0].completed) || 0,
-        cancelled: parseInt(result.rows[0].cancelled) || 0
-      }
+        cancelled: parseInt(result.rows[0].cancelled) || 0,
+        paid: parseInt(result.rows[0].paid) || 0,
+        paymentPending: parseInt(result.rows[0].payment_pending) || 0,
+        totalEarned: parseInt(result.rows[0].total_earned) || 0
+      },
+      isLeader: leaderCheck.rows.length > 0,
+      leaderType: leaderCheck.rows[0]?.leader_type || null
     });
 
   } catch (error) {

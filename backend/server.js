@@ -46,7 +46,7 @@ app.use('/api/wallet', require('./src/routes/wallet'));
 app.use('/api/mpesa', require('./src/routes/mpesa'));
 app.use('/api/kyc', require('./src/routes/kyc'));
 app.use('/api/vendor', require('./src/routes/vendor'));
-app.use('/api/imam', require('./src/routes/imam'));
+app.use('/api/leader', require('./src/routes/leader'));
 app.use('/api/client', require('./src/routes/client'));
 app.use('/api/hajj', require('./src/routes/hajj'));
 app.use('/api/cart', require('./src/routes/cart'));
@@ -55,7 +55,7 @@ app.use('/api/takaful', require('./src/routes/takaful'));
 app.use('/api/pension', require('./src/routes/pension'));
 app.use('/api/mosque', require('./src/routes/mosque'));
 app.use('/api/wills', require('./src/routes/wills'));
-app.use('/api/kadhis', require('./src/routes/kadhis'));
+app.use('/api/kadhis', require('./src/routes/leader-consultation'));
 app.use('/api/bookings', require('./src/routes/bookings'));
 app.use('/api/livekit', require('./src/routes/livekit'));
 app.use('/api/utilities', require('./src/routes/utilities'));
@@ -64,6 +64,7 @@ app.use('/api/zakat', require('./src/routes/zakat'));
 app.use('/api/sadaqa', require('./src/routes/sadaqa'));
 app.use('/api/hearse', require('./src/routes/hearse'));
 app.use('/api/bank', require('./src/routes/bank-sandbox'));
+app.use('/api/leader-consultation', require('./src/routes/leader-consultation'));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'HalalHub API is running' });
@@ -84,7 +85,7 @@ async function initDB() {
     await client.connect();
     
     // ============================================================
-    // 1. USERS TABLE
+    // 1. USERS TABLE (Updated with leader_status)
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -108,8 +109,8 @@ async function initDB() {
         terms_accepted BOOLEAN DEFAULT FALSE,
         vendor_status TEXT DEFAULT 'pending',
         vendor_approved_at TIMESTAMP,
-        imam_status TEXT DEFAULT 'pending',
-        imam_approved_at TIMESTAMP,
+        leader_status TEXT DEFAULT 'pending',
+        leader_approved_at TIMESTAMP,
         profile_image TEXT,
         bio TEXT,
         createdat TIMESTAMP DEFAULT NOW(),
@@ -166,7 +167,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 4. PRODUCTS TABLE (with Butchery fields)
+    // 4. PRODUCTS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS products (
@@ -187,30 +188,13 @@ async function initDB() {
         rating DECIMAL(3,2) DEFAULT 0,
         total_reviews INTEGER DEFAULT 0,
         total_sold INTEGER DEFAULT 0,
+        meat_type TEXT DEFAULT 'beef',
+        cut_type TEXT DEFAULT 'whole',
+        price_per_kg INTEGER DEFAULT 0,
+        stock_kg DECIMAL(10,2) DEFAULT 0,
         createdat TIMESTAMP DEFAULT NOW(),
         updatedat TIMESTAMP DEFAULT NOW()
       )
-    `);
-
-    // ============================================================
-    // 4a. ADD BUTCHERY COLUMNS TO PRODUCTS (if they don't exist)
-    // ============================================================
-    await client.query(`
-      DO $$
-      BEGIN
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='meat_type') THEN
-          ALTER TABLE products ADD COLUMN meat_type TEXT DEFAULT 'beef';
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='cut_type') THEN
-          ALTER TABLE products ADD COLUMN cut_type TEXT DEFAULT 'whole';
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='price_per_kg') THEN
-          ALTER TABLE products ADD COLUMN price_per_kg INTEGER DEFAULT 0;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='stock_kg') THEN
-          ALTER TABLE products ADD COLUMN stock_kg DECIMAL(10,2) DEFAULT 0;
-        END IF;
-      END $$;
     `);
 
     // ============================================================
@@ -263,10 +247,10 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 7. HALALSTAY BOOKINGS TABLE
+    // 7. BOOKINGS TABLE (HalalStay)
     // ============================================================
     await client.query(`
-      CREATE TABLE IF NOT EXISTS halalstay_bookings (
+      CREATE TABLE IF NOT EXISTS bookings (
         id TEXT PRIMARY KEY,
         listing_id TEXT NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
         user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -308,24 +292,35 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 9. IMAMS TABLE
+    // 9. LEADERS TABLE (NEW - Replaces imams)
     // ============================================================
     await client.query(`
-      CREATE TABLE IF NOT EXISTS imams (
+      CREATE TABLE IF NOT EXISTS leaders (
         id TEXT PRIMARY KEY,
         user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        title TEXT DEFAULT 'Imam',
-        sub_role TEXT DEFAULT 'imam',
-        mosque_name TEXT NOT NULL,
-        mosque_location TEXT NOT NULL,
-        mosque_county TEXT,
+        leader_type TEXT NOT NULL,
+        name TEXT NOT NULL,
+        title TEXT,
+        location TEXT NOT NULL,
+        region TEXT,
+        sub_county TEXT,
+        ward TEXT,
+        mosque_name TEXT,
+        mosque_location TEXT,
         qualifications TEXT[],
         years_of_service INTEGER DEFAULT 0,
         bio TEXT,
-        profile_image TEXT,
+        institution TEXT,
+        consultation_fee INTEGER DEFAULT 0,
+        consultation_types TEXT[] DEFAULT '{"video"}',
+        available_for_consultation BOOLEAN DEFAULT TRUE,
         is_verified BOOLEAN DEFAULT FALSE,
         status TEXT DEFAULT 'pending',
         admin_notes TEXT,
+        is_public BOOLEAN DEFAULT FALSE,
+        share_link TEXT UNIQUE,
+        rating DECIMAL(3,2) DEFAULT 0,
+        reviews INTEGER DEFAULT 0,
         verified_at TIMESTAMP,
         createdat TIMESTAMP DEFAULT NOW(),
         updatedat TIMESTAMP DEFAULT NOW()
@@ -333,28 +328,11 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 10. PENSION CONTRIBUTIONS (Imam) - FIXED: Added updatedat
+    // 10. LEADER PENSION BALANCES (NEW - Replaces pension_balances)
     // ============================================================
     await client.query(`
-      CREATE TABLE IF NOT EXISTS pension_contributions (
-        id TEXT PRIMARY KEY,
-        imam_id TEXT NOT NULL REFERENCES imams(id) ON DELETE CASCADE,
-        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        amount INTEGER NOT NULL,
-        payment_method TEXT DEFAULT 'mpesa',
-        payment_reference TEXT,
-        status TEXT DEFAULT 'pending',
-        contribution_date TIMESTAMP DEFAULT NOW(),
-        updatedat TIMESTAMP DEFAULT NOW()
-      )
-    `);
-
-    // ============================================================
-    // 11. PENSION BALANCE (Imam)
-    // ============================================================
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS pension_balances (
-        imam_id TEXT PRIMARY KEY REFERENCES imams(id) ON DELETE CASCADE,
+      CREATE TABLE IF NOT EXISTS leader_pension_balances (
+        leader_id TEXT PRIMARY KEY REFERENCES leaders(id) ON DELETE CASCADE,
         total_contributions INTEGER DEFAULT 0,
         total_supporters INTEGER DEFAULT 0,
         updatedat TIMESTAMP DEFAULT NOW()
@@ -362,7 +340,104 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 12. RESTAURANT MENU ITEMS
+    // 11. LEADER PENSION CONTRIBUTIONS (NEW - Replaces pension_contributions)
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS leader_pension_contributions (
+        id TEXT PRIMARY KEY,
+        leader_id TEXT NOT NULL REFERENCES leaders(id) ON DELETE CASCADE,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        amount INTEGER NOT NULL,
+        payment_method TEXT DEFAULT 'wallet',
+        payment_reference TEXT,
+        status TEXT DEFAULT 'pending',
+        is_self_contribution BOOLEAN DEFAULT FALSE,
+        contribution_date TIMESTAMP DEFAULT NOW(),
+        updatedat TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // ============================================================
+    // 12. LEADER SUPPORTERS (NEW - Replaces supporters)
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS leader_supporters (
+        id TEXT PRIMARY KEY,
+        leader_id TEXT NOT NULL REFERENCES leaders(id) ON DELETE CASCADE,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        amount INTEGER DEFAULT 0,
+        frequency TEXT DEFAULT 'once',
+        status TEXT DEFAULT 'active',
+        createdat TIMESTAMP DEFAULT NOW(),
+        updatedat TIMESTAMP DEFAULT NOW(),
+        UNIQUE(leader_id, user_id)
+      )
+    `);
+
+    // ============================================================
+    // 13. LEADER WITHDRAWAL REQUESTS (NEW)
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS leader_withdrawal_requests (
+        id TEXT PRIMARY KEY,
+        leader_id TEXT NOT NULL REFERENCES leaders(id) ON DELETE CASCADE,
+        amount INTEGER NOT NULL,
+        notes TEXT,
+        status TEXT DEFAULT 'pending',
+        admin_notes TEXT,
+        requested_at TIMESTAMP DEFAULT NOW(),
+        approved_at TIMESTAMP,
+        rejected_at TIMESTAMP,
+        createdat TIMESTAMP DEFAULT NOW(),
+        updatedat TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // ============================================================
+    // 14. CONSULTATION BOOKINGS (Updated - uses leader_id instead of kadhi_id)
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS consultation_bookings (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        leader_id TEXT NOT NULL REFERENCES leaders(id) ON DELETE CASCADE,
+        booking_date DATE NOT NULL,
+        booking_time TEXT NOT NULL,
+        type TEXT DEFAULT 'video',
+        topic TEXT NOT NULL,
+        notes TEXT,
+        status TEXT DEFAULT 'pending',
+        room_name TEXT,
+        user_name TEXT,
+        user_email TEXT,
+        amount INTEGER DEFAULT 0,
+        payment_status TEXT DEFAULT 'pending',
+        payment_reference TEXT,
+        accepted_at TIMESTAMP,
+        createdat TIMESTAMP DEFAULT NOW(),
+        updatedat TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // ============================================================
+    // 15. MOSQUE TABLE (Updated - uses leader_id instead of imam_id)
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS mosques (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        location TEXT NOT NULL,
+        county TEXT,
+        latitude DECIMAL(10,8),
+        longitude DECIMAL(11,8),
+        leader_id TEXT REFERENCES leaders(id) ON DELETE SET NULL,
+        createdat TIMESTAMP DEFAULT NOW(),
+        updatedat TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // ============================================================
+    // 16. RESTAURANT MENU ITEMS
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS menu_items (
@@ -380,7 +455,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 13. REVIEWS TABLE
+    // 17. REVIEWS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS reviews (
@@ -396,7 +471,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 14. NOTIFICATIONS TABLE
+    // 18. NOTIFICATIONS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS notifications (
@@ -412,41 +487,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 15. SUPPORTERS (Imam Supporters)
-    // ============================================================
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS supporters (
-        id TEXT PRIMARY KEY,
-        imam_id TEXT NOT NULL REFERENCES imams(id) ON DELETE CASCADE,
-        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        amount INTEGER DEFAULT 0,
-        frequency TEXT DEFAULT 'once',
-        status TEXT DEFAULT 'active',
-        createdat TIMESTAMP DEFAULT NOW(),
-        updatedat TIMESTAMP DEFAULT NOW(),
-        UNIQUE(imam_id, user_id)
-      )
-    `);
-
-    // ============================================================
-    // 16. MOSQUE TABLE
-    // ============================================================
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS mosques (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        location TEXT NOT NULL,
-        county TEXT,
-        latitude DECIMAL(10,8),
-        longitude DECIMAL(11,8),
-        imam_id TEXT REFERENCES imams(id) ON DELETE SET NULL,
-        createdat TIMESTAMP DEFAULT NOW(),
-        updatedat TIMESTAMP DEFAULT NOW()
-      )
-    `);
-
-    // ============================================================
-    // 17. CART TABLE (Ecommerce)
+    // 19. CART TABLE (Ecommerce)
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS cart (
@@ -461,7 +502,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 18. P2P TRANSACTIONS TABLE
+    // 20. P2P TRANSACTIONS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS p2p_transactions (
@@ -478,7 +519,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 19. TAKAFUL PLANS TABLE
+    // 21. TAKAFUL PLANS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS takaful_plans (
@@ -498,7 +539,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 20. TAKAFUL POLICIES TABLE
+    // 22. TAKAFUL POLICIES TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS takaful_policies (
@@ -517,7 +558,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 21. TAKAFUL FAMILY MEMBERS TABLE
+    // 23. TAKAFUL FAMILY MEMBERS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS takaful_family_members (
@@ -532,7 +573,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 22. TAKAFUL CLAIMS TABLE
+    // 24. TAKAFUL CLAIMS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS takaful_claims (
@@ -551,7 +592,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 23. TAKAFUL CONTRIBUTIONS TABLE
+    // 25. TAKAFUL CONTRIBUTIONS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS takaful_contributions (
@@ -567,7 +608,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 24. TAKAFUL POOL STATS TABLE
+    // 26. TAKAFUL POOL STATS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS takaful_pool_stats (
@@ -582,7 +623,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 25. WILLS TABLE
+    // 27. WILLS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS wills (
@@ -607,7 +648,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 26. KADHIS TABLE
+    // 28. KADHIS TABLE (Keep for backward compatibility)
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS kadhis (
@@ -634,30 +675,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 27. CONSULTATION BOOKINGS TABLE
-    // ============================================================
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS consultation_bookings (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        kadhi_id TEXT NOT NULL REFERENCES kadhis(id) ON DELETE CASCADE,
-        booking_date DATE NOT NULL,
-        booking_time TEXT NOT NULL,
-        type TEXT DEFAULT 'video',
-        topic TEXT NOT NULL,
-        notes TEXT,
-        status TEXT DEFAULT 'pending',
-        room_name TEXT,
-        user_name TEXT,
-        user_email TEXT,
-        accepted_at TIMESTAMP,
-        createdat TIMESTAMP DEFAULT NOW(),
-        updatedat TIMESTAMP DEFAULT NOW()
-      )
-    `);
-
-    // ============================================================
-    // 28. ZAKAT RECIPIENTS TABLE - FIXED: Added user_id & updatedat
+    // 29. ZAKAT RECIPIENTS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS zakat_recipients (
@@ -684,7 +702,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 29. ZAKAT PAYMENTS TABLE
+    // 30. ZAKAT PAYMENTS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS zakat_payments (
@@ -703,7 +721,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 30. SADAQA CAMPAIGNS TABLE
+    // 31. SADAQA CAMPAIGNS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS sadaqa_campaigns (
@@ -728,7 +746,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 31. SADAQA PAYMENTS TABLE
+    // 32. SADAQA PAYMENTS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS sadaqa_payments (
@@ -748,7 +766,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 32. COMMUNITY POOL TABLE
+    // 33. COMMUNITY POOL TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS community_pool (
@@ -763,7 +781,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 33. POOL DISBURSEMENTS TABLE
+    // 34. POOL DISBURSEMENTS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS pool_disbursements (
@@ -781,7 +799,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 34. HEARSE PROVIDERS TABLE
+    // 35. HEARSE PROVIDERS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS hearse_providers (
@@ -801,7 +819,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 35. HEARSE REQUESTS TABLE
+    // 36. HEARSE REQUESTS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS hearse_requests (
@@ -828,7 +846,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 36. HEARSE REQUEST ASSIGNMENTS TABLE
+    // 37. HEARSE REQUEST ASSIGNMENTS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS hearse_request_assignments (
@@ -847,7 +865,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 37. HEARSE PROVIDER SERVICES TABLE
+    // 38. HEARSE PROVIDER SERVICES TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS hearse_provider_services (
@@ -863,7 +881,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 38. HAJJ PACKAGES TABLE
+    // 39. HAJJ PACKAGES TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS hajj_packages (
@@ -889,7 +907,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 39. HAJJ BOOKINGS TABLE
+    // 40. HAJJ BOOKINGS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS hajj_bookings (
@@ -914,7 +932,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 40. VIRTUAL ACCOUNTS TABLE (BANK)
+    // 41. VIRTUAL ACCOUNTS TABLE (BANK)
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS virtual_accounts (
@@ -930,7 +948,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 41. BANK TRANSACTIONS TABLE (BANK)
+    // 42. BANK TRANSACTIONS TABLE (BANK)
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS bank_transactions (
@@ -951,7 +969,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 42. BANK WEBHOOKS TABLE (BANK)
+    // 43. BANK WEBHOOKS TABLE (BANK)
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS bank_webhooks (
@@ -965,7 +983,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 43. UTILITY PAYMENTS TABLE
+    // 44. UTILITY PAYMENTS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS utility_payments (
@@ -985,7 +1003,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 44. SAVED SERVICES TABLE (Utilities)
+    // 45. SAVED SERVICES TABLE (Utilities)
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS saved_services (
@@ -1001,7 +1019,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 45. TRANSACTIONS TABLE - FIXED: Added missing columns
+    // 46. TRANSACTIONS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS transactions (
@@ -1027,11 +1045,11 @@ async function initDB() {
       BEGIN
         IF NOT EXISTS (
           SELECT 1 FROM pg_constraint 
-          WHERE conname = 'unique_kadhi_booking_slot'
+          WHERE conname = 'unique_leader_booking_slot'
         ) THEN
           ALTER TABLE consultation_bookings 
-          ADD CONSTRAINT unique_kadhi_booking_slot 
-          UNIQUE (kadhi_id, booking_date, booking_time);
+          ADD CONSTRAINT unique_leader_booking_slot 
+          UNIQUE (leader_id, booking_date, booking_time);
         END IF;
       END $$;
     `);
@@ -1041,37 +1059,43 @@ async function initDB() {
     // ============================================================
     await client.query(`CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_users_vendor_status ON users(vendor_status)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_users_imam_status ON users(imam_status)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_users_leader_status ON users(leader_status)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_products_vendor_id ON products(vendor_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_products_meat_type ON products(meat_type)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_listings_vendor_id ON listings(vendor_id)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_halalstay_bookings_user_id ON halalstay_bookings(user_id)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_halalstay_bookings_vendor_id ON halalstay_bookings(vendor_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_bookings_user_id ON bookings(user_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_bookings_vendor_id ON bookings(vendor_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_orders_vendor_id ON orders(vendor_id)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_halalstay_bookings_status ON halalstay_bookings(status)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_listing_availability_date ON listing_availability(date)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_consultation_bookings_user_id ON consultation_bookings(user_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_consultation_bookings_leader_id ON consultation_bookings(leader_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_consultation_bookings_status ON consultation_bookings(status)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_consultation_bookings_room_name ON consultation_bookings(room_name)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_leaders_user_id ON leaders(user_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_leaders_leader_type ON leaders(leader_type)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_leaders_status ON leaders(status)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_leaders_is_public ON leaders(is_public)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_leaders_share_link ON leaders(share_link)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_leader_pension_contributions_leader_id ON leader_pension_contributions(leader_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_leader_pension_contributions_user_id ON leader_pension_contributions(user_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_leader_pension_contributions_status ON leader_pension_contributions(status)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_leader_supporters_leader_id ON leader_supporters(leader_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_leader_supporters_user_id ON leader_supporters(user_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_leader_withdrawal_requests_leader_id ON leader_withdrawal_requests(leader_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_leader_withdrawal_requests_status ON leader_withdrawal_requests(status)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_leader_pension_balances_leader_id ON leader_pension_balances(leader_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications(is_read)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_cart_user_id ON cart(user_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_cart_product_id ON cart(product_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_p2p_sender_id ON p2p_transactions(sender_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_p2p_recipient_id ON p2p_transactions(recipient_id)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_p2p_status ON p2p_transactions(status)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_takaful_policies_user_id ON takaful_policies(user_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_takaful_policies_status ON takaful_policies(status)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_takaful_claims_policy_id ON takaful_claims(policy_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_takaful_claims_status ON takaful_claims(status)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_takaful_family_members_policy_id ON takaful_family_members(policy_id)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_imams_user_id ON imams(user_id)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_imams_sub_role ON imams(sub_role)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_imams_mosque_name ON imams(mosque_name)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_supporters_imam_id ON supporters(imam_id)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_supporters_user_id ON supporters(user_id)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_pension_contributions_imam_id ON pension_contributions(imam_id)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_pension_contributions_user_id ON pension_contributions(user_id)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_mosques_imam_id ON mosques(imam_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_mosques_leader_id ON mosques(leader_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_mosques_county ON mosques(county)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_wills_user_id ON wills(user_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_wills_status ON wills(status)`);
@@ -1079,10 +1103,6 @@ async function initDB() {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_kadhis_user_id ON kadhis(user_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_kadhis_type ON kadhis(type)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_kadhis_county ON kadhis(county)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_consultation_bookings_user_id ON consultation_bookings(user_id)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_consultation_bookings_kadhi_id ON consultation_bookings(kadhi_id)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_consultation_bookings_status ON consultation_bookings(status)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_consultation_bookings_room_name ON consultation_bookings(room_name)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_zakat_payments_user_id ON zakat_payments(user_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_zakat_payments_recipient_id ON zakat_payments(recipient_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_zakat_payments_status ON zakat_payments(status)`);
@@ -1140,7 +1160,7 @@ async function initDB() {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())`,
         ['system', 'System Account', '0000000000', 'system@halalhub.com', 'SYSTEM000', 'system', 'system', false, 'verified']
       );
-      console.log(' System user created for master accounts');
+      console.log('System user created for master accounts');
     } else {
       console.log('System user already exists');
     }
@@ -1220,7 +1240,7 @@ async function initDB() {
     }
 
     console.log('All database tables ready');
-    console.log(' All master accounts verified/created:');
+    console.log('All master accounts verified/created:');
     console.log(`   - ${PENSION_MASTER_ACCOUNT} (Pension)`);
     console.log(`   - ${TAKAFUL_POOL_ACCOUNT} (Takaful)`);
     console.log(`   - ${ZAKAT_POOL_ACCOUNT} (Zakat)`);

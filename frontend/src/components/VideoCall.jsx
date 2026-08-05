@@ -140,18 +140,25 @@ const VideoCall = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Loading State
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B342B] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#032A24] flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-[#C9A44B]/20 border-t-[#C9A44B] rounded-full animate-spin mx-auto" />
-          <p className="text-white/80 mt-6 text-[15px] font-medium">Loading your consultation...</p>
-          <p className="text-white/40 text-[13px] mt-1">Please wait</p>
+          <div className="w-16 h-16 border-4 border-[#C9A44B]/20 border-t-[#C9A44B] rounded-full animate-spin mx-auto shadow-lg shadow-[#C9A44B]/10" />
+          <p className="text-[#C9A44B]/80 mt-6 text-[15px] font-medium tracking-wide">Preparing Your Consultation</p>
+          <p className="text-white/30 text-[13px] mt-1">Please wait while we connect you</p>
+          <div className="mt-4 flex justify-center gap-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#C9A44B]/40 animate-pulse" style={{ animationDelay: '0ms' }} />
+            <div className="w-1.5 h-1.5 rounded-full bg-[#C9A44B]/40 animate-pulse" style={{ animationDelay: '200ms' }} />
+            <div className="w-1.5 h-1.5 rounded-full bg-[#C9A44B]/40 animate-pulse" style={{ animationDelay: '400ms' }} />
+          </div>
         </div>
       </div>
     );
   }
 
+  // Error State
   if (error) {
     return (
       <div className="min-h-screen bg-[#FAFAF7] flex items-center justify-center p-4">
@@ -184,11 +191,12 @@ const VideoCall = () => {
     );
   }
 
+  // Waiting for confirmation
   if (booking && booking.status !== 'confirmed' && booking.status !== 'completed') {
     const statusMessages = {
-      'pending': 'Waiting for Kadhi to accept your request',
+      'pending': 'Waiting for the religious leader to accept your request',
       'cancelled': 'This consultation has been cancelled',
-      'rejected': 'This consultation was rejected by the Kadhi',
+      'rejected': 'This consultation was rejected by the religious leader',
       'expired': 'This consultation has expired'
     };
     
@@ -212,13 +220,13 @@ const VideoCall = () => {
             )}
           </div>
           <h3 className="text-[20px] font-bold text-[#1F2937] mt-4">
-            {isPending ? 'Waiting for Kadhi' : 'Consultation Not Available'}
+            {isPending ? 'Awaiting Confirmation' : 'Consultation Not Available'}
           </h3>
           <p className="text-[15px] text-[#6B7280] mt-2">{message}</p>
           {isPending && (
             <>
               <p className="text-[13px] text-[#6B7280] mt-1">
-                You will be able to join once the Kadhi confirms.
+                You will be able to join once the leader confirms.
               </p>
               <div className="mt-4 flex items-center justify-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-[#D97706] animate-pulse" />
@@ -237,6 +245,7 @@ const VideoCall = () => {
     );
   }
 
+  // No room
   if (!booking || !booking.room_name) {
     return (
       <div className="min-h-screen bg-[#FAFAF7] flex items-center justify-center p-4">
@@ -259,59 +268,69 @@ const VideoCall = () => {
     );
   }
 
+  // ============================================================
+  // MAIN VIDEO CALL UI
+  // ============================================================
   return (
-    <div className="fixed inset-0 bg-[#0D1B2A] flex flex-col z-50 overflow-hidden">
+    <div className="fixed inset-0 bg-[#0A1A15] flex flex-col z-50 overflow-hidden">
       
-      {/* Header */}
-      <div className="bg-[#0B342B] px-4 md:px-6 py-3 flex flex-wrap items-center justify-between gap-3 flex-shrink-0 shadow-lg z-10">
-        <div className="flex items-center gap-3 md:gap-4 min-w-0">
+      {/* ===== HEADER ===== */}
+      <div className="bg-gradient-to-r from-[#032A24] to-[#0B342B] px-3 sm:px-4 md:px-6 py-2 sm:py-3 flex flex-wrap items-center justify-between gap-2 flex-shrink-0 shadow-xl z-10 border-b border-[#C9A44B]/10">
+        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 min-w-0">
           <button
-            className="text-white hover:text-[#C9A44B] transition-colors flex-shrink-0 p-2 hover:bg-white/10 rounded-xl"
+            className="text-white/60 hover:text-[#C9A44B] transition-colors flex-shrink-0 p-1.5 sm:p-2 hover:bg-white/5 rounded-xl"
             onClick={handleLeave}
             title="End Call"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 sm:w-[22px] sm:h-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
           </button>
+          
           <div className="min-w-0">
-            <h1 className="text-white font-bold text-[15px] md:text-[16px] lg:text-[17px] truncate">Video Consultation</h1>
-            <div className="flex flex-wrap items-center gap-2 text-white/70 text-[13px]">
-              <span>{booking?.kadhi_name || 'Kadhi'}</span>
-              <span className="w-1 h-1 rounded-full bg-white/30" />
+            <h1 className="text-white font-bold text-sm sm:text-base lg:text-lg truncate tracking-tight">
+               Video Consultation
+            </h1>
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-white/50 text-[11px] sm:text-[13px]">
+              <span className="text-white/70 font-medium">{booking?.leader_name || 'Religious Leader'}</span>
+              <span className="w-1 h-1 rounded-full bg-white/20" />
               <span>{formatDate(booking?.booking_date)}</span>
-              <span className="w-1 h-1 rounded-full bg-white/30" />
+              <span className="w-1 h-1 rounded-full bg-white/20" />
               <span>{formatTime(booking?.booking_time)}</span>
               {isConnected && (
                 <>
-                  <span className="w-1 h-1 rounded-full bg-white/30" />
-                  <span className="font-mono">{formatDuration(callDuration)}</span>
+                  <span className="w-1 h-1 rounded-full bg-white/20" />
+                  <span className="font-mono text-[#C9A44B]">{formatDuration(callDuration)}</span>
                 </>
               )}
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2 md:gap-3">
-          <div className="flex items-center gap-2 bg-white/10 rounded-full px-3 py-1">
-            <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-[#3FAF73] animate-pulse' : 'bg-[#D97706] animate-pulse'}`} />
-            <span className="text-[13px] text-white/80 hidden sm:inline-block">
+        
+        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-white/5 rounded-full px-2 sm:px-3 py-1 border border-white/5">
+            <span className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${
+              isConnected ? 'bg-[#3FAF73] animate-pulse shadow-lg shadow-[#3FAF73]/50' : 'bg-[#D97706] animate-pulse'
+            }`} />
+            <span className="text-[11px] sm:text-[13px] text-white/60 hidden xs:inline-block">
               {isConnected ? 'Connected' : isConnecting ? 'Connecting...' : 'Disconnected'}
             </span>
           </div>
           <button
-            className="px-4 md:px-6 py-1.5 md:py-2 bg-[#DC2626] text-white text-[14px] font-medium rounded-lg hover:bg-[#B91C1C] transition-colors shadow-md shadow-[#DC2626]/20"
+            className="px-3 sm:px-4 md:px-5 py-1 sm:py-1.5 md:py-2 bg-[#DC2626] text-white text-[13px] sm:text-[14px] font-semibold rounded-lg hover:bg-[#B91C1C] transition-all duration-200 shadow-lg shadow-[#DC2626]/30 hover:shadow-[#DC2626]/50 hover:scale-105 active:scale-95"
             onClick={handleLeave}
           >
-            End Call
+            End
           </button>
         </div>
       </div>
 
-      {/* Video Container */}
+      {/* ===== VIDEO CONTAINER ===== */}
       <div 
         id="video-container" 
-        className="flex-1 relative bg-[#0D1B2A] overflow-hidden"
+        className="flex-1 relative bg-[#0A1A15] overflow-hidden"
       >
+        {/* LiveKit Video */}
         {token ? (
           <LiveKitRoom
             serverUrl={LIVEKIT_URL}
@@ -332,129 +351,196 @@ const VideoCall = () => {
             <VideoConference />
           </LiveKitRoom>
         ) : (
-          <div className="flex items-center justify-center h-full bg-[#0D1B2A]">
+          <div className="flex items-center justify-center h-full bg-[#0A1A15]">
             <div className="text-center">
-              <div className="w-12 h-12 border-4 border-[#C9A44B]/20 border-t-[#C9A44B] rounded-full animate-spin mx-auto" />
-              <p className="text-white/60 mt-4 text-[15px]">Connecting to video service...</p>
+              <div className="w-12 h-12 border-4 border-[#C9A44B]/20 border-t-[#C9A44B] rounded-full animate-spin mx-auto shadow-lg shadow-[#C9A44B]/10" />
+              <p className="text-white/40 mt-4 text-[15px]">Initializing video service...</p>
             </div>
           </div>
         )}
 
-        {/* Floating Controls */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-[#0D1B2A]/80 backdrop-blur-xl rounded-2xl px-4 py-3 flex items-center gap-2 md:gap-4 shadow-2xl border border-white/10 z-20">
-          {/* Audio Toggle */}
+        {/* ===== FLOATING CONTROLS ===== */}
+        <div className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 bg-[#0A1A15]/85 backdrop-blur-xl rounded-2xl px-2 sm:px-3 py-1.5 sm:py-2 flex items-center gap-1 sm:gap-1.5 md:gap-2 lg:gap-3 shadow-2xl border border-white/10 z-20">
+          
+          {/* Mic */}
           <button
-            className={`p-2.5 md:p-3 rounded-xl transition-all duration-200 ${
+            className={`p-2 sm:p-2.5 md:p-3 rounded-xl transition-all duration-200 ${
               isMuted 
-                ? 'bg-[#DC2626]/20 text-[#DC2626] hover:bg-[#DC2626]/30' 
+                ? 'bg-[#DC2626]/30 text-[#DC2626] hover:bg-[#DC2626]/50' 
                 : 'bg-white/10 text-white hover:bg-white/20'
             }`}
             onClick={toggleMute}
             title={isMuted ? 'Unmute' : 'Mute'}
           >
             {isMuted ? (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 3L3 21" />
               </svg>
             ) : (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
               </svg>
             )}
           </button>
           
-          <div className="w-px h-8 bg-white/10" />
+          <div className="w-px h-6 sm:h-8 bg-white/10" />
           
-          {/* Video Toggle */}
+          {/* Video */}
           <button
-            className={`p-2.5 md:p-3 rounded-xl transition-all duration-200 ${
+            className={`p-2 sm:p-2.5 md:p-3 rounded-xl transition-all duration-200 ${
               isVideoOff 
-                ? 'bg-[#DC2626]/20 text-[#DC2626] hover:bg-[#DC2626]/30' 
+                ? 'bg-[#DC2626]/30 text-[#DC2626] hover:bg-[#DC2626]/50' 
                 : 'bg-white/10 text-white hover:bg-white/20'
             }`}
             onClick={toggleVideo}
             title={isVideoOff ? 'Turn on camera' : 'Turn off camera'}
           >
             {isVideoOff ? (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 3L3 21" />
               </svg>
             ) : (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
             )}
           </button>
           
-          <div className="w-px h-8 bg-white/10" />
+          <div className="w-px h-6 sm:h-8 bg-white/10" />
           
-          {/* Fullscreen Toggle */}
+          {/* Screen Share */}
           <button
-            className="p-2.5 md:p-3 rounded-xl bg-white/10 text-white hover:bg-white/20 transition-all duration-200"
+            className="p-2 sm:p-2.5 md:p-3 rounded-xl bg-white/10 text-white hover:bg-white/20 transition-all duration-200"
+            onClick={() => {
+              // Screen share functionality can be added here
+            }}
+            title="Share Screen"
+          >
+            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </button>
+          
+          <div className="w-px h-6 sm:h-8 bg-white/10" />
+          
+          {/* Fullscreen */}
+          <button
+            className={`p-2 sm:p-2.5 md:p-3 rounded-xl transition-all duration-200 ${
+              isFullscreen 
+                ? 'bg-[#C9A44B]/20 text-[#C9A44B]' 
+                : 'bg-white/10 text-white hover:bg-white/20'
+            }`}
             onClick={toggleFullscreen}
             title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           >
             {isFullscreen ? (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 9V4m0 0H4m5 0l-5 5m10 0V4m0 0h5m-5 0l5 5m-5 5h5m0 0v-5m0 5l-5-5m-5 5v5m0 0h5m-5 0l5-5" />
               </svg>
             ) : (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
               </svg>
             )}
           </button>
           
-          <div className="w-px h-8 bg-white/10" />
+          <div className="w-px h-6 sm:h-8 bg-white/10" />
           
           {/* End Call */}
           <button
-            className="p-2.5 md:p-3 rounded-xl bg-[#DC2626] hover:bg-[#B91C1C] transition-all duration-200 text-white shadow-lg shadow-[#DC2626]/30"
+            className="p-2 sm:p-2.5 md:p-3 rounded-xl bg-[#DC2626] hover:bg-[#B91C1C] transition-all duration-200 text-white shadow-lg shadow-[#DC2626]/40 hover:shadow-[#DC2626]/60 hover:scale-105 active:scale-95"
             onClick={handleLeave}
             title="End Call"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 8l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
             </svg>
           </button>
         </div>
 
-        {/* Call Duration Badge */}
+        {/* ===== TOP LEFT BADGE - Call Duration ===== */}
         {isConnected && (
-          <div className="absolute top-4 left-4 bg-[#0D1B2A]/60 backdrop-blur-sm rounded-xl px-3 py-1.5 border border-white/10 z-10">
-            <span className="text-[13px] text-white/60 flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="absolute top-3 sm:top-4 left-3 sm:left-4 bg-[#0A1A15]/70 backdrop-blur-sm rounded-xl px-2.5 sm:px-3 py-1 border border-[#C9A44B]/20 z-10">
+            <span className="text-[11px] sm:text-[13px] text-[#C9A44B]/70 flex items-center gap-1.5 sm:gap-2">
+              <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              {formatDuration(callDuration)}
+              <span className="font-mono font-semibold text-white/80">{formatDuration(callDuration)}</span>
             </span>
           </div>
         )}
 
-        {/* Connection Status */}
-        <div className="absolute top-4 right-4 bg-[#0B342B]/80 backdrop-blur-sm rounded-xl px-3 py-1.5 border border-[#C9A44B]/30 z-10">
-          <span className="text-[13px] text-white flex items-center gap-2">
-            <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-[#3FAF73] animate-pulse' : 'bg-[#D97706] animate-pulse'}`} />
+        {/* ===== TOP RIGHT BADGE - Connection Status ===== */}
+        <div className="absolute top-3 sm:top-4 right-3 sm:right-4 bg-[#0A1A15]/70 backdrop-blur-sm rounded-xl px-2.5 sm:px-3 py-1 border border-[#C9A44B]/30 z-10">
+          <span className="text-[11px] sm:text-[13px] text-white/70 flex items-center gap-1.5 sm:gap-2">
+            <span className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${
+              isConnected ? 'bg-[#3FAF73] animate-pulse shadow-lg shadow-[#3FAF73]/50' : 'bg-[#D97706] animate-pulse'
+            }`} />
             {isConnected ? 'Live' : isConnecting ? 'Connecting...' : 'Disconnected'}
           </span>
         </div>
 
-        {/* Booking Info */}
-        <div className="absolute bottom-24 left-4 bg-[#0D1B2A]/70 backdrop-blur-sm rounded-xl px-3 py-1.5 border border-white/10 z-10">
-          <p className="text-[13px] text-white/50">
-            Booking: {bookingId}
+        {/* ===== BOTTOM LEFT - Booking Reference ===== */}
+        <div className="absolute bottom-20 sm:bottom-24 left-3 sm:left-4 bg-[#0A1A15]/60 backdrop-blur-sm rounded-xl px-2.5 sm:px-3 py-1 border border-white/5 z-10">
+          <p className="text-[10px] sm:text-[13px] text-white/30 font-mono">
+            Ref: {bookingId?.slice(0, 12)}...
           </p>
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="bg-[#0B342B] py-3 px-4 text-center flex-shrink-0 border-t border-white/10 z-10">
-        <p className="text-[13px] text-[#C9A44B]/80 tracking-wider font-medium">
-          Powered by HalalHub · Secure Video Consultation
-        </p>
+      {/* ===== FOOTER ===== */}
+      <div className="bg-gradient-to-r from-[#032A24] to-[#0B342B] py-2 sm:py-3 px-3 sm:px-4 text-center flex-shrink-0 border-t border-[#C9A44B]/10 z-10">
+        <div className="flex items-center justify-center gap-2 sm:gap-3">
+          <img 
+            src="/itqaan_logo.png" 
+            alt="Itqaan" 
+            className="h-4 sm:h-5 w-auto object-contain opacity-70"
+          />
+          <span className="text-[10px] sm:text-[13px] text-[#C9A44B]/40 tracking-wider font-medium">
+            Secure Video Consultation
+          </span>
+          <span className="w-px h-3 sm:h-4 bg-[#C9A44B]/10" />
+          <span className="text-[9px] sm:text-[12px] text-white/20 font-mono tracking-tight">
+            v1.0
+          </span>
+        </div>
       </div>
+
+      {/* ===== RESPONSIVE STYLES ===== */}
+      <style>{`
+        /* Hide scrollbar on video container */
+        #video-container::-webkit-scrollbar {
+          display: none;
+        }
+        #video-container {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        
+        /* Responsive control buttons */
+        @media (max-width: 480px) {
+          .fixed.inset-0 .absolute.bottom-6 {
+            padding: 0 8px;
+          }
+          .fixed.inset-0 .absolute.bottom-6 button {
+            min-width: 32px;
+            min-height: 32px;
+          }
+        }
+        
+        /* Glass morphism effect */
+        .backdrop-blur-xl {
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+        }
+        
+        /* Smooth transitions */
+        * {
+          transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+      `}</style>
     </div>
   );
 };

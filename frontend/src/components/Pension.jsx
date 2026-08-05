@@ -4,274 +4,287 @@ import { pensionService } from '../services/api';
 
 const Pension = () => {
   const navigate = useNavigate();
-  
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [stats, setStats] = useState({
-    totalImams: 0,
-    totalMosques: 0,
-    communitiesServed: 0,
-    monthlyContributors: 0,
-    totalContributions: 0
+    totalLeaders: 0,
+    totalSupporters: 0,
+    totalContributions: 0,
+    pendingContributions: 0,
+    typeBreakdown: {}
   });
+  const [leaders, setLeaders] = useState([]);
+  const [filterType, setFilterType] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [leaderTypes, setLeaderTypes] = useState([]);
+
+  const LEADER_TYPE_LABELS = {
+    'islamic_scholar': 'Islamic Scholar',
+    'imam': 'Imam',
+    'adhan_caller': 'Adhan Caller',
+    'ustadh': 'Ustadh',
+    'ustadha': 'Ustadha',
+    'kadhi': 'Kadhi'
+  };
 
   useEffect(() => {
-    fetchStats();
+    fetchData();
   }, []);
 
-  const fetchStats = async () => {
+  const fetchData = async () => {
     setLoading(true);
     setError('');
     try {
-      const response = await pensionService.getStats();
-      setStats(response.data.stats || {
-        totalImams: 0,
-        totalMosques: 0,
-        communitiesServed: 0,
-        monthlyContributors: 0,
-        totalContributions: 0
+      const [statsRes, leadersRes] = await Promise.all([
+        pensionService.getStats(),
+        pensionService.getLeaders({ limit: 100 })
+      ]);
+
+      setStats(statsRes.data.stats || {
+        totalLeaders: 0,
+        totalSupporters: 0,
+        totalContributions: 0,
+        pendingContributions: 0,
+        typeBreakdown: {}
       });
+      setLeaders(leadersRes.data.leaders || []);
+
+      const types = Object.keys(statsRes.data.stats?.typeBreakdown || {});
+      setLeaderTypes(types);
+
     } catch (err) {
-      console.error('Error fetching pension stats:', err);
-      setError('Failed to load stats. Please refresh.');
+      console.error('Error fetching pension data:', err);
+      setError('Failed to load data. Please refresh.');
     } finally {
       setLoading(false);
     }
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-KE', {
-      style: 'currency',
-      currency: 'KES',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount || 0);
+  const getLeaderTypeLabel = (type) => {
+    return LEADER_TYPE_LABELS[type] || type;
   };
 
-  // SVG Icons
-  const MosqueIcon = () => (
-    <svg className="w-5 h-5 text-[#0B342B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-    </svg>
-  );
+  const getInitials = (name) => {
+    if (!name) return 'LD';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
 
-  const PersonIcon = () => (
-    <svg className="w-5 h-5 text-[#0B342B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-    </svg>
-  );
-
-  const CommunityIcon = () => (
-    <svg className="w-5 h-5 text-[#0B342B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-    </svg>
-  );
-
-  const HeartIcon = () => (
-    <svg className="w-5 h-5 text-[#0B342B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-    </svg>
-  );
-
-  const ShieldIcon = () => (
-    <svg className="w-5 h-5 text-[#C9A44B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-    </svg>
-  );
+  const filteredLeaders = leaders.filter(leader => {
+    const matchesType = filterType === 'all' || leader.leader_type === filterType;
+    const matchesSearch = leader.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          leader.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          getLeaderTypeLabel(leader.leader_type).toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesType && matchesSearch;
+  });
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FAFAF7] p-3 sm:p-4 md:p-5 lg:p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-[#FAFAF7] flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="w-10 h-10 border-3 border-[#C9A44B]/20 border-t-[#C9A44B] rounded-full animate-spin mx-auto" />
-          <p className="text-[#6B7280] mt-3 text-sm">Loading pension stats...</p>
+          <div className="w-12 h-12 border-4 border-[#C9A44B]/20 border-t-[#C9A44B] rounded-full animate-spin mx-auto" />
+          <p className="text-[#6B7280] mt-4 text-sm">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAF7] p-2 sm:p-4 md:p-5 lg:p-6">
-      <div className="max-w-5xl mx-auto">
-        
-        {/* ===== HEADER ===== */}
-        <div className="mb-4 sm:mb-5">
-          <h1 className="text-base sm:text-lg font-bold text-[#1F2937]">Imam Pension</h1>
-          <p className="text-xs text-[#6B7280]">Community-powered retirement support</p>
-        </div>
+    <div className="min-h-screen bg-[#FAFAF7] py-6 px-4 md:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto">
 
-        {/* ===== ERROR ===== */}
         {error && (
-          <div className="mb-4 p-3 bg-[#FEF2F2] border border-[#FECACA] rounded-xl flex flex-wrap items-center justify-between gap-3">
-            <span className="text-xs text-[#DC2626]">{error}</span>
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex flex-wrap items-center justify-between gap-3">
+            <span className="text-sm text-red-600">{error}</span>
             <button 
-              className="px-3 py-1 bg-[#DC2626] text-white text-[10px] font-semibold rounded-lg hover:bg-[#B91C1C] transition-colors"
-              onClick={fetchStats}
+              className="px-4 py-1.5 bg-red-600 text-white text-xs font-medium rounded-lg hover:bg-red-700 transition"
+              onClick={fetchData}
             >
               Retry
             </button>
           </div>
         )}
 
-        {/* ===== HERO SECTION ===== */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-[#0B342B] via-[#12342D] to-[#032A24] rounded-xl sm:rounded-2xl p-5 sm:p-6 md:p-8 shadow-xl shadow-black/10 border border-[rgba(201,164,75,0.15)] mb-5">
+        {/* Hero Section - Slimmer */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-[#0B342B] via-[#12342D] to-[#032A24] rounded-2xl px-8 py-6 md:px-10 md:py-7 shadow-xl shadow-black/10 border border-[rgba(201,164,75,0.12)] mb-6">
           <div className="absolute top-0 right-0 w-48 h-48 bg-[#C9A44B]/5 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 w-36 h-36 bg-[#C9A44B]/5 rounded-full blur-3xl" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] border border-[rgba(201,164,75,0.05)] rounded-full" />
           
           <div className="relative z-10">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2.5">
-                  <span className="text-[10px] font-semibold text-[#B7C0BA] uppercase tracking-wider">Imam Retirement Support</span>
-                  <span className="w-px h-3 bg-[rgba(201,164,75,0.2)]" />
-                  <span className="text-[10px] font-medium text-[#C9A44B]">Community-Powered</span>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-[#C9A44B]/10 border border-[#C9A44B]/20 mb-3">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#C9A44B] animate-pulse" />
+                  <span className="text-[9px] font-medium text-[#C9A44B] uppercase tracking-wider">Itqaan Pension</span>
                 </div>
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#F7F6F1] leading-tight">
-                  Supporting Imams Through
-                  <span className="block text-[#C9A44B]">Community-Powered Retirement</span>
+                <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-[#FFFFFF] leading-snug">
+                  Support Religious Leaders
+                  <span className="block text-[#C9A44B]">Secure Their Future</span>
                 </h1>
-                <p className="text-[#B7C0BA] text-sm mt-2 max-w-lg">
-                  Join a community of believers supporting the long-term welfare of Imams 
-                  through a structured, dignified, and Sharia-compliant program.
+                <p className="text-[#B7C0BA] text-xs md:text-sm mt-2 max-w-lg leading-relaxed">
+                  Contribute to the long-term welfare of Islamic Scholars, Imams, Adhan Callers, 
+                  Ustadhs, Ustadhas, and Kadhis through a community-powered retirement program.
                 </p>
-                <div className="flex flex-wrap gap-2 mt-4">
-                  <button 
-                    className="px-5 py-2 bg-[#C9A44B] text-[#032A24] font-bold text-sm rounded-lg hover:bg-[#E1C16B] transition-all duration-200 shadow-lg shadow-[#C9A44B]/20"
-                    onClick={() => navigate('/select-mosque')}
-                  >
-                    Support an Imam
-                  </button>
-                  <button 
-                    className="px-5 py-2 bg-white/10 backdrop-blur-sm text-[#F7F6F1] font-semibold text-sm rounded-lg border border-[rgba(201,164,75,0.2)] hover:bg-white/20 transition-all duration-200"
-                    onClick={() => document.querySelector('.how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
-                  >
-                    Learn More
-                  </button>
-                </div>
               </div>
-
-              {/* Stats */}
-              <div className="grid grid-cols-2 gap-3 min-w-[160px]">
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center border border-[rgba(201,164,75,0.1)]">
-                  <div className="text-xl md:text-2xl font-bold text-[#F7F6F1]">{stats.totalImams}</div>
-                  <div className="text-[10px] text-[#B7C0BA]/60">Imams</div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center border border-[rgba(201,164,75,0.1)]">
-                  <div className="text-xl md:text-2xl font-bold text-[#C9A44B]">{stats.totalMosques}</div>
-                  <div className="text-[10px] text-[#B7C0BA]/60">Mosques</div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center border border-[rgba(201,164,75,0.1)]">
-                  <div className="text-xl md:text-2xl font-bold text-[#3FAF73]">{stats.communitiesServed}</div>
-                  <div className="text-[10px] text-[#B7C0BA]/60">Communities</div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center border border-[rgba(201,164,75,0.1)]">
-                  <div className="text-xl md:text-2xl font-bold text-[#F7F6F1]">{stats.monthlyContributors}</div>
-                  <div className="text-[10px] text-[#B7C0BA]/60">Contributors</div>
-                </div>
+              <div className="flex flex-wrap gap-2 flex-shrink-0">
+                <button 
+                  className="px-5 py-2 bg-[#C9A44B] text-[#032A24] font-semibold text-sm rounded-lg hover:bg-[#E1C16B] transition shadow-md shadow-[#C9A44B]/20"
+                  onClick={() => document.querySelector('.leaders-section')?.scrollIntoView({ behavior: 'smooth' })}
+                >
+                  Support a Leader
+                </button>
+                <button 
+                  className="px-5 py-2 bg-white/10 backdrop-blur-sm text-[#F7F6F1] font-medium text-sm rounded-lg border border-[rgba(201,164,75,0.2)] hover:bg-white/20 transition"
+                  onClick={() => document.querySelector('.how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
+                >
+                  Learn More
+                </button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* ===== HOW IT WORKS ===== */}
-        <div className="how-it-works bg-white rounded-xl border border-[rgba(11,52,43,0.08)] shadow-sm p-4 sm:p-5 md:p-6 mb-5">
-          <h2 className="text-sm font-bold text-[#1F2937] mb-4 text-center">How It Works</h2>
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+          <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-4 text-center">
+            <p className="text-2xl font-bold text-[#0B342B]">{stats.totalLeaders}</p>
+            <p className="text-xs text-[#6B7280] uppercase tracking-wider">Leaders</p>
+          </div>
+          <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-4 text-center">
+            <p className="text-2xl font-bold text-[#C9A44B]">{stats.totalSupporters}</p>
+            <p className="text-xs text-[#6B7280] uppercase tracking-wider">Supporters</p>
+          </div>
+          <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-4 text-center">
+            <p className="text-2xl font-bold text-[#0B342B]">{Object.keys(stats.typeBreakdown || {}).length}</p>
+            <p className="text-xs text-[#6B7280] uppercase tracking-wider">Leader Types</p>
+          </div>
+        </div>
+
+        {/* How It Works */}
+        <div className="how-it-works bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-5 md:p-6 mb-6">
+          <h2 className="text-sm font-semibold text-[#1F2937] mb-4 text-center">How It Works</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="w-10 h-10 rounded-full bg-[#0B342B]/10 flex items-center justify-center mx-auto mb-2">
-                <span className="text-sm font-bold text-[#0B342B]">1</span>
+            {[
+              { num: '1', label: 'Browse Leaders', desc: 'Find a religious leader' },
+              { num: '2', label: 'View Profile', desc: 'Learn about their work' },
+              { num: '3', label: 'Contribute', desc: 'Support their welfare' },
+              { num: '4', label: 'Community', desc: 'Together we support' }
+            ].map((item, i) => (
+              <div key={i} className="text-center">
+                <div className="w-9 h-9 rounded-full bg-[#0B342B]/10 flex items-center justify-center mx-auto mb-1.5">
+                  <span className="text-xs font-bold text-[#0B342B]">{item.num}</span>
+                </div>
+                <p className="text-sm font-medium text-[#1F2937]">{item.label}</p>
+                <p className="text-xs text-[#6B7280]">{item.desc}</p>
               </div>
-              <div className="font-semibold text-[#1F2937] text-xs">Select Mosque</div>
-              <div className="text-[10px] text-[#6B7280] mt-0.5">Choose a mosque</div>
-            </div>
-            <div className="text-center">
-              <div className="w-10 h-10 rounded-full bg-[#0B342B]/10 flex items-center justify-center mx-auto mb-2">
-                <span className="text-sm font-bold text-[#0B342B]">2</span>
-              </div>
-              <div className="font-semibold text-[#1F2937] text-xs">Choose Imam</div>
-              <div className="text-[10px] text-[#6B7280] mt-0.5">Select an Imam</div>
-            </div>
-            <div className="text-center">
-              <div className="w-10 h-10 rounded-full bg-[#0B342B]/10 flex items-center justify-center mx-auto mb-2">
-                <span className="text-sm font-bold text-[#0B342B]">3</span>
-              </div>
-              <div className="font-semibold text-[#1F2937] text-xs">Contribute</div>
-              <div className="text-[10px] text-[#6B7280] mt-0.5">Support their welfare</div>
-            </div>
-            <div className="text-center">
-              <div className="w-10 h-10 rounded-full bg-[#0B342B]/10 flex items-center justify-center mx-auto mb-2">
-                <span className="text-sm font-bold text-[#0B342B]">4</span>
-              </div>
-              <div className="font-semibold text-[#1F2937] text-xs">Community</div>
-              <div className="text-[10px] text-[#6B7280] mt-0.5">Together we support</div>
-            </div>
+            ))}
           </div>
         </div>
 
-        {/* ===== STATS CARDS ===== */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-          <div className="bg-white rounded-xl border border-[rgba(11,52,43,0.08)] shadow-sm p-4 text-center hover:shadow-md hover:border-[rgba(11,52,43,0.2)] transition-all duration-200">
-            <div className="flex justify-center mb-2.5">
-              <div className="w-10 h-10 rounded-xl bg-[#0B342B]/10 flex items-center justify-center">
-                <PersonIcon />
-              </div>
-            </div>
-            <div className="text-lg font-bold text-[#1F2937]">{stats.totalImams}</div>
-            <div className="text-[10px] text-[#6B7280]">Imams Supported</div>
-          </div>
-          <div className="bg-white rounded-xl border border-[rgba(11,52,43,0.08)] shadow-sm p-4 text-center hover:shadow-md hover:border-[rgba(11,52,43,0.2)] transition-all duration-200">
-            <div className="flex justify-center mb-2.5">
-              <div className="w-10 h-10 rounded-xl bg-[#0B342B]/10 flex items-center justify-center">
-                <MosqueIcon />
-              </div>
-            </div>
-            <div className="text-lg font-bold text-[#1F2937]">{stats.totalMosques}</div>
-            <div className="text-[10px] text-[#6B7280]">Mosques</div>
-          </div>
-          <div className="bg-white rounded-xl border border-[rgba(11,52,43,0.08)] shadow-sm p-4 text-center hover:shadow-md hover:border-[rgba(11,52,43,0.2)] transition-all duration-200">
-            <div className="flex justify-center mb-2.5">
-              <div className="w-10 h-10 rounded-xl bg-[#0B342B]/10 flex items-center justify-center">
-                <CommunityIcon />
-              </div>
-            </div>
-            <div className="text-lg font-bold text-[#1F2937]">{stats.communitiesServed}</div>
-            <div className="text-[10px] text-[#6B7280]">Communities</div>
-          </div>
-          <div className="bg-white rounded-xl border border-[rgba(11,52,43,0.08)] shadow-sm p-4 text-center hover:shadow-md hover:border-[rgba(11,52,43,0.2)] transition-all duration-200">
-            <div className="flex justify-center mb-2.5">
-              <div className="w-10 h-10 rounded-xl bg-[#0B342B]/10 flex items-center justify-center">
-                <HeartIcon />
-              </div>
-            </div>
-            <div className="text-lg font-bold text-[#1F2937]">{stats.monthlyContributors}</div>
-            <div className="text-[10px] text-[#6B7280]">Contributors</div>
-          </div>
-        </div>
-
-        {/* ===== TOTAL CONTRIBUTIONS ===== */}
-        {stats.totalContributions > 0 && (
-          <div className="bg-gradient-to-r from-[#0B342B] to-[#12342D] rounded-xl border border-[rgba(201,164,75,0.15)] p-5 md:p-6 mb-5 text-[#F7F6F1] text-center">
-            <div className="flex items-center justify-center gap-2 mb-1.5">
-              <ShieldIcon />
-              <span className="text-[10px] font-medium text-[#B7C0BA]">Total Community Contributions</span>
-            </div>
-            <div className="text-2xl md:text-3xl font-bold text-[#C9A44B]">{formatCurrency(stats.totalContributions)}</div>
-            <p className="text-[10px] text-[#B7C0BA]/60 mt-1">Barakah in giving</p>
+        {/* Leader Type Breakdown */}
+        {stats.typeBreakdown && Object.keys(stats.typeBreakdown).length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-5">
+            {Object.entries(stats.typeBreakdown).map(([type, count]) => (
+              <span key={type} className="px-3 py-1 bg-white rounded-full border border-[#E8EEF4] text-xs font-medium text-[#1F2937] shadow-sm">
+                {getLeaderTypeLabel(type)} <span className="text-[#6B7280]">({count})</span>
+              </span>
+            ))}
           </div>
         )}
 
-        {/* ===== CTA SECTION ===== */}
-        <div className="bg-white rounded-xl border border-[rgba(11,52,43,0.08)] shadow-sm p-5 md:p-6 text-center">
-          <h3 className="text-sm font-bold text-[#1F2937] mb-1.5">Ready to Support?</h3>
-          <p className="text-xs text-[#6B7280] mb-4">Find a mosque and start supporting an Imam today.</p>
-          <button 
-            className="px-6 py-2 bg-[#0B342B] text-[#F7F6F1] font-bold text-sm rounded-lg hover:bg-[#12342D] transition-all duration-200 shadow-md shadow-[#0B342B]/20"
-            onClick={() => navigate('/select-mosque')}
-          >
-            Find a Mosque
-          </button>
-          <p className="text-[10px] text-[#6B7280] mt-3">Wakala Model · 0% Riba · Community-Powered</p>
+        {/* Leaders Section */}
+        <div className="leaders-section bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-5 md:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <h2 className="text-sm font-semibold text-[#1F2937]">Support a Leader</h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="text"
+                className="px-3 py-1.5 border border-[#E8EEF4] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition bg-white w-40 sm:w-48"
+                placeholder="Search leaders..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <select
+                className="px-3 py-1.5 border border-[#E8EEF4] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0B342B]/20 focus:border-[#0B342B] transition bg-white"
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+              >
+                <option value="all">All Types</option>
+                {leaderTypes.map((type) => (
+                  <option key={type} value={type}>{getLeaderTypeLabel(type)}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {filteredLeaders.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-[#6B7280]">No leaders found</p>
+              <p className="text-xs text-[#6B7280] mt-1">Try adjusting your filters</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredLeaders.map((leader) => (
+                <div 
+                  key={leader.id} 
+                  className="border border-[#E8EEF4] rounded-xl p-4 hover:shadow-md hover:border-[#C9A44B] transition-all duration-200 cursor-pointer bg-white"
+                  onClick={() => navigate(`/pension/leader/${leader.share_link || leader.id}`)}
+                >
+                  <div className="flex items-start gap-3">
+                    {leader.profile_image ? (
+                      <img src={leader.profile_image} alt={leader.name} className="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-xl bg-[#0B342B] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                        {getInitials(leader.name)}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-semibold text-sm text-[#1F2937] truncate">{leader.name}</h3>
+                        {leader.is_verified && (
+                          <span className="text-[9px] font-medium px-2 py-0.5 rounded-full bg-[#D1FAE5] text-[#3FAF73] border border-[#A7F3D0]">
+                            Verified
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-[#6B7280]">{getLeaderTypeLabel(leader.leader_type)}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 pt-3 border-t border-[#F4F5F1]">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-[#6B7280]">{leader.location || 'Location not specified'}</span>
+                      <span className="text-[#6B7280]">{leader.total_supporters || 0} supporters</span>
+                    </div>
+                    {leader.mosque_name && (
+                      <p className="text-xs text-[#6B7280] mt-1">{leader.mosque_name}</p>
+                    )}
+                    {leader.qualifications && leader.qualifications.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {leader.qualifications.slice(0, 2).map((q, i) => (
+                          <span key={i} className="text-[9px] px-2 py-0.5 rounded-full bg-[#FAFAF7] text-[#6B7280] border border-[#E8EEF4]">
+                            {q}
+                          </span>
+                        ))}
+                        {leader.qualifications.length > 2 && (
+                          <span className="text-[9px] px-2 py-0.5 rounded-full bg-[#FAFAF7] text-[#6B7280] border border-[#E8EEF4]">
+                            +{leader.qualifications.length - 2}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <button 
+                    className="w-full mt-3 py-1.5 bg-[#0B342B] text-white text-sm font-medium rounded-lg hover:bg-[#032A24] transition shadow-sm"
+                    onClick={(e) => { e.stopPropagation(); navigate(`/pension/leader/${leader.share_link || leader.id}`); }}
+                  >
+                    Support Leader
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
       </div>

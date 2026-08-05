@@ -25,8 +25,28 @@ const Navbar = ({ user, onLogout }) => {
     return 'GU';
   }, [user?.fullName]);
 
+  const getLeaderTypeLabel = (type) => {
+    const labels = {
+      'islamic_scholar': 'Islamic Scholar',
+      'imam': 'Imam',
+      'adhan_caller': 'Adhan Caller',
+      'ustadh': 'Ustadh',
+      'ustadha': 'Ustadha',
+      'kadhi': 'Kadhi'
+    };
+    return labels[type] || type;
+  };
+
+  const getPensionPath = () => {
+    if (user?.role === 'leader' || user?.role === 'imam') {
+      return '/leader-pension';
+    }
+    return '/pension';
+  };
+
   const navItems = useMemo(() => {
     const role = user?.role || 'client';
+    const leaderType = user?.leaderType || null;
     
     const dashboardItem = { 
       path: '/dashboard', 
@@ -39,6 +59,19 @@ const Navbar = ({ user, onLogout }) => {
       isCategory: false
     };
 
+    // Islamic Finance - always visible
+    const islamicFinanceChildren = [
+      { path: '/zakat', label: 'Zakat' },
+      { path: '/sadaqa', label: 'Sadaqa' },
+      { path: '/takaful', label: 'Takaful' },
+      { path: getPensionPath(), label: 'Itqaan Pension' },
+    ];
+
+    // For leaders, add Consultations to Islamic Finance
+    if (role === 'leader' || role === 'imam') {
+      islamicFinanceChildren.push({ path: '/consultations', label: 'Consultations' });
+    }
+
     const islamicFinanceItems = {
       label: 'Islamic Finance',
       icon: (
@@ -47,12 +80,7 @@ const Navbar = ({ user, onLogout }) => {
         </svg>
       ),
       isCategory: true,
-      children: [
-        { path: '/zakat', label: 'Zakat' },
-        { path: '/sadaqa', label: 'Sadaqa' },
-        { path: '/takaful', label: 'Takaful' },
-        { path: '/pension', label: 'Imam Pension' },
-      ]
+      children: islamicFinanceChildren
     };
 
     const ecommerceItems = {
@@ -106,10 +134,14 @@ const Navbar = ({ user, onLogout }) => {
         { path: '/hearse', label: 'Free Hearse & Shroud' },
         { path: '/mosque-finder', label: 'Find a Mosque' },
         { path: '/wills', label: 'Digital Wills' },
-        { path: '/kadhis', label: 'Dial a Scholar' },
         { path: '/about', label: 'About' },
       ]
     };
+
+    // Dial a Scholar - only for clients and vendors (not leaders)
+    if (role !== 'leader' && role !== 'imam') {
+      servicesItems.children.splice(4, 0, { path: '/kadhis', label: 'Dial a Scholar' });
+    }
 
     let items = [dashboardItem];
 
@@ -120,11 +152,12 @@ const Navbar = ({ user, onLogout }) => {
       items.push(utilitiesItem);
       items.push(servicesItems);
     } else if (role === 'vendor') {
+      items.push(islamicFinanceItems);
       items.push(ecommerceItems);
       items.push(halalStayItem);
       items.push(utilitiesItem);
       items.push(servicesItems);
-    } else if (role === 'imam') {
+    } else if (role === 'leader' || role === 'imam') {
       items.push(islamicFinanceItems);
       items.push(utilitiesItem);
       items.push(servicesItems);
@@ -238,11 +271,9 @@ const Navbar = ({ user, onLogout }) => {
   }, []);
 
   const renderNavItem = (item, index, isMobile = false) => {
-    // Category with children (always visible)
     if (item.isCategory) {
       return (
         <div key={index} className="mb-1">
-          {/* Category Header - Bold */}
           <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-bold text-[#C9A44B] ${isCollapsed && !isMobile ? 'justify-center px-2' : ''}`}>
             <span className="flex-shrink-0 text-[#C9A44B]">
               {item.icon}
@@ -252,7 +283,6 @@ const Navbar = ({ user, onLogout }) => {
             )}
           </div>
           
-          {/* Children - Always Visible */}
           <div className={`${isCollapsed && !isMobile ? '' : 'ml-2 pl-2 border-l-2 border-[rgba(201,164,75,0.18)]'}`}>
             {item.children.map((child, childIndex) => (
               <button
@@ -284,7 +314,6 @@ const Navbar = ({ user, onLogout }) => {
       );
     }
 
-    // Single item (no children)
     return (
       <button
         key={index}
@@ -314,14 +343,12 @@ const Navbar = ({ user, onLogout }) => {
 
   return (
     <>
-      {/* Sidebar - Desktop */}
       <aside 
         ref={sidebarRef}
         className={`fixed top-0 left-0 z-50 h-screen bg-[#032A24] transition-all duration-300 ease-in-out flex flex-col border-r border-[rgba(201,164,75,0.18)] shadow-2xl shadow-black/30 ${
           isCollapsed ? 'w-16' : 'w-60'
         } hidden lg:flex`}
       >
-        {/* Logo Section */}
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} px-4 py-5 border-b border-[rgba(201,164,75,0.18)]`}>
           <div 
             className={`flex items-center cursor-pointer ${isCollapsed ? 'justify-center' : ''}`}
@@ -352,14 +379,12 @@ const Navbar = ({ user, onLogout }) => {
           )}
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4 px-2.5 scrollbar-thin scrollbar-thumb-[rgba(201,164,75,0.3)] scrollbar-track-transparent">
           <div className="space-y-0.5">
             {navItems.map((item, index) => renderNavItem(item, index, false))}
           </div>
         </nav>
 
-        {/* User Section */}
         <div className={`border-t border-[rgba(201,164,75,0.18)] p-3 ${isCollapsed ? 'flex justify-center' : ''}`}>
           <div className="relative" ref={userMenuRef}>
             <button
@@ -381,7 +406,9 @@ const Navbar = ({ user, onLogout }) => {
                     {user?.fullName || 'Guest'}
                   </div>
                   <div className="text-xs text-[#B7C0BA] truncate">
-                    {user?.email || ''}
+                    {user?.role === 'leader' && user?.leaderType 
+                      ? getLeaderTypeLabel(user.leaderType)
+                      : user?.email || ''}
                   </div>
                 </div>
               )}
@@ -404,7 +431,9 @@ const Navbar = ({ user, onLogout }) => {
                     {user?.fullName || 'Guest'}
                   </div>
                   <div className="text-xs text-[#B7C0BA]">
-                    {user?.email || ''}
+                    {user?.role === 'leader' && user?.leaderType 
+                      ? getLeaderTypeLabel(user.leaderType)
+                      : user?.email || ''}
                   </div>
                 </div>
 
@@ -437,7 +466,6 @@ const Navbar = ({ user, onLogout }) => {
         </div>
       </aside>
 
-      {/* Floating Toggle Button - Appears when sidebar is collapsed */}
       {isCollapsed && (
         <button
           onClick={toggleCollapse}
@@ -450,7 +478,6 @@ const Navbar = ({ user, onLogout }) => {
         </button>
       )}
 
-      {/* Mobile Overlay */}
       {isMobileMenuOpen && (
         <div 
           className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
@@ -458,7 +485,6 @@ const Navbar = ({ user, onLogout }) => {
         />
       )}
 
-      {/* Mobile Drawer */}
       <div 
         ref={mobileMenuRef}
         className={`fixed top-0 left-0 z-50 h-screen w-72 bg-[#032A24] transform transition-transform duration-300 ease-in-out lg:hidden ${
@@ -466,7 +492,6 @@ const Navbar = ({ user, onLogout }) => {
         } shadow-2xl shadow-black/50`}
       >
         <div className="flex flex-col h-full">
-          {/* Mobile Drawer Header */}
           <div className="flex items-center justify-between px-4 py-5 border-b border-[rgba(201,164,75,0.18)]">
             <div 
               className="flex items-center cursor-pointer"
@@ -494,14 +519,12 @@ const Navbar = ({ user, onLogout }) => {
             </button>
           </div>
 
-          {/* Mobile Navigation */}
           <nav className="flex-1 overflow-y-auto py-4 px-3 min-h-0">
             <div className="space-y-0.5">
               {navItems.map((item, index) => renderNavItem(item, index, true))}
             </div>
           </nav>
 
-          {/* Mobile User Section */}
           <div className="flex-shrink-0 border-t border-[rgba(201,164,75,0.18)] p-3">
             <div className="relative" ref={mobileUserMenuRef}>
               <button
@@ -521,7 +544,9 @@ const Navbar = ({ user, onLogout }) => {
                     {user?.fullName || 'Guest'}
                   </div>
                   <div className="text-xs text-[#B7C0BA] truncate">
-                    {user?.email || ''}
+                    {user?.role === 'leader' && user?.leaderType 
+                      ? getLeaderTypeLabel(user.leaderType)
+                      : user?.email || ''}
                   </div>
                 </div>
                 <svg className={`w-4 h-4 text-[#B7C0BA] transition-transform duration-200 ${isMobileUserMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -539,7 +564,9 @@ const Navbar = ({ user, onLogout }) => {
                       {user?.fullName || 'Guest'}
                     </div>
                     <div className="text-xs text-[#B7C0BA]">
-                      {user?.email || ''}
+                      {user?.role === 'leader' && user?.leaderType 
+                        ? getLeaderTypeLabel(user.leaderType)
+                        : user?.email || ''}
                     </div>
                   </div>
 
@@ -574,10 +601,8 @@ const Navbar = ({ user, onLogout }) => {
         </div>
       </div>
 
-      {/* Main Content Spacer - Desktop */}
       <div className={`hidden lg:block transition-all duration-300 ${isCollapsed ? 'pl-16' : 'pl-60'}`} />
 
-      {/* ===== MOBILE HEADER ===== */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#032A24]/95 backdrop-blur-md border-b border-[rgba(201,164,75,0.18)] rounded-b-2xl shadow-lg shadow-black/30">
         <div className="flex items-center justify-between px-4 h-14">
           <div 
@@ -604,7 +629,6 @@ const Navbar = ({ user, onLogout }) => {
         </div>
       </header>
 
-      {/* Mobile Content Spacer */}
       <div className="lg:hidden h-14" />
 
       <style>{`

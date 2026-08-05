@@ -1,8 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/api';
+import { getCounties, getSubCounties, getWards } from '../services/locationApi';
 
-const ImamRegister = () => {
+const LEADER_TYPES = [
+  { id: 'islamic_scholar', label: 'Islamic Scholar' },
+  { id: 'imam', label: 'Imam' },
+  { id: 'adhan_caller', label: 'Adhan Caller' },
+  { id: 'ustadh', label: 'Ustadh' },
+  { id: 'ustadha', label: 'Ustadha' },
+  { id: 'kadhi', label: 'Kadhi' }
+];
+
+const CONSULTATION_TYPES = ['video', 'in-person', 'phone', 'chat'];
+
+const LeaderRegister = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -18,7 +30,11 @@ const ImamRegister = () => {
   const inputRefs = useRef([]);
   const otpTimerRef = useRef(null);
   
-  const [counties, setCounties] = useState(['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret', 'Garissa', 'Malindi', 'Thika', 'Kitale', 'Meru']);
+  const [counties, setCounties] = useState([]);
+  const [subCounties, setSubCounties] = useState([]);
+  const [wards, setWards] = useState([]);
+  const [loadingLocations, setLoadingLocations] = useState(true);
+  const [locationError, setLocationError] = useState('');
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -26,20 +42,89 @@ const ImamRegister = () => {
     email: '',
     nationalId: '',
     pin: '',
-    title: 'Imam',
-    subRole: 'imam',
+    leaderType: '',
+    location: '',
+    region: '',
+    regionName: '',
+    subCounty: '',
+    subCountyName: '',
+    ward: '',
+    wardName: '',
     mosqueName: '',
     mosqueLocation: '',
-    mosqueCounty: '',
     qualifications: '',
     yearsOfService: '',
-    institution: '',
     bio: '',
-    region: '',
-    subCounty: '',
-    ward: '',
+    institution: '',
+    consultationFee: '',
+    consultationTypes: [],
     termsAccepted: false
   });
+
+  useEffect(() => {
+    const fetchCounties = async () => {
+      try {
+        setLoadingLocations(true);
+        const data = await getCounties();
+        setCounties(data);
+        setLocationError('');
+      } catch (err) {
+        setLocationError('Failed to load counties. Please refresh.');
+        console.error(err);
+      } finally {
+        setLoadingLocations(false);
+      }
+    };
+    fetchCounties();
+  }, []);
+
+  useEffect(() => {
+    if (formData.regionName) {
+      const fetchSubs = async () => {
+        try {
+          const data = await getSubCounties(formData.regionName);
+          setSubCounties(data);
+          setWards([]);
+          setFormData(prev => ({
+            ...prev,
+            subCounty: '',
+            subCountyName: '',
+            ward: '',
+            wardName: ''
+          }));
+        } catch (err) {
+          console.error('Failed to fetch sub-counties:', err);
+          setSubCounties([]);
+        }
+      };
+      fetchSubs();
+    } else {
+      setSubCounties([]);
+      setWards([]);
+    }
+  }, [formData.regionName]);
+
+  useEffect(() => {
+    if (formData.regionName && formData.subCountyName) {
+      const fetchWards = async () => {
+        try {
+          const data = await getWards(formData.regionName, formData.subCountyName);
+          setWards(data);
+          setFormData(prev => ({
+            ...prev,
+            ward: '',
+            wardName: ''
+          }));
+        } catch (err) {
+          console.error('Failed to fetch wards:', err);
+          setWards([]);
+        }
+      };
+      fetchWards();
+    } else {
+      setWards([]);
+    }
+  }, [formData.regionName, formData.subCountyName]);
 
   useEffect(() => {
     return () => {
@@ -54,6 +139,53 @@ const ImamRegister = () => {
     setFormData({
       ...formData,
       [name]: type === 'checkbox' ? checked : value
+    });
+  };
+
+  const handleConsultationTypeToggle = (type) => {
+    setFormData(prev => {
+      const current = prev.consultationTypes || [];
+      if (current.includes(type)) {
+        return { ...prev, consultationTypes: current.filter(t => t !== type) };
+      } else {
+        return { ...prev, consultationTypes: [...current, type] };
+      }
+    });
+  };
+
+  const handleCountyChange = (e) => {
+    const value = e.target.value;
+    const [id, name] = value.split('|');
+    setFormData({
+      ...formData,
+      region: id,
+      regionName: name,
+      subCounty: '',
+      subCountyName: '',
+      ward: '',
+      wardName: ''
+    });
+  };
+
+  const handleSubCountyChange = (e) => {
+    const value = e.target.value;
+    const [id, name] = value.split('|');
+    setFormData({
+      ...formData,
+      subCounty: id,
+      subCountyName: name,
+      ward: '',
+      wardName: ''
+    });
+  };
+
+  const handleWardChange = (e) => {
+    const value = e.target.value;
+    const [id, name] = value.split('|');
+    setFormData({
+      ...formData,
+      ward: id,
+      wardName: name
     });
   };
 
@@ -158,16 +290,16 @@ const ImamRegister = () => {
     setError('');
     setSuccess('');
 
-    if (step === 1 && (!formData.fullName || !formData.phone || !formData.email || !formData.nationalId || !formData.pin || formData.pin.length < 4)) {
-      setError('Please fill in all required fields. PIN must be at least 4 digits.');
-      return;
-    }
-    if (step === 2 && (!formData.subRole)) {
-      setError('Please select your role (Imam or Kadhi)');
-      return;
-    }
-    if (step === 3 && (!formData.mosqueName || !formData.mosqueLocation)) {
+    if (step === 1 && (!formData.fullName || !formData.leaderType || !formData.location || !formData.region || !formData.subCounty || !formData.ward)) {
       setError('Please fill in all required fields');
+      return;
+    }
+    if (step === 2 && (!formData.phone || !formData.email)) {
+      setError('Please fill in all required fields');
+      return;
+    }
+    if (step === 3 && (!formData.nationalId || !formData.pin || formData.pin.length < 4)) {
+      setError('Please enter a valid National ID and PIN (min 4 digits)');
       return;
     }
     if (step === 4 && (!formData.qualifications)) {
@@ -208,30 +340,32 @@ const ImamRegister = () => {
         return;
       }
 
-      await authService.registerImam({
+      await authService.registerLeader({
         fullName: formData.fullName,
         phone: formData.phone,
         email: formData.email,
         nationalId: formData.nationalId,
         pin: formData.pin,
-        title: formData.title || 'Imam',
-        subRole: formData.subRole,
-        mosqueName: formData.mosqueName,
-        mosqueLocation: formData.mosqueLocation,
-        mosqueCounty: formData.mosqueCounty,
+        leaderType: formData.leaderType,
+        location: formData.location,
+        region: formData.regionName,
+        subCounty: formData.subCountyName,
+        ward: formData.wardName,
+        mosqueName: formData.mosqueName || null,
+        mosqueLocation: formData.mosqueLocation || null,
         qualifications: formData.qualifications.split(',').map(q => q.trim()),
         yearsOfService: parseInt(formData.yearsOfService) || 0,
-        institution: formData.institution,
-        bio: formData.bio,
-        region: formData.region,
-        subCounty: formData.subCounty,
-        ward: formData.ward,
+        bio: formData.bio || null,
+        institution: formData.institution || null,
+        consultationFee: parseInt(formData.consultationFee) || 0,
+        consultationTypes: formData.consultationTypes.length > 0 ? formData.consultationTypes : ['video'],
+        availableForConsultation: formData.consultationTypes.length > 0,
         termsAccepted: formData.termsAccepted
       });
 
       setStep(7);
-      const roleLabel = formData.subRole === 'kadhi' ? 'Kadhi' : 'Imam';
-      setSuccess(`${roleLabel} application submitted successfully!`);
+      const leaderLabel = LEADER_TYPES.find(t => t.id === formData.leaderType)?.label || 'Leader';
+      setSuccess(`${leaderLabel} application submitted successfully!`);
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed. Please try again.');
     }
@@ -273,7 +407,7 @@ const ImamRegister = () => {
         return (
           <div className="space-y-3 animate-fadeIn">
             <div className="mb-1.5">
-              <h3 className="text-base font-bold text-[#F7F6F1]">Personal Information</h3>
+              <h3 className="text-base font-bold text-[#F7F6F1]">Leader Information</h3>
               <p className="text-xs text-[#B7C0BA]">Tell us about yourself</p>
             </div>
 
@@ -286,6 +420,124 @@ const ImamRegister = () => {
                 onChange={handleChange}
                 placeholder="Full Name *"
               />
+            </div>
+
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
+              <select
+                className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 appearance-none"
+                name="leaderType"
+                value={formData.leaderType}
+                onChange={handleChange}
+              >
+                <option value="" className="bg-[#032A24]">Select Leader Type *</option>
+                {LEADER_TYPES.map((type) => (
+                  <option key={type.id} value={type.id} className="bg-[#032A24]">
+                    {type.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
+              <input
+                className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300"
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                placeholder="Specific Location/Address *"
+              />
+            </div>
+
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
+              {loadingLocations ? (
+                <div className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#B7C0BA] text-sm">Loading counties...</div>
+              ) : locationError ? (
+                <div className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#DC2626]/30 rounded-xl text-[#DC2626] text-sm">{locationError}</div>
+              ) : (
+                <select
+                  className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 appearance-none"
+                  value={formData.region ? `${formData.region}|${formData.regionName}` : ''}
+                  onChange={handleCountyChange}
+                >
+                  <option value="" className="bg-[#032A24]">Select County *</option>
+                  {counties.map((county) => (
+                    <option key={county.id} value={`${county.id}|${county.name}`} className="bg-[#032A24]">
+                      {county.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {formData.region && (
+              <div className="relative group">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
+                <select
+                  className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 appearance-none"
+                  value={formData.subCounty ? `${formData.subCounty}|${formData.subCountyName}` : ''}
+                  onChange={handleSubCountyChange}
+                >
+                  <option value="" className="bg-[#032A24]">Select Sub-County *</option>
+                  {subCounties.map((sub) => (
+                    <option key={sub.id} value={`${sub.id}|${sub.name}`} className="bg-[#032A24]">
+                      {sub.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {formData.subCounty && (
+              <div className="relative group">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
+                <select
+                  className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 appearance-none"
+                  value={formData.ward ? `${formData.ward}|${formData.wardName}` : ''}
+                  onChange={handleWardChange}
+                >
+                  <option value="" className="bg-[#032A24]">Select Ward *</option>
+                  {wards.map((ward) => (
+                    <option key={ward.id} value={`${ward.id}|${ward.name}`} className="bg-[#032A24]">
+                      {ward.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
+              <input
+                className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300"
+                name="mosqueName"
+                value={formData.mosqueName}
+                onChange={handleChange}
+                placeholder="Mosque Name (Optional)"
+              />
+            </div>
+
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
+              <input
+                className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300"
+                name="mosqueLocation"
+                value={formData.mosqueLocation}
+                onChange={handleChange}
+                placeholder="Mosque Location (Optional)"
+              />
+            </div>
+          </div>
+        );
+
+      case 2:
+        return (
+          <div className="space-y-3 animate-fadeIn">
+            <div className="mb-1.5">
+              <h3 className="text-base font-bold text-[#F7F6F1]">Contact Information</h3>
+              <p className="text-xs text-[#B7C0BA]">How can we reach you?</p>
             </div>
 
             <div className="relative group">
@@ -308,6 +560,16 @@ const ImamRegister = () => {
                 onChange={handleChange}
                 placeholder="Email Address *"
               />
+            </div>
+          </div>
+        );
+
+      case 3:
+        return (
+          <div className="space-y-3 animate-fadeIn">
+            <div className="mb-1.5">
+              <h3 className="text-base font-bold text-[#F7F6F1]">ID & Security</h3>
+              <p className="text-xs text-[#B7C0BA]">Verify your identity</p>
             </div>
 
             <div className="relative group">
@@ -337,136 +599,12 @@ const ImamRegister = () => {
           </div>
         );
 
-      case 2:
-        return (
-          <div className="space-y-3 animate-fadeIn">
-            <div className="mb-1.5">
-              <h3 className="text-base font-bold text-[#F7F6F1]">Select Your Role</h3>
-              <p className="text-xs text-[#B7C0BA]">Choose your primary role as a religious leader</p>
-            </div>
-
-            <div className="space-y-3">
-              <label className={`flex items-start gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
-                formData.subRole === 'imam'
-                  ? 'border-[#C9A44B] bg-[#032A24] shadow-lg shadow-black/20'
-                  : 'border-[#C9A44B]/30 hover:border-[#C9A44B]/60 hover:bg-[#032A24]/50'
-              }`}>
-                <input
-                  type="radio"
-                  name="subRole"
-                  value="imam"
-                  checked={formData.subRole === 'imam'}
-                  onChange={handleChange}
-                  className="w-4 h-4 mt-0.5 rounded-full border-[#C9A44B]/30 bg-[#032A24] text-[#C9A44B] focus:ring-[#C9A44B]/40 focus:ring-2 flex-shrink-0"
-                />
-                <div>
-                  <div className="text-sm font-bold text-[#F7F6F1]">Imam</div>
-                  <div className="text-xs text-[#B7C0BA]">Mosque leadership, pension, community support</div>
-                  <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                    <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-[#032A24] text-[#C9A44B] border border-[#C9A44B]/30">Pension</span>
-                    <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-[#032A24] text-[#3FAF73] border border-[#3FAF73]/30">Supporters</span>
-                    <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-[#032A24] text-[#C9A44B] border border-[#C9A44B]/30">Verified</span>
-                  </div>
-                </div>
-              </label>
-
-              <label className={`flex items-start gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
-                formData.subRole === 'kadhi'
-                  ? 'border-[#C9A44B] bg-[#032A24] shadow-lg shadow-black/20'
-                  : 'border-[#C9A44B]/30 hover:border-[#C9A44B]/60 hover:bg-[#032A24]/50'
-              }`}>
-                <input
-                  type="radio"
-                  name="subRole"
-                  value="kadhi"
-                  checked={formData.subRole === 'kadhi'}
-                  onChange={handleChange}
-                  className="w-4 h-4 mt-0.5 rounded-full border-[#C9A44B]/30 bg-[#032A24] text-[#C9A44B] focus:ring-[#C9A44B]/40 focus:ring-2 flex-shrink-0"
-                />
-                <div>
-                  <div className="text-sm font-bold text-[#F7F6F1]">Kadhi</div>
-                  <div className="text-xs text-[#B7C0BA]">Islamic legal guidance, consultations, video calls</div>
-                  <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                    <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-[#032A24] text-[#C9A44B] border border-[#C9A44B]/30">Consultations</span>
-                    <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-[#032A24] text-[#3FAF73] border border-[#3FAF73]/30">Video Calls</span>
-                    <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-[#032A24] text-[#C9A44B] border border-[#C9A44B]/30">Legal Guidance</span>
-                  </div>
-                </div>
-              </label>
-            </div>
-
-            <div className="bg-[#032A24] rounded-xl p-3 border border-[#C9A44B]/30 mt-1">
-              <p className="text-[10px] text-[#B7C0BA]/60 text-center leading-relaxed">
-                You can only register as one primary role. If you serve in both capacities, please choose your primary role.
-              </p>
-            </div>
-          </div>
-        );
-
-      case 3:
-        return (
-          <div className="space-y-3 animate-fadeIn">
-            <div className="mb-1.5">
-              <h3 className="text-base font-bold text-[#F7F6F1]">Mosque Details</h3>
-              <p className="text-xs text-[#B7C0BA]">Tell us about your mosque</p>
-            </div>
-
-            <div className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
-              <input
-                className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300"
-                name="mosqueName"
-                value={formData.mosqueName}
-                onChange={handleChange}
-                placeholder="Mosque Name *"
-              />
-            </div>
-
-            <div className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
-              <input
-                className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300"
-                name="mosqueLocation"
-                value={formData.mosqueLocation}
-                onChange={handleChange}
-                placeholder="Mosque Location (Street/City) *"
-              />
-            </div>
-
-            <div className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
-              <select
-                className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 appearance-none"
-                name="mosqueCounty"
-                value={formData.mosqueCounty}
-                onChange={handleChange}
-              >
-                <option value="" className="bg-[#032A24]">Select County</option>
-                {counties.map((county) => (
-                  <option key={county} value={county} className="bg-[#032A24]">{county}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
-              <input
-                className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                placeholder="Title (e.g., Chief Imam, Sheikh)"
-              />
-            </div>
-          </div>
-        );
-
       case 4:
         return (
           <div className="space-y-3 animate-fadeIn">
             <div className="mb-1.5">
-              <h3 className="text-base font-bold text-[#F7F6F1]">Qualifications & Background</h3>
-              <p className="text-xs text-[#B7C0BA]">Tell us about your qualifications</p>
+              <h3 className="text-base font-bold text-[#F7F6F1]">Qualifications & Consultation</h3>
+              <p className="text-xs text-[#B7C0BA]">Tell us about your qualifications and services</p>
             </div>
 
             <div className="relative group">
@@ -500,8 +638,40 @@ const ImamRegister = () => {
                 name="institution"
                 value={formData.institution}
                 onChange={handleChange}
-                placeholder="Institution (optional)"
+                placeholder="Institution (Optional)"
               />
+            </div>
+
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
+              <input
+                className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300"
+                type="number"
+                name="consultationFee"
+                value={formData.consultationFee}
+                onChange={handleChange}
+                placeholder="Consultation Fee (KES) - Optional"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-[#B7C0BA] block mb-1.5">Consultation Types (Optional)</label>
+              <div className="flex flex-wrap gap-2">
+                {CONSULTATION_TYPES.map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                      formData.consultationTypes.includes(type)
+                        ? 'bg-[#C9A44B] text-[#032A24]'
+                        : 'bg-[#032A24] text-[#B7C0BA] border border-[#C9A44B]/30'
+                    }`}
+                    onClick={() => handleConsultationTypeToggle(type)}
+                  >
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="relative group">
@@ -511,7 +681,7 @@ const ImamRegister = () => {
                 name="bio"
                 value={formData.bio}
                 onChange={handleChange}
-                placeholder="Bio / About You (optional)"
+                placeholder="Bio / About You (Optional)"
               />
             </div>
           </div>
@@ -560,7 +730,7 @@ const ImamRegister = () => {
                     <div>
                       <span className="text-[10px] font-medium text-[#C9A44B]">Your OTP Code</span>
                       <div className="text-lg font-mono font-bold text-[#E1C16B] tracking-widest mt-0.5">
-                        {otpCode || '••••••'}
+                        {otpCode || '......'}
                       </div>
                     </div>
                   </div>
@@ -673,7 +843,7 @@ const ImamRegister = () => {
             </div>
             <h3 className="text-xl font-bold text-[#F7F6F1]">Application Submitted</h3>
             <p className="text-[#B7C0BA] text-sm mt-2 leading-relaxed">
-              Your {formData.subRole === 'kadhi' ? 'Kadhi' : 'Imam'} application is under review.<br />
+              Your {LEADER_TYPES.find(t => t.id === formData.leaderType)?.label || 'Leader'} application is under review.<br />
               We'll notify you once approved.
             </p>
             <div className="mt-4 p-4 bg-[#032A24] rounded-xl text-left space-y-1.5 border border-[#C9A44B]/30">
@@ -682,12 +852,12 @@ const ImamRegister = () => {
                 <span className="font-medium text-[#F7F6F1]">{formData.fullName}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-[#B7C0BA]">Role:</span>
-                <span className="font-medium text-[#F7F6F1]">{formData.subRole === 'kadhi' ? 'Kadhi' : 'Imam'}</span>
+                <span className="text-[#B7C0BA]">Type:</span>
+                <span className="font-medium text-[#F7F6F1]">{LEADER_TYPES.find(t => t.id === formData.leaderType)?.label || 'Leader'}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-[#B7C0BA]">Mosque:</span>
-                <span className="font-medium text-[#F7F6F1]">{formData.mosqueName}</span>
+                <span className="text-[#B7C0BA]">Location:</span>
+                <span className="font-medium text-[#F7F6F1]">{formData.location}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-[#B7C0BA]">Email:</span>
@@ -711,47 +881,49 @@ const ImamRegister = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#032A24] px-4 py-8">
       <div className="flex flex-col lg:flex-row max-w-4xl w-full bg-[#0B342B] rounded-3xl shadow-2xl shadow-black/30 border border-[#C9A44B]/30 overflow-hidden relative">
-        
+
         <div className="absolute -top-16 -right-16 w-48 h-48 bg-[#C9A44B]/5 rounded-full blur-3xl" />
         <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-[#C9A44B]/5 rounded-full blur-3xl" />
 
-        {/* LEFT: Branding Section */}
         <div className="w-full lg:w-2/5 bg-gradient-to-br from-[#032A24] to-[#0B342B] p-6 lg:p-8 flex items-center justify-center relative overflow-hidden">
           <div className="relative z-10 text-center">
             <div className="mb-6">
               <div className="flex items-center justify-center mb-3">
-                <img 
-                  src="/itqaan_logo.png" 
-                  alt="Itqaan" 
+                <img
+                  src="/itqaan_logo.png"
+                  alt="Itqaan"
                   className="h-16 w-auto object-contain"
                 />
               </div>
               <div className="text-[9px] font-medium text-[#C9A44B] tracking-[0.2em] uppercase">Sharia-Compliant Fintech</div>
             </div>
 
-            <h1 className="text-2xl lg:text-3xl font-bold text-[#F7F6F1]">Register as a Religious Leader</h1>
+            <h1 className="text-2xl lg:text-3xl font-bold text-[#F7F6F1]">Become a Religious Leader</h1>
             <p className="text-[#B7C0BA] text-sm mt-1.5 max-w-sm mx-auto">
-              Register as an Imam or Kadhi to serve your community.
+              Register as an Islamic Scholar, Imam, Adhan Caller, Ustadh, Ustadha, or Kadhi.
             </p>
 
             <div className="mt-6 space-y-1 flex flex-col items-start w-full max-w-[200px] mx-auto">
               <div className="flex items-center gap-2.5 text-xs text-[#B7C0BA]">
                 <span className="flex items-center justify-center w-5 h-5 rounded-lg bg-[#C9A44B]/20 text-[#C9A44B] text-[10px] font-bold flex-shrink-0">✓</span>
-                <span className="leading-none whitespace-nowrap">Choose Your Primary Role</span>
+                <span className="leading-none whitespace-nowrap">Choose Your Leader Type</span>
               </div>
               <div className="flex items-center gap-2.5 text-xs text-[#B7C0BA]">
                 <span className="flex items-center justify-center w-5 h-5 rounded-lg bg-[#C9A44B]/20 text-[#C9A44B] text-[10px] font-bold flex-shrink-0">✓</span>
-                <span className="leading-none whitespace-nowrap">Serve Your Community</span>
+                <span className="leading-none whitespace-nowrap">Build Your Pension</span>
               </div>
               <div className="flex items-center gap-2.5 text-xs text-[#B7C0BA]">
                 <span className="flex items-center justify-center w-5 h-5 rounded-lg bg-[#C9A44B]/20 text-[#C9A44B] text-[10px] font-bold flex-shrink-0">✓</span>
-                <span className="leading-none whitespace-nowrap">Access Platform Services</span>
+                <span className="leading-none whitespace-nowrap">Offer Consultations</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-xs text-[#B7C0BA]">
+                <span className="flex items-center justify-center w-5 h-5 rounded-lg bg-[#C9A44B]/20 text-[#C9A44B] text-[10px] font-bold flex-shrink-0">✓</span>
+                <span className="leading-none whitespace-nowrap">Community Support</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* RIGHT: Registration Form */}
         <div className="w-full lg:w-3/5 p-6 lg:p-8 bg-[#0B342B] flex items-center">
           <div className="w-full max-w-sm mx-auto relative z-10">
             <div className="mb-4">
@@ -862,4 +1034,4 @@ const ImamRegister = () => {
   );
 };
 
-export default ImamRegister;
+export default LeaderRegister;

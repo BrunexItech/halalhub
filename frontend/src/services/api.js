@@ -25,8 +25,8 @@ export const authService = {
   registerClient: (data) => api.post('/auth/register-client', data),
   // Vendor Registration
   registerVendor: (data) => api.post('/auth/register-vendor', data),
-  // Imam Registration
-  registerImam: (data) => api.post('/auth/register-imam', data),
+  // Leader Registration
+  registerLeader: (data) => api.post('/auth/register-leader', data),
   // Login
   loginStep1: (phone) => api.post('/auth/login-step1', { phone }),
   loginStep2: (data) => api.post('/auth/login-step2', data),
@@ -35,6 +35,31 @@ export const authService = {
   verifyRegistrationOtp: (data) => api.post('/auth/verify-registration-otp', data),
   // Get current user
   getMe: () => api.get('/auth/me'),
+};
+
+// ========================================
+// LEADER SERVICE (NEW)
+// ========================================
+export const leaderService = {
+  // Dashboard
+  getStats: () => api.get('/leader/dashboard-stats'),
+  getProfile: () => api.get('/leader/profile'),
+  updateProfile: (data) => api.post('/leader/profile', data),
+  // Pension
+  getPension: () => api.get('/leader/pension'),
+  getPensionHistory: (params) => api.get('/leader/pension/history', { params }),
+  // Supporters
+  getSupporters: () => api.get('/leader/supporters'),
+  // Notifications
+  getNotifications: (params) => api.get('/leader/notifications', { params }),
+  getUnreadCount: () => api.get('/leader/notifications/unread-count'),
+  // Share Link
+  shareLink: () => api.post('/leader/share'),
+  // Withdrawal Requests
+  requestWithdrawal: (data) => api.post('/leader/pension/withdraw-request', data),
+  getWithdrawals: () => api.get('/leader/pension/withdrawals'),
+  // Self Contribute
+  selfContribute: (data) => api.post('/leader/pension/self-contribute', data),
 };
 
 // ========================================
@@ -52,10 +77,10 @@ export const adminService = {
   getPendingVendors: () => api.get('/admin/pending-vendors'),
   getVendors: (params) => api.get('/admin/vendors', { params }),
   verifyVendor: (id, data) => api.put(`/admin/vendors/${id}/verify`, data),
-  // Imam management
-  getPendingImams: () => api.get('/admin/pending-imams'),
-  getImams: (params) => api.get('/admin/imams', { params }),
-  verifyImam: (id, data) => api.put(`/admin/imams/${id}/verify`, data),
+  // Leader management
+  getPendingLeaders: () => api.get('/admin/pending-leaders'),
+  getLeaders: (params) => api.get('/admin/leaders', { params }),
+  verifyLeader: (id, data) => api.put(`/admin/leaders/${id}/verify`, data),
   // Transactions & Orders
   getTransactions: (params) => api.get('/admin/transactions', { params }),
   getOrders: (params) => api.get('/admin/orders', { params }),
@@ -99,18 +124,15 @@ export const adminService = {
   updateSadaqaCampaign: (id, data) => api.put(`/sadaqa/admin/campaigns/${id}`, data),
   deleteSadaqaCampaign: (id) => api.delete(`/sadaqa/admin/campaigns/${id}`),
   getSadaqaPool: () => api.get('/sadaqa/admin/pool'),
-
-  // ============================================================
-  // PENSION ADMIN FUNCTIONS (NEW)
-  // ============================================================
+  // Pension Admin
   getPendingPensionContributions: () => api.get('/pension/admin/pending'),
   approvePensionContribution: (id, data) => api.put(`/pension/admin/approve/${id}`, data),
   rejectPensionContribution: (id, data) => api.put(`/pension/admin/reject/${id}`, data),
   getPensionAdminStats: () => api.get('/pension/admin/stats'),
-
-  // ============================================================
-  // TAKAFUL ADMIN FUNCTIONS (NEW)
-  // ============================================================
+  getPensionWithdrawals: (params) => api.get('/pension/admin/withdrawals', { params }),
+  approvePensionWithdrawal: (id, data) => api.put(`/pension/admin/withdrawals/${id}/approve`, data),
+  rejectPensionWithdrawal: (id, data) => api.put(`/pension/admin/withdrawals/${id}/reject`, data),
+  // Takaful Admin
   getPendingTakafulClaims: () => api.get('/takaful/admin/claims/pending'),
   approveTakafulClaim: (id, data) => api.put(`/takaful/admin/claims/${id}/approve`, data),
   rejectTakafulClaim: (id, data) => api.put(`/takaful/admin/claims/${id}/reject`, data),
@@ -163,35 +185,29 @@ export const vendorService = {
   uploadImage: (data) => api.post('/vendor/upload-image', data, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
-  // ============================================================
-  // HAJJ PACKAGE MANAGEMENT (Vendor)
-  // ============================================================
+  // Hajj Package Management
   getHajjPackages: () => api.get('/vendor/hajj/packages'),
   createHajjPackage: (data) => api.post('/vendor/hajj/packages', data),
   updateHajjPackage: (id, data) => api.put(`/vendor/hajj/packages/${id}`, data),
   deleteHajjPackage: (id) => api.delete(`/vendor/hajj/packages/${id}`),
   getHajjBookings: (params) => api.get('/vendor/hajj/bookings', { params }),
+  updateHajjBookingStatus: (id, data) => api.put(`/vendor/hajj/bookings/${id}/status`, data),
   getHajjStats: () => api.get('/vendor/hajj/stats'),
 };
 
 // ========================================
-// IMAM SERVICE
+// IMAM SERVICE (Deprecated - kept for backward compatibility)
 // ========================================
 export const imamService = {
-  // Dashboard
-  getStats: () => api.get('/imam/dashboard-stats'),
-  getProfile: () => api.get('/imam/profile'),
-  updateProfile: (data) => api.post('/imam/profile', data),
-  // Pension
-  getPension: () => api.get('/imam/pension'),
-  getPensionHistory: (params) => api.get('/imam/pension/history', { params }),
-  // Supporters
-  getSupporters: () => api.get('/imam/supporters'),
-  // Notifications
-  getNotifications: (params) => api.get('/imam/notifications', { params }),
-  getUnreadCount: () => api.get('/imam/notifications/unread-count'),
-  // Public profile
-  getPublicProfile: (id) => api.get(`/imam/public/${id}`),
+  getStats: () => api.get('/leader/dashboard-stats'),
+  getProfile: () => api.get('/leader/profile'),
+  updateProfile: (data) => api.post('/leader/profile', data),
+  getPension: () => api.get('/leader/pension'),
+  getPensionHistory: (params) => api.get('/leader/pension/history', { params }),
+  getSupporters: () => api.get('/leader/supporters'),
+  getNotifications: (params) => api.get('/leader/notifications', { params }),
+  getUnreadCount: () => api.get('/leader/notifications/unread-count'),
+  getPublicProfile: (id) => api.get(`/leader/public/${id}`),
 };
 
 // ========================================
@@ -215,11 +231,13 @@ export const clientService = {
   // Orders (Ecommerce)
   createOrder: (data) => api.post('/client/orders', data),
   getOrders: () => api.get('/client/orders'),
-  // Imams
-  getImams: (params) => api.get('/client/imams', { params }),
-  getImamById: (id) => api.get(`/client/imams/${id}`),
-  supportImam: (data) => api.post('/client/support-imam', data),
-  getSupportedImams: () => api.get('/client/supported-imams'),
+  // Leaders (Pension Support)
+  getLeaders: (params) => api.get('/client/leaders', { params }),
+  getLeaderById: (id) => api.get(`/client/leaders/${id}`),
+  supportLeader: (data) => api.post('/client/support-leader', data),
+  getSupportedLeaders: () => api.get('/client/supported-leaders'),
+  // Consultation Leaders
+  getConsultationLeaders: (params) => api.get('/client/consultation-leaders', { params }),
   // Mosques
   getMosques: (params) => api.get('/client/mosques', { params }),
   // Menu Items (Restaurants)
@@ -261,29 +279,17 @@ export const mpesaService = {
 // ZAKAT SERVICE
 // ========================================
 export const zakatService = {
-  // Calculate Zakat
   calculate: (data) => api.post('/zakat/calculate', data),
-  // Pay Zakat
   payZakat: (data) => api.post('/zakat/pay', data),
-  // Get Zakat history
   getHistory: () => api.get('/zakat/history'),
-  // Get Zakat summary
   getSummary: () => api.get('/zakat/summary'),
-  // Get Zakat due for current user
   getZakatDue: () => api.get('/zakat/due'),
-  // Get verified recipients
   getRecipients: (params) => api.get('/zakat/recipients', { params }),
-  // Admin: Get all Zakat payments
   adminGetPayments: (params) => api.get('/zakat/admin/payments', { params }),
-  // Admin: Get all recipients
   adminGetRecipients: (params) => api.get('/zakat/admin/recipients', { params }),
-  // Admin: Add recipient
   adminAddRecipient: (data) => api.post('/zakat/admin/recipients', data),
-  // Admin: Update recipient
   adminUpdateRecipient: (id, data) => api.put(`/zakat/admin/recipients/${id}`, data),
-  // Admin: Get pool balance
   adminGetPool: () => api.get('/zakat/admin/pool'),
-  // Admin: Disburse funds
   adminDisburse: (data) => api.post('/zakat/admin/disburse', data),
 };
 
@@ -291,29 +297,17 @@ export const zakatService = {
 // SADAQA SERVICE
 // ========================================
 export const sadaqaService = {
-  // Get all campaigns
   getCampaigns: (params) => api.get('/sadaqa/campaigns', { params }),
-  // Get campaign by ID
   getCampaignById: (id) => api.get(`/sadaqa/campaigns/${id}`),
-  // Get campaign categories
   getCategories: () => api.get('/sadaqa/categories'),
-  // Donate to campaign
   donate: (data) => api.post('/sadaqa/donate', data),
-  // Get donation history
   getHistory: () => api.get('/sadaqa/history'),
-  // Get donation summary
   getSummary: () => api.get('/sadaqa/summary'),
-  // Get impact stats
   getImpactStats: () => api.get('/sadaqa/impact'),
-  // Admin: Get all donations
   adminGetDonations: (params) => api.get('/sadaqa/admin/donations', { params }),
-  // Admin: Create campaign
   adminCreateCampaign: (data) => api.post('/sadaqa/admin/campaigns', data),
-  // Admin: Update campaign
   adminUpdateCampaign: (id, data) => api.put(`/sadaqa/admin/campaigns/${id}`, data),
-  // Admin: Delete campaign
   adminDeleteCampaign: (id) => api.delete(`/sadaqa/admin/campaigns/${id}`),
-  // Admin: Get pool
   adminGetPool: () => api.get('/sadaqa/admin/pool'),
 };
 
@@ -321,23 +315,14 @@ export const sadaqaService = {
 // P2P SERVICE
 // ========================================
 export const p2pService = {
-  // Search users
   searchUsers: (query) => api.get(`/p2p/users?q=${encodeURIComponent(query)}`),
-  // Get user by ID
   getUserById: (id) => api.get(`/p2p/users/${id}`),
-  // Get balance
   getBalance: () => api.get('/p2p/balance'),
-  // Send transfer
   transfer: (data) => api.post('/p2p/transfer', data),
-  // Get transaction history
   getTransactions: (limit = 50) => api.get(`/p2p/transactions?limit=${limit}`),
-  // Get transaction by reference
   getTransactionByRef: (reference) => api.get(`/p2p/transactions/${reference}`),
-  // Get stats
   getStats: () => api.get('/p2p/stats'),
-  // Sync balance
   sync: () => api.post('/p2p/sync'),
-  // Legacy loan endpoints (keep for backward compatibility if needed)
   getLoans: () => api.get('/p2p/loans'),
   getLoanRequests: () => api.get('/p2p/loan-requests'),
   getMyLoans: () => api.get('/p2p/my-loans'),
@@ -350,43 +335,28 @@ export const p2pService = {
 // TAKAFUL SERVICE
 // ========================================
 export const takafulService = {
-  // Plans
   getPlans: () => api.get('/takaful/plans'),
-  // Policy
   getPolicy: () => api.get('/takaful/policy'),
-  // Enroll
   enroll: (data) => api.post('/takaful/enroll', data),
-  // Family members
   getFamilyMembers: () => api.get('/takaful/family'),
   addFamilyMember: (data) => api.post('/takaful/family', data),
   removeFamilyMember: (id) => api.delete(`/takaful/family/${id}`),
-  // Claims
   getClaims: () => api.get('/takaful/claims'),
   getClaimById: (id) => api.get(`/takaful/claims/${id}`),
   submitClaim: (data) => api.post('/takaful/claims', data),
-  // Pool stats
   getPoolStats: () => api.get('/takaful/pool-stats'),
-  // Contributions
   getContributions: () => api.get('/takaful/contributions'),
-  // Monthly Payment
   payMonthlyContribution: (data) => api.post('/takaful/pay-monthly', data),
 };
 
 // ========================================
-// PENSION SERVICE (Imam Retirement Support)
+// PENSION SERVICE
 // ========================================
 export const pensionService = {
-  // Get public stats (imams, mosques, communities, contributors)
   getStats: () => api.get('/pension/stats'),
-  // Get all mosques (with search and filter)
-  getMosques: (params) => api.get('/pension/mosques', { params }),
-  // Get mosque details with imams
-  getMosqueById: (id) => api.get(`/pension/mosques/${id}`),
-  // Get imam profile (public)
-  getImamProfile: (id) => api.get(`/pension/imams/${id}`),
-  // Record contribution to imam's pension
+  getLeaders: (params) => api.get('/pension/leaders', { params }),
+  getLeader: (id) => api.get(`/pension/leaders/${id}`),
   contribute: (data) => api.post('/pension/contribute', data),
-  // Get user's contribution history
   getContributions: (params) => api.get('/pension/contributions', { params }),
 };
 
@@ -394,33 +364,22 @@ export const pensionService = {
 // MOSQUE SERVICE
 // ========================================
 export const mosqueService = {
-  // Get all mosques
   getAll: (params) => api.get('/mosque', { params }),
-  // Get mosque by ID
   getById: (id) => api.get(`/mosque/${id}`),
-  // Add mosque (vendor/admin)
   add: (data) => api.post('/mosque/add', data),
-  // Update mosque (vendor/admin)
   update: (id, data) => api.put(`/mosque/${id}`, data),
-  // Delete mosque (admin)
   delete: (id) => api.delete(`/mosque/${id}`),
-  // Get stats
   getStats: () => api.get('/mosque/stats/count'),
-  // Get counties with mosques
   getCounties: () => api.get('/mosque/counties/list'),
 };
 
 // ========================================
-// MOSQUE FINDER SERVICE (Public Mosque Search)
+// MOSQUE FINDER SERVICE
 // ========================================
 export const mosqueFinderService = {
-  // Get nearby mosques (database + OSM fallback)
   getNearbyMosques: (params) => api.get('/mosque-finder/nearby', { params }),
-  // Get mosque by ID
   getMosqueById: (id) => api.get(`/mosque-finder/${id}`),
-  // Get mosque statistics
   getStats: () => api.get('/mosque-finder/stats/summary'),
-  // Search mosques by name or city
   searchMosques: (query, params) => api.get(`/mosque-finder/search/${query}`, { params }),
 };
 
@@ -462,16 +421,13 @@ export const hajjService = {
 // HEARSE SERVICE
 // ========================================
 export const hearseService = {
-  // User endpoints
   createRequest: (data) => api.post('/hearse/requests', data),
   getRequests: (params) => api.get('/hearse/requests', { params }),
   getRequestById: (id) => api.get(`/hearse/requests/${id}`),
-  // Provider endpoints
   getProviderRequests: (params) => api.get('/hearse/provider/requests', { params }),
   acceptRequest: (id) => api.put(`/hearse/provider/requests/${id}/accept`),
   completeRequest: (id) => api.put(`/hearse/provider/requests/${id}/complete`),
   getProviderStats: () => api.get('/hearse/provider/stats'),
-  // Admin endpoints
   adminGetRequests: (params) => api.get('/hearse/admin/requests', { params }),
   adminAssignRequest: (data) => api.post('/hearse/admin/assign', data),
   adminGetProviders: (params) => api.get('/hearse/admin/providers', { params }),
@@ -490,43 +446,28 @@ export const willService = {
 };
 
 // ========================================
-// KADHI SERVICE
+// KADHI SERVICE (Deprecated - kept for backward compatibility)
 // ========================================
 export const kadhiService = {
-  // Get all kadhis with filters
-  getKadhis: (params) => api.get('/kadhis', { params }),
-  // Get kadhi by ID
-  getKadhiById: (id) => api.get(`/kadhis/${id}`),
-  // Get kadhi statistics
-  getKadhiStats: () => api.get('/kadhis/stats/summary'),
-  // Get counties with kadhis
-  getCounties: () => api.get('/kadhis/counties/list'),
-  // Create kadhi (admin only)
-  createKadhi: (data) => api.post('/kadhis', data),
-  // Update kadhi (admin only)
-  updateKadhi: (id, data) => api.put(`/kadhis/${id}`, data),
-  // Delete kadhi (admin only)
-  deleteKadhi: (id) => api.delete(`/kadhis/${id}`),
+  getKadhis: (params) => api.get('/leader-consultation', { params }),
+  getKadhiById: (id) => api.get(`/leader-consultation/${id}`),
+  getKadhiStats: () => api.get('/leader-consultation/stats/summary'),
+  getCounties: () => api.get('/leader-consultation/counties/list'),
+  getLeaderTypes: () => api.get('/leader-consultation/types/list'),
 };
 
 // ========================================
 // BOOKING SERVICE (Consultation Bookings)
 // ========================================
 export const bookingService = {
-  // Get all bookings for user
   getBookings: (params) => api.get('/bookings', { params }),
-  // Get booking by ID
   getBookingById: (id) => api.get(`/bookings/${id}`),
-  // Create a new booking
   createBooking: (data) => api.post('/bookings', data),
-  // Update a booking
   updateBooking: (id, data) => api.put(`/bookings/${id}`, data),
-  // Cancel a booking
   cancelBooking: (id) => api.put(`/bookings/${id}/cancel`),
-  // Get booking by room name
   getBookingByRoom: (roomName) => api.get(`/bookings/room/${roomName}`),
-  // Get booking statistics
   getBookingStats: () => api.get('/bookings/stats/summary'),
+  getLeaderTypes: () => api.get('/bookings/leader-types'),
 };
 
 // ========================================
@@ -551,7 +492,7 @@ export const paymentService = {
 };
 
 // ========================================
-// PDF SERVICE (For Will Downloads)
+// PDF SERVICE
 // ========================================
 export const pdfService = {
   generateWill: (data) => api.post('/pdf/will', data),

@@ -1,22 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { bookingService, kadhiService } from '../services/api';
+import { bookingService, leaderService } from '../services/api';
 
 const KadhiDashboard = () => {
   const navigate = useNavigate();
   
-  // ===== STATE =====
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
-  // User
   const [user, setUser] = useState(null);
-  const [kadhiProfile, setKadhiProfile] = useState(null);
+  const [leaderProfile, setLeaderProfile] = useState(null);
   const [userId, setUserId] = useState(null);
+  const [leaderType, setLeaderType] = useState(null);
   
-  // Bookings
   const [bookings, setBookings] = useState([]);
   const [filter, setFilter] = useState('all');
   const [stats, setStats] = useState({
@@ -27,14 +25,12 @@ const KadhiDashboard = () => {
     cancelled: 0
   });
   
-  // Modal
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
 
-  // ===== FETCH DATA =====
   useEffect(() => {
     checkAuth();
-    fetchKadhiProfile();
+    fetchLeaderProfile();
     fetchBookings();
     fetchStats();
   }, []);
@@ -42,30 +38,36 @@ const KadhiDashboard = () => {
   const checkAuth = () => {
     const token = localStorage.getItem('halalhub_token');
     const userData = JSON.parse(localStorage.getItem('halalhub_user') || '{}');
-    const subRole = localStorage.getItem('halalhub_subrole');
+    const storedLeaderType = localStorage.getItem('halalhub_leader_type');
     
     if (token && userData) {
       setUser(userData);
       setUserId(userData.id);
-      if (userData.role !== 'imam' || subRole !== 'kadhi') {
+      if (userData.role !== 'leader' && userData.role !== 'imam') {
         navigate('/dashboard');
+      }
+      if (storedLeaderType) {
+        setLeaderType(storedLeaderType);
       }
     } else {
       navigate('/');
     }
   };
 
-  const fetchKadhiProfile = async () => {
+  const fetchLeaderProfile = async () => {
     try {
       if (!userId) {
         return;
       }
-      const res = await kadhiService.getKadhiById(userId);
+      const res = await leaderService.getProfile();
       if (res.data.success) {
-        setKadhiProfile(res.data.kadhi);
+        setLeaderProfile(res.data.leader);
+        if (res.data.leader?.leader_type) {
+          setLeaderType(res.data.leader.leader_type);
+        }
       }
     } catch (err) {
-      console.error('Error fetching kadhi profile:', err);
+      console.error('Error fetching leader profile:', err);
     }
   };
 
@@ -95,7 +97,6 @@ const KadhiDashboard = () => {
     }
   };
 
-  // ===== BOOKING ACTIONS =====
   const acceptBooking = async (bookingId) => {
     setProcessing(true);
     setError('');
@@ -167,13 +168,11 @@ const KadhiDashboard = () => {
     setShowBookingModal(true);
   };
 
-  // ===== FILTERS =====
   const filteredBookings = bookings.filter(booking => {
     if (filter === 'all') return true;
     return booking.status === filter;
   });
 
-  // ===== HELPERS =====
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-KE', {
@@ -195,6 +194,18 @@ const KadhiDashboard = () => {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(amount);
+  };
+
+  const getLeaderTypeLabel = (type) => {
+    const labels = {
+      'islamic_scholar': 'Islamic Scholar',
+      'imam': 'Imam',
+      'adhan_caller': 'Adhan Caller',
+      'ustadh': 'Ustadh',
+      'ustadha': 'Ustadha',
+      'kadhi': 'Kadhi'
+    };
+    return labels[type] || type;
   };
 
   const getStatusBadge = (status) => {
@@ -231,7 +242,6 @@ const KadhiDashboard = () => {
     }
   };
 
-  // ===== LOADING STATE =====
   if (loading) {
     return (
       <div className="min-h-screen bg-[#FAFAF7] flex items-center justify-center p-4">
@@ -247,22 +257,25 @@ const KadhiDashboard = () => {
     <div className="min-h-screen bg-[#FAFAF7] p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         
-        {/* ===== HEADER ===== */}
         <div className="mb-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h1 className="text-[26px] md:text-[30px] font-semibold text-[#1F2937]">Kadhi Dashboard</h1>
+              <h1 className="text-[26px] md:text-[30px] font-semibold text-[#1F2937]">Consultation Dashboard</h1>
               <p className="text-[15px] text-[#6B7280] mt-0.5">Manage your consultations and bookings</p>
             </div>
             <div className="flex items-center gap-3">
+              {leaderType && (
+                <span className="text-[13px] font-medium text-[#0B342B] bg-white px-3 py-1.5 rounded-full border border-[#E8EEF4]">
+                  {getLeaderTypeLabel(leaderType)}
+                </span>
+              )}
               <span className="text-[13px] font-medium text-[#0B342B] bg-white px-3 py-1.5 rounded-full border border-[#E8EEF4]">
-                {kadhiProfile?.name || user?.fullName || 'Kadhi'}
+                {leaderProfile?.name || user?.fullName || 'Leader'}
               </span>
             </div>
           </div>
         </div>
 
-        {/* ===== STATS ===== */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-4 md:p-5">
             <div className="text-[14px] font-medium text-[#6B7280]">Total</div>
@@ -282,7 +295,6 @@ const KadhiDashboard = () => {
           </div>
         </div>
 
-        {/* ===== ERROR / SUCCESS ===== */}
         {error && (
           <div className="mb-4 p-4 bg-white border border-[#DC2626]/20 rounded-xl flex flex-wrap items-center justify-between gap-3 shadow-sm">
             <span className="text-[15px] text-[#DC2626]">{error}</span>
@@ -301,7 +313,6 @@ const KadhiDashboard = () => {
           </div>
         )}
 
-        {/* ===== FILTERS ===== */}
         <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm p-4 md:p-6 mb-6">
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-[13px] font-medium text-[#6B7280]">Filter:</span>
@@ -329,7 +340,6 @@ const KadhiDashboard = () => {
           </div>
         </div>
 
-        {/* ===== BOOKINGS LIST ===== */}
         <div className="bg-white rounded-xl border border-[#E8EEF4] shadow-sm overflow-hidden">
           <div className="p-4 md:p-6 border-b border-[#F4F5F1]">
             <h2 className="text-[17px] font-semibold text-[#1F2937]">Consultations</h2>
@@ -440,7 +450,6 @@ const KadhiDashboard = () => {
         </div>
       </div>
 
-      {/* ===== BOOKING DETAILS MODAL ===== */}
       {showBookingModal && selectedBooking && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-fadeIn">
@@ -450,7 +459,7 @@ const KadhiDashboard = () => {
                 className="text-[#6B7280] hover:text-[#1F2937] transition-colors text-[24px]"
                 onClick={() => setShowBookingModal(false)}
               >
-                ✕
+                X
               </button>
             </div>
             
@@ -494,6 +503,20 @@ const KadhiDashboard = () => {
                   <div className="flex justify-between text-[15px] border-t border-[#E8EEF4] pt-2">
                     <span className="text-[#6B7280]">Room</span>
                     <span className="font-mono text-[13px] text-[#0B342B] truncate max-w-[150px]">{selectedBooking.room_name}</span>
+                  </div>
+                )}
+                {selectedBooking.amount > 0 && (
+                  <div className="flex justify-between text-[15px] border-t border-[#E8EEF4] pt-2">
+                    <span className="text-[#6B7280]">Amount</span>
+                    <span className="font-semibold text-[#0B342B]">{formatCurrency(selectedBooking.amount)}</span>
+                  </div>
+                )}
+                {selectedBooking.payment_status && (
+                  <div className="flex justify-between text-[15px]">
+                    <span className="text-[#6B7280]">Payment Status</span>
+                    <span className={`font-semibold ${selectedBooking.payment_status === 'paid' ? 'text-[#3FAF73]' : selectedBooking.payment_status === 'pending' ? 'text-[#D97706]' : 'text-[#DC2626]'}`}>
+                      {selectedBooking.payment_status.charAt(0).toUpperCase() + selectedBooking.payment_status.slice(1)}
+                    </span>
                   </div>
                 )}
               </div>

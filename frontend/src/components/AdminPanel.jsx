@@ -14,31 +14,25 @@ const AdminPanel = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
-  // Tab state
   const [activeTab, setActiveTab] = useState('all');
   const [activeUserTab, setActiveUserTab] = useState('all');
   
-  // Users state
   const [users, setUsers] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [clients, setClients] = useState([]);
   const [vendors, setVendors] = useState([]);
-  const [imams, setImams] = useState([]);
-  const [kadhis, setKadhis] = useState([]);
+  const [leaders, setLeaders] = useState([]);
   const [admins, setAdmins] = useState([]);
   const [stats, setStats] = useState({});
   const [loadingData, setLoadingData] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterKYC, setFilterKYC] = useState('All');
-  const [filterSubRole, setFilterSubRole] = useState('All');
+  const [filterLeaderType, setFilterLeaderType] = useState('All');
   
-  // Pending applications
   const [pendingVendors, setPendingVendors] = useState([]);
-  const [pendingImams, setPendingImams] = useState([]);
-  const [pendingKadhis, setPendingKadhis] = useState([]);
+  const [pendingLeaders, setPendingLeaders] = useState([]);
   const [loadingPending, setLoadingPending] = useState(false);
   
-  // Transactions state
   const [transactions, setTransactions] = useState([]);
   const [loadingTransactions, setLoadingTransactions] = useState(false);
   const [txSearchQuery, setTxSearchQuery] = useState('');
@@ -54,7 +48,6 @@ const AdminPanel = () => {
     totalAmount: 0
   });
   
-  // Consultation stats
   const [consultationStats, setConsultationStats] = useState({
     total: 0,
     pending: 0,
@@ -64,26 +57,6 @@ const AdminPanel = () => {
     videoBookings: 0
   });
   
-  // Mosque state
-  const [mosques, setMosques] = useState([]);
-  const [loadingMosques, setLoadingMosques] = useState(false);
-  const [mosqueSearch, setMosqueSearch] = useState('');
-  const [mosqueCountyFilter, setMosqueCountyFilter] = useState('All');
-  const [counties, setCounties] = useState(['All']);
-  const [showAddMosqueModal, setShowAddMosqueModal] = useState(false);
-  const [editingMosque, setEditingMosque] = useState(null);
-  const [mosqueForm, setMosqueForm] = useState({
-    name: '',
-    location: '',
-    county: '',
-    latitude: '',
-    longitude: '',
-    imam_id: ''
-  });
-  const [imamOptions, setImamOptions] = useState([]);
-  const [loadingMosqueForm, setLoadingMosqueForm] = useState(false);
-  
-  // Zakat state
   const [zakatPayments, setZakatPayments] = useState([]);
   const [zakatRecipients, setZakatRecipients] = useState([]);
   const [zakatPool, setZakatPool] = useState({ zakatBalance: 0, totalDisbursed: 0 });
@@ -112,7 +85,6 @@ const AdminPanel = () => {
   });
   const [loadingDisburse, setLoadingDisburse] = useState(false);
   
-  // Sadaqa state
   const [sadaqaDonations, setSadaqaDonations] = useState([]);
   const [sadaqaCampaigns, setSadaqaCampaigns] = useState([]);
   const [sadaqaPool, setSadaqaPool] = useState({ sadaqaBalance: 0, totalDisbursed: 0 });
@@ -132,7 +104,6 @@ const AdminPanel = () => {
   });
   const [loadingCampaignForm, setLoadingCampaignForm] = useState(false);
   
-  // Hearse state
   const [hearseRequests, setHearseRequests] = useState([]);
   const [hearseProviders, setHearseProviders] = useState([]);
   const [loadingHearse, setLoadingHearse] = useState(false);
@@ -154,7 +125,6 @@ const AdminPanel = () => {
   const [loadingAssign, setLoadingAssign] = useState(false);
   const [hearseSubTab, setHearseSubTab] = useState('requests');
   
-  // Butchery state
   const [butcheryVendors, setButcheryVendors] = useState([]);
   const [butcheryProducts, setButcheryProducts] = useState([]);
   const [butcheryStats, setButcheryStats] = useState({
@@ -170,7 +140,6 @@ const AdminPanel = () => {
   const [butcheryMeatTypeFilter, setButcheryMeatTypeFilter] = useState('all');
   const [butcherySubTab, setButcherySubTab] = useState('vendors');
   
-  // Hajj state
   const [hajjPackages, setHajjPackages] = useState([]);
   const [hajjBookings, setHajjBookings] = useState([]);
   const [hajjStats, setHajjStats] = useState({
@@ -192,8 +161,8 @@ const AdminPanel = () => {
   const [showHajjBookingModal, setShowHajjBookingModal] = useState(false);
   const [selectedHajjBooking, setSelectedHajjBooking] = useState(null);
 
-  // ===== PENSION STATE =====
-  const [pendingPensionContributions, setPendingPensionContributions] = useState([]);
+  // Pension Withdrawals State
+  const [pensionWithdrawals, setPensionWithdrawals] = useState([]);
   const [pensionStats, setPensionStats] = useState({
     total: 0,
     pending: 0,
@@ -204,9 +173,9 @@ const AdminPanel = () => {
     rejectedAmount: 0
   });
   const [loadingPension, setLoadingPension] = useState(false);
+  const [pensionFilter, setPensionFilter] = useState('all');
 
-  // ===== TAKAFUL STATE =====
-  const [pendingTakafulClaims, setPendingTakafulClaims] = useState([]);
+  const [takafulClaims, setTakafulClaims] = useState([]);
   const [takafulPlans, setTakafulPlans] = useState([]);
   const [takafulClaimStats, setTakafulClaimStats] = useState({
     total: 0,
@@ -240,7 +209,6 @@ const AdminPanel = () => {
     'orphan', 'masjid', 'water', 'education', 'medical', 'emergency', 'imam', 'community'
   ];
   
-  // Modals
   const [selectedUser, setSelectedUser] = useState(null);
   const [showUserModal, setShowUserModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -248,15 +216,30 @@ const AdminPanel = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
 
+  const LEADER_TYPE_LABELS = {
+    'islamic_scholar': 'Islamic Scholar',
+    'imam': 'Imam',
+    'adhan_caller': 'Adhan Caller',
+    'ustadh': 'Ustadh',
+    'ustadha': 'Ustadha',
+    'kadhi': 'Kadhi'
+  };
+
+  const LEADER_TYPES = [
+    'islamic_scholar',
+    'imam',
+    'adhan_caller',
+    'ustadh',
+    'ustadha',
+    'kadhi'
+  ];
+
   useEffect(() => {
     if (token) {
       fetchData();
       fetchTransactions();
       fetchPendingApplications();
       fetchConsultationStats();
-      fetchMosques();
-      fetchCounties();
-      fetchImamOptions();
       fetchZakatData();
       fetchSadaqaData();
       fetchHearseData();
@@ -284,9 +267,8 @@ const AdminPanel = () => {
       setClients(allUsersData.filter(u => u.role === 'client'));
       setVendors(allUsersData.filter(u => u.role === 'vendor'));
       
-      const imamUsers = allUsersData.filter(u => u.role === 'imam');
-      setImams(imamUsers);
-      setKadhis(imamUsers.filter(u => u.imam_sub_role === 'kadhi'));
+      const leaderUsers = allUsersData.filter(u => u.role === 'leader' || u.role === 'imam');
+      setLeaders(leaderUsers);
       
       setAdmins(allUsersData.filter(u => u.role === 'admin'));
       setUsers(allUsersData);
@@ -303,16 +285,12 @@ const AdminPanel = () => {
     setLoadingPending(true);
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const [vendorsRes, imamsRes] = await Promise.all([
+      const [vendorsRes, leadersRes] = await Promise.all([
         axios.get(`${API_BASE}/admin/pending-vendors`, config),
-        axios.get(`${API_BASE}/admin/pending-imams`, config)
+        axios.get(`${API_BASE}/admin/pending-leaders`, config)
       ]);
       setPendingVendors(vendorsRes.data.vendors || []);
-      
-      const allPendingImams = imamsRes.data.imams || [];
-      setPendingImams(allPendingImams);
-      setPendingKadhis(allPendingImams.filter(i => i.sub_role === 'kadhi'));
-      
+      setPendingLeaders(leadersRes.data.leaders || []);
     } catch (err) {
       console.error('Failed to fetch pending applications:', err);
     } finally {
@@ -359,65 +337,34 @@ const AdminPanel = () => {
     }
   };
 
-  const fetchMosques = async () => {
-    setLoadingMosques(true);
-    try {
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      const params = {};
-      if (mosqueSearch) params.search = mosqueSearch;
-      if (mosqueCountyFilter !== 'All') params.county = mosqueCountyFilter;
-      
-      const response = await axios.get(`${API_BASE}/admin/mosques`, { ...config, params });
-      if (response.data.success) {
-        setMosques(response.data.mosques || []);
-      }
-    } catch (err) {
-      console.error('Failed to fetch mosques:', err);
-      setError('Failed to load mosques');
-    } finally {
-      setLoadingMosques(false);
-    }
-  };
-
-  const fetchCounties = async () => {
-    try {
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      const countiesRes = await axios.get(`${API_BASE}/mosque/counties/list`, config);
-      if (countiesRes.data.success) {
-        setCounties(['All', ...countiesRes.data.counties]);
-      }
-    } catch (err) {
-      console.error('Failed to fetch counties:', err);
-    }
-  };
-
-  const fetchImamOptions = async () => {
-    try {
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      const response = await axios.get(`${API_BASE}/admin/imams?status=approved`, config);
-      if (response.data.success) {
-        setImamOptions(response.data.imams || []);
-      }
-    } catch (err) {
-      console.error('Failed to fetch imams:', err);
-    }
-  };
-
-  // ===== PENSION FUNCTIONS =====
   const fetchPensionData = async () => {
     setLoadingPension(true);
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const [pendingRes, statsRes] = await Promise.all([
-        axios.get(`${API_BASE}/pension/admin/pending`, config),
-        axios.get(`${API_BASE}/pension/admin/stats`, config)
-      ]);
       
-      if (pendingRes.data.success) {
-        setPendingPensionContributions(pendingRes.data.contributions || []);
-      }
-      if (statsRes.data.success) {
-        setPensionStats(statsRes.data.stats);
+      // Fetch withdrawal requests
+      const withdrawalsRes = await axios.get(`${API_BASE}/pension/admin/withdrawals?limit=200`, config);
+      
+      if (withdrawalsRes.data.success) {
+        const withdrawals = withdrawalsRes.data.withdrawals || [];
+        setPensionWithdrawals(withdrawals);
+        
+        const pending = withdrawals.filter(w => w.status === 'pending');
+        const approved = withdrawals.filter(w => w.status === 'approved');
+        const rejected = withdrawals.filter(w => w.status === 'rejected');
+        const pendingAmount = pending.reduce((sum, w) => sum + (parseInt(w.amount) || 0), 0);
+        const approvedAmount = approved.reduce((sum, w) => sum + (parseInt(w.amount) || 0), 0);
+        const rejectedAmount = rejected.reduce((sum, w) => sum + (parseInt(w.amount) || 0), 0);
+        
+        setPensionStats({
+          total: withdrawals.length,
+          pending: pending.length,
+          approved: approved.length,
+          rejected: rejected.length,
+          pendingAmount: pendingAmount,
+          approvedAmount: approvedAmount,
+          rejectedAmount: rejectedAmount
+        });
       }
     } catch (err) {
       console.error('Failed to fetch pension data:', err);
@@ -426,39 +373,46 @@ const AdminPanel = () => {
     }
   };
 
-  const approvePensionContribution = async (contributionId) => {
+  const approvePensionWithdrawal = async (withdrawalId) => {
     setLoading(true);
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.put(`${API_BASE}/pension/admin/approve/${contributionId}`, {}, config);
-      setModalMessage('Pension contribution approved successfully');
+      await axios.put(`${API_BASE}/pension/admin/withdrawals/${withdrawalId}/approve`, {}, config);
+      setModalMessage('Withdrawal request approved successfully. Funds have been transferred.');
       setShowSuccessModal(true);
       await fetchPensionData();
       setTimeout(() => setShowSuccessModal(false), 3000);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to approve contribution');
+      setError(err.response?.data?.error || 'Failed to approve withdrawal');
     } finally {
       setLoading(false);
     }
   };
 
-  const rejectPensionContribution = async (contributionId) => {
+  const rejectPensionWithdrawal = async (withdrawalId) => {
     setLoading(true);
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.put(`${API_BASE}/pension/admin/reject/${contributionId}`, { reason: 'Rejected by admin' }, config);
-      setModalMessage('Pension contribution rejected');
+      const reason = window.prompt('Enter reason for rejection:');
+      if (reason === null) {
+        setLoading(false);
+        return;
+      }
+      await axios.put(`${API_BASE}/pension/admin/withdrawals/${withdrawalId}/reject`, 
+        { reason: reason || 'Rejected by admin' },
+        config
+      );
+      setModalMessage('Withdrawal request rejected');
       setShowSuccessModal(true);
       await fetchPensionData();
       setTimeout(() => setShowSuccessModal(false), 3000);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to reject contribution');
+      setError(err.response?.data?.error || 'Failed to reject withdrawal');
     } finally {
       setLoading(false);
     }
   };
 
-  // ===== TAKAFUL FUNCTIONS =====
   const fetchTakafulData = async () => {
     setLoadingTakaful(true);
     try {
@@ -470,7 +424,7 @@ const AdminPanel = () => {
       ]);
       
       if (pendingRes.data.success) {
-        setPendingTakafulClaims(pendingRes.data.claims || []);
+        setTakafulClaims(pendingRes.data.claims || []);
       }
       if (plansRes.data.success) {
         setTakafulPlans(plansRes.data.plans || []);
@@ -505,7 +459,15 @@ const AdminPanel = () => {
     setLoading(true);
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.put(`${API_BASE}/takaful/admin/claims/${claimId}/reject`, { notes: 'Rejected by admin' }, config);
+      const reason = window.prompt('Enter reason for rejection:');
+      if (reason === null) {
+        setLoading(false);
+        return;
+      }
+      await axios.put(`${API_BASE}/takaful/admin/claims/${claimId}/reject`, 
+        { notes: reason || 'Rejected by admin' },
+        config
+      );
       setModalMessage('Takaful claim rejected');
       setShowSuccessModal(true);
       await fetchTakafulData();
@@ -618,7 +580,6 @@ const AdminPanel = () => {
     }
   };
 
-  // ===== ZAKAT FUNCTIONS =====
   const fetchZakatData = async () => {
     setLoadingZakat(true);
     try {
@@ -713,7 +674,6 @@ const AdminPanel = () => {
     }
   };
 
-  // ===== SADAQA FUNCTIONS =====
   const fetchSadaqaData = async () => {
     setLoadingSadaqa(true);
     try {
@@ -791,7 +751,6 @@ const AdminPanel = () => {
     }
   };
 
-  // ===== HEARSE FUNCTIONS =====
   const fetchHearseData = async () => {
     setLoadingHearse(true);
     try {
@@ -881,7 +840,6 @@ const AdminPanel = () => {
     }
   };
 
-  // ===== BUTCHERY FUNCTIONS =====
   const fetchButcheryData = async () => {
     setLoadingButchery(true);
     try {
@@ -928,20 +886,6 @@ const AdminPanel = () => {
     }
   };
 
-  const filteredButcheryVendors = butcheryVendors.filter(v => {
-    if (butcheryVendorFilter === 'all') return true;
-    return v.vendor_status === butcheryVendorFilter;
-  });
-
-  const filteredButcheryProducts = butcheryProducts.filter(p => {
-    const matchesMeatType = butcheryMeatTypeFilter === 'all' || p.meat_type === butcheryMeatTypeFilter;
-    const matchesStatus = butcheryProductFilter === 'all' || 
-      (butcheryProductFilter === 'active' && p.is_active) ||
-      (butcheryProductFilter === 'inactive' && !p.is_active);
-    return matchesMeatType && matchesStatus;
-  });
-
-  // ===== HAJJ FUNCTIONS =====
   const fetchHajjData = async () => {
     setLoadingHajj(true);
     try {
@@ -1015,19 +959,6 @@ const AdminPanel = () => {
     setShowHajjBookingModal(true);
   };
 
-  const filteredHajjPackages = hajjPackages.filter(p => {
-    const matchesStatus = hajjPackageFilter === 'all' || 
-      (hajjPackageFilter === 'active' && p.is_active) ||
-      (hajjPackageFilter === 'inactive' && !p.is_active);
-    const matchesType = hajjTypeFilter === 'all' || p.type === hajjTypeFilter;
-    return matchesStatus && matchesType;
-  });
-
-  const filteredHajjBookings = hajjBookings.filter(b => {
-    if (hajjBookingFilter === 'all') return true;
-    return b.status === hajjBookingFilter;
-  });
-
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -1092,12 +1023,12 @@ const AdminPanel = () => {
     }
   };
 
-  const getImamUserId = (imam) => {
-    if (imam.user_id) return imam.user_id;
-    if (imam.id && imam.id.startsWith('imamprof-')) {
-      return imam.user_id || imam.id;
+  const getLeaderUserId = (leader) => {
+    if (leader.user_id) return leader.user_id;
+    if (leader.id && leader.id.startsWith('lprof-')) {
+      return leader.user_id || leader.id;
     }
-    return imam.id;
+    return leader.id;
   };
 
   const getVendorUserId = (vendor) => {
@@ -1147,130 +1078,45 @@ const AdminPanel = () => {
     }
   };
 
-  const approveImam = async (imam) => {
-    const userId = getImamUserId(imam);
+  const approveLeader = async (leader) => {
+    const userId = getLeaderUserId(leader);
     setLoading(true);
     try {
-      await axios.put(`${API_BASE}/admin/imams/${userId}/verify`,
+      await axios.put(`${API_BASE}/admin/leaders/${userId}/verify`,
         { status: 'approved' },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      const label = imam.sub_role === 'kadhi' ? 'Kadhi' : 'Imam';
-      setModalMessage(`${label} approved successfully!`);
+      setModalMessage('Leader approved successfully!');
       setShowSuccessModal(true);
       await fetchData();
       await fetchPendingApplications();
       setTimeout(() => setShowSuccessModal(false), 3000);
     } catch (err) {
-      setError('Failed to approve religious leader');
-      console.error('Approve imam error:', err);
+      setError('Failed to approve leader');
+      console.error('Approve leader error:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const rejectImam = async (imam) => {
-    const userId = getImamUserId(imam);
+  const rejectLeader = async (leader) => {
+    const userId = getLeaderUserId(leader);
     setLoading(true);
     try {
-      await axios.put(`${API_BASE}/admin/imams/${userId}/verify`,
+      await axios.put(`${API_BASE}/admin/leaders/${userId}/verify`,
         { status: 'rejected', admin_notes: 'Application rejected by admin' },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      const label = imam.sub_role === 'kadhi' ? 'Kadhi' : 'Imam';
-      setModalMessage(`${label} rejected`);
+      setModalMessage('Leader rejected');
       setShowSuccessModal(true);
       await fetchData();
       await fetchPendingApplications();
       setTimeout(() => setShowSuccessModal(false), 3000);
     } catch (err) {
-      setError(`Failed to reject ${imam.sub_role === 'kadhi' ? 'kadhi' : 'imam'}`);
-      console.error('Reject imam error:', err);
+      setError('Failed to reject leader');
+      console.error('Reject leader error:', err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  // ===== MOSQUE MANAGEMENT FUNCTIONS =====
-  const handleAddMosque = () => {
-    setEditingMosque(null);
-    setMosqueForm({
-      name: '',
-      location: '',
-      county: '',
-      latitude: '',
-      longitude: '',
-      imam_id: ''
-    });
-    setShowAddMosqueModal(true);
-  };
-
-  const handleEditMosque = (mosque) => {
-    setEditingMosque(mosque);
-    setMosqueForm({
-      name: mosque.name || '',
-      location: mosque.location || '',
-      county: mosque.county || '',
-      latitude: mosque.latitude || '',
-      longitude: mosque.longitude || '',
-      imam_id: mosque.imam_id || ''
-    });
-    setShowAddMosqueModal(true);
-  };
-
-  const handleDeleteMosque = async (mosqueId) => {
-    if (!window.confirm('Are you sure you want to delete this mosque?')) return;
-    setLoading(true);
-    try {
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.delete(`${API_BASE}/admin/mosques/${mosqueId}`, config);
-      setModalMessage('Mosque deleted successfully');
-      setShowSuccessModal(true);
-      await fetchMosques();
-      setTimeout(() => setShowSuccessModal(false), 3000);
-    } catch (err) {
-      setError('Failed to delete mosque');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSaveMosque = async () => {
-    if (!mosqueForm.name || !mosqueForm.location) {
-      setError('Name and location are required');
-      return;
-    }
-    
-    setLoadingMosqueForm(true);
-    setError('');
-    try {
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      const data = {
-        name: mosqueForm.name,
-        location: mosqueForm.location,
-        county: mosqueForm.county || null,
-        latitude: mosqueForm.latitude ? parseFloat(mosqueForm.latitude) : null,
-        longitude: mosqueForm.longitude ? parseFloat(mosqueForm.longitude) : null,
-        imam_id: mosqueForm.imam_id || null
-      };
-      
-      if (editingMosque) {
-        await axios.put(`${API_BASE}/admin/mosques/${editingMosque.id}`, data, config);
-        setModalMessage('Mosque updated successfully');
-      } else {
-        await axios.post(`${API_BASE}/admin/mosques`, data, config);
-        setModalMessage('Mosque added successfully');
-      }
-      
-      setShowSuccessModal(true);
-      setShowAddMosqueModal(false);
-      await fetchMosques();
-      await fetchCounties();
-      setTimeout(() => setShowSuccessModal(false), 3000);
-    } catch (err) {
-      setError(err.response?.data?.error || 'Failed to save mosque');
-    } finally {
-      setLoadingMosqueForm(false);
     }
   };
 
@@ -1323,24 +1169,21 @@ const AdminPanel = () => {
       'vendor': 'bg-amber-50 text-amber-700',
       'admin': 'bg-red-50 text-red-700',
       'client': 'bg-blue-50 text-blue-700',
-      'imam': 'bg-purple-50 text-purple-700',
-      'kadhi': 'bg-indigo-50 text-indigo-700'
+      'leader': 'bg-purple-50 text-purple-700',
+      'imam': 'bg-purple-50 text-purple-700'
     };
     return roles[role] || 'bg-gray-50 text-gray-500';
   };
 
-  const getSubRoleLabel = (subRole) => {
-    if (subRole === 'kadhi') return 'Kadhi';
-    if (subRole === 'imam') return 'Imam';
-    return 'N/A';
+  const getLeaderTypeLabel = (type) => {
+    return LEADER_TYPE_LABELS[type] || type;
   };
 
   const getCurrentUsers = () => {
     switch(activeUserTab) {
       case 'clients': return clients;
       case 'vendors': return vendors;
-      case 'imams': return imams;
-      case 'kadhis': return kadhis;
+      case 'leaders': return leaders;
       case 'admins': return admins;
       default: return allUsers;
     }
@@ -1350,8 +1193,7 @@ const AdminPanel = () => {
     switch(activeUserTab) {
       case 'clients': return clients.length;
       case 'vendors': return vendors.length;
-      case 'imams': return imams.length;
-      case 'kadhis': return kadhis.length;
+      case 'leaders': return leaders.length;
       case 'admins': return admins.length;
       default: return allUsers.length;
     }
@@ -1366,9 +1208,9 @@ const AdminPanel = () => {
     return matchesSearch && matchesKYC;
   });
 
-  const filteredPendingImams = pendingImams.filter(imam => {
-    if (filterSubRole === 'All') return true;
-    return imam.sub_role === filterSubRole;
+  const filteredPendingLeaders = pendingLeaders.filter(leader => {
+    if (filterLeaderType === 'All') return true;
+    return leader.leader_type === filterLeaderType;
   });
 
   const filteredTransactions = transactions.filter(tx => {
@@ -1413,6 +1255,11 @@ const AdminPanel = () => {
     return true;
   });
 
+  const filteredPensionWithdrawals = pensionWithdrawals.filter(w => {
+    if (pensionFilter === 'all') return true;
+    return w.status === pensionFilter;
+  });
+
   // ===== SVG ICONS =====
   const UsersIcon = () => (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1432,13 +1279,7 @@ const AdminPanel = () => {
     </svg>
   );
 
-  const ImamIcon = () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-    </svg>
-  );
-
-  const KadhiIcon = () => (
+  const LeaderIcon = () => (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
     </svg>
@@ -1477,12 +1318,6 @@ const AdminPanel = () => {
   const ConsultationIcon = () => (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-    </svg>
-  );
-
-  const MosqueIcon = () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
     </svg>
   );
 
@@ -1540,91 +1375,113 @@ const AdminPanel = () => {
     </svg>
   );
 
+  const WithdrawalIcon = () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+    </svg>
+  );
+
   // ===== LOGIN SCREEN =====
   if (!token) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F1F7FC] px-4">
+      <div className="min-h-screen flex items-center justify-center bg-[#032A24] px-4 py-8">
         <div className="w-full max-w-md">
-          <div className="bg-white rounded-2xl shadow-xl shadow-[#1769AA]/5 p-8 border border-[#E8EEF4]">
+          <div className="bg-[#0B342B] rounded-3xl shadow-2xl shadow-black/30 p-8 border border-[#C9A44B]/30 relative overflow-hidden">
             
-            <div className="text-center mb-8">
-              <div className="flex items-center justify-center gap-3 mb-2">
-                <div className="w-12 h-12 rounded-xl bg-[#1769AA] flex items-center justify-center">
-                  <span className="text-white text-xl font-bold">H</span>
+            <div className="absolute -top-16 -right-16 w-48 h-48 bg-[#C9A44B]/5 rounded-full blur-3xl" />
+            <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-[#C9A44B]/5 rounded-full blur-3xl" />
+            
+            <div className="relative z-10">
+              <div className="text-center mb-8">
+                <div className="flex items-center justify-center mb-3">
+                  <img 
+                    src="/itqaan_logo.png" 
+                    alt="Itqaan" 
+                    className="h-16 w-auto object-contain"
+                  />
                 </div>
-                <span className="text-2xl font-bold text-[#1A2A3A]">HalalHub</span>
+                <div className="text-[9px] font-medium text-[#C9A44B] tracking-[0.2em] uppercase">Sharia-Compliant Fintech</div>
+                <h2 className="text-xl font-bold text-[#F7F6F1] mt-4">Admin Login</h2>
+                <p className="text-xs text-[#B7C0BA] mt-1">Secure access · Authorized personnel only</p>
               </div>
-              <p className="text-sm text-[#94A3B8] mt-1">Admin Login</p>
+
+              {error && (
+                <div className="mb-4 p-3 bg-[#032A24] border border-[#DC2626]/30 rounded-xl flex items-center justify-between text-xs text-[#DC2626]">
+                  <span>{error}</span>
+                  <button onClick={() => setError('')} className="text-[#DC2626]/60 hover:text-[#DC2626] transition">X</button>
+                </div>
+              )}
+
+              {success && (
+                <div className="mb-4 p-3 bg-[#032A24] border border-[#3FAF73]/30 rounded-xl text-xs text-[#3FAF73]">
+                  {success}
+                </div>
+              )}
+
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-semibold text-[#F7F6F1] uppercase tracking-wider mb-1.5">Email</label>
+                  <input
+                    type="email"
+                    className="w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="admin@halalhub.com"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-semibold text-[#F7F6F1] uppercase tracking-wider mb-1.5">Password</label>
+                  <input
+                    type="password"
+                    className="w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-2.5 bg-gradient-to-r from-[#C9A44B] to-[#E1C16B] text-[#032A24] font-semibold text-sm rounded-xl hover:shadow-lg hover:shadow-[#C9A44B]/40 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-4 h-4 border-2 border-[#032A24]/30 border-t-[#032A24] rounded-full animate-spin" />
+                      Logging in...
+                    </span>
+                  ) : (
+                    'Login as Admin'
+                  )}
+                </button>
+
+                <div className="text-center">
+                  <p className="text-[9px] text-[#C9A44B]/40 tracking-wider">
+                    Secure · Encrypted · No Riba
+                  </p>
+                </div>
+              </form>
             </div>
-
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 flex justify-between items-center">
-                <span>Error: {error}</span>
-                <button onClick={() => setError('')} className="text-red-400 hover:text-red-600">X</button>
-              </div>
-            )}
-
-            {success && (
-              <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-600">
-                {success}
-              </div>
-            )}
-
-            <form onSubmit={handleLogin} className="space-y-5">
-              <div>
-                <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-1.5">Email</label>
-                <input
-                  type="email"
-                  className="w-full px-4 py-3.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@halalhub.com"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider mb-1.5">Password</label>
-                <input
-                  type="password"
-                  className="w-full px-4 py-3.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition-all duration-200"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-3.5 bg-[#1769AA] text-white font-semibold rounded-xl hover:bg-[#2F80C0] transition-all duration-200 shadow-md shadow-[#1769AA]/20 disabled:opacity-60"
-                disabled={loading}
-              >
-                {loading ? 'Logging in...' : 'Login as Admin'}
-              </button>
-
-              <p className="text-center text-xs text-[#94A3B8] tracking-wider">
-                Secure access · Authorized personnel only
-              </p>
-            </form>
           </div>
         </div>
       </div>
     );
   }
 
-  // ===== ADMIN DASHBOARD =====
+  // ===== MAIN DASHBOARD =====
   return (
     <div className="min-h-screen bg-[#F1F7FC] p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
-        {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl md:text-3xl font-heading font-bold text-[#1A2A3A]">Admin Dashboard</h1>
             <p className="text-sm text-[#94A3B8] mt-0.5">Manage users, applications, transactions, and platform activities</p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
-            <button className="px-4 py-2.5 rounded-xl bg-white border border-[#E8EEF4] text-[#5A6A7A] hover:bg-[#F1F7FC] transition text-sm" onClick={() => { fetchData(); fetchTransactions(); fetchPendingApplications(); fetchConsultationStats(); fetchMosques(); fetchZakatData(); fetchSadaqaData(); fetchHearseData(); fetchButcheryData(); fetchHajjData(); fetchPensionData(); fetchTakafulData(); }}>
+            <button className="px-4 py-2.5 rounded-xl bg-white border border-[#E8EEF4] text-[#5A6A7A] hover:bg-[#F1F7FC] transition text-sm" onClick={() => { fetchData(); fetchTransactions(); fetchPendingApplications(); fetchConsultationStats(); fetchZakatData(); fetchSadaqaData(); fetchHearseData(); fetchButcheryData(); fetchHajjData(); fetchPensionData(); fetchTakafulData(); }}>
               Refresh
             </button>
             <button className="px-4 py-2.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition text-sm font-semibold" onClick={handleLogout}>
@@ -1640,8 +1497,7 @@ const AdminPanel = () => {
           </div>
         )}
 
-        {/* STATS GRID */}
-        <div className="grid grid-cols-2 lg:grid-cols-12 gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-11 gap-4 mb-6">
           <div className="bg-white rounded-2xl p-5 border border-[#E8EEF4] shadow-sm text-center hover:shadow-md transition">
             <div className="flex justify-center mb-1 text-[#1A2A3A]"><UsersIcon /></div>
             <div className="text-2xl font-heading font-bold text-[#1A2A3A]">{stats.totalUsers || 0}</div>
@@ -1658,19 +1514,9 @@ const AdminPanel = () => {
             <div className="text-xs text-[#94A3B8]">Vendors</div>
           </div>
           <div className="bg-white rounded-2xl p-5 border border-[#E8EEF4] shadow-sm text-center hover:shadow-md transition">
-            <div className="flex justify-center mb-1 text-purple-600"><ImamIcon /></div>
-            <div className="text-2xl font-heading font-bold text-purple-600">{stats.totalImams || imams.length}</div>
-            <div className="text-xs text-[#94A3B8]">Imams</div>
-          </div>
-          <div className="bg-white rounded-2xl p-5 border border-[#E8EEF4] shadow-sm text-center hover:shadow-md transition">
-            <div className="flex justify-center mb-1 text-indigo-600"><KadhiIcon /></div>
-            <div className="text-2xl font-heading font-bold text-indigo-600">{kadhis.length}</div>
-            <div className="text-xs text-[#94A3B8]">Kadhis</div>
-          </div>
-          <div className="bg-white rounded-2xl p-5 border border-[#E8EEF4] shadow-sm text-center hover:shadow-md transition">
-            <div className="flex justify-center mb-1 text-[#1769AA]"><MosqueIcon /></div>
-            <div className="text-2xl font-heading font-bold text-[#1769AA]">{mosques.length}</div>
-            <div className="text-xs text-[#94A3B8]">Mosques</div>
+            <div className="flex justify-center mb-1 text-purple-600"><LeaderIcon /></div>
+            <div className="text-2xl font-heading font-bold text-purple-600">{stats.totalLeaders || leaders.length}</div>
+            <div className="text-xs text-[#94A3B8]">Leaders</div>
           </div>
           <div className="bg-white rounded-2xl p-5 border border-[#E8EEF4] shadow-sm text-center hover:shadow-md transition">
             <div className="flex justify-center mb-1 text-[#1769AA]"><ZakatIcon /></div>
@@ -1702,9 +1548,14 @@ const AdminPanel = () => {
             <div className="text-2xl font-heading font-bold text-[#1769AA]">{hearseStats.total || 0}</div>
             <div className="text-xs text-[#94A3B8]">Hearse</div>
           </div>
+          <div className="bg-white rounded-2xl p-5 border border-[#E8EEF4] shadow-sm text-center hover:shadow-md transition">
+            <div className="flex justify-center mb-1 text-purple-600"><PensionIcon /></div>
+            <div className="text-2xl font-heading font-bold text-purple-600">{pensionStats.pending || 0}</div>
+            <div className="text-xs text-[#94A3B8]">Withdrawals Pending</div>
+          </div>
         </div>
 
-        {/* MAIN TABS */}
+        {/* ===== TAB NAVIGATION ===== */}
         <div className="flex flex-wrap gap-1 bg-white rounded-2xl p-1.5 border border-[#E8EEF4] shadow-sm mb-6">
           <button
             onClick={() => setActiveTab('pending')}
@@ -1715,9 +1566,9 @@ const AdminPanel = () => {
             }`}
           >
             Pending
-            {(pendingVendors.length + pendingImams.length) > 0 && (
+            {(pendingVendors.length + pendingLeaders.length) > 0 && (
               <span className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
-                {pendingVendors.length + pendingImams.length}
+                {pendingVendors.length + pendingLeaders.length}
               </span>
             )}
           </button>
@@ -1752,24 +1603,14 @@ const AdminPanel = () => {
             <span className="flex items-center gap-1.5"><VendorIcon /><span>Vendors</span></span>
           </button>
           <button
-            onClick={() => { setActiveTab('users'); setActiveUserTab('imams'); }}
+            onClick={() => { setActiveTab('users'); setActiveUserTab('leaders'); }}
             className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
-              activeTab === 'users' && activeUserTab === 'imams'
+              activeTab === 'users' && activeUserTab === 'leaders'
                 ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20' 
                 : 'text-[#5A6A7A] hover:bg-[#F1F7FC] hover:text-[#1A2A3A]'
             }`}
           >
-            <span className="flex items-center gap-1.5"><ImamIcon /><span>Imams</span></span>
-          </button>
-          <button
-            onClick={() => { setActiveTab('users'); setActiveUserTab('kadhis'); }}
-            className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
-              activeTab === 'users' && activeUserTab === 'kadhis'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' 
-                : 'text-[#5A6A7A] hover:bg-[#F1F7FC] hover:text-[#1A2A3A]'
-            }`}
-          >
-            <span className="flex items-center gap-1.5"><KadhiIcon /><span>Kadhis</span></span>
+            <span className="flex items-center gap-1.5"><LeaderIcon /><span>Leaders</span></span>
           </button>
           <button
             onClick={() => { setActiveTab('users'); setActiveUserTab('admins'); }}
@@ -1790,16 +1631,6 @@ const AdminPanel = () => {
             }`}
           >
             <span className="flex items-center gap-1.5"><TransactionIcon /><span>Transactions</span></span>
-          </button>
-          <button
-            onClick={() => setActiveTab('mosques')}
-            className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
-              activeTab === 'mosques' 
-                ? 'bg-[#1769AA] text-white shadow-md shadow-[#1769AA]/20' 
-                : 'text-[#5A6A7A] hover:bg-[#F1F7FC] hover:text-[#1A2A3A]'
-            }`}
-          >
-            <span className="flex items-center gap-1.5"><MosqueIcon /><span>Mosques</span></span>
           </button>
           <button
             onClick={() => setActiveTab('zakat')}
@@ -1898,10 +1729,10 @@ const AdminPanel = () => {
           </button>
         </div>
 
-        {/* ===== PENDING APPLICATIONS TAB ===== */}
+        {/* ===== CONTENT SECTIONS ===== */}
+        {/* Pending Tab */}
         {activeTab === 'pending' && (
           <div className="space-y-6">
-            {/* Pending Vendors */}
             <div className="bg-white rounded-2xl border border-[#E8EEF4] shadow-sm p-5">
               <div className="flex justify-between items-center mb-4 pb-4 border-b border-[#F1F7FC]">
                 <h3 className="text-lg font-heading font-bold text-[#1A2A3A]">Pending Vendor Applications</h3>
@@ -1973,20 +1804,20 @@ const AdminPanel = () => {
               )}
             </div>
 
-            {/* Pending Religious Leaders (Imams + Kadhis) */}
             <div className="bg-white rounded-2xl border border-[#E8EEF4] shadow-sm p-5">
               <div className="flex justify-between items-center mb-4 pb-4 border-b border-[#F1F7FC]">
-                <h3 className="text-lg font-heading font-bold text-[#1A2A3A]">Pending Religious Leader Applications</h3>
+                <h3 className="text-lg font-heading font-bold text-[#1A2A3A]">Pending Leader Applications</h3>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-[#94A3B8]">{pendingImams.length} pending</span>
+                  <span className="text-sm text-[#94A3B8]">{pendingLeaders.length} pending</span>
                   <select
                     className="px-2 py-1 text-xs border border-[#E2E8F0] rounded-lg bg-white text-[#1A2A3A] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30"
-                    value={filterSubRole}
-                    onChange={(e) => setFilterSubRole(e.target.value)}
+                    value={filterLeaderType}
+                    onChange={(e) => setFilterLeaderType(e.target.value)}
                   >
-                    <option value="All">All</option>
-                    <option value="imam">Imams</option>
-                    <option value="kadhi">Kadhis</option>
+                    <option value="All">All Types</option>
+                    {LEADER_TYPES.map((type) => (
+                      <option key={type} value={type}>{getLeaderTypeLabel(type)}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -1996,9 +1827,9 @@ const AdminPanel = () => {
                   <div className="w-6 h-6 border-2 border-[#1769AA]/20 border-t-[#1769AA] rounded-full animate-spin" />
                   <span>Loading...</span>
                 </div>
-              ) : filteredPendingImams.length === 0 ? (
+              ) : filteredPendingLeaders.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-[#1A2A3A] font-semibold">No pending religious leader applications</p>
+                  <p className="text-[#1A2A3A] font-semibold">No pending leader applications</p>
                   <p className="text-sm text-[#94A3B8] mt-1">All applicants have been reviewed</p>
                 </div>
               ) : (
@@ -2007,55 +1838,48 @@ const AdminPanel = () => {
                     <thead>
                       <tr className="border-b-2 border-[#1A2A3A]">
                         <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Name</th>
-                        <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Role</th>
-                        <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Mosque</th>
+                        <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Type</th>
+                        <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Location</th>
                         <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Contact</th>
                         <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Submitted</th>
                         <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredPendingImams.map((imam) => {
-                        const roleLabel = imam.sub_role === 'kadhi' ? 'Kadhi' : 'Imam';
-                        const roleColor = imam.sub_role === 'kadhi' ? 'bg-indigo-50 text-indigo-700' : 'bg-purple-50 text-purple-700';
+                      {filteredPendingLeaders.map((leader) => {
                         return (
-                          <tr key={imam.id} className="border-b border-[#F1F7FC] hover:bg-[#F8FAFC] transition">
+                          <tr key={leader.id} className="border-b border-[#F1F7FC] hover:bg-[#F8FAFC] transition">
                             <td className="px-3 py-3">
                               <div>
-                                <div className="font-semibold text-[#1A2A3A]">{imam.fullname}</div>
-                                <div className="text-xs text-[#94A3B8]">{imam.title || 'Religious Leader'}</div>
+                                <div className="font-semibold text-[#1A2A3A]">{leader.fullname}</div>
+                                <div className="text-xs text-[#94A3B8]">{leader.title || 'Religious Leader'}</div>
                               </div>
                             </td>
                             <td className="px-3 py-3">
-                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${roleColor}`}>
-                                {roleLabel}
+                              <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-700">
+                                {getLeaderTypeLabel(leader.leader_type)}
                               </span>
                             </td>
+                            <td className="px-3 py-3 text-xs text-[#94A3B8]">{leader.location || 'N/A'}</td>
                             <td className="px-3 py-3">
                               <div className="text-xs">
-                                <div className="text-[#1A2A3A]">{imam.mosque_name || 'N/A'}</div>
-                                <div className="text-[#94A3B8]">{imam.mosque_location || 'N/A'}</div>
+                                <div className="text-[#1A2A3A]">{leader.email || 'N/A'}</div>
+                                <div className="text-[#94A3B8]">{leader.phone || 'N/A'}</div>
                               </div>
                             </td>
-                            <td className="px-3 py-3">
-                              <div className="text-xs">
-                                <div className="text-[#1A2A3A]">{imam.email || 'N/A'}</div>
-                                <div className="text-[#94A3B8]">{imam.phone || 'N/A'}</div>
-                              </div>
-                            </td>
-                            <td className="px-3 py-3 text-xs text-[#94A3B8]">{formatDate(imam.createdat)}</td>
+                            <td className="px-3 py-3 text-xs text-[#94A3B8]">{formatDate(leader.createdat)}</td>
                             <td className="px-3 py-3">
                               <div className="flex gap-2">
                                 <button 
                                   className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition"
-                                  onClick={() => approveImam(imam)}
+                                  onClick={() => approveLeader(leader)}
                                   disabled={loading}
                                 >
                                   Approve
                                 </button>
                                 <button 
                                   className="px-3 py-1.5 bg-red-600 text-white text-xs font-semibold rounded-lg hover:bg-red-700 transition"
-                                  onClick={() => rejectImam(imam)}
+                                  onClick={() => rejectLeader(leader)}
                                   disabled={loading}
                                 >
                                   Reject
@@ -2073,22 +1897,20 @@ const AdminPanel = () => {
           </div>
         )}
 
-        {/* ===== USERS TAB ===== */}
+        {/* Users Tab */}
         {activeTab === 'users' && (
           <div className="bg-white rounded-2xl border border-[#E8EEF4] shadow-sm p-5">
             <div className="flex justify-between items-center mb-4 pb-4 border-b border-[#F1F7FC]">
               <h3 className="text-lg font-heading font-bold text-[#1A2A3A]">
                 {activeUserTab === 'clients' && 'Clients'}
                 {activeUserTab === 'vendors' && 'Vendors'}
-                {activeUserTab === 'imams' && 'Imams'}
-                {activeUserTab === 'kadhis' && 'Kadhis'}
+                {activeUserTab === 'leaders' && 'Leaders'}
                 {activeUserTab === 'admins' && 'Admins'}
                 {activeUserTab === 'all' && 'All Users'}
               </h3>
               <span className="text-sm text-[#94A3B8]">{getCurrentUserCount()} users</span>
             </div>
 
-            {/* FILTERS */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
               <input
                 type="text"
@@ -2136,7 +1958,7 @@ const AdminPanel = () => {
                   <tbody>
                     {filteredUsers.map((user) => {
                       const kycStatus = getStatusBadge(user.kycstatus || 'pending');
-                      const displayRole = user.role === 'imam' && user.imam_sub_role === 'kadhi' ? 'kadhi' : user.role;
+                      const displayRole = user.role === 'leader' ? 'leader' : user.role;
                       return (
                         <tr key={user.id} className="border-b border-[#F1F7FC] hover:bg-[#F8FAFC] transition">
                           <td className="px-3 py-3">
@@ -2147,9 +1969,11 @@ const AdminPanel = () => {
                               <div>
                                 <div className="font-semibold text-[#1A2A3A]">{user.fullname || user.fullName || 'Unknown'}</div>
                                 <div className="text-xs text-[#94A3B8]">
-                                  {displayRole === 'kadhi' ? 'Kadhi' : user.role || 'client'}
-                                  {user.role === 'imam' && user.imam_sub_role === 'kadhi' && (
-                                    <span className="ml-1 px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded text-[9px]">K</span>
+                                  {displayRole === 'leader' ? 'Leader' : user.role || 'client'}
+                                  {user.role === 'leader' && user.leader_type && (
+                                    <span className="ml-1 px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded text-[9px]">
+                                      {getLeaderTypeLabel(user.leader_type)}
+                                    </span>
                                   )}
                                 </div>
                               </div>
@@ -2163,7 +1987,7 @@ const AdminPanel = () => {
                           </td>
                           <td className="px-3 py-3">
                             <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${getRoleBadge(displayRole)}`}>
-                              {displayRole === 'kadhi' ? 'Kadhi' : displayRole || 'client'}
+                              {displayRole === 'leader' ? 'Leader' : displayRole || 'client'}
                             </span>
                           </td>
                           <td className="px-3 py-3 hidden lg:table-cell font-semibold text-[#1A2A3A]">{formatCurrency(user.walletbalance || 0)}</td>
@@ -2195,7 +2019,7 @@ const AdminPanel = () => {
           </div>
         )}
 
-        {/* ===== TRANSACTIONS TAB ===== */}
+        {/* Transactions Tab */}
         {activeTab === 'transactions' && (
           <div className="bg-white rounded-2xl border border-[#E8EEF4] shadow-sm p-5">
             <div className="flex justify-between items-center mb-4 pb-4 border-b border-[#F1F7FC]">
@@ -2203,7 +2027,6 @@ const AdminPanel = () => {
               <span className="text-sm text-[#94A3B8]">{filteredTransactions.length} transactions</span>
             </div>
 
-            {/* Transaction Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
               <div className="bg-[#F1F7FC] rounded-xl p-3 text-center">
                 <div className="text-lg font-bold text-[#1A2A3A]">{txStats.total}</div>
@@ -2227,7 +2050,6 @@ const AdminPanel = () => {
               </div>
             </div>
 
-            {/* Transaction Filters */}
             <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 mb-4">
               <input
                 type="text"
@@ -2341,107 +2163,7 @@ const AdminPanel = () => {
           </div>
         )}
 
-        {/* ===== MOSQUES TAB ===== */}
-        {activeTab === 'mosques' && (
-          <div className="bg-white rounded-2xl border border-[#E8EEF4] shadow-sm p-5">
-            <div className="flex justify-between items-center mb-4 pb-4 border-b border-[#F1F7FC]">
-              <h3 className="text-lg font-heading font-bold text-[#1A2A3A]">Mosque Management</h3>
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-[#94A3B8]">{mosques.length} mosques</span>
-                <button
-                  className="px-4 py-2 bg-[#1769AA] text-white text-sm font-semibold rounded-xl hover:bg-[#2F80C0] transition"
-                  onClick={handleAddMosque}
-                >
-                  + Add Mosque
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-              <input
-                type="text"
-                className="px-4 py-2.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition"
-                placeholder="Search mosques..."
-                value={mosqueSearch}
-                onChange={(e) => setMosqueSearch(e.target.value)}
-              />
-              <select
-                className="px-4 py-2.5 border border-[#E2E8F0] rounded-xl bg-white text-[#1A2A3A] text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition appearance-none"
-                value={mosqueCountyFilter}
-                onChange={(e) => setMosqueCountyFilter(e.target.value)}
-              >
-                {counties.map(county => (
-                  <option key={county} value={county}>{county}</option>
-                ))}
-              </select>
-            </div>
-
-            {loadingMosques ? (
-              <div className="flex items-center justify-center gap-3 py-12 text-[#94A3B8]">
-                <div className="w-6 h-6 border-2 border-[#1769AA]/20 border-t-[#1769AA] rounded-full animate-spin" />
-                <span>Loading mosques...</span>
-              </div>
-            ) : mosques.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-[#1A2A3A] font-semibold">No mosques found</p>
-                <p className="text-sm text-[#94A3B8] mt-1">Click "Add Mosque" to create one</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b-2 border-[#1A2A3A]">
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Name</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Location</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">County</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Imam</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider hidden md:table-cell">Coordinates</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {mosques.map((mosque) => (
-                      <tr key={mosque.id} className="border-b border-[#F1F7FC] hover:bg-[#F8FAFC] transition">
-                        <td className="px-3 py-3">
-                          <div className="font-semibold text-[#1A2A3A]">{mosque.name}</div>
-                          {mosque.imam_verified && (
-                            <span className="text-[10px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded-full">Verified</span>
-                          )}
-                        </td>
-                        <td className="px-3 py-3 text-sm text-[#94A3B8]">{mosque.location || 'N/A'}</td>
-                        <td className="px-3 py-3 text-sm text-[#94A3B8]">{mosque.county || 'N/A'}</td>
-                        <td className="px-3 py-3 text-sm text-[#94A3B8]">{mosque.imam_name || 'None'}</td>
-                        <td className="px-3 py-3 hidden md:table-cell text-xs text-[#94A3B8]">
-                          {mosque.latitude && mosque.longitude ? `${mosque.latitude}, ${mosque.longitude}` : 'Not set'}
-                        </td>
-                        <td className="px-3 py-3">
-                          <div className="flex gap-1">
-                            <button
-                              className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition"
-                              onClick={() => handleEditMosque(mosque)}
-                              title="Edit"
-                            >
-                              E
-                            </button>
-                            <button
-                              className="w-8 h-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition"
-                              onClick={() => handleDeleteMosque(mosque.id)}
-                              title="Delete"
-                            >
-                              D
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ===== ZAKAT TAB ===== */}
+        {/* Zakat Tab */}
         {activeTab === 'zakat' && (
           <div className="bg-white rounded-2xl border border-[#E8EEF4] shadow-sm p-5">
             <div className="flex justify-between items-center mb-4 pb-4 border-b border-[#F1F7FC]">
@@ -2472,7 +2194,6 @@ const AdminPanel = () => {
               </div>
             </div>
 
-            {/* Recipients List */}
             <h4 className="text-sm font-semibold text-[#1A2A3A] mb-3">Verified Recipients</h4>
             {loadingZakat ? (
               <div className="flex items-center justify-center py-8">
@@ -2544,7 +2265,6 @@ const AdminPanel = () => {
               </div>
             )}
 
-            {/* Payments History */}
             <h4 className="text-sm font-semibold text-[#1A2A3A] mb-3">Payment History</h4>
             {zakatPayments.length === 0 ? (
               <div className="text-center py-4">
@@ -2583,7 +2303,7 @@ const AdminPanel = () => {
           </div>
         )}
 
-        {/* ===== SADAQA TAB ===== */}
+        {/* Sadaqa Tab */}
         {activeTab === 'sadaqa' && (
           <div className="bg-white rounded-2xl border border-[#E8EEF4] shadow-sm p-5">
             <div className="flex justify-between items-center mb-4 pb-4 border-b border-[#F1F7FC]">
@@ -2606,7 +2326,6 @@ const AdminPanel = () => {
               </div>
             </div>
 
-            {/* Campaigns List */}
             <h4 className="text-sm font-semibold text-[#1A2A3A] mb-3">Campaigns</h4>
             {loadingSadaqa ? (
               <div className="flex items-center justify-center py-8">
@@ -2681,7 +2400,6 @@ const AdminPanel = () => {
               </div>
             )}
 
-            {/* Donations History */}
             <h4 className="text-sm font-semibold text-[#1A2A3A] mb-3">Donation History</h4>
             {sadaqaDonations.length === 0 ? (
               <div className="text-center py-4">
@@ -2720,10 +2438,9 @@ const AdminPanel = () => {
           </div>
         )}
 
-        {/* ===== HEARSE TAB ===== */}
+        {/* Hearse Tab */}
         {activeTab === 'hearse' && (
           <div className="space-y-6">
-            {/* Hearse Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               <div className="bg-[#F1F7FC] rounded-xl p-4 text-center">
                 <div className="text-2xl font-bold text-[#1A2A3A]">{hearseStats.total}</div>
@@ -2747,7 +2464,6 @@ const AdminPanel = () => {
               </div>
             </div>
 
-            {/* Hearse Sub Tabs */}
             <div className="flex gap-1 bg-white rounded-2xl p-1.5 border border-[#E8EEF4] shadow-sm">
               <button
                 onClick={() => setHearseSubTab('requests')}
@@ -2781,7 +2497,6 @@ const AdminPanel = () => {
               </button>
             </div>
 
-            {/* Requests Sub Tab */}
             {hearseSubTab === 'requests' && (
               <div className="bg-white rounded-2xl border border-[#E8EEF4] shadow-sm p-5">
                 <div className="flex justify-between items-center mb-4 pb-4 border-b border-[#F1F7FC]">
@@ -2872,7 +2587,6 @@ const AdminPanel = () => {
               </div>
             )}
 
-            {/* Providers Sub Tab */}
             {hearseSubTab === 'providers' && (
               <div className="bg-white rounded-2xl border border-[#E8EEF4] shadow-sm p-5">
                 <div className="flex justify-between items-center mb-4 pb-4 border-b border-[#F1F7FC]">
@@ -2985,10 +2699,9 @@ const AdminPanel = () => {
           </div>
         )}
 
-        {/* ===== BUTCHERY TAB ===== */}
+        {/* Butchery Tab */}
         {activeTab === 'butchery' && (
           <div className="space-y-6">
-            {/* Butchery Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               <div className="bg-[#F1F7FC] rounded-xl p-4 text-center">
                 <div className="text-2xl font-bold text-[#1A2A3A]">{butcheryStats.totalButchers || 0}</div>
@@ -3012,7 +2725,6 @@ const AdminPanel = () => {
               </div>
             </div>
 
-            {/* Butchery Sub Tabs */}
             <div className="flex gap-1 bg-white rounded-2xl p-1.5 border border-[#E8EEF4] shadow-sm">
               <button
                 onClick={() => setButcherySubTab('vendors')}
@@ -3046,7 +2758,6 @@ const AdminPanel = () => {
               </button>
             </div>
 
-            {/* Butchery Vendors Sub Tab */}
             {butcherySubTab === 'vendors' && (
               <div className="bg-white rounded-2xl border border-[#E8EEF4] shadow-sm p-5">
                 <div className="flex flex-wrap justify-between items-center gap-3 mb-4 pb-4 border-b border-[#F1F7FC]">
@@ -3143,7 +2854,6 @@ const AdminPanel = () => {
               </div>
             )}
 
-            {/* Butchery Products Sub Tab */}
             {butcherySubTab === 'products' && (
               <div className="bg-white rounded-2xl border border-[#E8EEF4] shadow-sm p-5">
                 <div className="flex flex-wrap justify-between items-center gap-3 mb-4 pb-4 border-b border-[#F1F7FC]">
@@ -3249,10 +2959,9 @@ const AdminPanel = () => {
           </div>
         )}
 
-        {/* ===== HAJJ TAB ===== */}
+        {/* Hajj Tab */}
         {activeTab === 'hajj' && (
           <div className="space-y-6">
-            {/* Hajj Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               <div className="bg-[#F1F7FC] rounded-xl p-4 text-center">
                 <div className="text-2xl font-bold text-[#1A2A3A]">{hajjStats.totalPackages}</div>
@@ -3276,7 +2985,6 @@ const AdminPanel = () => {
               </div>
             </div>
 
-            {/* Hajj Sub Tabs */}
             <div className="flex gap-1 bg-white rounded-2xl p-1.5 border border-[#E8EEF4] shadow-sm">
               <button
                 onClick={() => setHajjSubTab('packages')}
@@ -3310,7 +3018,6 @@ const AdminPanel = () => {
               </button>
             </div>
 
-            {/* Hajj Packages Sub Tab */}
             {hajjSubTab === 'packages' && (
               <div className="bg-white rounded-2xl border border-[#E8EEF4] shadow-sm p-5">
                 <div className="flex flex-wrap justify-between items-center gap-3 mb-4 pb-4 border-b border-[#F1F7FC]">
@@ -3406,7 +3113,6 @@ const AdminPanel = () => {
               </div>
             )}
 
-            {/* Hajj Bookings Sub Tab */}
             {hajjSubTab === 'bookings' && (
               <div className="bg-white rounded-2xl border border-[#E8EEF4] shadow-sm p-5">
                 <div className="flex flex-wrap justify-between items-center gap-3 mb-4 pb-4 border-b border-[#F1F7FC]">
@@ -3523,10 +3229,9 @@ const AdminPanel = () => {
           </div>
         )}
 
-        {/* ===== PENSION TAB ===== */}
+        {/* Pension Tab - Withdrawal Requests */}
         {activeTab === 'pension' && (
           <div className="space-y-6">
-            {/* Pension Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
               <div className="bg-[#F1F7FC] rounded-xl p-4 text-center">
                 <div className="text-2xl font-bold text-[#1A2A3A]">{pensionStats.total}</div>
@@ -3554,11 +3259,25 @@ const AdminPanel = () => {
               </div>
             </div>
 
-            {/* Pension Contributions Table */}
             <div className="bg-white rounded-2xl border border-[#E8EEF4] shadow-sm p-5">
-              <div className="flex justify-between items-center mb-4 pb-4 border-b border-[#F1F7FC]">
-                <h3 className="text-lg font-heading font-bold text-[#1A2A3A]">Pending Pension Contributions</h3>
-                <span className="text-sm text-[#94A3B8]">{pendingPensionContributions.length} pending</span>
+              <div className="flex flex-wrap justify-between items-center gap-3 mb-4 pb-4 border-b border-[#F1F7FC]">
+                <h3 className="text-lg font-heading font-bold text-[#1A2A3A] flex items-center gap-2">
+                  <WithdrawalIcon />
+                  Pension Withdrawal Requests
+                </h3>
+                <div className="flex items-center gap-3">
+                  <select
+                    className="px-3 py-1.5 text-xs border border-[#E2E8F0] rounded-lg bg-white text-[#1A2A3A] focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30"
+                    value={pensionFilter}
+                    onChange={(e) => setPensionFilter(e.target.value)}
+                  >
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                  <span className="text-sm text-[#94A3B8]">{filteredPensionWithdrawals.length} requests</span>
+                </div>
               </div>
 
               {loadingPension ? (
@@ -3566,66 +3285,83 @@ const AdminPanel = () => {
                   <div className="w-6 h-6 border-2 border-[#1769AA]/20 border-t-[#1769AA] rounded-full animate-spin" />
                   <span>Loading...</span>
                 </div>
-              ) : pendingPensionContributions.length === 0 ? (
+              ) : filteredPensionWithdrawals.length === 0 ? (
                 <div className="text-center py-12">
-                  <p className="text-[#1A2A3A] font-semibold">No pending pension contributions</p>
-                  <p className="text-sm text-[#94A3B8] mt-1">All contributions have been processed</p>
+                  <p className="text-[#1A2A3A] font-semibold">No withdrawal requests found</p>
+                  <p className="text-sm text-[#94A3B8] mt-1">All requests have been processed</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b-2 border-[#1A2A3A]">
-                        <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Supporter</th>
-                        <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Imam</th>
+                        <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Leader</th>
+                        <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Type</th>
                         <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Amount</th>
-                        <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Date</th>
-                        <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Payment Method</th>
+                        <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider hidden md:table-cell">Bank Account</th>
+                        <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Status</th>
+                        <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider hidden lg:table-cell">Requested</th>
                         <th className="px-3 py-3 text-left text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {pendingPensionContributions.map((contribution) => (
-                        <tr key={contribution.id} className="border-b border-[#F1F7FC] hover:bg-[#F8FAFC] transition">
-                          <td className="px-3 py-3">
-                            <div>
-                              <div className="font-semibold text-[#1A2A3A]">{contribution.user_name || 'Unknown'}</div>
-                              <div className="text-xs text-[#94A3B8]">{contribution.user_phone || 'N/A'}</div>
-                            </div>
-                          </td>
-                          <td className="px-3 py-3">
-                            <div>
-                              <div className="font-semibold text-[#1A2A3A]">{contribution.imam_name || 'Unknown'}</div>
-                              <div className="text-xs text-[#94A3B8]">{contribution.imam_phone || 'N/A'}</div>
-                            </div>
-                          </td>
-                          <td className="px-3 py-3 font-semibold text-[#1769AA]">{formatCurrency(contribution.amount)}</td>
-                          <td className="px-3 py-3 text-xs text-[#94A3B8]">{formatDate(contribution.contribution_date)}</td>
-                          <td className="px-3 py-3">
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-[#F1F7FC] text-[#5A6A7A]">
-                              {contribution.payment_method || 'wallet'}
-                            </span>
-                          </td>
-                          <td className="px-3 py-3">
-                            <div className="flex gap-2">
-                              <button 
-                                className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition"
-                                onClick={() => approvePensionContribution(contribution.id)}
-                                disabled={loading}
-                              >
-                                Approve
-                              </button>
-                              <button 
-                                className="px-3 py-1.5 bg-red-600 text-white text-xs font-semibold rounded-lg hover:bg-red-700 transition"
-                                onClick={() => rejectPensionContribution(contribution.id)}
-                                disabled={loading}
-                              >
-                                Reject
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                      {filteredPensionWithdrawals.map((withdrawal) => {
+                        const statusBadge = getStatusBadge(withdrawal.status);
+                        return (
+                          <tr key={withdrawal.id} className="border-b border-[#F1F7FC] hover:bg-[#F8FAFC] transition">
+                            <td className="px-3 py-3">
+                              <div>
+                                <div className="font-semibold text-[#1A2A3A]">{withdrawal.leader_name || 'Unknown'}</div>
+                                <div className="text-xs text-[#94A3B8]">{withdrawal.leader_phone || 'N/A'}</div>
+                              </div>
+                            </td>
+                            <td className="px-3 py-3">
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700">
+                                {withdrawal.leader_type || 'N/A'}
+                              </span>
+                            </td>
+                            <td className="px-3 py-3 font-semibold text-[#1769AA]">
+                              {formatCurrency(withdrawal.amount)}
+                            </td>
+                            <td className="px-3 py-3 hidden md:table-cell">
+                              <div className="text-xs">
+                                <div className="text-[#1A2A3A]">{withdrawal.bank_account || 'N/A'}</div>
+                                <div className="text-[#94A3B8]">{withdrawal.bank_name || 'N/A'}</div>
+                              </div>
+                            </td>
+                            <td className="px-3 py-3">
+                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${statusBadge.bg} ${statusBadge.text}`}>
+                                {statusBadge.label}
+                              </span>
+                            </td>
+                            <td className="px-3 py-3 hidden lg:table-cell text-xs text-[#94A3B8]">
+                              {formatDate(withdrawal.requested_at)}
+                            </td>
+                            <td className="px-3 py-3">
+                              {withdrawal.status === 'pending' ? (
+                                <div className="flex gap-2">
+                                  <button 
+                                    className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition"
+                                    onClick={() => approvePensionWithdrawal(withdrawal.id)}
+                                    disabled={loading}
+                                  >
+                                    Approve
+                                  </button>
+                                  <button 
+                                    className="px-3 py-1.5 bg-red-600 text-white text-xs font-semibold rounded-lg hover:bg-red-700 transition"
+                                    onClick={() => rejectPensionWithdrawal(withdrawal.id)}
+                                    disabled={loading}
+                                  >
+                                    Reject
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-[#94A3B8]">—</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -3634,10 +3370,9 @@ const AdminPanel = () => {
           </div>
         )}
 
-        {/* ===== TAKAFUL TAB ===== */}
+        {/* Takaful Tab */}
         {activeTab === 'takaful' && (
           <div className="space-y-6">
-            {/* Takaful Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
               <div className="bg-[#F1F7FC] rounded-xl p-4 text-center">
                 <div className="text-2xl font-bold text-[#1A2A3A]">{takafulClaimStats.total}</div>
@@ -3665,7 +3400,6 @@ const AdminPanel = () => {
               </div>
             </div>
 
-            {/* Takaful Sub Tabs */}
             <div className="flex gap-1 bg-white rounded-2xl p-1.5 border border-[#E8EEF4] shadow-sm">
               <button
                 onClick={() => setTakafulSubTab('claims')}
@@ -3699,12 +3433,11 @@ const AdminPanel = () => {
               </button>
             </div>
 
-            {/* Takaful Claims Sub Tab */}
             {takafulSubTab === 'claims' && (
               <div className="bg-white rounded-2xl border border-[#E8EEF4] shadow-sm p-5">
                 <div className="flex justify-between items-center mb-4 pb-4 border-b border-[#F1F7FC]">
                   <h3 className="text-lg font-heading font-bold text-[#1A2A3A]">Pending Takaful Claims</h3>
-                  <span className="text-sm text-[#94A3B8]">{pendingTakafulClaims.length} pending</span>
+                  <span className="text-sm text-[#94A3B8]">{takafulClaims.length} pending</span>
                 </div>
 
                 {loadingTakaful ? (
@@ -3712,7 +3445,7 @@ const AdminPanel = () => {
                     <div className="w-6 h-6 border-2 border-[#1769AA]/20 border-t-[#1769AA] rounded-full animate-spin" />
                     <span>Loading...</span>
                   </div>
-                ) : pendingTakafulClaims.length === 0 ? (
+                ) : takafulClaims.length === 0 ? (
                   <div className="text-center py-12">
                     <p className="text-[#1A2A3A] font-semibold">No pending Takaful claims</p>
                     <p className="text-sm text-[#94A3B8] mt-1">All claims have been processed</p>
@@ -3731,7 +3464,7 @@ const AdminPanel = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {pendingTakafulClaims.map((claim) => (
+                        {takafulClaims.map((claim) => (
                           <tr key={claim.id} className="border-b border-[#F1F7FC] hover:bg-[#F8FAFC] transition">
                             <td className="px-3 py-3">
                               <div>
@@ -3774,7 +3507,6 @@ const AdminPanel = () => {
               </div>
             )}
 
-            {/* Takaful Plans Sub Tab */}
             {takafulSubTab === 'plans' && (
               <div className="bg-white rounded-2xl border border-[#E8EEF4] shadow-sm p-5">
                 <div className="flex flex-wrap justify-between items-center gap-3 mb-4 pb-4 border-b border-[#F1F7FC]">
@@ -3875,13 +3607,14 @@ const AdminPanel = () => {
         )}
       </div>
 
-      {/* ===== USER DETAIL MODAL ===== */}
+      {/* ===== MODALS ===== */}
+      {/* User Modal */}
       {showUserModal && selectedUser && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowUserModal(false)}>
           <div className="bg-white rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-[#E8EEF4] shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 border-b border-[#E8EEF4] flex justify-between items-center">
               <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">User Details</h3>
-              <button className="w-8 h-8 rounded-xl hover:bg-[#F1F7FC] transition flex items-center justify-center text-[#94A3B8] hover:text-[#1A2A3A]" onClick={() => setShowUserModal(false)}>X</button>
+              <button className="w-8 h-8 rounded-xl hover:bg-[#F1F7FC] transition flex items-center justify-center text-[#94A3B8] hover:text-[#1A2A3A]" onClick={() => setShowUserModal(false)}><CloseIcon /></button>
             </div>
             <div className="p-6">
               <div className="flex items-center gap-4 mb-5 pb-5 border-b border-[#F1F7FC]">
@@ -3891,8 +3624,8 @@ const AdminPanel = () => {
                 <div>
                   <div className="text-lg font-bold text-[#1A2A3A]">{selectedUser.fullname || selectedUser.fullName}</div>
                   <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${getRoleBadge(selectedUser.role)}`}>{selectedUser.role || 'client'}</span>
-                  {selectedUser.role === 'imam' && selectedUser.imam_sub_role === 'kadhi' && (
-                    <span className="ml-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700">Kadhi</span>
+                  {selectedUser.role === 'leader' && selectedUser.leader_type && (
+                    <span className="ml-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-700">{getLeaderTypeLabel(selectedUser.leader_type)}</span>
                   )}
                 </div>
               </div>
@@ -3932,13 +3665,13 @@ const AdminPanel = () => {
         </div>
       )}
 
-      {/* ===== DELETE CONFIRMATION MODAL ===== */}
+      {/* Delete Modal */}
       {showDeleteModal && userToDelete && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowDeleteModal(false)}>
           <div className="bg-white rounded-3xl max-w-sm w-full border border-[#E8EEF4] shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 border-b border-[#E8EEF4] flex justify-between items-center">
               <h3 className="text-xl font-heading font-bold text-red-600">Confirm Delete</h3>
-              <button className="w-8 h-8 rounded-xl hover:bg-[#F1F7FC] transition flex items-center justify-center text-[#94A3B8] hover:text-[#1A2A3A]" onClick={() => setShowDeleteModal(false)}>X</button>
+              <button className="w-8 h-8 rounded-xl hover:bg-[#F1F7FC] transition flex items-center justify-center text-[#94A3B8] hover:text-[#1A2A3A]" onClick={() => setShowDeleteModal(false)}><CloseIcon /></button>
             </div>
             <div className="p-6 text-center">
               <h4 className="text-lg font-bold text-[#1A2A3A]">Delete User?</h4>
@@ -3952,119 +3685,7 @@ const AdminPanel = () => {
         </div>
       )}
 
-      {/* ===== ADD/EDIT MOSQUE MODAL ===== */}
-      {showAddMosqueModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowAddMosqueModal(false)}>
-          <div className="bg-white rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-[#E8EEF4] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b border-[#E8EEF4] flex justify-between items-center">
-              <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">
-                {editingMosque ? 'Edit Mosque' : 'Add New Mosque'}
-              </h3>
-              <button className="w-8 h-8 rounded-xl hover:bg-[#F1F7FC] transition flex items-center justify-center text-[#94A3B8] hover:text-[#1A2A3A]" onClick={() => setShowAddMosqueModal(false)}>X</button>
-            </div>
-            <div className="p-6 space-y-4">
-              {error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
-                  {error}
-                </div>
-              )}
-              
-              <div>
-                <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">Mosque Name *</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition"
-                  value={mosqueForm.name}
-                  onChange={(e) => setMosqueForm({ ...mosqueForm, name: e.target.value })}
-                  placeholder="Enter mosque name"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">Location *</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition"
-                  value={mosqueForm.location}
-                  onChange={(e) => setMosqueForm({ ...mosqueForm, location: e.target.value })}
-                  placeholder="Street address or area"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">County</label>
-                <select
-                  className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition appearance-none"
-                  value={mosqueForm.county}
-                  onChange={(e) => setMosqueForm({ ...mosqueForm, county: e.target.value })}
-                >
-                  <option value="">Select county</option>
-                  {counties.filter(c => c !== 'All').map(county => (
-                    <option key={county} value={county}>{county}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">Latitude</label>
-                  <input
-                    type="number"
-                    step="any"
-                    className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition"
-                    value={mosqueForm.latitude}
-                    onChange={(e) => setMosqueForm({ ...mosqueForm, latitude: e.target.value })}
-                    placeholder="-1.2921"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">Longitude</label>
-                  <input
-                    type="number"
-                    step="any"
-                    className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition"
-                    value={mosqueForm.longitude}
-                    onChange={(e) => setMosqueForm({ ...mosqueForm, longitude: e.target.value })}
-                    placeholder="36.8219"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-[#5A6A7A] uppercase tracking-wider block mb-1.5">Assigned Imam</label>
-                <select
-                  className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1769AA]/30 focus:border-[#1769AA] transition appearance-none"
-                  value={mosqueForm.imam_id}
-                  onChange={(e) => setMosqueForm({ ...mosqueForm, imam_id: e.target.value })}
-                >
-                  <option value="">None</option>
-                  {imamOptions.map(imam => (
-                    <option key={imam.id} value={imam.id}>{imam.fullname} ({imam.mosque_name || 'No mosque'})</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex gap-3 pt-4 border-t border-[#F1F7FC]">
-                <button
-                  className="flex-1 px-6 py-3 rounded-xl bg-[#F1F7FC] text-[#5A6A7A] font-semibold text-sm hover:bg-[#E2E8F0] transition"
-                  onClick={() => setShowAddMosqueModal(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="flex-[2] px-6 py-3 rounded-xl bg-[#1769AA] text-white font-semibold text-sm hover:bg-[#2F80C0] transition disabled:opacity-60"
-                  onClick={handleSaveMosque}
-                  disabled={loadingMosqueForm || !mosqueForm.name || !mosqueForm.location}
-                >
-                  {loadingMosqueForm ? 'Saving...' : editingMosque ? 'Update Mosque' : 'Add Mosque'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ===== ADD/EDIT ZAKAT RECIPIENT MODAL ===== */}
+      {/* Add/Edit Recipient Modal */}
       {showAddRecipientModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowAddRecipientModal(false)}>
           <div className="bg-white rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-[#E8EEF4] shadow-2xl" onClick={(e) => e.stopPropagation()}>
@@ -4072,7 +3693,7 @@ const AdminPanel = () => {
               <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">
                 {editingRecipient ? 'Edit Recipient' : 'Add Recipient Organization'}
               </h3>
-              <button className="w-8 h-8 rounded-xl hover:bg-[#F1F7FC] transition flex items-center justify-center text-[#94A3B8] hover:text-[#1A2A3A]" onClick={() => setShowAddRecipientModal(false)}>X</button>
+              <button className="w-8 h-8 rounded-xl hover:bg-[#F1F7FC] transition flex items-center justify-center text-[#94A3B8] hover:text-[#1A2A3A]" onClick={() => setShowAddRecipientModal(false)}><CloseIcon /></button>
             </div>
             <div className="p-6 space-y-4">
               {error && (
@@ -4216,13 +3837,13 @@ const AdminPanel = () => {
         </div>
       )}
 
-      {/* ===== DISBURSE MODAL ===== */}
+      {/* Disburse Modal */}
       {showDisburseModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowDisburseModal(false)}>
           <div className="bg-white rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-[#E8EEF4] shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 border-b border-[#E8EEF4] flex justify-between items-center">
               <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">Disburse Funds</h3>
-              <button className="w-8 h-8 rounded-xl hover:bg-[#F1F7FC] transition flex items-center justify-center text-[#94A3B8] hover:text-[#1A2A3A]" onClick={() => setShowDisburseModal(false)}>X</button>
+              <button className="w-8 h-8 rounded-xl hover:bg-[#F1F7FC] transition flex items-center justify-center text-[#94A3B8] hover:text-[#1A2A3A]" onClick={() => setShowDisburseModal(false)}><CloseIcon /></button>
             </div>
             <div className="p-6 space-y-4">
               {error && (
@@ -4301,7 +3922,7 @@ const AdminPanel = () => {
         </div>
       )}
 
-      {/* ===== ADD/EDIT SADAQA CAMPAIGN MODAL ===== */}
+      {/* Add/Edit Campaign Modal */}
       {showAddCampaignModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowAddCampaignModal(false)}>
           <div className="bg-white rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-[#E8EEF4] shadow-2xl" onClick={(e) => e.stopPropagation()}>
@@ -4309,7 +3930,7 @@ const AdminPanel = () => {
               <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">
                 {editingCampaign ? 'Edit Campaign' : 'Add New Campaign'}
               </h3>
-              <button className="w-8 h-8 rounded-xl hover:bg-[#F1F7FC] transition flex items-center justify-center text-[#94A3B8] hover:text-[#1A2A3A]" onClick={() => setShowAddCampaignModal(false)}>X</button>
+              <button className="w-8 h-8 rounded-xl hover:bg-[#F1F7FC] transition flex items-center justify-center text-[#94A3B8] hover:text-[#1A2A3A]" onClick={() => setShowAddCampaignModal(false)}><CloseIcon /></button>
             </div>
             <div className="p-6 space-y-4">
               {error && (
@@ -4429,13 +4050,13 @@ const AdminPanel = () => {
         </div>
       )}
 
-      {/* ===== ASSIGN HEARSE REQUEST MODAL ===== */}
+      {/* Assign Hearse Modal */}
       {showAssignModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowAssignModal(false)}>
           <div className="bg-white rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-[#E8EEF4] shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 border-b border-[#E8EEF4] flex justify-between items-center">
               <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">Assign Service Request</h3>
-              <button className="w-8 h-8 rounded-xl hover:bg-[#F1F7FC] transition flex items-center justify-center text-[#94A3B8] hover:text-[#1A2A3A]" onClick={() => setShowAssignModal(false)}>X</button>
+              <button className="w-8 h-8 rounded-xl hover:bg-[#F1F7FC] transition flex items-center justify-center text-[#94A3B8] hover:text-[#1A2A3A]" onClick={() => setShowAssignModal(false)}><CloseIcon /></button>
             </div>
             <div className="p-6 space-y-4">
               {error && (
@@ -4496,7 +4117,7 @@ const AdminPanel = () => {
         </div>
       )}
 
-      {/* ===== HAJJ BOOKING DETAIL MODAL ===== */}
+      {/* Hajj Booking Modal */}
       {showHajjBookingModal && selectedHajjBooking && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowHajjBookingModal(false)}>
           <div className="bg-white rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-[#E8EEF4] shadow-2xl" onClick={(e) => e.stopPropagation()}>
@@ -4572,7 +4193,7 @@ const AdminPanel = () => {
                         setTimeout(() => setShowSuccessModal(false), 3000);
                       }
                     }}
-                    disabled={processing}
+                    disabled={loading}
                   >
                     Confirm Booking
                   </button>
@@ -4601,7 +4222,7 @@ const AdminPanel = () => {
         </div>
       )}
 
-      {/* ===== ADD/EDIT TAKAFUL PLAN MODAL ===== */}
+      {/* Add/Edit Takaful Plan Modal */}
       {showAddPlanModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowAddPlanModal(false)}>
           <div className="bg-white rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-[#E8EEF4] shadow-2xl" onClick={(e) => e.stopPropagation()}>
@@ -4609,7 +4230,7 @@ const AdminPanel = () => {
               <h3 className="text-xl font-heading font-bold text-[#1A2A3A]">
                 {editingPlan ? 'Edit Takaful Plan' : 'Add New Takaful Plan'}
               </h3>
-              <button className="w-8 h-8 rounded-xl hover:bg-[#F1F7FC] transition flex items-center justify-center text-[#94A3B8] hover:text-[#1A2A3A]" onClick={() => setShowAddPlanModal(false)}>X</button>
+              <button className="w-8 h-8 rounded-xl hover:bg-[#F1F7FC] transition flex items-center justify-center text-[#94A3B8] hover:text-[#1A2A3A]" onClick={() => setShowAddPlanModal(false)}><CloseIcon /></button>
             </div>
             <div className="p-6 space-y-4">
               {error && (
@@ -4741,7 +4362,7 @@ const AdminPanel = () => {
         </div>
       )}
 
-      {/* ===== SUCCESS MODAL ===== */}
+      {/* Success Modal */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowSuccessModal(false)}>
           <div className="bg-white rounded-3xl max-w-sm w-full border border-[#E8EEF4] shadow-2xl" onClick={(e) => e.stopPropagation()}>

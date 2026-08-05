@@ -7,7 +7,7 @@ import Navbar from './components/Navbar';
 import Dashboard from './components/Dashboard';
 import VendorDashboard from './components/VendorDashboard';
 import HearseProviderDashboard from './components/HearseProviderDashboard';
-import ImamDashboard from './components/ImamDashboard';
+import LeaderDashboard from './components/LeaderDashboard';
 import KadhiDashboard from './components/KadhiDashboard';
 import Wallet from './components/Wallet';
 import Zakat from './components/Zakat';
@@ -17,7 +17,7 @@ import Takaful from './components/Takaful';
 import Pension from './components/Pension';
 import SelectMosque from './components/SelectMosque';
 import MosqueDetails from './components/MosqueDetails';
-import ImamProfile from './components/ImamProfile';
+import LeaderPublicProfile from './components/LeaderPublicProfile';
 import MosqueFinder from './components/MosqueFinder';
 import Utilities from './components/Utilities';
 import HalalStay from './components/HalalStay';
@@ -39,7 +39,7 @@ import VideoCall from './components/VideoCall';
 import RegisterRole from './components/RegisterRole';
 import ClientRegister from './components/ClientRegister';
 import VendorRegister from './components/VendorRegister';
-import ImamRegister from './components/ImamRegister';
+import LeaderRegister from './components/LeaderRegister';
 
 // Scroll to top component
 const ScrollToTop = ({ children }) => {
@@ -80,6 +80,7 @@ function App() {
     localStorage.removeItem('halalhub_role');
     localStorage.removeItem('halalhub_subrole');
     localStorage.removeItem('halalhub_vendor_type');
+    localStorage.removeItem('halalhub_leader_type');
     setIsAuthenticated(false);
     setUser(null);
   };
@@ -92,13 +93,7 @@ function App() {
       }
       return <VendorDashboard user={user} />;
     }
-    if (user?.role === 'imam') {
-      const subRole = localStorage.getItem('halalhub_subrole');
-      if (subRole === 'kadhi') {
-        return <KadhiDashboard />;
-      }
-      return <ImamDashboard />;
-    }
+    // All users (client, leader, imam) get the normal dashboard
     return <Dashboard user={user} />;
   };
 
@@ -106,20 +101,17 @@ function App() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0B342B] via-[#12342D] to-[#1A4A3D]">
         <div className="relative">
-          {/* Background decorative elements */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#C9A44B]/5 rounded-full blur-3xl animate-pulse" />
           <div className="absolute top-1/4 right-1/4 w-32 h-32 bg-[#C9A44B]/10 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
           <div className="absolute bottom-1/4 left-1/4 w-24 h-24 bg-[#C9A44B]/10 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '2s' }} />
           
           <div className="relative z-10 text-center">
-            {/* Logo */}
             <div className="flex items-center justify-center gap-3 mb-8">
               <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#C9A44B] to-[#B8923D] flex items-center justify-center shadow-2xl shadow-[#C9A44B]/30">
                 <span className="text-3xl font-bold text-[#0B342B]">H</span>
               </div>
             </div>
 
-            {/* Brand Name */}
             <h1 className="text-3xl font-bold text-[#F7F6F1] tracking-tight">
               HalalHub
             </h1>
@@ -127,7 +119,6 @@ function App() {
               Sharia-Compliant Fintech
             </p>
 
-            {/* Loading Progress Bar */}
             <div className="mt-8 w-64 mx-auto">
               <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
                 <div className="h-full w-3/4 bg-gradient-to-r from-[#C9A44B] to-[#B8923D] rounded-full animate-pulse" />
@@ -139,7 +130,6 @@ function App() {
               </div>
             </div>
 
-            {/* Loading Text */}
             <p className="mt-6 text-xs text-white/40 tracking-widest uppercase animate-pulse">
               Loading your experience
             </p>
@@ -159,7 +149,7 @@ function App() {
           <Route path="/register/role" element={<RegisterRole />} />
           <Route path="/register/client" element={<ClientRegister />} />
           <Route path="/register/vendor" element={<VendorRegister />} />
-          <Route path="/register/imam" element={<ImamRegister />} />
+          <Route path="/register/leader" element={<LeaderRegister />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Router>
@@ -170,14 +160,11 @@ function App() {
     <Router>
       <ScrollToTop>
         <div className="min-h-screen bg-[#FAFAF7]">
-          {/* Conditionally render Navbar - hide on admin routes */}
           {location.pathname !== '/admin' && location.pathname !== '/admin/bank' && (
             <Navbar user={user} onLogout={handleLogout} />
           )}
           
-          {/* Main content area */}
           <main className={`pt-14 lg:pt-0 pb-12 min-h-screen ${location.pathname !== '/admin' && location.pathname !== '/admin/bank' ? '' : ''}`}>
-            {/* Only add sidebar padding when NOT on admin routes */}
             {location.pathname !== '/admin' && location.pathname !== '/admin/bank' ? (
               <div className="lg:pl-60">
                 <Routes>
@@ -189,20 +176,16 @@ function App() {
                   <Route path="/p2p" element={<P2P />} />
                   <Route path="/takaful" element={<Takaful />} />
                   
-                  {/* Imam Support Routes */}
                   <Route path="/pension" element={<Pension />} />
+                  <Route path="/leader-pension" element={<LeaderDashboard />} />
+                  <Route path="/pension/leader/:id" element={<LeaderPublicProfile />} />
                   <Route path="/select-mosque" element={<SelectMosque />} />
                   <Route path="/mosque/:id" element={<MosqueDetails />} />
-                  <Route path="/imam/:id" element={<ImamProfile />} />
-                  <Route path="/imam-dashboard" element={<ImamDashboard />} />
+                  <Route path="/leader-dashboard" element={<LeaderDashboard />} />
+                  <Route path="/consultations" element={<KadhiDashboard />} />
                   
-                  {/* Kadhi Dashboard */}
                   <Route path="/kadhi-dashboard" element={<KadhiDashboard />} />
-                  
-                  {/* Hearse Provider Dashboard */}
                   <Route path="/hearse-provider-dashboard" element={<HearseProviderDashboard />} />
-                  
-                  {/* Independent Mosque Finder */}
                   <Route path="/mosque-finder" element={<MosqueFinder />} />
                   
                   <Route path="/utilities" element={<Utilities />} />
@@ -218,14 +201,12 @@ function App() {
                   <Route path="/admin" element={<AdminPanel />} />
                   <Route path="/admin/bank" element={<BankAdmin />} />
                   
-                  {/* Video Call Route */}
                   <Route path="/video-call/:bookingId" element={<VideoCall />} />
                   
                   <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
               </div>
             ) : (
-              /* Admin routes - no sidebar padding, full width */
               <div className="lg:pl-0">
                 <Routes>
                   <Route path="/admin" element={<AdminPanel />} />
