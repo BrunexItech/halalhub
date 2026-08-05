@@ -111,6 +111,9 @@ const Cart = ({
       // Clear local cart state
       setCart([]);
 
+      // Clear cart from localStorage
+      localStorage.removeItem('halalhub_cart');
+
       setShowCheckoutModal(false);
       setShowSuccessModal(true);
       
@@ -134,6 +137,7 @@ const Cart = ({
     try {
       await cartService.clearCart();
       setCart([]);
+      localStorage.removeItem('halalhub_cart');
       setSuccess('Cart cleared.');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -245,65 +249,69 @@ const Cart = ({
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Cart Items */}
                 <div className="lg:col-span-2 space-y-3">
-                  {cart.map((item) => (
-                    <div 
-                      key={item.id} 
-                      className="bg-[#FAFAF7] rounded-xl p-4 hover:shadow-md transition-all duration-200 border border-[#E8EEF4]"
-                    >
-                      <div className="flex flex-wrap items-center gap-4">
-                        <div className="flex-1 min-w-[150px]">
-                          <div className="flex items-start gap-3">
-                            <ProductImage image={item.image || item.images} name={item.name} />
-                            <div>
-                              <h4 className="font-semibold text-[#1F2937] text-[15px]">{item.name}</h4>
-                              <p className="text-[13px] text-[#6B7280]">{item.vendor_name || item.business_name || 'Vendor'}</p>
-                              <p className="text-[15px] font-semibold text-[#0B342B] mt-1">
-                                {formatCurrency(item.price)}
-                              </p>
+                  {cart.map((item) => {
+                    // Use cart_id or id for the update/delete operations
+                    const itemId = item.cart_id || item.id;
+                    return (
+                      <div 
+                        key={itemId} 
+                        className="bg-[#FAFAF7] rounded-xl p-4 hover:shadow-md transition-all duration-200 border border-[#E8EEF4]"
+                      >
+                        <div className="flex flex-wrap items-center gap-4">
+                          <div className="flex-1 min-w-[150px]">
+                            <div className="flex items-start gap-3">
+                              <ProductImage image={item.image || item.images} name={item.name} />
+                              <div>
+                                <h4 className="font-semibold text-[#1F2937] text-[15px]">{item.name}</h4>
+                                <p className="text-[13px] text-[#6B7280]">{item.vendor_name || item.business_name || 'Vendor'}</p>
+                                <p className="text-[15px] font-semibold text-[#0B342B] mt-1">
+                                  {formatCurrency(item.price)}
+                                </p>
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        <div className="flex items-center gap-3 ml-auto">
-                          <div className="flex items-center border border-[#E8EEF4] rounded-lg overflow-hidden bg-white">
-                            <button
-                              className="w-8 h-8 flex items-center justify-center text-[#6B7280] hover:bg-[#FAFAF7] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                              disabled={localProcessing}
-                            >
-                              −
-                            </button>
-                            <span className="w-8 text-center text-[15px] font-medium text-[#1F2937]">
-                              {item.quantity}
-                            </span>
-                            <button
-                              className="w-8 h-8 flex items-center justify-center text-[#6B7280] hover:bg-[#FAFAF7] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                              disabled={localProcessing}
-                            >
-                              +
-                            </button>
-                          </div>
-
-                          <div className="text-right">
-                            <div className="text-[15px] font-bold text-[#1F2937]">
-                              {formatCurrency(item.price * item.quantity)}
+                          <div className="flex items-center gap-3 ml-auto">
+                            <div className="flex items-center border border-[#E8EEF4] rounded-lg overflow-hidden bg-white">
+                              <button
+                                className="w-8 h-8 flex items-center justify-center text-[#6B7280] hover:bg-[#FAFAF7] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                onClick={() => updateQuantity(itemId, (item.quantity || 1) - 1)}
+                                disabled={localProcessing}
+                              >
+                                <span className="text-[18px]">-</span>
+                              </button>
+                              <span className="w-8 text-center text-[15px] font-medium text-[#1F2937]">
+                                {item.quantity || 1}
+                              </span>
+                              <button
+                                className="w-8 h-8 flex items-center justify-center text-[#6B7280] hover:bg-[#FAFAF7] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                onClick={() => updateQuantity(itemId, (item.quantity || 1) + 1)}
+                                disabled={localProcessing}
+                              >
+                                <span className="text-[18px]">+</span>
+                              </button>
                             </div>
-                            <button
-                              className="text-[13px] text-[#6B7280] hover:text-[#DC2626] transition-colors"
-                              onClick={() => removeFromCart(item.id)}
-                              disabled={localProcessing}
-                            >
-                              Remove
-                            </button>
+
+                            <div className="text-right">
+                              <div className="text-[15px] font-bold text-[#1F2937]">
+                                {formatCurrency((item.price || 0) * (item.quantity || 1))}
+                              </div>
+                              <button
+                                className="text-[13px] text-[#6B7280] hover:text-[#DC2626] transition-colors"
+                                onClick={() => removeFromCart(itemId)}
+                                disabled={localProcessing}
+                              >
+                                Remove
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
-                {/* Order Summary - No Delivery Fee */}
+                {/* Order Summary */}
                 <div className="lg:col-span-1">
                   <div className="bg-[#FAFAF7] rounded-xl p-6 sticky top-6 border border-[#E8EEF4]">
                     <h4 className="text-[17px] font-semibold text-[#1F2937] mb-4">Order Summary</h4>
@@ -354,7 +362,7 @@ const Cart = ({
         </div>
       </div>
 
-      {/* ===== CHECKOUT MODAL ===== */}
+      {/* Checkout Modal */}
       {showCheckoutModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowCheckoutModal(false)}>
           <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-fadeIn" onClick={(e) => e.stopPropagation()}>
@@ -437,7 +445,7 @@ const Cart = ({
         </div>
       )}
 
-      {/* ===== SUCCESS MODAL ===== */}
+      {/* Success Modal */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowSuccessModal(false)}>
           <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-fadeIn" onClick={(e) => e.stopPropagation()}>

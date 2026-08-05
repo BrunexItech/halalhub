@@ -5,7 +5,7 @@ import Cart from './Cart';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-const Ecommerce = () => {
+const Ecommerce = ({ category = 'all' }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const token = localStorage.getItem('halalhub_token');
@@ -55,7 +55,7 @@ const Ecommerce = () => {
   const [vendors, setVendors] = useState(['All']);
   
   // ===== BUTCHERY MODE =====
-  const [isButcheryMode, setIsButcheryMode] = useState(false);
+  const [isButcheryMode, setIsButcheryMode] = useState(category === 'butchery');
   
   const priceRanges = [
     { label: 'All', value: 'All' },
@@ -65,34 +65,67 @@ const Ecommerce = () => {
     { label: 'Over KES 5,000', value: 'over-5000', min: 5000, max: Infinity }
   ];
 
+  // ===== LOCAL STORAGE HELPERS =====
+  const saveCartToLocalStorage = (cartData) => {
+    try {
+      localStorage.setItem('halalhub_cart', JSON.stringify(cartData));
+    } catch (e) {
+      console.error('Failed to save cart to localStorage:', e);
+    }
+  };
+
+  const loadCartFromLocalStorage = () => {
+    try {
+      const saved = localStorage.getItem('halalhub_cart');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error('Failed to load cart from localStorage:', e);
+    }
+    return null;
+  };
+
   // ===== FETCH DATA =====
   useEffect(() => {
     checkAuth();
     fetchProducts();
+    // Try to load cart from localStorage first
+    const savedCart = loadCartFromLocalStorage();
+    if (savedCart && savedCart.length > 0) {
+      setCart(savedCart);
+    }
+    // Then fetch from server to sync
     fetchCart();
     fetchOrders();
   }, []);
 
+  // Set butchery mode based on category prop
+  useEffect(() => {
+    setIsButcheryMode(category === 'butchery');
+  }, [category]);
+
+  // Save cart to localStorage whenever it changes
+  useEffect(() => {
+    if (cart && cart.length > 0) {
+      saveCartToLocalStorage(cart);
+    } else if (cart && cart.length === 0) {
+      localStorage.removeItem('halalhub_cart');
+    }
+  }, [cart]);
+
   // ===== HANDLE URL PARAMETERS =====
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const category = params.get('category');
+    const categoryParam = params.get('category');
     
-    if (category === 'butchery') {
+    if (categoryParam === 'butchery') {
       setIsButcheryMode(true);
       setSelectedCategory('All');
-    } else {
+    } else if (categoryParam === 'all' || !categoryParam) {
       setIsButcheryMode(false);
-      if (category) {
-        const matchedCategory = categories.find(c => c.toLowerCase() === category.toLowerCase());
-        if (matchedCategory) {
-          setSelectedCategory(matchedCategory);
-        }
-      } else {
-        setSelectedCategory('All');
-      }
     }
-  }, [location.search, categories]);
+  }, [location.search]);
 
   const checkAuth = () => {
     const token = localStorage.getItem('halalhub_token');
@@ -129,14 +162,34 @@ const Ecommerce = () => {
   };
 
   const fetchCart = async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      const savedCart = loadCartFromLocalStorage();
+      if (savedCart) {
+        setCart(savedCart);
+      }
+      return;
+    }
+    
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
       const response = await axios.get(`${API_BASE}/cart`, config);
-      setCart(response.data.items || []);
+      
+      const cartItems = response.data.items || [];
+      setCart(cartItems);
+      
+      if (cartItems.length > 0) {
+        saveCartToLocalStorage(cartItems);
+      } else {
+        localStorage.removeItem('halalhub_cart');
+      }
     } catch (err) {
       console.error('Cart error:', err);
-      setCart([]);
+      const savedCart = loadCartFromLocalStorage();
+      if (savedCart) {
+        setCart(savedCart);
+      } else {
+        setCart([]);
+      }
     }
   };
 
@@ -158,7 +211,6 @@ const Ecommerce = () => {
   const applyFilters = (productList = products) => {
     let filtered = [...productList];
     
-    // If butchery mode, filter by vendor_type
     if (isButcheryMode) {
       filtered = filtered.filter(p => p.vendor_type === 'halalbutchery');
     }
@@ -225,7 +277,7 @@ const Ecommerce = () => {
     setProcessing(true);
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.post(`${API_BASE}/cart`, { 
+      const response = await axios.post(`${API_BASE}/cart`, { 
         product_id: product.id, 
         quantity: 1 
       }, config);
@@ -241,24 +293,35 @@ const Ecommerce = () => {
     }
   };
 
-  const removeFromCart = async (productId) => {
+  const removeFromCart = async (cartId) => {
+    if (!cartId) {
+      setError('Invalid cart item');
+      return;
+    }
+    
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.delete(`${API_BASE}/cart/${productId}`, config);
+      await axios.delete(`${API_BASE}/cart/${cartId}`, config);
       await fetchCart();
     } catch (err) {
       setError('Failed to remove item from cart.');
     }
   };
 
-  const updateQuantity = async (productId, quantity) => {
-    if (quantity <= 0) {
-      removeFromCart(productId);
+  const updateQuantity = async (cartId, quantity) => {
+    if (!cartId) {
+      setError('Invalid cart item');
       return;
     }
+    
+    if (quantity <= 0) {
+      removeFromCart(cartId);
+      return;
+    }
+    
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.put(`${API_BASE}/cart/${productId}`, { quantity }, config);
+      await axios.put(`${API_BASE}/cart/${cartId}`, { quantity }, config);
       await fetchCart();
     } catch (err) {
       setError('Failed to update quantity.');
@@ -266,7 +329,7 @@ const Ecommerce = () => {
   };
 
   const getCartTotal = () => {
-    return cart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
+    return cart.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
   };
 
   const getCartItemCount = () => {
@@ -291,7 +354,7 @@ const Ecommerce = () => {
       const orderData = {
         vendor_id: cart[0]?.vendor_id || cart[0]?.vendorId,
         items: cart.map(item => ({
-          product_id: item.id,
+          product_id: item.product_id || item.id,
           name: item.name,
           price: item.price,
           quantity: item.quantity
@@ -309,6 +372,7 @@ const Ecommerce = () => {
       setShowSuccessModal(true);
       
       setCart([]);
+      localStorage.removeItem('halalhub_cart');
       
       await fetchOrders();
       
@@ -358,20 +422,6 @@ const Ecommerce = () => {
       'cancelled': { bg: 'bg-[#FEE2E2]', text: 'text-[#DC2626]' }
     };
     return colors[status] || { bg: 'bg-[#F4F5F1]', text: 'text-[#6B7280]' };
-  };
-
-  const getVendorTypeLabel = (vendorType) => {
-    const labels = {
-      'halalmarket': 'Halal Market',
-      'halalbutchery': 'Halal Butchery',
-      'restaurant': 'Restaurant',
-      'halalstay': 'HalalStay'
-    };
-    return labels[vendorType] || 'Vendor';
-  };
-
-  const isButcheryProduct = (product) => {
-    return product.meat_type && product.vendor_type === 'halalbutchery';
   };
 
   // SVG Icons

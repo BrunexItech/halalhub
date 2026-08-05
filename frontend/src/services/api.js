@@ -471,13 +471,13 @@ export const bookingService = {
 };
 
 // ========================================
-// CART SERVICE
+// CART SERVICE (FIXED)
 // ========================================
 export const cartService = {
   getCart: () => api.get('/cart'),
-  addToCart: (productId, quantity) => api.post('/cart', { productId, quantity }),
-  removeFromCart: (productId) => api.delete(`/cart/${productId}`),
-  updateQuantity: (productId, quantity) => api.put(`/cart/${productId}`, { quantity }),
+  addToCart: (productId, quantity) => api.post('/cart', { product_id: productId, quantity }),
+  removeFromCart: (cartId) => api.delete(`/cart/${cartId}`),
+  updateQuantity: (cartId, quantity) => api.put(`/cart/${cartId}`, { quantity }),
   clearCart: () => api.delete('/cart'),
 };
 

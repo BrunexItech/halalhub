@@ -92,8 +92,8 @@ const Navbar = ({ user, onLogout }) => {
       ),
       isCategory: true,
       children: [
-        { path: '/ecommerce', label: 'HalalMarket' },
-        { path: '/ecommerce?category=butchery', label: 'Halal Butchery' },
+        { path: '/market', label: 'HalalMarket' },
+        { path: '/butchery', label: 'Halal Butchery' },
         { path: '/restaurants', label: 'Halal Restaurants' },
       ]
     };
@@ -168,7 +168,7 @@ const Navbar = ({ user, onLogout }) => {
 
   const isActive = useCallback((path) => {
     if (!path) return false;
-    return location.pathname === path || location.pathname.startsWith(path + '/');
+    return location.pathname === path;
   }, [location.pathname]);
 
   const closeAllMenus = useCallback(() => {

@@ -192,8 +192,12 @@ function App() {
                   <Route path="/halalstay" element={<HalalStay />} />
                   <Route path="/hajj" element={<Hajj />} />
                   <Route path="/hearse" element={<Hearse />} />
-                  <Route path="/ecommerce" element={<Ecommerce />} />
+                  
+                  {/* Ecommerce Routes - Separate paths for each */}
+                  <Route path="/market" element={<Ecommerce category="all" />} />
+                  <Route path="/butchery" element={<Ecommerce category="butchery" />} />
                   <Route path="/restaurants" element={<Restaurants />} />
+                  
                   <Route path="/wills" element={<Wills />} />
                   <Route path="/kadhis" element={<Kadhis />} />
                   <Route path="/about" element={<About />} />

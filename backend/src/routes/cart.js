@@ -30,7 +30,7 @@ router.get('/', authenticate, async (req, res) => {
     const result = await db.query(
       `
       SELECT 
-        c.id,
+        c.id as cart_id,
         c.product_id,
         c.quantity,
         c.createdat,
@@ -41,23 +41,50 @@ router.get('/', authenticate, async (req, res) => {
         p.images,
         p.stock,
         p.is_halal,
+        p.meat_type,
+        p.cut_type,
+        p.price_per_kg,
+        p.stock_kg,
+        p.vendor_id,
         u.fullname as vendor_name,
-        u.id as vendor_id
+        u.business_name,
+        vp.vendor_type
       FROM cart c
       JOIN products p ON c.product_id = p.id
       JOIN users u ON p.vendor_id = u.id
+      LEFT JOIN vendor_profiles vp ON u.id = vp.user_id
       WHERE c.user_id = $1
       ORDER BY c.createdat DESC
       `,
       [userId]
     );
 
-    const totalItems = result.rows.reduce((sum, item) => sum + parseInt(item.quantity), 0);
-    const totalAmount = result.rows.reduce((sum, item) => sum + (parseFloat(item.price) * parseInt(item.quantity)), 0);
+    // Format items for frontend
+    const items = result.rows.map(row => ({
+      id: row.cart_id,           // Cart ID for updates/deletes
+      product_id: row.product_id,
+      name: row.product_name,
+      price: row.price,
+      original_price: row.original_price,
+      quantity: parseInt(row.quantity),
+      images: row.images || [],
+      stock: parseInt(row.stock),
+      is_halal: row.is_halal,
+      vendor_id: row.vendor_id,
+      vendor_name: row.vendor_name || row.business_name || 'Vendor',
+      vendor_type: row.vendor_type,
+      meat_type: row.meat_type,
+      cut_type: row.cut_type,
+      price_per_kg: row.price_per_kg,
+      stock_kg: row.stock_kg
+    }));
+
+    const totalItems = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+    const totalAmount = items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 0)), 0);
 
     res.json({
       success: true,
-      items: result.rows,
+      items: items,
       totalItems: totalItems,
       totalAmount: totalAmount
     });
@@ -79,7 +106,7 @@ router.post('/', authenticate, async (req, res) => {
     const db = await getClient();
     const userId = req.user.id;
     const productId = req.body.product_id || req.body.productId;
-    const quantity = req.body.quantity || 1;
+    const quantity = parseInt(req.body.quantity || 1);
 
     if (!productId) {
       return res.status(400).json({
@@ -90,7 +117,7 @@ router.post('/', authenticate, async (req, res) => {
 
     // Check product exists and has stock
     const productCheck = await db.query(
-      'SELECT id, stock FROM products WHERE id = $1 AND is_active = true',
+      'SELECT id, stock, price FROM products WHERE id = $1 AND is_active = true',
       [productId]
     );
 
@@ -103,7 +130,7 @@ router.post('/', authenticate, async (req, res) => {
 
     const product = productCheck.rows[0];
 
-    // Check if item already in cart
+    // Check if item already in cart - USING product_id column
     const existing = await db.query(
       'SELECT id, quantity FROM cart WHERE user_id = $1 AND product_id = $2',
       [userId, productId]
@@ -114,7 +141,7 @@ router.post('/', authenticate, async (req, res) => {
 
     if (existing.rows.length > 0) {
       // Update quantity
-      newQuantity = parseInt(existing.rows[0].quantity) + parseInt(quantity);
+      newQuantity = parseInt(existing.rows[0].quantity) + quantity;
       
       // Check stock
       if (newQuantity > parseInt(product.stock)) {
@@ -131,20 +158,20 @@ router.post('/', authenticate, async (req, res) => {
       cartId = existing.rows[0].id;
     } else {
       // Add new item
-      if (parseInt(quantity) > parseInt(product.stock)) {
+      if (quantity > parseInt(product.stock)) {
         return res.status(400).json({
           success: false,
           error: 'Not enough stock available'
         });
       }
 
-      cartId = 'cart-' + Date.now().toString(36);
+      cartId = 'cart-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
       await db.query(
         `INSERT INTO cart (id, user_id, product_id, quantity, createdat, updatedat)
          VALUES ($1, $2, $3, $4, NOW(), NOW())`,
         [cartId, userId, productId, quantity]
       );
-      newQuantity = parseInt(quantity);
+      newQuantity = quantity;
     }
 
     // Get updated cart total
@@ -152,8 +179,8 @@ router.post('/', authenticate, async (req, res) => {
       `
       SELECT 
         COUNT(*) as total_items,
-        COALESCE(SUM(quantity), 0) as total_quantity,
-        COALESCE(SUM(p.price * quantity), 0) as total_amount
+        COALESCE(SUM(c.quantity), 0) as total_quantity,
+        COALESCE(SUM(p.price * c.quantity), 0) as total_amount
       FROM cart c
       JOIN products p ON c.product_id = p.id
       WHERE c.user_id = $1
@@ -186,11 +213,11 @@ router.post('/', authenticate, async (req, res) => {
 // ============================================================
 // 3. UPDATE CART ITEM QUANTITY (Authenticated)
 // ============================================================
-router.put('/:productId', authenticate, async (req, res) => {
+router.put('/:cartId', authenticate, async (req, res) => {
   try {
     const db = await getClient();
     const userId = req.user.id;
-    const { productId } = req.params;
+    const { cartId } = req.params;
     const { quantity } = req.body;
 
     if (!quantity || parseInt(quantity) < 0) {
@@ -200,10 +227,12 @@ router.put('/:productId', authenticate, async (req, res) => {
       });
     }
 
-    // Check if item exists in cart
+    const newQuantity = parseInt(quantity);
+
+    // Check if item exists in cart by cart ID
     const existing = await db.query(
-      'SELECT id FROM cart WHERE user_id = $1 AND product_id = $2',
-      [userId, productId]
+      'SELECT id, product_id, quantity FROM cart WHERE id = $1 AND user_id = $2',
+      [cartId, userId]
     );
 
     if (existing.rows.length === 0) {
@@ -213,17 +242,35 @@ router.put('/:productId', authenticate, async (req, res) => {
       });
     }
 
-    if (parseInt(quantity) === 0) {
+    const cartItem = existing.rows[0];
+
+    // Check stock for the product
+    const productCheck = await db.query(
+      'SELECT stock FROM products WHERE id = $1',
+      [cartItem.product_id]
+    );
+
+    if (productCheck.rows.length > 0) {
+      const stock = parseInt(productCheck.rows[0].stock);
+      if (newQuantity > stock) {
+        return res.status(400).json({
+          success: false,
+          error: `Only ${stock} items available in stock`
+        });
+      }
+    }
+
+    if (newQuantity === 0) {
       // Remove item if quantity is 0
       await db.query(
-        'DELETE FROM cart WHERE user_id = $1 AND product_id = $2',
-        [userId, productId]
+        'DELETE FROM cart WHERE id = $1 AND user_id = $2',
+        [cartId, userId]
       );
     } else {
       // Update quantity
       await db.query(
-        'UPDATE cart SET quantity = $1, updatedat = NOW() WHERE user_id = $2 AND product_id = $3',
-        [quantity, userId, productId]
+        'UPDATE cart SET quantity = $1, updatedat = NOW() WHERE id = $2 AND user_id = $3',
+        [newQuantity, cartId, userId]
       );
     }
 
@@ -232,8 +279,8 @@ router.put('/:productId', authenticate, async (req, res) => {
       `
       SELECT 
         COUNT(*) as total_items,
-        COALESCE(SUM(quantity), 0) as total_quantity,
-        COALESCE(SUM(p.price * quantity), 0) as total_amount
+        COALESCE(SUM(c.quantity), 0) as total_quantity,
+        COALESCE(SUM(p.price * c.quantity), 0) as total_amount
       FROM cart c
       JOIN products p ON c.product_id = p.id
       WHERE c.user_id = $1
@@ -243,10 +290,10 @@ router.put('/:productId', authenticate, async (req, res) => {
 
     res.json({
       success: true,
-      message: parseInt(quantity) === 0 ? 'Item removed from cart' : 'Cart updated',
+      message: newQuantity === 0 ? 'Item removed from cart' : 'Cart updated',
       data: {
-        productId: productId,
-        quantity: parseInt(quantity),
+        cartId: cartId,
+        quantity: newQuantity,
         totalItems: parseInt(cartSummary.rows[0].total_items) || 0,
         totalQuantity: parseInt(cartSummary.rows[0].total_quantity) || 0,
         totalAmount: parseFloat(cartSummary.rows[0].total_amount) || 0
@@ -265,15 +312,15 @@ router.put('/:productId', authenticate, async (req, res) => {
 // ============================================================
 // 4. REMOVE ITEM FROM CART (Authenticated)
 // ============================================================
-router.delete('/:productId', authenticate, async (req, res) => {
+router.delete('/:cartId', authenticate, async (req, res) => {
   try {
     const db = await getClient();
     const userId = req.user.id;
-    const { productId } = req.params;
+    const { cartId } = req.params;
 
     const result = await db.query(
-      'DELETE FROM cart WHERE user_id = $1 AND product_id = $2 RETURNING id',
-      [userId, productId]
+      'DELETE FROM cart WHERE id = $1 AND user_id = $2 RETURNING id',
+      [cartId, userId]
     );
 
     if (result.rows.length === 0) {
@@ -288,8 +335,8 @@ router.delete('/:productId', authenticate, async (req, res) => {
       `
       SELECT 
         COUNT(*) as total_items,
-        COALESCE(SUM(quantity), 0) as total_quantity,
-        COALESCE(SUM(p.price * quantity), 0) as total_amount
+        COALESCE(SUM(c.quantity), 0) as total_quantity,
+        COALESCE(SUM(p.price * c.quantity), 0) as total_amount
       FROM cart c
       JOIN products p ON c.product_id = p.id
       WHERE c.user_id = $1
@@ -360,8 +407,8 @@ router.get('/summary', authenticate, async (req, res) => {
       `
       SELECT 
         COUNT(*) as total_items,
-        COALESCE(SUM(quantity), 0) as total_quantity,
-        COALESCE(SUM(p.price * quantity), 0) as total_amount
+        COALESCE(SUM(c.quantity), 0) as total_quantity,
+        COALESCE(SUM(p.price * c.quantity), 0) as total_amount
       FROM cart c
       JOIN products p ON c.product_id = p.id
       WHERE c.user_id = $1

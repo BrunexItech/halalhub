@@ -1455,4 +1455,258 @@ router.put('/hajj/bookings/:bookingId/cancel', async (req, res) => {
   }
 });
 
+// ============================================================
+// 23. CREATE ORDER (Client - Ecommerce)
+// ============================================================
+router.post('/orders', async (req, res) => {
+  const db = await getClient();
+
+  try {
+    const userId = req.user.id;
+    const {
+      vendor_id,
+      items,
+      subtotal,
+      delivery_fee = 0,
+      total_amount,
+      delivery_address,
+      delivery_type = 'delivery',
+      special_instructions
+    } = req.body;
+
+    if (!vendor_id || !items || items.length === 0) {
+      return res.status(400).json({ error: 'Vendor ID and items are required' });
+    }
+
+    if (!total_amount || total_amount <= 0) {
+      return res.status(400).json({ error: 'Invalid total amount' });
+    }
+
+    // Check if user has sufficient balance
+    const clientAccount = await virtualAccountService.getUserAccount(userId);
+
+    if (!clientAccount) {
+      return res.status(404).json({ error: 'Virtual account not found' });
+    }
+
+    if (clientAccount.balance < total_amount) {
+      return res.status(400).json({
+        error: `Insufficient balance. Available: KES ${clientAccount.balance.toLocaleString()}, Required: KES ${total_amount.toLocaleString()}`
+      });
+    }
+
+    // Check vendor exists
+    const vendorCheck = await db.query(
+      'SELECT id FROM users WHERE id = $1 AND role = $2 AND vendor_status = $3',
+      [vendor_id, 'vendor', 'approved']
+    );
+
+    if (vendorCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Vendor not found' });
+    }
+
+    // Get vendor's virtual account
+    const vendorAccount = await virtualAccountService.getUserAccount(vendor_id);
+
+    if (!vendorAccount) {
+      return res.status(404).json({ error: 'Vendor virtual account not found' });
+    }
+
+    const orderId = 'ord-' + Date.now().toString(36) + require('crypto').randomBytes(4).toString('hex');
+    const transactionRef = 'PAY-' + Date.now().toString(36).toUpperCase() + require('crypto').randomBytes(4).toString('hex').toUpperCase();
+
+    await db.query('BEGIN');
+
+    try {
+      // Transfer payment from client to vendor
+      await virtualAccountService.processTransfer(
+        userId,
+        clientAccount.account_number,
+        vendorAccount.account_number,
+        total_amount,
+        `Order payment - ${orderId}`
+      );
+
+      // Create order
+      await db.query(`
+        INSERT INTO orders (
+          id, user_id, vendor_id, items, subtotal, delivery_fee,
+          total_amount, status, payment_status, payment_reference,
+          delivery_address, delivery_type, special_instructions, order_date, updatedat
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', 'completed', $8, $9, $10, $11, NOW(), NOW())
+      `, [
+        orderId,
+        userId,
+        vendor_id,
+        JSON.stringify(items),
+        subtotal || 0,
+        delivery_fee || 0,
+        total_amount,
+        transactionRef,
+        delivery_address || null,
+        delivery_type || 'delivery',
+        special_instructions || null
+      ]);
+
+      // Update vendor profile stats
+      await db.query(`
+        UPDATE vendor_profiles
+        SET total_orders = total_orders + 1,
+            total_revenue = total_revenue + $1,
+            updatedat = NOW()
+        WHERE user_id = $2
+      `, [total_amount, vendor_id]);
+
+      // Update product stock
+      for (const item of items) {
+        await db.query(
+          'UPDATE products SET stock = stock - $1, total_sold = total_sold + $1, updatedat = NOW() WHERE id = $2 AND vendor_id = $3',
+          [item.quantity, item.product_id, vendor_id]
+        );
+      }
+
+      // Clear user's cart
+      const productIds = items.map(i => i.product_id);
+      await db.query(
+        'DELETE FROM cart WHERE user_id = $1 AND product_id = ANY($2)',
+        [userId, productIds]
+      );
+
+      // Send notification to vendor
+      const vendorNotifId = 'notif-' + Date.now().toString(36) + require('crypto').randomBytes(4).toString('hex');
+      await db.query(`
+        INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
+        VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      `, [
+        vendorNotifId,
+        vendor_id,
+        'New Order Received',
+        `You have received a new order. Total: KES ${total_amount.toLocaleString()}. Funds have been deposited to your virtual account.`,
+        'order',
+        `/vendor/orders/${orderId}`
+      ]);
+
+      // Send notification to client
+      const clientNotifId = 'notif-' + Date.now().toString(36) + require('crypto').randomBytes(4).toString('hex');
+      await db.query(`
+        INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
+        VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      `, [
+        clientNotifId,
+        userId,
+        'Order Placed Successfully',
+        `Your order has been placed successfully. Total: KES ${total_amount.toLocaleString()}. Payment confirmed.`,
+        'order',
+        `/orders/${orderId}`
+      ]);
+
+      await db.query('COMMIT');
+
+      const updatedClientAccount = await virtualAccountService.getUserAccount(userId);
+
+      res.status(201).json({
+        success: true,
+        message: 'Order placed successfully',
+        orderId: orderId,
+        order_id: orderId,
+        total_amount: total_amount,
+        payment_reference: transactionRef,
+        new_balance: updatedClientAccount?.balance || 0
+      });
+
+    } catch (err) {
+      await db.query('ROLLBACK');
+      throw err;
+    }
+
+  } catch (err) {
+    await db.query('ROLLBACK');
+    console.error('Error creating order:', err.message);
+    res.status(500).json({ error: err.message || 'Failed to create order' });
+  }
+});
+
+// ============================================================
+// 24. GET USER ORDERS (Client)
+// ============================================================
+router.get('/orders', async (req, res) => {
+  try {
+    const db = await getClient();
+    const userId = req.user.id;
+    const { status, limit = 50 } = req.query;
+
+    let query = `
+      SELECT 
+        o.*,
+        u.fullname as vendor_name,
+        u.business_name,
+        u.phone as vendor_phone
+      FROM orders o
+      JOIN users u ON o.vendor_id = u.id
+      WHERE o.user_id = $1
+    `;
+    const params = [userId];
+    let paramIndex = 2;
+
+    if (status && status !== 'all') {
+      query += ` AND o.status = $${paramIndex}`;
+      params.push(status);
+      paramIndex++;
+    }
+
+    query += ` ORDER BY o.order_date DESC LIMIT $${paramIndex}`;
+    params.push(parseInt(limit));
+
+    const result = await db.query(query, params);
+
+    res.json({
+      success: true,
+      orders: result.rows,
+      total: result.rows.length
+    });
+
+  } catch (err) {
+    console.error('Error fetching orders:', err.message);
+    res.status(500).json({ error: 'Failed to fetch orders' });
+  }
+});
+
+// ============================================================
+// 25. GET ORDER BY ID (Client)
+// ============================================================
+router.get('/orders/:orderId', async (req, res) => {
+  try {
+    const db = await getClient();
+    const userId = req.user.id;
+    const orderId = req.params.orderId;
+
+    const result = await db.query(`
+      SELECT 
+        o.*,
+        u.fullname as vendor_name,
+        u.business_name,
+        u.phone as vendor_phone,
+        u.email as vendor_email,
+        vp.location as vendor_location
+      FROM orders o
+      JOIN users u ON o.vendor_id = u.id
+      LEFT JOIN vendor_profiles vp ON u.id = vp.user_id
+      WHERE o.id = $1 AND o.user_id = $2
+    `, [orderId, userId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    res.json({
+      success: true,
+      order: result.rows[0]
+    });
+
+  } catch (err) {
+    console.error('Error fetching order:', err.message);
+    res.status(500).json({ error: 'Failed to fetch order' });
+  }
+});
+
 module.exports = router;
