@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Itqaan",
+    "slug": "itqaan-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/itqaan_icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#032A24"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.itqaan.app"
+    },
+    "android": {
+      "package": "com.itqaan.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/itqaan_icon.png",
+        "backgroundColor": "#032A24"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
