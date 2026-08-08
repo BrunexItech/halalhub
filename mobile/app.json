@@ -6,11 +6,16 @@
     "orientation": "portrait",
     "icon": "./assets/itqaan_icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#032A24"
-    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FAFAF7",
+          "image": "./assets/itqaan_logo.png",
+          "imageWidth": 220
+        }
+      ]
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.itqaan.app"
@@ -24,6 +29,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "5434efb5-603c-4865-b639-5b8256044385"
+      }
     }
   }
 }

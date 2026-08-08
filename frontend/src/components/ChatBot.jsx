@@ -14,7 +14,7 @@ const ChatBot = () => {
   const faqs = [
     {
       keywords: ['hello', 'hi', 'hey', 'assalamu', 'salam'],
-      response: "Assalamu Alaykum! 👋 Welcome to HalalHub. How can I help you today? I'm here to assist with:\n\n• 💳 Wallet & Payments\n• ⚖️ Zakat Calculation\n• 🤲 Sadaqa Donations\n• 🛒 Halal Market Shopping\n• 📋 Account & KYC\n• 🏨 HalalStay Bookings"
+      response: "Assalamu Alaykum! 👋 Welcome to Itqaan. How can I help you today? I'm here to assist with:\n\n• 💳 Wallet & Payments\n• ⚖️ Zakat Calculation\n• 🤲 Sadaqa Donations\n• 🛒 Halal Market Shopping\n• 📋 Account & KYC\n• 🏨 HalalStay Bookings"
     },
     {
       keywords: ['balance', 'wallet', 'money'],
@@ -70,7 +70,7 @@ const ChatBot = () => {
     },
     {
       keywords: ['help', 'support', 'contact', 'assist'],
-      response: "📧 We're here to help!\n\n• Email: support@halalhub.com\n• Phone: +254 700 000 000\n• WhatsApp: +254 700 000 000\n\nOur support team is available 8am-8pm, Monday-Saturday.\n\nJazakAllah Khair for choosing HalalHub! 🤲"
+      response: "📧 We're here to help!\n\n• Email: support@itqaan.com\n• Phone: +254 700 000 000\n• WhatsApp: +254 700 000 000\n\nOur support team is available 8am-8pm, Monday-Saturday.\n\nJazakAllah Khair for choosing Itqaan! 🤲"
     },
     {
       keywords: ['thank', 'thanks', 'jazakallah', 'barakallah'],
@@ -83,7 +83,7 @@ const ChatBot = () => {
     const greeting = {
       id: Date.now(),
       sender: 'bot',
-      text: "Assalamu Alaykum! 👋\n\nWelcome to HalalHub Support. I'm here to help you with:\n\n• 💳 Wallet & Payments\n• ⚖️ Zakat & Sadaqa\n• 🛒 Halal Market\n• 🏨 HalalStay\n• 📋 Account & KYC\n\nAsk me anything about HalalHub!",
+      text: "Assalamu Alaykum! 👋\n\nWelcome to Itqaan Support. I'm here to help you with:\n\n• 💳 Wallet & Payments\n• ⚖️ Zakat & Sadaqa\n• 🛒 Halal Market\n• 🏨 HalalStay\n• 📋 Account & KYC\n\nAsk me anything about HalalHub!",
       timestamp: new Date().toISOString()
     };
     setMessages([greeting]);
@@ -213,7 +213,7 @@ const ChatBot = () => {
             <div className="chatbot-header-info">
               <div className="chatbot-avatar">🤖</div>
               <div>
-                <div className="chatbot-title">HalalHub Support</div>
+                <div className="chatbot-title">Itqaan Support</div>
                 <div className="chatbot-status">
                   <span className="chatbot-dot" />
                   Online
@@ -307,7 +307,7 @@ const ChatBot = () => {
 
           {/* ===== FOOTER ===== */}
           <div className="chatbot-footer">
-            Powered by HalalHub · Assalamu Alaykum
+            Powered by Itqaan · Assalamu Alaykum
           </div>
         </div>
       )}
