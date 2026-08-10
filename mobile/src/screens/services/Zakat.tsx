@@ -9,20 +9,23 @@ import {
   ActivityIndicator,
   RefreshControl,
   Modal,
-  Alert,
+  StatusBar,
+  Dimensions,
+  Platform,
 } from 'react-native';
+import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import { zakatService, walletService } from '../../api/client';
 
+const { width: screenWidth } = Dimensions.get('window');
+
 const Zakat = () => {
   const navigation = useNavigation();
-  const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const [balance, setBalance] = useState(0);
   const [cash, setCash] = useState('');
   const [gold, setGold] = useState('');
   const [silver, setSilver] = useState('');
@@ -56,6 +59,8 @@ const Zakat = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [notes, setNotes] = useState('');
 
+  const [showRecentPayments, setShowRecentPayments] = useState(false);
+
   const categories = [
     { id: 'all', label: 'All Categories' },
     { id: 'mosque', label: 'Mosques & Institutions' },
@@ -74,23 +79,75 @@ const Zakat = () => {
     { label: 'Retiree', values: { cash: 800000, gold: 100000, silver: 20000, business: 0, investments: 100000, receivables: 0, liabilities: 50000 } },
   ];
 
+  // Premium SVG Icons
+  const BackIcon = () => (
+    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M19 12H5M12 19l-7-7 7-7" />
+    </Svg>
+  );
+
+  const ShieldIcon = () => (
+    <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9A44B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <Path d="M9 12l2 2 4-4" />
+    </Svg>
+  );
+
+  const CheckIcon = () => (
+    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3FAF73" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+      <Path d="M22 4L12 14.01l-3-3" />
+    </Svg>
+  );
+
+  const CloseIcon = () => (
+    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M18 6L6 18M6 6l12 12" />
+    </Svg>
+  );
+
+  const SendIcon = () => (
+    <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+    </Svg>
+  );
+
+  const CloseModalIcon = () => (
+    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M18 6L6 18M6 6l12 12" />
+    </Svg>
+  );
+
+  const ChevronDownIcon = () => (
+    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M6 9l6 6 6-6" />
+    </Svg>
+  );
+
+  const ChevronUpIcon = () => (
+    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M18 15l-6-6-6 6" />
+    </Svg>
+  );
+
   useEffect(() => {
-    fetchBalance();
-    fetchRecipients();
-    fetchZakatHistory();
-    fetchSummary();
+    fetchAllData();
   }, []);
 
   useEffect(() => {
     calculateZakat();
   }, [cash, gold, silver, business, investments, receivables, liabilities, nisabType]);
 
-  const fetchBalance = async () => {
+  const fetchAllData = async () => {
     try {
-      const res = await walletService.getBalance();
-      setBalance(res.data.balance || 0);
-    } catch (err) {
-      console.log('Failed to fetch balance:', err);
+      await Promise.all([
+        fetchRecipients(),
+        fetchZakatHistory(),
+        fetchSummary(),
+      ]);
+    } catch (error) {
+      console.log('Error fetching data:', error);
+      setError('Failed to load data. Please refresh.');
     }
   };
 
@@ -157,10 +214,7 @@ const Zakat = () => {
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchBalance();
-    fetchRecipients();
-    fetchZakatHistory();
-    fetchSummary();
+    fetchAllData();
   };
 
   const handleFieldChange = (setter: any) => (text: string) => {
@@ -180,10 +234,6 @@ const Zakat = () => {
   const handlePayZakat = () => {
     if (calculation.zakatDue <= 0) {
       setError('No Zakat due. Please check your calculations.');
-      return;
-    }
-    if (balance < calculation.zakatDue) {
-      setError(`Insufficient balance. Available: KES ${balance.toLocaleString()}`);
       return;
     }
     setSelectedRecipient('');
@@ -211,10 +261,7 @@ const Zakat = () => {
       if (response.data.success) {
         setSuccess(`Zakat of KES ${calculation.zakatDue.toLocaleString()} paid successfully!`);
         setShowConfirmModal(false);
-        await fetchBalance();
-        await fetchZakatHistory();
-        await fetchSummary();
-        await fetchRecipients();
+        await fetchAllData();
         setTimeout(() => setSuccess(''), 5000);
       }
     } catch (err: any) {
@@ -239,9 +286,9 @@ const Zakat = () => {
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, { bg: string; text: string }> = {
-      completed: { bg: '#D1FAE5', text: '#3FAF73' },
-      pending: { bg: '#FEF3C7', text: '#D97706' },
-      failed: { bg: '#FEE2E2', text: '#DC2626' },
+      completed: { bg: 'rgba(63, 175, 115, 0.08)', text: '#3FAF73' },
+      pending: { bg: 'rgba(217, 119, 6, 0.08)', text: '#D97706' },
+      failed: { bg: 'rgba(220, 38, 38, 0.08)', text: '#DC2626' },
     };
     return styles[status] || styles.completed;
   };
@@ -265,19 +312,71 @@ const Zakat = () => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
+      <StatusBar barStyle="light-content" backgroundColor="#032A24" translucent={false} />
+      
+      {/* ===== EMERALD HEADER ===== */}
+      <View style={{
+        backgroundColor: '#032A24',
+        paddingTop: 12,
+        paddingBottom: 16,
+        paddingHorizontal: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(201, 164, 75, 0.08)',
+      }}>
+        <View style={{ 
+          flexDirection: 'row', 
+          alignItems: 'center',
+          maxWidth: 600, 
+          width: '100%', 
+          alignSelf: 'center',
+        }}>
+          <TouchableOpacity 
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}
+            style={{ padding: 4, marginRight: 12 }}
+          >
+            <BackIcon />
+          </TouchableOpacity>
+          <Text style={{ 
+            color: '#FFFFFF', 
+            fontSize: 16, 
+            fontWeight: '600',
+            letterSpacing: -0.2,
+          }}>
+            Zakat
+          </Text>
+          <View style={{ flex: 1 }} />
+          <View style={{
+            borderWidth: 1,
+            borderColor: 'rgba(201, 164, 75, 0.15)',
+            paddingHorizontal: 8,
+            paddingVertical: 2,
+            borderRadius: 999,
+          }}>
+            <Text style={{ color: '#C9A44B', fontSize: 7, fontWeight: '500', letterSpacing: 1, textTransform: 'uppercase' }}>
+              Third Pillar
+            </Text>
+          </View>
+        </View>
+      </View>
+
       <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+        contentContainerStyle={{ 
+          paddingTop: 0, 
+          paddingBottom: 32,
+        }}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#C9A44B" />}
       >
-        <View style={{ maxWidth: 800, width: '100%', alignSelf: 'center' }}>
-          {/* Hero Section */}
+        <View style={{ maxWidth: 600, width: '100%', alignSelf: 'center', paddingHorizontal: 16 }}>
+          
+          {/* ===== HERO CARD - Always visible, no loading, no balance ===== */}
           <View style={{
             backgroundColor: '#0B342B',
             borderRadius: 16,
             padding: 20,
-            marginBottom: 16,
-            overflow: 'hidden',
+            marginTop: 16,
+            marginBottom: 20,
             borderWidth: 1,
             borderColor: 'rgba(201, 164, 75, 0.15)',
             shadowColor: '#000',
@@ -285,49 +384,54 @@ const Zakat = () => {
             shadowOpacity: 0.1,
             shadowRadius: 8,
             elevation: 4,
+            overflow: 'hidden',
           }}>
-            <View style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, backgroundColor: 'rgba(201, 164, 75, 0.05)', borderRadius: 999 }} />
-            <View style={{ position: 'absolute', bottom: -30, left: -30, width: 80, height: 80, backgroundColor: 'rgba(201, 164, 75, 0.05)', borderRadius: 999 }} />
+            <View style={{ position: 'absolute', top: -80, right: -80, width: 160, height: 160, backgroundColor: 'rgba(201, 164, 75, 0.05)', borderRadius: 999 }} />
+            <View style={{ position: 'absolute', bottom: -60, left: -60, width: 120, height: 120, backgroundColor: 'rgba(201, 164, 75, 0.05)', borderRadius: 999 }} />
 
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
-              <View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <Text style={{ color: 'rgba(183, 192, 186, 0.7)', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1 }}>
-                    Zakat
+              <View style={{ flex: 1 }}>
+                <View style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  alignSelf: 'flex-start',
+                  backgroundColor: 'rgba(201, 164, 75, 0.1)',
+                  paddingHorizontal: 10,
+                  paddingVertical: 3,
+                  borderRadius: 999,
+                  borderWidth: 1,
+                  borderColor: 'rgba(201, 164, 75, 0.2)',
+                  marginBottom: 8,
+                  gap: 6,
+                }}>
+                  <ShieldIcon />
+                  <Text style={{ color: '#C9A44B', fontSize: 8, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 1 }}>
+                    Third Pillar of Islam
                   </Text>
-                  <View style={{ width: 1, height: 12, backgroundColor: 'rgba(201, 164, 75, 0.2)' }} />
-                  <Text style={{ color: '#C9A44B', fontSize: 10, fontWeight: '500' }}>Third Pillar of Islam</Text>
                 </View>
-                <Text style={{ color: '#F7F6F1', fontSize: 22, fontWeight: '700' }}>Calculate & Pay Your Zakat</Text>
-                <Text style={{ color: 'rgba(183, 192, 186, 0.7)', fontSize: 14, marginTop: 4, maxWidth: 400 }}>
+
+                <Text style={{ color: '#FFFFFF', fontSize: 20, fontWeight: '700', letterSpacing: -0.3 }}>
+                  Calculate & Pay Your Zakat
+                </Text>
+                <Text style={{ color: 'rgba(183, 192, 186, 0.7)', fontSize: 13, marginTop: 4, maxWidth: 400, lineHeight: 20 }}>
                   Fulfill your Zakat obligation with confidence. Calculate accurately and distribute through verified institutions.
                 </Text>
               </View>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                <View style={{
-                  backgroundColor: 'rgba(255,255,255,0.1)',
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
-                  borderRadius: 999,
-                  borderWidth: 1,
-                  borderColor: 'rgba(201, 164, 75, 0.15)',
-                }}>
-                  <Text style={{ color: '#C9A44B', fontSize: 10, fontWeight: '600' }}>1446 AH</Text>
-                </View>
-                <View style={{
-                  backgroundColor: 'rgba(255,255,255,0.1)',
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
-                  borderRadius: 999,
-                  borderWidth: 1,
-                  borderColor: 'rgba(201, 164, 75, 0.15)',
-                }}>
-                  <Text style={{ color: '#F7F6F1', fontSize: 10, fontWeight: '600' }}>Balance: {formatCurrency(balance)}</Text>
-                </View>
+
+              <View style={{
+                backgroundColor: 'rgba(255,255,255,0.06)',
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                borderRadius: 999,
+                borderWidth: 1,
+                borderColor: 'rgba(201, 164, 75, 0.1)',
+              }}>
+                <Text style={{ color: '#C9A44B', fontSize: 10, fontWeight: '500' }}>1446 AH</Text>
               </View>
             </View>
           </View>
 
+          {/* Error */}
           {error ? (
             <View style={{
               backgroundColor: '#FEF2F2',
@@ -335,17 +439,41 @@ const Zakat = () => {
               borderColor: '#FECACA',
               borderRadius: 12,
               padding: 12,
-              marginBottom: 12,
+              marginBottom: 16,
               flexDirection: 'row',
               justifyContent: 'space-between',
               alignItems: 'center',
             }}>
-              <Text style={{ color: '#DC2626', fontSize: 13 }}>{error}</Text>
+              <Text style={{ color: '#DC2626', fontSize: 12, flex: 1 }}>{error}</Text>
               <TouchableOpacity
-                style={{ backgroundColor: '#DC2626', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}
+                style={{ backgroundColor: '#DC2626', paddingHorizontal: 14, paddingVertical: 5, borderRadius: 8 }}
                 onPress={() => setError('')}
+                activeOpacity={0.7}
               >
-                <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '600' }}>Dismiss</Text>
+                <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600' }}>Dismiss</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+
+          {/* Success */}
+          {success ? (
+            <View style={{
+              backgroundColor: '#0B342B',
+              borderRadius: 12,
+              padding: 14,
+              marginBottom: 16,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              borderWidth: 1,
+              borderColor: 'rgba(201, 164, 75, 0.15)',
+            }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <CheckIcon />
+                <Text style={{ color: '#F7F6F1', fontSize: 13, fontWeight: '500', flex: 1 }}>{success}</Text>
+              </View>
+              <TouchableOpacity onPress={() => setSuccess('')}>
+                <CloseIcon />
               </TouchableOpacity>
             </View>
           ) : null}
@@ -358,39 +486,30 @@ const Zakat = () => {
                 borderRadius: 12,
                 padding: 16,
                 borderWidth: 1,
-                borderColor: 'rgba(11, 52, 43, 0.08)',
-                shadowColor: '#000',
+                borderColor: 'rgba(3, 42, 36, 0.06)',
+                shadowColor: '#032A24',
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.04,
                 shadowRadius: 4,
                 elevation: 1,
               }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '700' }}>Zakat Calculator</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <View style={{
-                      backgroundColor: 'rgba(11, 52, 43, 0.1)',
-                      paddingHorizontal: 8,
-                      paddingVertical: 2,
-                      borderRadius: 999,
-                    }}>
-                      <Text style={{ color: '#0B342B', fontSize: 10, fontWeight: '600' }}>1446 AH</Text>
-                    </View>
-                    <View style={{
-                      borderWidth: 1,
-                      borderColor: 'rgba(11, 52, 43, 0.12)',
-                      borderRadius: 8,
-                      paddingHorizontal: 8,
-                      paddingVertical: 4,
-                      backgroundColor: '#FFFFFF',
-                    }}>
-                      <TextInput
-                        style={{ color: '#1F2937', fontSize: 10, padding: 0 }}
-                        value={nisabType}
-                        onChangeText={(text) => setNisabType(text)}
-                        placeholder="silver"
-                      />
-                    </View>
+                  <Text style={{ color: '#032A24', fontSize: 15, fontWeight: '600' }}>Zakat Calculator</Text>
+                  <View style={{
+                    borderWidth: 1,
+                    borderColor: 'rgba(3, 42, 36, 0.08)',
+                    borderRadius: 8,
+                    paddingHorizontal: 8,
+                    paddingVertical: 4,
+                    backgroundColor: '#FAFAF7',
+                  }}>
+                    <TextInput
+                      style={{ color: '#032A24', fontSize: 10, padding: 0, minWidth: 50 }}
+                      value={nisabType}
+                      onChangeText={(text) => setNisabType(text)}
+                      placeholder="silver"
+                      placeholderTextColor="rgba(107, 114, 128, 0.5)"
+                    />
                   </View>
                 </View>
 
@@ -401,14 +520,17 @@ const Zakat = () => {
                     <TouchableOpacity
                       key={index}
                       style={{
-                        backgroundColor: '#F3F4F6',
+                        backgroundColor: '#FAFAF7',
                         paddingHorizontal: 10,
                         paddingVertical: 4,
                         borderRadius: 999,
+                        borderWidth: 1,
+                        borderColor: 'rgba(3, 42, 36, 0.04)',
                       }}
                       onPress={() => applyPreset(preset)}
+                      activeOpacity={0.7}
                     >
-                      <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '500' }}>{preset.label}</Text>
+                      <Text style={{ color: '#6B7280', fontSize: 9, fontWeight: '500' }}>{preset.label}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -425,23 +547,24 @@ const Zakat = () => {
                     { label: 'Liabilities', value: liabilities, setter: setLiabilities, key: 'liabilities' },
                   ].map((field) => (
                     <View key={field.key} style={{ flex: 1, minWidth: 140 }}>
-                      <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+                      <Text style={{ color: '#6B7280', fontSize: 9, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
                         {field.label}
                       </Text>
                       <TextInput
                         style={{
                           backgroundColor: '#FAFAF7',
                           borderWidth: 1,
-                          borderColor: 'rgba(11, 52, 43, 0.12)',
+                          borderColor: 'rgba(3, 42, 36, 0.06)',
                           borderRadius: 8,
                           paddingHorizontal: 12,
                           paddingVertical: 8,
-                          color: '#1F2937',
-                          fontSize: 14,
+                          color: '#032A24',
+                          fontSize: 13,
                         }}
                         value={field.value}
                         onChangeText={handleFieldChange(field.setter)}
                         placeholder="0"
+                        placeholderTextColor="rgba(107, 114, 128, 0.4)"
                         keyboardType="numeric"
                       />
                     </View>
@@ -453,40 +576,40 @@ const Zakat = () => {
                   marginTop: 14,
                   padding: 14,
                   backgroundColor: '#FAFAF7',
-                  borderRadius: 12,
+                  borderRadius: 10,
                   borderWidth: 1,
-                  borderColor: 'rgba(11, 52, 43, 0.06)',
+                  borderColor: 'rgba(3, 42, 36, 0.04)',
                 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 }}>
-                    <Text style={{ color: '#6B7280', fontSize: 12 }}>Total Assets</Text>
-                    <Text style={{ color: '#1F2937', fontSize: 12, fontWeight: '600' }}>{formatCurrency(totalAssets)}</Text>
+                    <Text style={{ color: '#6B7280', fontSize: 11 }}>Total Assets</Text>
+                    <Text style={{ color: '#032A24', fontSize: 11, fontWeight: '600' }}>{formatCurrency(totalAssets)}</Text>
                   </View>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 }}>
-                    <Text style={{ color: '#6B7280', fontSize: 12 }}>Total Liabilities</Text>
-                    <Text style={{ color: '#1F2937', fontSize: 12, fontWeight: '600' }}>{formatCurrency(totalLiabilities)}</Text>
+                    <Text style={{ color: '#6B7280', fontSize: 11 }}>Total Liabilities</Text>
+                    <Text style={{ color: '#032A24', fontSize: 11, fontWeight: '600' }}>{formatCurrency(totalLiabilities)}</Text>
                   </View>
-                  <View style={{ borderTopWidth: 1, borderTopColor: 'rgba(11, 52, 43, 0.08)', paddingTop: 6, marginTop: 4 }}>
+                  <View style={{ borderTopWidth: 1, borderTopColor: 'rgba(3, 42, 36, 0.06)', paddingTop: 6, marginTop: 4 }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                      <Text style={{ color: '#1F2937', fontSize: 12, fontWeight: '600' }}>Net Zakatable Assets</Text>
-                      <Text style={{ color: '#0B342B', fontSize: 12, fontWeight: '700' }}>{formatCurrency(calculation.netAssets || 0)}</Text>
+                      <Text style={{ color: '#032A24', fontSize: 11, fontWeight: '600' }}>Net Zakatable Assets</Text>
+                      <Text style={{ color: '#032A24', fontSize: 11, fontWeight: '700' }}>{formatCurrency(calculation.netAssets || 0)}</Text>
                     </View>
                   </View>
-                  <View style={{ borderTopWidth: 1, borderTopColor: 'rgba(11, 52, 43, 0.08)', paddingTop: 8, marginTop: 6, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <View style={{ borderTopWidth: 1, borderTopColor: 'rgba(3, 42, 36, 0.06)', paddingTop: 8, marginTop: 6, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <View>
-                      <Text style={{ color: '#6B7280', fontSize: 10 }}>Zakat Due (2.5%)</Text>
-                      <Text style={{ color: '#0B342B', fontSize: 20, fontWeight: '700' }}>{formatCurrency(calculation.zakatDue || 0)}</Text>
+                      <Text style={{ color: '#6B7280', fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.5 }}>Zakat Due (2.5%)</Text>
+                      <Text style={{ color: '#032A24', fontSize: 20, fontWeight: '700' }}>{formatCurrency(calculation.zakatDue || 0)}</Text>
                     </View>
                     <View style={{
-                      backgroundColor: calculation.isObligatory ? 'rgba(63, 175, 115, 0.1)' : 'rgba(201, 164, 75, 0.1)',
+                      backgroundColor: calculation.isObligatory ? 'rgba(63, 175, 115, 0.08)' : 'rgba(201, 164, 75, 0.08)',
                       paddingHorizontal: 10,
                       paddingVertical: 4,
                       borderRadius: 999,
                       borderWidth: 1,
-                      borderColor: calculation.isObligatory ? 'rgba(63, 175, 115, 0.2)' : 'rgba(201, 164, 75, 0.2)',
+                      borderColor: calculation.isObligatory ? 'rgba(63, 175, 115, 0.1)' : 'rgba(201, 164, 75, 0.1)',
                     }}>
                       <Text style={{
                         color: calculation.isObligatory ? '#3FAF73' : '#C9A44B',
-                        fontSize: 10,
+                        fontSize: 9,
                         fontWeight: '600',
                       }}>
                         {calculation.isObligatory ? 'Nisab Exceeded' : 'Below Nisab'}
@@ -497,25 +620,32 @@ const Zakat = () => {
 
                 <TouchableOpacity
                   style={{
-                    backgroundColor: '#0B342B',
+                    backgroundColor: '#032A24',
                     paddingVertical: 12,
                     borderRadius: 8,
                     marginTop: 14,
                     alignItems: 'center',
                     opacity: calculation.zakatDue <= 0 || processing ? 0.6 : 1,
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    gap: 8,
                   }}
                   onPress={handlePayZakat}
                   disabled={calculation.zakatDue <= 0 || processing}
+                  activeOpacity={0.7}
                 >
                   {processing ? (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <>
                       <ActivityIndicator size="small" color="#FFFFFF" />
-                      <Text style={{ color: '#F7F6F1', fontSize: 15, fontWeight: '600' }}>Processing...</Text>
-                    </View>
+                      <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Processing...</Text>
+                    </>
                   ) : (
-                    <Text style={{ color: '#F7F6F1', fontSize: 15, fontWeight: '600' }}>
-                      Pay Zakat ({formatCurrency(calculation.zakatDue || 0)})
-                    </Text>
+                    <>
+                      <SendIcon />
+                      <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>
+                        Pay Zakat ({formatCurrency(calculation.zakatDue || 0)})
+                      </Text>
+                    </>
                   )}
                 </TouchableOpacity>
               </View>
@@ -529,104 +659,116 @@ const Zakat = () => {
                 borderRadius: 12,
                 padding: 14,
                 borderWidth: 1,
-                borderColor: 'rgba(11, 52, 43, 0.08)',
-                shadowColor: '#000',
+                borderColor: 'rgba(3, 42, 36, 0.06)',
+                shadowColor: '#032A24',
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.04,
                 shadowRadius: 4,
                 elevation: 1,
               }}>
-                <Text style={{ color: '#1F2937', fontSize: 15, fontWeight: '700', marginBottom: 10 }}>Your Zakat Summary</Text>
+                <Text style={{ color: '#032A24', fontSize: 14, fontWeight: '600', marginBottom: 10 }}>Your Zakat Summary</Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                   {[
                     { label: 'Total Payments', value: summary.totalPayments || 0 },
                     { label: 'Total Given', value: formatCurrency(summary.totalAmount || 0) },
                     { label: 'Recipients', value: summary.uniqueRecipients || 0 },
-                    { label: 'Wallet Balance', value: formatCurrency(balance), color: '#3FAF73' },
                   ].map((item, index) => (
                     <View key={index} style={{
                       flex: 1,
-                      minWidth: 80,
+                      minWidth: 70,
                       backgroundColor: '#FAFAF7',
                       borderRadius: 8,
                       padding: 10,
                       alignItems: 'center',
                     }}>
                       <Text style={{
-                        color: item.color || '#0B342B',
-                        fontSize: 16,
+                        color: '#032A24',
+                        fontSize: 15,
                         fontWeight: '700',
                       }}>
                         {item.value}
                       </Text>
-                      <Text style={{ color: '#6B7280', fontSize: 10 }}>{item.label}</Text>
+                      <Text style={{ color: '#6B7280', fontSize: 9 }}>{item.label}</Text>
                     </View>
                   ))}
                 </View>
               </View>
 
-              {/* Recent Payments */}
+              {/* Recent Payments - Collapsible */}
               <View style={{
                 backgroundColor: '#FFFFFF',
                 borderRadius: 12,
                 padding: 14,
                 borderWidth: 1,
-                borderColor: 'rgba(11, 52, 43, 0.08)',
-                shadowColor: '#000',
+                borderColor: 'rgba(3, 42, 36, 0.06)',
+                shadowColor: '#032A24',
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.04,
                 shadowRadius: 4,
                 elevation: 1,
               }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <Text style={{ color: '#1F2937', fontSize: 15, fontWeight: '700' }}>Recent Payments</Text>
-                  <TouchableOpacity onPress={fetchZakatHistory}>
-                    <Text style={{ color: '#6B7280', fontSize: 10 }}>Refresh</Text>
-                  </TouchableOpacity>
-                </View>
-
-                {loadingHistory ? (
-                  <View style={{ alignItems: 'center', paddingVertical: 16 }}>
-                    <ActivityIndicator size="small" color="#C9A44B" />
+                <TouchableOpacity
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                  onPress={() => setShowRecentPayments(!showRecentPayments)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{ color: '#032A24', fontSize: 14, fontWeight: '600' }}>Recent Payments</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={{ color: '#6B7280', fontSize: 10 }}>
+                      {showRecentPayments ? 'Hide' : 'Show'}
+                    </Text>
+                    {showRecentPayments ? <ChevronUpIcon /> : <ChevronDownIcon />}
                   </View>
-                ) : zakatHistory.length === 0 ? (
-                  <Text style={{ color: '#6B7280', fontSize: 12, textAlign: 'center', paddingVertical: 12 }}>
-                    No Zakat payments yet
-                  </Text>
-                ) : (
-                  zakatHistory.slice(0, 5).map((item) => {
-                    const badge = getStatusBadge(item.status);
-                    return (
-                      <View key={item.id} style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        paddingVertical: 8,
-                        borderBottomWidth: 1,
-                        borderBottomColor: '#F4F5F1',
-                      }}>
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ color: '#1F2937', fontSize: 12, fontWeight: '500' }} numberOfLines={1}>
-                            {item.recipient_name || 'Zakat'}
-                          </Text>
-                          <Text style={{ color: '#6B7280', fontSize: 10 }}>{formatDate(item.paid_at || item.createdat)}</Text>
-                        </View>
-                        <View style={{ alignItems: 'flex-end' }}>
-                          <Text style={{ color: '#0B342B', fontSize: 12, fontWeight: '700' }}>{formatCurrency(item.amount)}</Text>
-                          <View style={{
-                            backgroundColor: badge.bg,
-                            paddingHorizontal: 6,
-                            paddingVertical: 1,
-                            borderRadius: 999,
-                            borderWidth: 1,
-                            borderColor: 'rgba(0,0,0,0.05)',
-                          }}>
-                            <Text style={{ color: badge.text, fontSize: 10, fontWeight: '500' }}>{getStatusLabel(item.status)}</Text>
-                          </View>
-                        </View>
+                </TouchableOpacity>
+
+                {showRecentPayments && (
+                  <View style={{ marginTop: 10 }}>
+                    {loadingHistory ? (
+                      <View style={{ alignItems: 'center', paddingVertical: 16 }}>
+                        <ActivityIndicator size="small" color="#C9A44B" />
                       </View>
-                    );
-                  })
+                    ) : zakatHistory.length === 0 ? (
+                      <Text style={{ color: '#9CA3AF', fontSize: 12, textAlign: 'center', paddingVertical: 12 }}>
+                        No Zakat payments yet
+                      </Text>
+                    ) : (
+                      zakatHistory.slice(0, 5).map((item) => {
+                        const badge = getStatusBadge(item.status);
+                        return (
+                          <View key={item.id} style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            paddingVertical: 8,
+                            borderBottomWidth: 1,
+                            borderBottomColor: 'rgba(3, 42, 36, 0.03)',
+                          }}>
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ color: '#032A24', fontSize: 11, fontWeight: '500' }} numberOfLines={1}>
+                                {item.recipient_name || 'Zakat'}
+                              </Text>
+                              <Text style={{ color: '#9CA3AF', fontSize: 9 }}>{formatDate(item.paid_at || item.createdat)}</Text>
+                            </View>
+                            <View style={{ alignItems: 'flex-end' }}>
+                              <Text style={{ color: '#032A24', fontSize: 11, fontWeight: '700' }}>{formatCurrency(item.amount)}</Text>
+                              <View style={{
+                                backgroundColor: badge.bg,
+                                paddingHorizontal: 6,
+                                paddingVertical: 1,
+                                borderRadius: 8,
+                              }}>
+                                <Text style={{ color: badge.text, fontSize: 8, fontWeight: '500' }}>{getStatusLabel(item.status)}</Text>
+                              </View>
+                            </View>
+                          </View>
+                        );
+                      })
+                    )}
+                  </View>
                 )}
               </View>
             </View>
@@ -634,7 +776,7 @@ const Zakat = () => {
         </View>
       </ScrollView>
 
-      {/* Confirmation Modal */}
+      {/* ===== CONFIRMATION MODAL ===== */}
       <Modal visible={showConfirmModal} transparent animationType="fade">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
           <View style={{
@@ -644,50 +786,33 @@ const Zakat = () => {
             width: '100%',
             maxWidth: 500,
             maxHeight: '90%',
+            shadowColor: '#032A24',
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.15,
+            shadowRadius: 24,
+            elevation: 8,
           }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ color: '#1F2937', fontSize: 18, fontWeight: '700' }}>Confirm Zakat Payment</Text>
-              <TouchableOpacity onPress={() => setShowConfirmModal(false)}>
-                <Text style={{ color: '#6B7280', fontSize: 20 }}>✕</Text>
+              <Text style={{ color: '#032A24', fontSize: 18, fontWeight: '700' }}>Confirm Zakat Payment</Text>
+              <TouchableOpacity onPress={() => setShowConfirmModal(false)} activeOpacity={0.7}>
+                <CloseModalIcon />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={{
-                backgroundColor: '#FAFAF7',
-                borderRadius: 8,
-                padding: 12,
+                backgroundColor: 'rgba(3, 42, 36, 0.04)',
+                borderRadius: 10,
+                padding: 14,
                 alignItems: 'center',
                 marginBottom: 12,
               }}>
-                <Text style={{ color: '#6B7280', fontSize: 10 }}>Amount</Text>
-                <Text style={{ color: '#0B342B', fontSize: 24, fontWeight: '700' }}>{formatCurrency(calculation.zakatDue || 0)}</Text>
-              </View>
-
-              <View style={{
-                backgroundColor: '#FAFAF7',
-                borderRadius: 8,
-                padding: 12,
-                marginBottom: 12,
-              }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 12 }}>Wallet Balance</Text>
-                  <Text style={{
-                    color: balance >= calculation.zakatDue ? '#3FAF73' : '#DC2626',
-                    fontSize: 12,
-                    fontWeight: '600',
-                  }}>
-                    {formatCurrency(balance)}
-                  </Text>
-                </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ color: '#6B7280', fontSize: 12 }}>Balance After</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 12, fontWeight: '600' }}>{formatCurrency(balance - calculation.zakatDue)}</Text>
-                </View>
+                <Text style={{ color: '#6B7280', fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>Amount</Text>
+                <Text style={{ color: '#032A24', fontSize: 24, fontWeight: '700' }}>{formatCurrency(calculation.zakatDue || 0)}</Text>
               </View>
 
               <View style={{ marginBottom: 12 }}>
-                <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
+                <Text style={{ color: '#6B7280', fontSize: 9, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
                   Select Recipient Category
                 </Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
@@ -698,13 +823,16 @@ const Zakat = () => {
                         paddingHorizontal: 10,
                         paddingVertical: 4,
                         borderRadius: 999,
-                        backgroundColor: selectedCategory === cat.id ? '#0B342B' : '#F3F4F6',
+                        backgroundColor: selectedCategory === cat.id ? '#032A24' : '#FAFAF7',
+                        borderWidth: 1,
+                        borderColor: selectedCategory === cat.id ? '#032A24' : 'rgba(3, 42, 36, 0.06)',
                       }}
                       onPress={() => setSelectedCategory(cat.id)}
+                      activeOpacity={0.7}
                     >
                       <Text style={{
-                        color: selectedCategory === cat.id ? '#F7F6F1' : '#6B7280',
-                        fontSize: 10,
+                        color: selectedCategory === cat.id ? '#FFFFFF' : '#6B7280',
+                        fontSize: 9,
                         fontWeight: selectedCategory === cat.id ? '600' : '500',
                       }}>
                         {cat.label}
@@ -713,7 +841,7 @@ const Zakat = () => {
                   ))}
                 </View>
 
-                <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
+                <Text style={{ color: '#6B7280', fontSize: 9, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
                   Select Recipient Organization
                 </Text>
 
@@ -722,7 +850,7 @@ const Zakat = () => {
                     <ActivityIndicator size="small" color="#C9A44B" />
                   </View>
                 ) : filteredRecipients.length === 0 ? (
-                  <Text style={{ color: '#6B7280', fontSize: 12, textAlign: 'center', paddingVertical: 12 }}>
+                  <Text style={{ color: '#9CA3AF', fontSize: 12, textAlign: 'center', paddingVertical: 12 }}>
                     No recipients available in this category
                   </Text>
                 ) : (
@@ -733,34 +861,33 @@ const Zakat = () => {
                         padding: 10,
                         borderRadius: 8,
                         borderWidth: 2,
-                        borderColor: selectedRecipient === recipient.id ? '#0B342B' : 'rgba(11, 52, 43, 0.08)',
-                        backgroundColor: selectedRecipient === recipient.id ? '#FAFAF7' : 'transparent',
+                        borderColor: selectedRecipient === recipient.id ? '#032A24' : 'rgba(3, 42, 36, 0.06)',
+                        backgroundColor: selectedRecipient === recipient.id ? 'rgba(3, 42, 36, 0.02)' : 'transparent',
                         marginBottom: 6,
                       }}
                       onPress={() => setSelectedRecipient(recipient.id)}
+                      activeOpacity={0.7}
                     >
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                         <View style={{ flex: 1 }}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                            <Text style={{ color: '#1F2937', fontSize: 13, fontWeight: '600' }}>{recipient.name}</Text>
+                            <Text style={{ color: '#032A24', fontSize: 12, fontWeight: '600' }}>{recipient.name}</Text>
                             <View style={{
-                              backgroundColor: 'rgba(63, 175, 115, 0.1)',
-                              paddingHorizontal: 6,
+                              backgroundColor: 'rgba(63, 175, 115, 0.06)',
+                              paddingHorizontal: 4,
                               paddingVertical: 1,
-                              borderRadius: 999,
-                              borderWidth: 1,
-                              borderColor: 'rgba(63, 175, 115, 0.2)',
+                              borderRadius: 4,
                             }}>
-                              <Text style={{ color: '#3FAF73', fontSize: 9, fontWeight: '500' }}>Verified</Text>
+                              <Text style={{ color: '#3FAF73', fontSize: 8, fontWeight: '500' }}>Verified</Text>
                             </View>
                           </View>
-                          <Text style={{ color: '#6B7280', fontSize: 11 }} numberOfLines={1}>
+                          <Text style={{ color: '#6B7280', fontSize: 10 }} numberOfLines={1}>
                             {recipient.description || 'Organization'}
                           </Text>
-                          <Text style={{ color: '#6B7280', fontSize: 11 }}>{recipient.location || 'N/A'}</Text>
+                          <Text style={{ color: '#9CA3AF', fontSize: 10 }}>{recipient.location || 'N/A'}</Text>
                         </View>
                         {selectedRecipient === recipient.id && (
-                          <Text style={{ color: '#0B342B', fontSize: 16, fontWeight: '700' }}>✓</Text>
+                          <Text style={{ color: '#032A24', fontSize: 16, fontWeight: '700' }}>✓</Text>
                         )}
                       </View>
                     </TouchableOpacity>
@@ -769,40 +896,41 @@ const Zakat = () => {
               </View>
 
               <View style={{ marginBottom: 12 }}>
-                <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+                <Text style={{ color: '#6B7280', fontSize: 9, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
                   Notes (Optional)
                 </Text>
                 <TextInput
                   style={{
                     backgroundColor: '#FAFAF7',
                     borderWidth: 1,
-                    borderColor: 'rgba(11, 52, 43, 0.12)',
+                    borderColor: 'rgba(3, 42, 36, 0.06)',
                     borderRadius: 8,
                     paddingHorizontal: 12,
                     paddingVertical: 8,
-                    color: '#1F2937',
-                    fontSize: 14,
+                    color: '#032A24',
+                    fontSize: 13,
                     minHeight: 50,
                     textAlignVertical: 'top',
                   }}
                   value={notes}
                   onChangeText={setNotes}
                   placeholder="Add any notes..."
+                  placeholderTextColor="rgba(107, 114, 128, 0.4)"
                   multiline
                 />
               </View>
 
-              {error ? <Text style={{ color: '#DC2626', fontSize: 12, marginBottom: 8 }}>{error}</Text> : null}
+              {error ? <Text style={{ color: '#DC2626', fontSize: 11, marginBottom: 8 }}>{error}</Text> : null}
 
               <View style={{
-                backgroundColor: 'rgba(63, 175, 115, 0.05)',
+                backgroundColor: 'rgba(201, 164, 75, 0.04)',
                 padding: 10,
                 borderRadius: 8,
                 borderWidth: 1,
-                borderColor: 'rgba(63, 175, 115, 0.1)',
+                borderColor: 'rgba(201, 164, 75, 0.08)',
                 marginBottom: 16,
               }}>
-                <Text style={{ color: '#0B342B', fontSize: 12, textAlign: 'center', lineHeight: 18 }}>
+                <Text style={{ color: '#032A24', fontSize: 11, textAlign: 'center', lineHeight: 18 }}>
                   "The example of those who spend their wealth in the way of Allah is like a seed of grain which grows seven spikes..." — Quran 2:261
                 </Text>
               </View>
@@ -811,19 +939,22 @@ const Zakat = () => {
                 <TouchableOpacity
                   style={{
                     flex: 1,
-                    backgroundColor: '#F4F5F1',
+                    backgroundColor: '#FAFAF7',
                     paddingVertical: 10,
                     borderRadius: 8,
                     alignItems: 'center',
+                    borderWidth: 1,
+                    borderColor: 'rgba(3, 42, 36, 0.06)',
                   }}
                   onPress={() => setShowConfirmModal(false)}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#6B7280', fontSize: 15, fontWeight: '500' }}>Cancel</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '500' }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={{
                     flex: 2,
-                    backgroundColor: '#0B342B',
+                    backgroundColor: '#032A24',
                     paddingVertical: 10,
                     borderRadius: 8,
                     alignItems: 'center',
@@ -831,14 +962,15 @@ const Zakat = () => {
                   }}
                   onPress={confirmPayment}
                   disabled={processing || !selectedRecipient}
+                  activeOpacity={0.7}
                 >
                   {processing ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <ActivityIndicator size="small" color="#FFFFFF" />
-                      <Text style={{ color: '#F7F6F1', fontSize: 15, fontWeight: '600' }}>Processing...</Text>
+                      <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Processing...</Text>
                     </View>
                   ) : (
-                    <Text style={{ color: '#F7F6F1', fontSize: 15, fontWeight: '600' }}>Confirm Payment</Text>
+                    <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Confirm Payment</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -846,36 +978,6 @@ const Zakat = () => {
           </View>
         </View>
       </Modal>
-
-      {/* Success Toast */}
-      {success ? (
-        <View style={{
-          position: 'absolute',
-          top: 60,
-          right: 16,
-          left: 16,
-          backgroundColor: '#0B342B',
-          paddingHorizontal: 16,
-          paddingVertical: 12,
-          borderRadius: 12,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          shadowColor: '#0B342B',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          elevation: 4,
-        }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text style={{ color: '#C9A44B', fontSize: 16 }}>✓</Text>
-            <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '500', flex: 1 }}>{success}</Text>
-          </View>
-          <TouchableOpacity onPress={() => setSuccess('')}>
-            <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 16 }}>✕</Text>
-          </TouchableOpacity>
-        </View>
-      ) : null}
     </SafeAreaView>
   );
 };

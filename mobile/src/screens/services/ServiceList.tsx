@@ -13,7 +13,11 @@ import { useAuth } from '../../contexts/AuthContext';
 const ServiceList = () => {
   const navigation = useNavigation();
   const { user } = useAuth();
-  const isLeader = user?.role === 'leader' || user?.role === 'imam' || user?.role === 'kadhi';
+
+  const isLeader =
+    user?.role === 'leader' ||
+    user?.role === 'imam' ||
+    user?.role === 'kadhi';
 
   const services = [
     {
@@ -23,9 +27,14 @@ const ServiceList = () => {
       bgColor: '#FDFAF0',
       route: 'Zakat',
       icon: (
-        <Svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#C9A44B" strokeWidth="1.5">
-          <Path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-          <Circle cx="12" cy="12" r="2" />
+        <Svg width={25} height={25} viewBox="0 0 24 24" fill="none">
+          <Circle cx="12" cy="12" r="8.5" stroke="#C9A44B" strokeWidth="1.6" />
+          <Path
+            d="M12 7.5V16.5M9.5 10.5C9.5 9.4 10.4 8.5 11.5 8.5H13C14.1 8.5 15 9.4 15 10.5C15 11.6 14.1 12.5 13 12.5H11C9.9 12.5 9 13.4 9 14.5C9 15.6 9.9 16.5 11 16.5H13"
+            stroke="#C9A44B"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
         </Svg>
       ),
     },
@@ -36,8 +45,13 @@ const ServiceList = () => {
       bgColor: '#D1FAE5',
       route: 'Sadaqa',
       icon: (
-        <Svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3FAF73" strokeWidth="1.5">
-          <Path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+        <Svg width={25} height={25} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M12 20.5C12 20.5 4.5 16.2 4.5 10.2C4.5 7.9 6.2 6.2 8.4 6.2C9.9 6.2 11.2 7 12 8.2C12.8 7 14.1 6.2 15.6 6.2C17.8 6.2 19.5 7.9 19.5 10.2C19.5 16.2 12 20.5 12 20.5Z"
+            stroke="#3FAF73"
+            strokeWidth="1.7"
+            strokeLinejoin="round"
+          />
         </Svg>
       ),
     },
@@ -45,11 +59,23 @@ const ServiceList = () => {
       id: 'takaful',
       label: 'Takaful',
       color: '#0B342B',
-      bgColor: 'rgba(11, 52, 43, 0.1)',
+      bgColor: 'rgba(11, 52, 43, 0.08)',
       route: 'Takaful',
       icon: (
-        <Svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0B342B" strokeWidth="1.5">
-          <Path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        <Svg width={25} height={25} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M12 3.5L19 6.5V11.2C19 15.5 16.2 18.9 12 20.5C7.8 18.9 5 15.5 5 11.2V6.5L12 3.5Z"
+            stroke="#0B342B"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+          <Path
+            d="M9 12L11.2 14.2L15.5 9.8"
+            stroke="#0B342B"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </Svg>
       ),
     },
@@ -60,9 +86,26 @@ const ServiceList = () => {
       bgColor: '#FEF3C7',
       route: isLeader ? 'LeaderDashboard' : 'Pension',
       icon: (
-        <Svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="1.5">
-          <Path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-          <Path d="M8 12h8" />
+        <Svg width={25} height={25} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M4.5 19.5H19.5"
+            stroke="#D97706"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+          <Path
+            d="M6 19V9.5M10 19V9.5M14 19V9.5M18 19V9.5"
+            stroke="#D97706"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+          <Path
+            d="M3.5 9.5L12 4L20.5 9.5"
+            stroke="#D97706"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </Svg>
       ),
     },
@@ -70,23 +113,51 @@ const ServiceList = () => {
       id: 'hajj',
       label: 'Hajj & Umrah',
       color: '#0B342B',
-      bgColor: 'rgba(11, 52, 43, 0.1)',
+      bgColor: 'rgba(11, 52, 43, 0.08)',
       route: 'Hajj',
       icon: (
-        <Svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0B342B" strokeWidth="1.5">
-          <Path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        <Svg width={25} height={25} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M5 19.5H19"
+            stroke="#0B342B"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+          <Path
+            d="M6.5 19.5V8L12 4.5L17.5 8V19.5"
+            stroke="#0B342B"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+          <Path
+            d="M9.5 10H14.5V13H9.5V10Z"
+            stroke="#0B342B"
+            strokeWidth="1.4"
+          />
         </Svg>
       ),
     },
     {
       id: 'hearse',
-      label: 'Funeral Services',
+      label: 'Hearse & Shroud',
       color: '#6B7280',
       bgColor: '#F3F4F6',
       route: 'Hearse',
       icon: (
-        <Svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="1.5">
-          <Path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        <Svg width={25} height={25} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M4 8.5H16L19.5 12.5V18.5H4V8.5Z"
+            stroke="#6B7280"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+          <Path
+            d="M16 8.5V12.5H19.5"
+            stroke="#6B7280"
+            strokeWidth="1.6"
+          />
+          <Circle cx="8" cy="18.5" r="1.8" stroke="#6B7280" strokeWidth="1.5" />
+          <Circle cx="16.5" cy="18.5" r="1.8" stroke="#6B7280" strokeWidth="1.5" />
         </Svg>
       ),
     },
@@ -94,11 +165,28 @@ const ServiceList = () => {
       id: 'wills',
       label: 'Digital Wills',
       color: '#0B342B',
-      bgColor: 'rgba(11, 52, 43, 0.1)',
+      bgColor: 'rgba(11, 52, 43, 0.08)',
       route: 'Wills',
       icon: (
-        <Svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0B342B" strokeWidth="1.5">
-          <Path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        <Svg width={25} height={25} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M6 4.5H14L18 8.5V19.5H6V4.5Z"
+            stroke="#0B342B"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+          <Path
+            d="M14 4.5V8.5H18"
+            stroke="#0B342B"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+          <Path
+            d="M9 12H15M9 15H15"
+            stroke="#0B342B"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+          />
         </Svg>
       ),
     },
@@ -109,9 +197,13 @@ const ServiceList = () => {
       bgColor: '#FFEDD5',
       route: 'Utilities',
       icon: (
-        <Svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#EA580C" strokeWidth="1.5">
-          <Path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-          <Path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        <Svg width={25} height={25} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M13.5 3.5L6.5 13H11.5L10.5 20.5L17.5 11H12.5L13.5 3.5Z"
+            stroke="#EA580C"
+            strokeWidth="1.7"
+            strokeLinejoin="round"
+          />
         </Svg>
       ),
     },
@@ -119,11 +211,22 @@ const ServiceList = () => {
       id: 'halalstay',
       label: 'HalalStay',
       color: '#0B342B',
-      bgColor: 'rgba(11, 52, 43, 0.1)',
+      bgColor: 'rgba(11, 52, 43, 0.08)',
       route: 'HalalStay',
       icon: (
-        <Svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0B342B" strokeWidth="1.5">
-          <Path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        <Svg width={25} height={25} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M4 19V10.5L12 4L20 10.5V19"
+            stroke="#0B342B"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+          <Path
+            d="M7.5 19V14H16.5V19M4 19.5H20"
+            stroke="#0B342B"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
         </Svg>
       ),
     },
@@ -131,11 +234,28 @@ const ServiceList = () => {
       id: 'market',
       label: 'Halal Market',
       color: '#0B342B',
-      bgColor: 'rgba(11, 52, 43, 0.1)',
+      bgColor: 'rgba(11, 52, 43, 0.08)',
       route: 'Ecommerce',
       icon: (
-        <Svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0B342B" strokeWidth="1.5">
-          <Path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+        <Svg width={25} height={25} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M4 7.5H20L18.5 18.5H5.5L4 7.5Z"
+            stroke="#0B342B"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+          <Path
+            d="M8 7.5L9 4.5H15L16 7.5"
+            stroke="#0B342B"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+          <Path
+            d="M9 11.5V15.5M15 11.5V15.5"
+            stroke="#0B342B"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+          />
         </Svg>
       ),
     },
@@ -143,11 +263,40 @@ const ServiceList = () => {
       id: 'restaurants',
       label: 'Restaurants',
       color: '#0B342B',
-      bgColor: 'rgba(11, 52, 43, 0.1)',
+      bgColor: 'rgba(11, 52, 43, 0.08)',
       route: 'Restaurants',
       icon: (
-        <Svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0B342B" strokeWidth="1.5">
-          <Path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+        <Svg width={25} height={25} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M7 4V11"
+            stroke="#0B342B"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+          <Path
+            d="M4.5 4V9C4.5 10.4 5.6 11.5 7 11.5C8.4 11.5 9.5 10.4 9.5 9V4"
+            stroke="#0B342B"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+          <Path
+            d="M7 11.5V20"
+            stroke="#0B342B"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+          <Path
+            d="M16.5 4V20"
+            stroke="#0B342B"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+          <Path
+            d="M16.5 4C14.7 5.2 14 7 14 9.5H19C19 7 18.3 5.2 16.5 4Z"
+            stroke="#0B342B"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
         </Svg>
       ),
     },
@@ -155,11 +304,33 @@ const ServiceList = () => {
       id: 'mosque',
       label: 'Mosque Finder',
       color: '#0B342B',
-      bgColor: 'rgba(11, 52, 43, 0.1)',
+      bgColor: 'rgba(11, 52, 43, 0.08)',
       route: 'MosqueFinder',
       icon: (
-        <Svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0B342B" strokeWidth="1.5">
-          <Path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        <Svg width={25} height={25} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M5 19.5H19"
+            stroke="#0B342B"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+          <Path
+            d="M6 19.5V11L12 6L18 11V19.5"
+            stroke="#0B342B"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+          <Path
+            d="M12 6V3.5"
+            stroke="#0B342B"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+          <Path
+            d="M10 14H14V19.5H10V14Z"
+            stroke="#0B342B"
+            strokeWidth="1.4"
+          />
         </Svg>
       ),
     },
@@ -167,81 +338,244 @@ const ServiceList = () => {
       id: 'kadhis',
       label: isLeader ? 'Consultations' : 'Dial a Scholar',
       color: '#0B342B',
-      bgColor: 'rgba(11, 52, 43, 0.1)',
+      bgColor: 'rgba(11, 52, 43, 0.08)',
       route: 'Kadhis',
       icon: (
-        <Svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0B342B" strokeWidth="1.5">
-          <Path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        <Svg width={25} height={25} viewBox="0 0 24 24" fill="none">
+          <Circle
+            cx="12"
+            cy="8"
+            r="3.2"
+            stroke="#0B342B"
+            strokeWidth="1.6"
+          />
+          <Path
+            d="M5.5 19.5C6 15.9 8.4 13.5 12 13.5C15.6 13.5 18 15.9 18.5 19.5"
+            stroke="#0B342B"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
         </Svg>
       ),
     },
   ];
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
+    <SafeAreaView
+      style={{
+        flex: 1,
+        backgroundColor: '#FAFAF7',
+      }}
+    >
       <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingTop: 18,
+          paddingBottom: 40,
+        }}
       >
-        <View style={{ maxWidth: 600, width: '100%', alignSelf: 'center' }}>
+        <View
+          style={{
+            width: '100%',
+            maxWidth: 600,
+            alignSelf: 'center',
+          }}
+        >
           {/* Header */}
-          <View style={{ marginBottom: 20 }}>
-            <Text style={{ color: '#1F2937', fontSize: 24, fontWeight: '700' }}>
+          <View
+            style={{
+              marginBottom: 22,
+              paddingHorizontal: 2,
+            }}
+          >
+            <Text
+              style={{
+                color: '#0B342B',
+                fontSize: 26,
+                fontWeight: '700',
+                letterSpacing: -0.5,
+                marginBottom: 7,
+              }}
+            >
               All Services
             </Text>
-            <Text style={{ color: '#6B7280', fontSize: 14, marginTop: 2 }}>
-              Explore all the services Itqaan has to offer
+
+            <Text
+              style={{
+                color: '#66736F',
+                fontSize: 14,
+                lineHeight: 21,
+                fontWeight: '400',
+                maxWidth: 330,
+              }}
+            >
+              Everything you need, thoughtfully brought together in one
+              place.
             </Text>
           </View>
 
-          {/* Services Grid */}
-          <View style={{
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            justifyContent: 'space-between',
-            gap: 8,
-          }}>
-            {services.map((service) => (
-              <TouchableOpacity
-                key={service.id}
+          {/* Services Container */}
+          <View
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: 24,
+              borderWidth: 1,
+              borderColor: '#E8E9E5',
+              paddingHorizontal: 14,
+              paddingTop: 18,
+              paddingBottom: 18,
+
+              shadowColor: '#032A24',
+              shadowOffset: {
+                width: 0,
+                height: 8,
+              },
+              shadowOpacity: 0.06,
+              shadowRadius: 20,
+              elevation: 3,
+            }}
+          >
+            {/* Section Label */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginBottom: 15,
+                paddingHorizontal: 4,
+              }}
+            >
+              <View
                 style={{
-                  width: '23%',
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: 12,
-                  paddingVertical: 14,
-                  paddingHorizontal: 4,
-                  alignItems: 'center',
-                  borderWidth: 1,
-                  borderColor: '#E8EEF4',
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.04,
-                  shadowRadius: 4,
-                  elevation: 1,
+                  width: 4,
+                  height: 18,
+                  borderRadius: 3,
+                  backgroundColor: '#C9A44B',
+                  marginRight: 9,
                 }}
-                onPress={() => navigation.navigate(service.route as never)}
+              />
+
+              <Text
+                style={{
+                  color: '#0B342B',
+                  fontSize: 14,
+                  fontWeight: '700',
+                  letterSpacing: 0.2,
+                }}
               >
-                <View style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 12,
-                  backgroundColor: service.bgColor,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                  {service.icon}
-                </View>
-                <Text style={{
-                  color: '#1F2937',
-                  fontSize: 9,
+                Explore Services
+              </Text>
+            </View>
+
+            {/* Services Grid */}
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                justifyContent: 'space-between',
+              }}
+            >
+              {services.map((service) => (
+                <TouchableOpacity
+                  key={service.id}
+                  activeOpacity={0.78}
+                  onPress={() =>
+                    navigation.navigate(service.route as never)
+                  }
+                  style={{
+                    width: '31.5%',
+                    minHeight: 108,
+                    marginBottom: 10,
+                    backgroundColor: '#FCFCFA',
+                    borderRadius: 17,
+                    borderWidth: 1,
+                    borderColor: '#ECEDE8',
+                    paddingHorizontal: 7,
+                    paddingVertical: 12,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+
+                    shadowColor: '#032A24',
+                    shadowOffset: {
+                      width: 0,
+                      height: 3,
+                    },
+                    shadowOpacity: 0.025,
+                    shadowRadius: 7,
+                    elevation: 1,
+                  }}
+                >
+                  {/* Icon */}
+                  <View
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 15,
+                      backgroundColor: service.bgColor,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: 9,
+                    }}
+                  >
+                    {service.icon}
+                  </View>
+
+                  {/* Label */}
+                  <Text
+                    numberOfLines={2}
+                    style={{
+                      color: '#263631',
+                      fontSize: 11,
+                      lineHeight: 15,
+                      fontWeight: '600',
+                      textAlign: 'center',
+                      letterSpacing: -0.05,
+                    }}
+                  >
+                    {service.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Bottom Brand Accent */}
+            <View
+              style={{
+                height: 1,
+                backgroundColor: '#EEF0EC',
+                marginTop: 5,
+                marginBottom: 13,
+              }}
+            />
+
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <View
+                style={{
+                  width: 5,
+                  height: 5,
+                  borderRadius: 3,
+                  backgroundColor: '#C9A44B',
+                  marginRight: 7,
+                }}
+              />
+
+              <Text
+                style={{
+                  color: '#89928E',
+                  fontSize: 10,
                   fontWeight: '500',
-                  textAlign: 'center',
-                  marginTop: 6,
-                }}>
-                  {service.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  letterSpacing: 0.4,
+                }}
+              >
+                ITQAAN · ONE TRUSTED PLATFORM
+              </Text>
+            </View>
           </View>
         </View>
       </ScrollView>

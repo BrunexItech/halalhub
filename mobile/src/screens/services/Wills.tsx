@@ -11,10 +11,109 @@ import {
   Modal,
   Platform,
   Alert,
+  Dimensions,
+  LayoutAnimation,
+  UIManager,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { willService, pdfService } from '../../api/client';
+import Svg, { Path, Circle, Rect } from 'react-native-svg';
+
+// Enable LayoutAnimation for Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const { width } = Dimensions.get('window');
+
+// ===== PROFESSIONAL SVG ICONS =====
+const BackIcon = ({ color = '#032A24', size = 24 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M15 18L9 12L15 6" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const WillIcon = ({ color = '#C9A44B', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M4 4H20V20H4V4Z" stroke={color} strokeWidth="1.5" strokeLinejoin="round"/>
+    <Path d="M8 8H16" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <Path d="M8 12H14" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <Path d="M8 16H12" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <Path d="M18 8L20 10L18 12" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const UserIcon = ({ color = '#6B7280', size = 14 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="8" r="4" stroke={color} strokeWidth="1.5"/>
+    <Path d="M5.5 20C5.5 16.6863 8.18629 14 11.5 14H12.5C15.8137 14 18.5 16.6863 18.5 20" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </Svg>
+);
+
+const ShieldIcon = ({ color = '#C9A44B', size = 14 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <Path d="M9 12l2 2 4-4" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const DocumentIcon = ({ color = '#6B7280', size = 14 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M4 4H20V20H4V4Z" stroke={color} strokeWidth="1.5" strokeLinejoin="round"/>
+    <Path d="M8 8H16" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <Path d="M8 12H14" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <Path d="M8 16H12" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </Svg>
+);
+
+const PeopleIcon = ({ color = '#6B7280', size = 14 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <Circle cx="9" cy="7" r="4" stroke={color} strokeWidth="1.5"/>
+    <Path d="M23 21v-2a4 4 0 00-3-3.87" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <Path d="M16 3.13a4 4 0 010 7.75" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </Svg>
+);
+
+const CheckIcon = ({ color = '#FFFFFF', size = 16 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M5 12L10 17L20 7" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const CloseIcon = ({ color = '#6B7280', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M18 6L6 18M6 6L18 18" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const ChevronDownIcon = ({ color = '#6B7280', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M6 9L12 15L18 9" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const ChevronUpIcon = ({ color = '#6B7280', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M18 15L12 9L6 15" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const PlusIcon = ({ color = '#C9A44B', size = 16 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.5"/>
+    <Path d="M12 8V16" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <Path d="M8 12H16" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </Svg>
+);
+
+const MinusIcon = ({ color = '#DC2626', size = 16 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.5"/>
+    <Path d="M8 12H16" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </Svg>
+);
 
 const Wills = () => {
   const navigation = useNavigation();
@@ -56,6 +155,16 @@ const Wills = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
+  // Collapsible sections
+  const [personalExpanded, setPersonalExpanded] = useState(true);
+  const [executorExpanded, setExecutorExpanded] = useState(true);
+  const [assetsExpanded, setAssetsExpanded] = useState(true);
+  const [bequestsExpanded, setBequestsExpanded] = useState(true);
+  const [witnessesExpanded, setWitnessesExpanded] = useState(true);
+  const [instructionsExpanded, setInstructionsExpanded] = useState(true);
+  const [calculatorExpanded, setCalculatorExpanded] = useState(true);
+  const [historyExpanded, setHistoryExpanded] = useState(false);
+
   useEffect(() => {
     fetchWillsHistory();
     setLoading(false);
@@ -70,6 +179,20 @@ const Wills = () => {
       }));
     }
   }, [user]);
+
+  const toggleSection = (section: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    switch(section) {
+      case 'personal': setPersonalExpanded(!personalExpanded); break;
+      case 'executor': setExecutorExpanded(!executorExpanded); break;
+      case 'assets': setAssetsExpanded(!assetsExpanded); break;
+      case 'bequests': setBequestsExpanded(!bequestsExpanded); break;
+      case 'witnesses': setWitnessesExpanded(!witnessesExpanded); break;
+      case 'instructions': setInstructionsExpanded(!instructionsExpanded); break;
+      case 'calculator': setCalculatorExpanded(!calculatorExpanded); break;
+      case 'history': setHistoryExpanded(!historyExpanded); break;
+    }
+  };
 
   const fetchWillsHistory = async () => {
     setLoadingHistory(true);
@@ -289,8 +412,8 @@ const Wills = () => {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <ActivityIndicator size="large" color="#C9A44B" />
-          <Text style={{ color: '#6B7280', marginTop: 12, fontSize: 14 }}>Loading...</Text>
+          <ActivityIndicator size="large" color="#032A24" />
+          <Text style={{ color: '#6B7280', marginTop: 16, fontSize: 14 }}>Loading...</Text>
         </View>
       </SafeAreaView>
     );
@@ -299,62 +422,103 @@ const Wills = () => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
       <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+        contentContainerStyle={{
+          paddingTop: Platform.OS === 'ios' ? 8 : 12,
+          paddingHorizontal: 20,
+          paddingBottom: 40,
+        }}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#C9A44B" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#032A24" />}
       >
         <View style={{ maxWidth: 800, width: '100%', alignSelf: 'center' }}>
-          {/* Hero Section */}
+          {/* ===== PREMIUM HEADER ===== */}
           <View style={{
-            backgroundColor: '#0B342B',
-            borderRadius: 16,
-            padding: 20,
-            marginBottom: 16,
-            overflow: 'hidden',
+            backgroundColor: '#032A24',
+            borderRadius: 18,
+            paddingHorizontal: 18,
+            paddingVertical: 16,
+            marginBottom: 24,
             borderWidth: 1,
             borderColor: 'rgba(201, 164, 75, 0.15)',
-            shadowColor: '#000',
+            shadowColor: '#032A24',
             shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.1,
-            shadowRadius: 8,
+            shadowOpacity: 0.08,
+            shadowRadius: 16,
             elevation: 4,
           }}>
-            <View style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, backgroundColor: 'rgba(201, 164, 75, 0.05)', borderRadius: 999 }} />
-            <View style={{ position: 'absolute', bottom: -30, left: -30, width: 80, height: 80, backgroundColor: 'rgba(201, 164, 75, 0.05)', borderRadius: 999 }} />
+            <View style={{
+              position: 'absolute',
+              top: 0,
+              left: 40,
+              right: 40,
+              height: 2,
+              backgroundColor: '#C9A44B',
+              opacity: 0.3,
+            }} />
 
-            <View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                <Text style={{ color: '#C9A44B', fontSize: 12, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 1 }}>
-                  Digital Wasiyyah
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                activeOpacity={0.7}
+                style={{
+                  padding: 6,
+                  marginRight: 12,
+                  borderRadius: 10,
+                  backgroundColor: 'rgba(201, 164, 75, 0.08)',
+                }}
+              >
+                <BackIcon color="#C9A44B" size={22} />
+              </TouchableOpacity>
+
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <WillIcon color="#C9A44B" size={18} />
+                  <Text style={{
+                    color: '#C9A44B',
+                    fontSize: 12,
+                    fontWeight: '600',
+                    letterSpacing: 0.8,
+                    textTransform: 'uppercase',
+                  }}>
+                    Digital Wasiyyah
+                  </Text>
+                </View>
+                <Text style={{
+                  color: '#FFFFFF',
+                  fontSize: 18,
+                  fontWeight: '700',
+                  letterSpacing: -0.3,
+                  marginTop: 2,
+                }}>
+                  Create Your Islamic Will
                 </Text>
-                <View style={{ width: 1, height: 14, backgroundColor: 'rgba(201, 164, 75, 0.3)' }} />
-                <Text style={{ color: 'rgba(201, 164, 75, 0.6)', fontSize: 12, fontWeight: '500' }}>Islamic Will</Text>
+                <Text style={{
+                  color: 'rgba(255,255,255,0.5)',
+                  fontSize: 12,
+                  letterSpacing: 0.2,
+                  marginTop: 1,
+                }}>
+                  Sharia-compliant · Encrypted · Professional
+                </Text>
               </View>
-              <Text style={{ color: '#FFFFFF', fontSize: 24, fontWeight: '700' }}>Create Your Islamic Will</Text>
-              <Text style={{ color: 'rgba(183, 192, 186, 0.7)', fontSize: 14, marginTop: 6, maxWidth: 400, lineHeight: 20 }}>
-                A guided process to create your Wasiyyah. Secure, Sharia-compliant, and professionally structured.
-              </Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+
+              <View style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                backgroundColor: 'rgba(201, 164, 75, 0.08)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 1,
+                borderColor: 'rgba(201, 164, 75, 0.1)',
+              }}>
                 <View style={{
-                  backgroundColor: 'rgba(255,255,255,0.1)',
-                  paddingHorizontal: 14,
-                  paddingVertical: 6,
-                  borderRadius: 10,
-                  borderWidth: 1,
-                  borderColor: 'rgba(201, 164, 75, 0.2)',
-                }}>
-                  <Text style={{ color: '#C9A44B', fontSize: 12, fontWeight: '600' }}>Sharia Compliant</Text>
-                </View>
-                <View style={{
-                  backgroundColor: 'rgba(255,255,255,0.1)',
-                  paddingHorizontal: 14,
-                  paddingVertical: 6,
-                  borderRadius: 10,
-                  borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.1)',
-                }}>
-                  <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '600' }}>Encrypted</Text>
-                </View>
+                  width: 4,
+                  height: 4,
+                  borderRadius: 2,
+                  backgroundColor: '#C9A44B',
+                  opacity: 0.5,
+                }} />
               </View>
             </View>
           </View>
@@ -365,15 +529,15 @@ const Wills = () => {
               borderWidth: 1,
               borderColor: '#FECACA',
               borderRadius: 12,
-              padding: 12,
-              marginBottom: 12,
+              padding: 14,
+              marginBottom: 16,
               flexDirection: 'row',
               justifyContent: 'space-between',
               alignItems: 'center',
             }}>
-              <Text style={{ color: '#DC2626', fontSize: 13 }}>{error}</Text>
+              <Text style={{ color: '#DC2626', fontSize: 13, flex: 1 }}>{error}</Text>
               <TouchableOpacity
-                style={{ backgroundColor: '#DC2626', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}
+                style={{ backgroundColor: '#DC2626', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 6 }}
                 onPress={() => setError('')}
               >
                 <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '600' }}>Dismiss</Text>
@@ -384,381 +548,593 @@ const Wills = () => {
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
             {/* Form - Left */}
             <View style={{ flex: 2, minWidth: 300, gap: 12 }}>
-              {/* Personal Information */}
+              {/* Personal Information - Collapsible */}
               <View style={{
                 backgroundColor: '#FFFFFF',
-                borderRadius: 12,
-                padding: 16,
+                borderRadius: 16,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
-                shadowColor: '#000',
+                borderColor: 'rgba(3, 42, 36, 0.06)',
+                shadowColor: '#032A24',
                 shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.04,
-                shadowRadius: 4,
+                shadowOpacity: 0.02,
+                shadowRadius: 8,
                 elevation: 1,
+                overflow: 'hidden',
               }}>
-                <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '700', marginBottom: 12 }}>Personal Information</Text>
-                <View style={{ marginBottom: 10 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 13, fontWeight: '500', marginBottom: 4 }}>Full Legal Name</Text>
-                  <TextInput
-                    style={{
-                      backgroundColor: '#FFFFFF',
-                      borderWidth: 1,
-                      borderColor: '#E8EEF4',
-                      borderRadius: 8,
-                      paddingHorizontal: 12,
-                      paddingVertical: 8,
-                      color: '#1F2937',
-                      fontSize: 14,
-                    }}
-                    value={willData.fullName}
-                    onChangeText={(text) => handleWillChange('fullName', text)}
-                    placeholder="As per National ID"
-                  />
-                </View>
-                <View>
-                  <Text style={{ color: '#6B7280', fontSize: 13, fontWeight: '500', marginBottom: 4 }}>ID Number</Text>
-                  <TextInput
-                    style={{
-                      backgroundColor: '#FFFFFF',
-                      borderWidth: 1,
-                      borderColor: '#E8EEF4',
-                      borderRadius: 8,
-                      paddingHorizontal: 12,
-                      paddingVertical: 8,
-                      color: '#1F2937',
-                      fontSize: 14,
-                    }}
-                    value={willData.idNumber}
-                    onChangeText={(text) => handleWillChange('idNumber', text)}
-                    placeholder="National ID / Passport"
-                  />
-                </View>
-              </View>
-
-              {/* Executor */}
-              <View style={{
-                backgroundColor: '#FFFFFF',
-                borderRadius: 12,
-                padding: 16,
-                borderWidth: 1,
-                borderColor: '#E8EEF4',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.04,
-                shadowRadius: 4,
-                elevation: 1,
-              }}>
-                <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '700', marginBottom: 12 }}>Executor (Wasi)</Text>
-                <View style={{ marginBottom: 10 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 13, fontWeight: '500', marginBottom: 4 }}>Executor Name</Text>
-                  <TextInput
-                    style={{
-                      backgroundColor: '#FFFFFF',
-                      borderWidth: 1,
-                      borderColor: '#E8EEF4',
-                      borderRadius: 8,
-                      paddingHorizontal: 12,
-                      paddingVertical: 8,
-                      color: '#1F2937',
-                      fontSize: 14,
-                    }}
-                    value={willData.executorName}
-                    onChangeText={(text) => handleWillChange('executorName', text)}
-                    placeholder="Name of trusted executor"
-                  />
-                </View>
-                <View style={{ flexDirection: 'row', gap: 10 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ color: '#6B7280', fontSize: 13, fontWeight: '500', marginBottom: 4 }}>Phone</Text>
-                    <TextInput
-                      style={{
-                        backgroundColor: '#FFFFFF',
-                        borderWidth: 1,
-                        borderColor: '#E8EEF4',
-                        borderRadius: 8,
-                        paddingHorizontal: 12,
-                        paddingVertical: 8,
-                        color: '#1F2937',
-                        fontSize: 14,
-                      }}
-                      value={willData.executorPhone}
-                      onChangeText={(text) => handleWillChange('executorPhone', text)}
-                      placeholder="+2547XXXXXXXX"
-                    />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ color: '#6B7280', fontSize: 13, fontWeight: '500', marginBottom: 4 }}>Email</Text>
-                    <TextInput
-                      style={{
-                        backgroundColor: '#FFFFFF',
-                        borderWidth: 1,
-                        borderColor: '#E8EEF4',
-                        borderRadius: 8,
-                        paddingHorizontal: 12,
-                        paddingVertical: 8,
-                        color: '#1F2937',
-                        fontSize: 14,
-                      }}
-                      value={willData.executorEmail}
-                      onChangeText={(text) => handleWillChange('executorEmail', text)}
-                      placeholder="executor@email.com"
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                    />
-                  </View>
-                </View>
-              </View>
-
-              {/* Assets */}
-              <View style={{
-                backgroundColor: '#FFFFFF',
-                borderRadius: 12,
-                padding: 16,
-                borderWidth: 1,
-                borderColor: '#E8EEF4',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.04,
-                shadowRadius: 4,
-                elevation: 1,
-              }}>
-                <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '700', marginBottom: 10 }}>Assets</Text>
-                <Text style={{ color: '#6B7280', fontSize: 13, fontWeight: '500', marginBottom: 4 }}>List Your Assets</Text>
-                <TextInput
+                <TouchableOpacity
+                  onPress={() => toggleSection('personal')}
+                  activeOpacity={0.7}
                   style={{
-                    backgroundColor: '#FFFFFF',
-                    borderWidth: 1,
-                    borderColor: '#E8EEF4',
-                    borderRadius: 8,
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
-                    color: '#1F2937',
-                    fontSize: 14,
-                    minHeight: 80,
-                    textAlignVertical: 'top',
-                  }}
-                  value={willData.assets}
-                  onChangeText={(text) => handleWillChange('assets', text)}
-                  placeholder="Bank accounts, property, business interests, vehicles, investments, digital assets, personal valuables..."
-                  multiline
-                />
-              </View>
-
-              {/* Bequests */}
-              <View style={{
-                backgroundColor: '#FFFFFF',
-                borderRadius: 12,
-                padding: 16,
-                borderWidth: 1,
-                borderColor: '#E8EEF4',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.04,
-                shadowRadius: 4,
-                elevation: 1,
-              }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '700' }}>Bequests</Text>
-                  <TouchableOpacity onPress={addBequest}>
-                    <Text style={{ color: '#0B342B', fontSize: 14, fontWeight: '500' }}>+ Add</Text>
-                  </TouchableOpacity>
-                </View>
-                <Text style={{ color: '#6B7280', fontSize: 13, marginBottom: 10 }}>Bequests cannot exceed 1/3 of your estate</Text>
-
-                {willData.bequests.map((bequest, index) => (
-                  <View key={index} style={{
                     flexDirection: 'row',
+                    justifyContent: 'space-between',
                     alignItems: 'center',
-                    gap: 8,
-                    backgroundColor: '#FAFAF7',
-                    padding: 10,
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    borderColor: '#E8EEF4',
-                    marginBottom: 8,
-                    flexWrap: 'wrap',
-                  }}>
-                    <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                      <TextInput
-                        style={{
-                          flex: 1,
-                          minWidth: 80,
-                          backgroundColor: '#FFFFFF',
-                          borderWidth: 1,
-                          borderColor: '#E8EEF4',
-                          borderRadius: 6,
-                          paddingHorizontal: 8,
-                          paddingVertical: 6,
-                          color: '#1F2937',
-                          fontSize: 14,
-                        }}
-                        value={bequest.name}
-                        onChangeText={(text) => updateBequest(index, 'name', text)}
-                        placeholder="Name"
-                      />
-                      <TextInput
-                        style={{
-                          flex: 1,
-                          minWidth: 80,
-                          backgroundColor: '#FFFFFF',
-                          borderWidth: 1,
-                          borderColor: '#E8EEF4',
-                          borderRadius: 6,
-                          paddingHorizontal: 8,
-                          paddingVertical: 6,
-                          color: '#1F2937',
-                          fontSize: 14,
-                        }}
-                        value={bequest.relation}
-                        onChangeText={(text) => updateBequest(index, 'relation', text)}
-                        placeholder="Relation"
-                      />
-                      <TextInput
-                        style={{
-                          flex: 1,
-                          minWidth: 80,
-                          backgroundColor: '#FFFFFF',
-                          borderWidth: 1,
-                          borderColor: '#E8EEF4',
-                          borderRadius: 6,
-                          paddingHorizontal: 8,
-                          paddingVertical: 6,
-                          color: '#1F2937',
-                          fontSize: 14,
-                        }}
-                        value={String(bequest.amount)}
-                        onChangeText={(text) => updateBequest(index, 'amount', parseFloat(text) || 0)}
-                        placeholder="Amount"
-                        keyboardType="numeric"
-                      />
-                    </View>
-                    <TouchableOpacity onPress={() => removeBequest(index)}>
-                      <Text style={{ color: '#DC2626', fontSize: 16 }}>✕</Text>
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </View>
-
-              {/* Witnesses */}
-              <View style={{
-                backgroundColor: '#FFFFFF',
-                borderRadius: 12,
-                padding: 16,
-                borderWidth: 1,
-                borderColor: '#E8EEF4',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.04,
-                shadowRadius: 4,
-                elevation: 1,
-              }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '700' }}>Witnesses</Text>
-                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Two witnesses required</Text>
-                </View>
-
-                {willData.witnesses.map((witness, index) => (
-                  <View key={index} style={{
-                    backgroundColor: '#FAFAF7',
-                    padding: 12,
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    borderColor: '#E8EEF4',
-                    marginBottom: 10,
-                  }}>
-                    <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600', marginBottom: 6 }}>
-                      Witness {index + 1}
-                    </Text>
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                      <TextInput
-                        style={{
-                          flex: 1,
-                          minWidth: 80,
-                          backgroundColor: '#FFFFFF',
-                          borderWidth: 1,
-                          borderColor: '#E8EEF4',
-                          borderRadius: 6,
-                          paddingHorizontal: 8,
-                          paddingVertical: 6,
-                          color: '#1F2937',
-                          fontSize: 14,
-                        }}
-                        value={witness.name}
-                        onChangeText={(text) => updateWitness(index, 'name', text)}
-                        placeholder="Full Name *"
-                      />
-                      <TextInput
-                        style={{
-                          flex: 1,
-                          minWidth: 70,
-                          backgroundColor: '#FFFFFF',
-                          borderWidth: 1,
-                          borderColor: '#E8EEF4',
-                          borderRadius: 6,
-                          paddingHorizontal: 8,
-                          paddingVertical: 6,
-                          color: '#1F2937',
-                          fontSize: 14,
-                        }}
-                        value={witness.idNumber}
-                        onChangeText={(text) => updateWitness(index, 'idNumber', text)}
-                        placeholder="ID Number"
-                      />
-                      <TextInput
-                        style={{
-                          flex: 1,
-                          minWidth: 70,
-                          backgroundColor: '#FFFFFF',
-                          borderWidth: 1,
-                          borderColor: '#E8EEF4',
-                          borderRadius: 6,
-                          paddingHorizontal: 8,
-                          paddingVertical: 6,
-                          color: '#1F2937',
-                          fontSize: 14,
-                        }}
-                        value={witness.phone}
-                        onChangeText={(text) => updateWitness(index, 'phone', text)}
-                        placeholder="Phone"
-                      />
-                    </View>
-                  </View>
-                ))}
-              </View>
-
-              {/* Special Instructions */}
-              <View style={{
-                backgroundColor: '#FFFFFF',
-                borderRadius: 12,
-                padding: 16,
-                borderWidth: 1,
-                borderColor: '#E8EEF4',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.04,
-                shadowRadius: 4,
-                elevation: 1,
-              }}>
-                <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '700', marginBottom: 10 }}>Special Instructions</Text>
-                <TextInput
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderWidth: 1,
-                    borderColor: '#E8EEF4',
-                    borderRadius: 8,
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
-                    color: '#1F2937',
-                    fontSize: 14,
-                    minHeight: 60,
-                    textAlignVertical: 'top',
+                    padding: 16,
                   }}
-                  value={willData.specialInstructions}
-                  onChangeText={(text) => handleWillChange('specialInstructions', text)}
-                  placeholder="Any special instructions or wishes..."
-                  multiline
-                />
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <View style={{
+                      width: 3,
+                      height: 16,
+                      backgroundColor: '#C9A44B',
+                      borderRadius: 2,
+                    }} />
+                    <UserIcon color="#032A24" size={14} />
+                    <Text style={{ color: '#032A24', fontSize: 15, fontWeight: '600', letterSpacing: -0.2 }}>
+                      Personal Information
+                    </Text>
+                  </View>
+                  {personalExpanded ? (
+                    <ChevronUpIcon color="#6B7280" size={18} />
+                  ) : (
+                    <ChevronDownIcon color="#6B7280" size={18} />
+                  )}
+                </TouchableOpacity>
+
+                {personalExpanded && (
+                  <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+                    <View style={{ marginBottom: 10 }}>
+                      <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                        Full Legal Name *
+                      </Text>
+                      <TextInput
+                        style={{
+                          backgroundColor: '#FAFAF7',
+                          borderWidth: 1,
+                          borderColor: 'rgba(3, 42, 36, 0.06)',
+                          borderRadius: 10,
+                          paddingHorizontal: 14,
+                          paddingVertical: 8,
+                          color: '#1F2937',
+                          fontSize: 14,
+                        }}
+                        value={willData.fullName}
+                        onChangeText={(text) => handleWillChange('fullName', text)}
+                        placeholder="As per National ID"
+                        placeholderTextColor="#9CA3AF"
+                      />
+                    </View>
+                    <View>
+                      <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                        ID Number
+                      </Text>
+                      <TextInput
+                        style={{
+                          backgroundColor: '#FAFAF7',
+                          borderWidth: 1,
+                          borderColor: 'rgba(3, 42, 36, 0.06)',
+                          borderRadius: 10,
+                          paddingHorizontal: 14,
+                          paddingVertical: 8,
+                          color: '#1F2937',
+                          fontSize: 14,
+                        }}
+                        value={willData.idNumber}
+                        onChangeText={(text) => handleWillChange('idNumber', text)}
+                        placeholder="National ID / Passport"
+                        placeholderTextColor="#9CA3AF"
+                      />
+                    </View>
+                  </View>
+                )}
+              </View>
+
+              {/* Executor - Collapsible */}
+              <View style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: 'rgba(3, 42, 36, 0.06)',
+                shadowColor: '#032A24',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.02,
+                shadowRadius: 8,
+                elevation: 1,
+                overflow: 'hidden',
+              }}>
+                <TouchableOpacity
+                  onPress={() => toggleSection('executor')}
+                  activeOpacity={0.7}
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: 16,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <View style={{
+                      width: 3,
+                      height: 16,
+                      backgroundColor: '#C9A44B',
+                      borderRadius: 2,
+                    }} />
+                    <ShieldIcon color="#032A24" size={14} />
+                    <Text style={{ color: '#032A24', fontSize: 15, fontWeight: '600', letterSpacing: -0.2 }}>
+                      Executor (Wasi)
+                    </Text>
+                  </View>
+                  {executorExpanded ? (
+                    <ChevronUpIcon color="#6B7280" size={18} />
+                  ) : (
+                    <ChevronDownIcon color="#6B7280" size={18} />
+                  )}
+                </TouchableOpacity>
+
+                {executorExpanded && (
+                  <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+                    <View style={{ marginBottom: 10 }}>
+                      <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                        Executor Name *
+                      </Text>
+                      <TextInput
+                        style={{
+                          backgroundColor: '#FAFAF7',
+                          borderWidth: 1,
+                          borderColor: 'rgba(3, 42, 36, 0.06)',
+                          borderRadius: 10,
+                          paddingHorizontal: 14,
+                          paddingVertical: 8,
+                          color: '#1F2937',
+                          fontSize: 14,
+                        }}
+                        value={willData.executorName}
+                        onChangeText={(text) => handleWillChange('executorName', text)}
+                        placeholder="Name of trusted executor"
+                        placeholderTextColor="#9CA3AF"
+                      />
+                    </View>
+                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                          Phone
+                        </Text>
+                        <TextInput
+                          style={{
+                            backgroundColor: '#FAFAF7',
+                            borderWidth: 1,
+                            borderColor: 'rgba(3, 42, 36, 0.06)',
+                            borderRadius: 10,
+                            paddingHorizontal: 14,
+                            paddingVertical: 8,
+                            color: '#1F2937',
+                            fontSize: 14,
+                          }}
+                          value={willData.executorPhone}
+                          onChangeText={(text) => handleWillChange('executorPhone', text)}
+                          placeholder="+2547XXXXXXXX"
+                          placeholderTextColor="#9CA3AF"
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                          Email
+                        </Text>
+                        <TextInput
+                          style={{
+                            backgroundColor: '#FAFAF7',
+                            borderWidth: 1,
+                            borderColor: 'rgba(3, 42, 36, 0.06)',
+                            borderRadius: 10,
+                            paddingHorizontal: 14,
+                            paddingVertical: 8,
+                            color: '#1F2937',
+                            fontSize: 14,
+                          }}
+                          value={willData.executorEmail}
+                          onChangeText={(text) => handleWillChange('executorEmail', text)}
+                          placeholder="executor@email.com"
+                          placeholderTextColor="#9CA3AF"
+                          keyboardType="email-address"
+                          autoCapitalize="none"
+                        />
+                      </View>
+                    </View>
+                  </View>
+                )}
+              </View>
+
+              {/* Assets - Collapsible */}
+              <View style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: 'rgba(3, 42, 36, 0.06)',
+                shadowColor: '#032A24',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.02,
+                shadowRadius: 8,
+                elevation: 1,
+                overflow: 'hidden',
+              }}>
+                <TouchableOpacity
+                  onPress={() => toggleSection('assets')}
+                  activeOpacity={0.7}
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: 16,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <View style={{
+                      width: 3,
+                      height: 16,
+                      backgroundColor: '#C9A44B',
+                      borderRadius: 2,
+                    }} />
+                    <DocumentIcon color="#032A24" size={14} />
+                    <Text style={{ color: '#032A24', fontSize: 15, fontWeight: '600', letterSpacing: -0.2 }}>
+                      Assets
+                    </Text>
+                  </View>
+                  {assetsExpanded ? (
+                    <ChevronUpIcon color="#6B7280" size={18} />
+                  ) : (
+                    <ChevronDownIcon color="#6B7280" size={18} />
+                  )}
+                </TouchableOpacity>
+
+                {assetsExpanded && (
+                  <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+                    <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                      List Your Assets *
+                    </Text>
+                    <TextInput
+                      style={{
+                        backgroundColor: '#FAFAF7',
+                        borderWidth: 1,
+                        borderColor: 'rgba(3, 42, 36, 0.06)',
+                        borderRadius: 10,
+                        paddingHorizontal: 14,
+                        paddingVertical: 8,
+                        color: '#1F2937',
+                        fontSize: 14,
+                        minHeight: 80,
+                        textAlignVertical: 'top',
+                      }}
+                      value={willData.assets}
+                      onChangeText={(text) => handleWillChange('assets', text)}
+                      placeholder="Bank accounts, property, business interests, vehicles, investments, digital assets, personal valuables..."
+                      placeholderTextColor="#9CA3AF"
+                      multiline
+                    />
+                  </View>
+                )}
+              </View>
+
+              {/* Bequests - Collapsible */}
+              <View style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: 'rgba(3, 42, 36, 0.06)',
+                shadowColor: '#032A24',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.02,
+                shadowRadius: 8,
+                elevation: 1,
+                overflow: 'hidden',
+              }}>
+                <TouchableOpacity
+                  onPress={() => toggleSection('bequests')}
+                  activeOpacity={0.7}
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: 16,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <View style={{
+                      width: 3,
+                      height: 16,
+                      backgroundColor: '#C9A44B',
+                      borderRadius: 2,
+                    }} />
+                    <PeopleIcon color="#032A24" size={14} />
+                    <Text style={{ color: '#032A24', fontSize: 15, fontWeight: '600', letterSpacing: -0.2 }}>
+                      Bequests
+                    </Text>
+                    <Text style={{ color: '#8B8A86', fontSize: 10 }}>Max 1/3 of estate</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <TouchableOpacity onPress={addBequest} activeOpacity={0.7}>
+                      <PlusIcon color="#C9A44B" size={16} />
+                    </TouchableOpacity>
+                    {bequestsExpanded ? (
+                      <ChevronUpIcon color="#6B7280" size={18} />
+                    ) : (
+                      <ChevronDownIcon color="#6B7280" size={18} />
+                    )}
+                  </View>
+                </TouchableOpacity>
+
+                {bequestsExpanded && (
+                  <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+                    {willData.bequests.map((bequest, index) => (
+                      <View key={index} style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 8,
+                        backgroundColor: '#FAFAF7',
+                        padding: 10,
+                        borderRadius: 10,
+                        borderWidth: 1,
+                        borderColor: 'rgba(3, 42, 36, 0.04)',
+                        marginBottom: 8,
+                      }}>
+                        <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                          <TextInput
+                            style={{
+                              flex: 1,
+                              minWidth: 70,
+                              backgroundColor: '#FFFFFF',
+                              borderWidth: 1,
+                              borderColor: 'rgba(3, 42, 36, 0.06)',
+                              borderRadius: 8,
+                              paddingHorizontal: 8,
+                              paddingVertical: 6,
+                              color: '#1F2937',
+                              fontSize: 13,
+                            }}
+                            value={bequest.name}
+                            onChangeText={(text) => updateBequest(index, 'name', text)}
+                            placeholder="Name"
+                            placeholderTextColor="#9CA3AF"
+                          />
+                          <TextInput
+                            style={{
+                              flex: 1,
+                              minWidth: 70,
+                              backgroundColor: '#FFFFFF',
+                              borderWidth: 1,
+                              borderColor: 'rgba(3, 42, 36, 0.06)',
+                              borderRadius: 8,
+                              paddingHorizontal: 8,
+                              paddingVertical: 6,
+                              color: '#1F2937',
+                              fontSize: 13,
+                            }}
+                            value={bequest.relation}
+                            onChangeText={(text) => updateBequest(index, 'relation', text)}
+                            placeholder="Relation"
+                            placeholderTextColor="#9CA3AF"
+                          />
+                          <TextInput
+                            style={{
+                              flex: 1,
+                              minWidth: 70,
+                              backgroundColor: '#FFFFFF',
+                              borderWidth: 1,
+                              borderColor: 'rgba(3, 42, 36, 0.06)',
+                              borderRadius: 8,
+                              paddingHorizontal: 8,
+                              paddingVertical: 6,
+                              color: '#1F2937',
+                              fontSize: 13,
+                            }}
+                            value={String(bequest.amount)}
+                            onChangeText={(text) => updateBequest(index, 'amount', parseFloat(text) || 0)}
+                            placeholder="Amount"
+                            placeholderTextColor="#9CA3AF"
+                            keyboardType="numeric"
+                          />
+                        </View>
+                        <TouchableOpacity onPress={() => removeBequest(index)} activeOpacity={0.7}>
+                          <MinusIcon color="#DC2626" size={16} />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+
+              {/* Witnesses - Collapsible */}
+              <View style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: 'rgba(3, 42, 36, 0.06)',
+                shadowColor: '#032A24',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.02,
+                shadowRadius: 8,
+                elevation: 1,
+                overflow: 'hidden',
+              }}>
+                <TouchableOpacity
+                  onPress={() => toggleSection('witnesses')}
+                  activeOpacity={0.7}
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: 16,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <View style={{
+                      width: 3,
+                      height: 16,
+                      backgroundColor: '#C9A44B',
+                      borderRadius: 2,
+                    }} />
+                    <PeopleIcon color="#032A24" size={14} />
+                    <Text style={{ color: '#032A24', fontSize: 15, fontWeight: '600', letterSpacing: -0.2 }}>
+                      Witnesses
+                    </Text>
+                    <Text style={{ color: '#8B8A86', fontSize: 10 }}>2 required</Text>
+                  </View>
+                  {witnessesExpanded ? (
+                    <ChevronUpIcon color="#6B7280" size={18} />
+                  ) : (
+                    <ChevronDownIcon color="#6B7280" size={18} />
+                  )}
+                </TouchableOpacity>
+
+                {witnessesExpanded && (
+                  <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+                    {willData.witnesses.map((witness, index) => (
+                      <View key={index} style={{
+                        backgroundColor: '#FAFAF7',
+                        padding: 12,
+                        borderRadius: 10,
+                        borderWidth: 1,
+                        borderColor: 'rgba(3, 42, 36, 0.04)',
+                        marginBottom: 10,
+                      }}>
+                        <Text style={{ color: '#032A24', fontSize: 12, fontWeight: '600', marginBottom: 6 }}>
+                          Witness {index + 1}
+                        </Text>
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                          <TextInput
+                            style={{
+                              flex: 1,
+                              minWidth: 70,
+                              backgroundColor: '#FFFFFF',
+                              borderWidth: 1,
+                              borderColor: 'rgba(3, 42, 36, 0.06)',
+                              borderRadius: 8,
+                              paddingHorizontal: 8,
+                              paddingVertical: 6,
+                              color: '#1F2937',
+                              fontSize: 13,
+                            }}
+                            value={witness.name}
+                            onChangeText={(text) => updateWitness(index, 'name', text)}
+                            placeholder="Full Name *"
+                            placeholderTextColor="#9CA3AF"
+                          />
+                          <TextInput
+                            style={{
+                              flex: 1,
+                              minWidth: 60,
+                              backgroundColor: '#FFFFFF',
+                              borderWidth: 1,
+                              borderColor: 'rgba(3, 42, 36, 0.06)',
+                              borderRadius: 8,
+                              paddingHorizontal: 8,
+                              paddingVertical: 6,
+                              color: '#1F2937',
+                              fontSize: 13,
+                            }}
+                            value={witness.idNumber}
+                            onChangeText={(text) => updateWitness(index, 'idNumber', text)}
+                            placeholder="ID Number"
+                            placeholderTextColor="#9CA3AF"
+                          />
+                          <TextInput
+                            style={{
+                              flex: 1,
+                              minWidth: 60,
+                              backgroundColor: '#FFFFFF',
+                              borderWidth: 1,
+                              borderColor: 'rgba(3, 42, 36, 0.06)',
+                              borderRadius: 8,
+                              paddingHorizontal: 8,
+                              paddingVertical: 6,
+                              color: '#1F2937',
+                              fontSize: 13,
+                            }}
+                            value={witness.phone}
+                            onChangeText={(text) => updateWitness(index, 'phone', text)}
+                            placeholder="Phone"
+                            placeholderTextColor="#9CA3AF"
+                          />
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+
+              {/* Special Instructions - Collapsible */}
+              <View style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: 'rgba(3, 42, 36, 0.06)',
+                shadowColor: '#032A24',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.02,
+                shadowRadius: 8,
+                elevation: 1,
+                overflow: 'hidden',
+              }}>
+                <TouchableOpacity
+                  onPress={() => toggleSection('instructions')}
+                  activeOpacity={0.7}
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: 16,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <View style={{
+                      width: 3,
+                      height: 16,
+                      backgroundColor: '#C9A44B',
+                      borderRadius: 2,
+                    }} />
+                    <DocumentIcon color="#032A24" size={14} />
+                    <Text style={{ color: '#032A24', fontSize: 15, fontWeight: '600', letterSpacing: -0.2 }}>
+                      Special Instructions
+                    </Text>
+                  </View>
+                  {instructionsExpanded ? (
+                    <ChevronUpIcon color="#6B7280" size={18} />
+                  ) : (
+                    <ChevronDownIcon color="#6B7280" size={18} />
+                  )}
+                </TouchableOpacity>
+
+                {instructionsExpanded && (
+                  <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+                    <TextInput
+                      style={{
+                        backgroundColor: '#FAFAF7',
+                        borderWidth: 1,
+                        borderColor: 'rgba(3, 42, 36, 0.06)',
+                        borderRadius: 10,
+                        paddingHorizontal: 14,
+                        paddingVertical: 8,
+                        color: '#1F2937',
+                        fontSize: 14,
+                        minHeight: 60,
+                        textAlignVertical: 'top',
+                      }}
+                      value={willData.specialInstructions}
+                      onChangeText={(text) => handleWillChange('specialInstructions', text)}
+                      placeholder="Any special instructions or wishes..."
+                      placeholderTextColor="#9CA3AF"
+                      multiline
+                    />
+                  </View>
+                )}
               </View>
 
               {/* Actions */}
@@ -766,20 +1142,16 @@ const Wills = () => {
                 <TouchableOpacity
                   style={{
                     flex: 1,
-                    backgroundColor: '#0B342B',
+                    backgroundColor: '#032A24',
                     paddingVertical: 12,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     alignItems: 'center',
-                    shadowColor: '#0B342B',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 8,
-                    elevation: 4,
                   }}
                   onPress={saveWill}
                   disabled={processing}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>
+                  <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>
                     {processing ? 'Saving...' : 'Save & Encrypt Will'}
                   </Text>
                 </TouchableOpacity>
@@ -788,15 +1160,16 @@ const Wills = () => {
                     flex: 1,
                     backgroundColor: '#FFFFFF',
                     paddingVertical: 12,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     alignItems: 'center',
                     borderWidth: 1,
-                    borderColor: '#E8EEF4',
+                    borderColor: 'rgba(3, 42, 36, 0.06)',
                   }}
                   onPress={generatePDF}
                   disabled={processing}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#6B7280', fontSize: 15, fontWeight: '500' }}>
+                  <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '500' }}>
                     {processing ? 'Generating...' : 'Download PDF'}
                   </Text>
                 </TouchableOpacity>
@@ -808,50 +1181,52 @@ const Wills = () => {
               {/* Islamic Guidance */}
               <View style={{
                 backgroundColor: '#FFFFFF',
-                borderRadius: 12,
+                borderRadius: 16,
                 padding: 16,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
-                shadowColor: '#000',
+                borderColor: 'rgba(3, 42, 36, 0.06)',
+                shadowColor: '#032A24',
                 shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.04,
-                shadowRadius: 4,
+                shadowOpacity: 0.02,
+                shadowRadius: 8,
                 elevation: 1,
               }}>
-                <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '700', marginBottom: 10 }}>Islamic Guidance</Text>
+                <Text style={{ color: '#032A24', fontSize: 15, fontWeight: '600', marginBottom: 10 }}>
+                  Islamic Guidance
+                </Text>
                 <View style={{
-                  backgroundColor: '#FAFAF7',
+                  backgroundColor: 'rgba(201, 164, 75, 0.04)',
                   padding: 12,
-                  borderRadius: 8,
+                  borderRadius: 10,
                   borderWidth: 1,
-                  borderColor: '#E8EEF4',
+                  borderColor: 'rgba(201, 164, 75, 0.06)',
                   marginBottom: 8,
                 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14, lineHeight: 20 }}>
+                  <Text style={{ color: '#6B7280', fontSize: 13, lineHeight: 20 }}>
                     "And whoever leaves behind a will, it shall be carried out after any debts." — Quran 2:180
                   </Text>
                 </View>
                 <View style={{
-                  backgroundColor: '#FAFAF7',
+                  backgroundColor: 'rgba(201, 164, 75, 0.04)',
                   padding: 12,
-                  borderRadius: 8,
+                  borderRadius: 10,
                   borderWidth: 1,
-                  borderColor: '#E8EEF4',
+                  borderColor: 'rgba(201, 164, 75, 0.06)',
                   marginBottom: 8,
                 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14, lineHeight: 20 }}>
+                  <Text style={{ color: '#6B7280', fontSize: 13, lineHeight: 20 }}>
                     "Verily, Allah has given to each person their rightful share." — Hadith
                   </Text>
                 </View>
                 <View style={{
-                  backgroundColor: '#FAFAF7',
+                  backgroundColor: 'rgba(201, 164, 75, 0.04)',
                   padding: 12,
-                  borderRadius: 8,
+                  borderRadius: 10,
                   borderWidth: 1,
-                  borderColor: '#E8EEF4',
+                  borderColor: 'rgba(201, 164, 75, 0.06)',
                 }}>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600', marginBottom: 4 }}>What is a Wasiyyah?</Text>
-                  <Text style={{ color: '#6B7280', fontSize: 13, lineHeight: 18 }}>
+                  <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600', marginBottom: 4 }}>What is a Wasiyyah?</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 12, lineHeight: 18 }}>
                     A Wasiyyah (Islamic will) allows you to allocate up to 1/3 of your estate
                     to non-heirs, while the remaining 2/3 is distributed according to
                     Faraidh (Islamic inheritance law).
@@ -859,377 +1234,461 @@ const Wills = () => {
                 </View>
               </View>
 
-              {/* Faraidh Calculator */}
+              {/* Faraidh Calculator - Collapsible */}
               <View style={{
                 backgroundColor: '#FFFFFF',
-                borderRadius: 12,
-                padding: 16,
+                borderRadius: 16,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
-                shadowColor: '#000',
+                borderColor: 'rgba(3, 42, 36, 0.06)',
+                shadowColor: '#032A24',
                 shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.04,
-                shadowRadius: 4,
+                shadowOpacity: 0.02,
+                shadowRadius: 8,
                 elevation: 1,
+                overflow: 'hidden',
               }}>
-                <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '700', marginBottom: 10 }}>Faraidh Calculator</Text>
-                <View style={{ marginBottom: 10 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 13, fontWeight: '500', marginBottom: 4 }}>Estate Value (KES)</Text>
-                  <TextInput
-                    style={{
-                      backgroundColor: '#FFFFFF',
-                      borderWidth: 1,
-                      borderColor: '#E8EEF4',
-                      borderRadius: 8,
-                      paddingHorizontal: 12,
-                      paddingVertical: 8,
-                      color: '#1F2937',
-                      fontSize: 14,
-                    }}
-                    value={String(estateValue)}
-                    onChangeText={(text) => setEstateValue(parseFloat(text) || 0)}
-                    keyboardType="numeric"
-                  />
-                </View>
-
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '500' }}>Heirs</Text>
-                  <TouchableOpacity onPress={addHeir}>
-                    <Text style={{ color: '#0B342B', fontSize: 14, fontWeight: '500' }}>+ Add Heir</Text>
-                  </TouchableOpacity>
-                </View>
-
-                {heirs.map((heir, index) => (
-                  <View key={index} style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 6,
-                    backgroundColor: '#FAFAF7',
-                    padding: 8,
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    borderColor: '#E8EEF4',
-                    marginBottom: 6,
-                    flexWrap: 'wrap',
-                  }}>
-                    <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
-                      <TextInput
-                        style={{
-                          flex: 1,
-                          minWidth: 60,
-                          backgroundColor: '#FFFFFF',
-                          borderWidth: 1,
-                          borderColor: '#E8EEF4',
-                          borderRadius: 6,
-                          paddingHorizontal: 6,
-                          paddingVertical: 4,
-                          color: '#1F2937',
-                          fontSize: 13,
-                        }}
-                        value={heir.relation}
-                        onChangeText={(text) => updateHeir(index, 'relation', text)}
-                        placeholder="Relation"
-                      />
-                      <TextInput
-                        style={{
-                          flex: 1,
-                          minWidth: 60,
-                          backgroundColor: '#FFFFFF',
-                          borderWidth: 1,
-                          borderColor: '#E8EEF4',
-                          borderRadius: 6,
-                          paddingHorizontal: 6,
-                          paddingVertical: 4,
-                          color: '#1F2937',
-                          fontSize: 13,
-                        }}
-                        value={heir.name}
-                        onChangeText={(text) => updateHeir(index, 'name', text)}
-                        placeholder="Name"
-                      />
-                      <TextInput
-                        style={{
-                          flex: 1,
-                          minWidth: 50,
-                          backgroundColor: '#FFFFFF',
-                          borderWidth: 1,
-                          borderColor: '#E8EEF4',
-                          borderRadius: 6,
-                          paddingHorizontal: 6,
-                          paddingVertical: 4,
-                          color: '#1F2937',
-                          fontSize: 13,
-                        }}
-                        value={heir.share}
-                        onChangeText={(text) => updateHeir(index, 'share', text)}
-                        placeholder="Share"
-                      />
-                    </View>
-                    <TouchableOpacity onPress={() => removeHeir(index)}>
-                      <Text style={{ color: '#DC2626', fontSize: 14 }}>✕</Text>
-                    </TouchableOpacity>
-                  </View>
-                ))}
-
                 <TouchableOpacity
+                  onPress={() => toggleSection('calculator')}
+                  activeOpacity={0.7}
                   style={{
-                    backgroundColor: '#0B342B',
-                    paddingVertical: 10,
-                    borderRadius: 8,
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
                     alignItems: 'center',
-                    marginTop: 8,
-                    opacity: processing ? 0.6 : 1,
-                    shadowColor: '#0B342B',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 8,
-                    elevation: 4,
+                    padding: 16,
                   }}
-                  onPress={calculateInheritance}
-                  disabled={processing}
                 >
-                  <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>
-                    {processing ? 'Calculating...' : 'Calculate Inheritance'}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <View style={{
+                      width: 3,
+                      height: 16,
+                      backgroundColor: '#C9A44B',
+                      borderRadius: 2,
+                    }} />
+                    <DocumentIcon color="#032A24" size={14} />
+                    <Text style={{ color: '#032A24', fontSize: 15, fontWeight: '600', letterSpacing: -0.2 }}>
+                      Faraidh Calculator
+                    </Text>
+                  </View>
+                  {calculatorExpanded ? (
+                    <ChevronUpIcon color="#6B7280" size={18} />
+                  ) : (
+                    <ChevronDownIcon color="#6B7280" size={18} />
+                  )}
                 </TouchableOpacity>
 
-                {inheritanceResult && (
-                  <View style={{
-                    backgroundColor: '#FAFAF7',
-                    padding: 12,
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    borderColor: '#E8EEF4',
-                    marginTop: 10,
-                  }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>Distribution</Text>
-                      <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>
-                        Total: {formatCurrency(inheritanceResult.estate)}
+                {calculatorExpanded && (
+                  <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+                    <View style={{ marginBottom: 10 }}>
+                      <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                        Estate Value (KES)
                       </Text>
+                      <TextInput
+                        style={{
+                          backgroundColor: '#FAFAF7',
+                          borderWidth: 1,
+                          borderColor: 'rgba(3, 42, 36, 0.06)',
+                          borderRadius: 10,
+                          paddingHorizontal: 14,
+                          paddingVertical: 8,
+                          color: '#1F2937',
+                          fontSize: 14,
+                        }}
+                        value={String(estateValue)}
+                        onChangeText={(text) => setEstateValue(parseFloat(text) || 0)}
+                        keyboardType="numeric"
+                        placeholderTextColor="#9CA3AF"
+                      />
                     </View>
-                    {inheritanceResult.distribution.map((item: any, index: number) => (
+
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '500' }}>Heirs</Text>
+                      <TouchableOpacity onPress={addHeir} activeOpacity={0.7}>
+                        <PlusIcon color="#C9A44B" size={14} />
+                      </TouchableOpacity>
+                    </View>
+
+                    {heirs.map((heir, index) => (
                       <View key={index} style={{
                         flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        paddingVertical: 4,
-                        borderBottomWidth: index < inheritanceResult.distribution.length - 1 ? 1 : 0,
-                        borderBottomColor: '#E8EEF4',
+                        alignItems: 'center',
+                        gap: 6,
+                        backgroundColor: '#FAFAF7',
+                        padding: 8,
+                        borderRadius: 8,
+                        borderWidth: 1,
+                        borderColor: 'rgba(3, 42, 36, 0.04)',
+                        marginBottom: 6,
                       }}>
-                        <Text style={{ color: '#6B7280', fontSize: 13 }}>
-                          {item.relation}: {item.name}
-                        </Text>
-                        <Text style={{ color: '#1F2937', fontSize: 13, fontWeight: '500' }}>
-                          {item.share} — {formatCurrency(item.amount)}
-                        </Text>
+                        <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
+                          <TextInput
+                            style={{
+                              flex: 1,
+                              minWidth: 50,
+                              backgroundColor: '#FFFFFF',
+                              borderWidth: 1,
+                              borderColor: 'rgba(3, 42, 36, 0.06)',
+                              borderRadius: 6,
+                              paddingHorizontal: 6,
+                              paddingVertical: 4,
+                              color: '#1F2937',
+                              fontSize: 12,
+                            }}
+                            value={heir.relation}
+                            onChangeText={(text) => updateHeir(index, 'relation', text)}
+                            placeholder="Relation"
+                            placeholderTextColor="#9CA3AF"
+                          />
+                          <TextInput
+                            style={{
+                              flex: 1,
+                              minWidth: 50,
+                              backgroundColor: '#FFFFFF',
+                              borderWidth: 1,
+                              borderColor: 'rgba(3, 42, 36, 0.06)',
+                              borderRadius: 6,
+                              paddingHorizontal: 6,
+                              paddingVertical: 4,
+                              color: '#1F2937',
+                              fontSize: 12,
+                            }}
+                            value={heir.name}
+                            onChangeText={(text) => updateHeir(index, 'name', text)}
+                            placeholder="Name"
+                            placeholderTextColor="#9CA3AF"
+                          />
+                          <TextInput
+                            style={{
+                              flex: 1,
+                              minWidth: 40,
+                              backgroundColor: '#FFFFFF',
+                              borderWidth: 1,
+                              borderColor: 'rgba(3, 42, 36, 0.06)',
+                              borderRadius: 6,
+                              paddingHorizontal: 6,
+                              paddingVertical: 4,
+                              color: '#1F2937',
+                              fontSize: 12,
+                            }}
+                            value={heir.share}
+                            onChangeText={(text) => updateHeir(index, 'share', text)}
+                            placeholder="Share"
+                            placeholderTextColor="#9CA3AF"
+                          />
+                        </View>
+                        <TouchableOpacity onPress={() => removeHeir(index)} activeOpacity={0.7}>
+                          <MinusIcon color="#DC2626" size={14} />
+                        </TouchableOpacity>
                       </View>
                     ))}
-                    {inheritanceResult.remaining > 0 && (
+
+                    <TouchableOpacity
+                      style={{
+                        backgroundColor: '#032A24',
+                        paddingVertical: 10,
+                        borderRadius: 10,
+                        alignItems: 'center',
+                        marginTop: 8,
+                        opacity: processing ? 0.5 : 1,
+                      }}
+                      onPress={calculateInheritance}
+                      disabled={processing}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '600' }}>
+                        {processing ? 'Calculating...' : 'Calculate Inheritance'}
+                      </Text>
+                    </TouchableOpacity>
+
+                    {inheritanceResult && (
                       <View style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        paddingTop: 6,
-                        marginTop: 4,
-                        borderTopWidth: 1,
-                        borderTopColor: '#E8EEF4',
+                        backgroundColor: 'rgba(201, 164, 75, 0.04)',
+                        padding: 12,
+                        borderRadius: 10,
+                        borderWidth: 1,
+                        borderColor: 'rgba(201, 164, 75, 0.06)',
+                        marginTop: 10,
                       }}>
-                        <Text style={{ color: '#6B7280', fontSize: 13 }}>Remaining (Asabah)</Text>
-                        <Text style={{ color: '#0B342B', fontSize: 13, fontWeight: '600' }}>
-                          {formatCurrency(inheritanceResult.remaining)}
-                        </Text>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+                          <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>Distribution</Text>
+                          <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>
+                            Total: {formatCurrency(inheritanceResult.estate)}
+                          </Text>
+                        </View>
+                        {inheritanceResult.distribution.map((item: any, index: number) => (
+                          <View key={index} style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            paddingVertical: 4,
+                            borderBottomWidth: index < inheritanceResult.distribution.length - 1 ? 1 : 0,
+                            borderBottomColor: 'rgba(3, 42, 36, 0.04)',
+                          }}>
+                            <Text style={{ color: '#6B7280', fontSize: 12 }}>
+                              {item.relation}: {item.name}
+                            </Text>
+                            <Text style={{ color: '#032A24', fontSize: 12, fontWeight: '500' }}>
+                              {item.share} — {formatCurrency(item.amount)}
+                            </Text>
+                          </View>
+                        ))}
+                        {inheritanceResult.remaining > 0 && (
+                          <View style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            paddingTop: 6,
+                            marginTop: 4,
+                            borderTopWidth: 1,
+                            borderTopColor: 'rgba(3, 42, 36, 0.04)',
+                          }}>
+                            <Text style={{ color: '#6B7280', fontSize: 12 }}>Remaining (Asabah)</Text>
+                            <Text style={{ color: '#C9A44B', fontSize: 12, fontWeight: '600' }}>
+                              {formatCurrency(inheritanceResult.remaining)}
+                            </Text>
+                          </View>
+                        )}
                       </View>
                     )}
                   </View>
                 )}
               </View>
 
-              {/* Previous Wills */}
+              {/* Previous Wills - Collapsible */}
               <View style={{
                 backgroundColor: '#FFFFFF',
-                borderRadius: 12,
-                padding: 16,
+                borderRadius: 16,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
-                shadowColor: '#000',
+                borderColor: 'rgba(3, 42, 36, 0.06)',
+                shadowColor: '#032A24',
                 shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.04,
-                shadowRadius: 4,
+                shadowOpacity: 0.02,
+                shadowRadius: 8,
                 elevation: 1,
+                overflow: 'hidden',
               }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '700' }}>Previous Wills</Text>
-                  <TouchableOpacity onPress={fetchWillsHistory}>
-                    <Text style={{ color: '#0B342B', fontSize: 13, fontWeight: '500' }}>Refresh</Text>
-                  </TouchableOpacity>
-                </View>
-
-                {loadingHistory ? (
-                  <View style={{ alignItems: 'center', paddingVertical: 16 }}>
-                    <ActivityIndicator size="small" color="#C9A44B" />
-                  </View>
-                ) : willsHistory.length === 0 ? (
-                  <View style={{ alignItems: 'center', paddingVertical: 16 }}>
-                    <Text style={{ color: '#6B7280', fontSize: 14 }}>No previous wills</Text>
-                    <Text style={{ color: '#6B7280', fontSize: 13, marginTop: 2 }}>Create your first will</Text>
-                  </View>
-                ) : (
-                  willsHistory.slice(0, 5).map((will) => (
-                    <TouchableOpacity
-                      key={will.id}
-                      style={{
-                        backgroundColor: '#FAFAF7',
-                        padding: 10,
+                <TouchableOpacity
+                  onPress={() => toggleSection('history')}
+                  activeOpacity={0.7}
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: 16,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <View style={{
+                      width: 3,
+                      height: 16,
+                      backgroundColor: '#C9A44B',
+                      borderRadius: 2,
+                    }} />
+                    <DocumentIcon color="#032A24" size={14} />
+                    <Text style={{ color: '#032A24', fontSize: 15, fontWeight: '600', letterSpacing: -0.2 }}>
+                      Previous Wills
+                    </Text>
+                    {willsHistory.length > 0 && (
+                      <View style={{
+                        backgroundColor: 'rgba(3, 42, 36, 0.06)',
+                        paddingHorizontal: 8,
+                        paddingVertical: 2,
                         borderRadius: 8,
-                        borderWidth: 1,
-                        borderColor: '#E8EEF4',
-                        marginBottom: 6,
-                      }}
-                      onPress={() => fetchWillById(will.id)}
-                    >
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <View>
-                          <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '500' }}>
-                            {will.fullName || will.version}
-                          </Text>
-                          <Text style={{ color: '#6B7280', fontSize: 13 }}>{formatDate(will.date)}</Text>
-                          {will.reference && (
-                            <Text style={{ color: '#6B7280', fontSize: 12, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }}>
-                              Ref: {will.reference}
-                            </Text>
-                          )}
-                        </View>
-                        <View style={{ alignItems: 'flex-end' }}>
-                          <View style={{
-                            backgroundColor: will.status === 'active' ? '#D1FAE5' :
-                                          will.status === 'completed' ? '#DBEAFE' :
-                                          '#FEF3C7',
-                            paddingHorizontal: 6,
-                            paddingVertical: 2,
-                            borderRadius: 999,
-                            borderWidth: 1,
-                            borderColor: will.status === 'active' ? '#A7F3D0' :
-                                          will.status === 'completed' ? '#BFDBFE' :
-                                          '#FDE68A',
-                          }}>
-                            <Text style={{
-                              color: will.status === 'active' ? '#3FAF73' :
-                                     will.status === 'completed' ? '#3B82F6' :
-                                     '#D97706',
-                              fontSize: 11,
-                              fontWeight: '500',
-                            }}>
-                              {will.status === 'active' ? 'Active' :
-                               will.status === 'completed' ? 'Completed' : 'Draft'}
-                            </Text>
-                          </View>
-                          <Text style={{ color: '#6B7280', fontSize: 12 }}>v{will.version || '1'}</Text>
-                        </View>
+                      }}>
+                        <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '500' }}>
+                          {willsHistory.length}
+                        </Text>
                       </View>
+                    )}
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <TouchableOpacity onPress={fetchWillsHistory} activeOpacity={0.7}>
+                      <Text style={{ color: '#6B7280', fontSize: 11 }}>Refresh</Text>
                     </TouchableOpacity>
-                  ))
+                    {historyExpanded ? (
+                      <ChevronUpIcon color="#6B7280" size={18} />
+                    ) : (
+                      <ChevronDownIcon color="#6B7280" size={18} />
+                    )}
+                  </View>
+                </TouchableOpacity>
+
+                {historyExpanded && (
+                  <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+                    {loadingHistory ? (
+                      <View style={{ alignItems: 'center', paddingVertical: 16 }}>
+                        <ActivityIndicator size="small" color="#032A24" />
+                      </View>
+                    ) : willsHistory.length === 0 ? (
+                      <View style={{ alignItems: 'center', paddingVertical: 16 }}>
+                        <Text style={{ color: '#9CA3AF', fontSize: 13 }}>No previous wills</Text>
+                        <Text style={{ color: '#9CA3AF', fontSize: 11, marginTop: 2 }}>Create your first will</Text>
+                      </View>
+                    ) : (
+                      willsHistory.slice(0, 5).map((will) => (
+                        <TouchableOpacity
+                          key={will.id}
+                          style={{
+                            backgroundColor: '#FAFAF7',
+                            padding: 10,
+                            borderRadius: 10,
+                            borderWidth: 1,
+                            borderColor: 'rgba(3, 42, 36, 0.04)',
+                            marginBottom: 6,
+                          }}
+                          onPress={() => fetchWillById(will.id)}
+                          activeOpacity={0.7}
+                        >
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <View>
+                              <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '500' }}>
+                                {will.fullName || will.version}
+                              </Text>
+                              <Text style={{ color: '#6B7280', fontSize: 11 }}>{formatDate(will.date)}</Text>
+                              {will.reference && (
+                                <Text style={{ color: '#9CA3AF', fontSize: 10, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }}>
+                                  Ref: {will.reference}
+                                </Text>
+                              )}
+                            </View>
+                            <View style={{ alignItems: 'flex-end' }}>
+                              <View style={{
+                                backgroundColor: will.status === 'active' ? '#D1FAE5' :
+                                              will.status === 'completed' ? '#DBEAFE' :
+                                              '#FEF3C7',
+                                paddingHorizontal: 6,
+                                paddingVertical: 2,
+                                borderRadius: 8,
+                              }}>
+                                <Text style={{
+                                  color: will.status === 'active' ? '#3FAF73' :
+                                         will.status === 'completed' ? '#3B82F6' :
+                                         '#D97706',
+                                  fontSize: 9,
+                                  fontWeight: '500',
+                                }}>
+                                  {will.status === 'active' ? 'Active' :
+                                   will.status === 'completed' ? 'Completed' : 'Draft'}
+                                </Text>
+                              </View>
+                              <Text style={{ color: '#9CA3AF', fontSize: 10 }}>v{will.version || '1'}</Text>
+                            </View>
+                          </View>
+                        </TouchableOpacity>
+                      ))
+                    )}
+                  </View>
                 )}
               </View>
             </View>
+          </View>
+
+          {/* Footer */}
+          <View style={{ alignItems: 'center', marginTop: 24 }}>
+            <Text style={{
+              color: 'rgba(201, 164, 75, 0.2)',
+              fontSize: 9,
+              letterSpacing: 1,
+              fontWeight: '500',
+            }}>
+              Itqaan · Digital Wasiyyah Services
+            </Text>
           </View>
         </View>
       </ScrollView>
 
       {/* Confirmation Modal */}
       <Modal visible={showConfirmModal} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
+            borderRadius: 20,
+            padding: 24,
             width: '100%',
-            maxWidth: 400,
+            maxWidth: 420,
             maxHeight: '90%',
           }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ color: '#1F2937', fontSize: 20, fontWeight: '700' }}>Confirm Will</Text>
-              <TouchableOpacity onPress={() => setShowConfirmModal(false)}>
-                <Text style={{ color: '#6B7280', fontSize: 20 }}>✕</Text>
+              <Text style={{ color: '#032A24', fontSize: 18, fontWeight: '700', letterSpacing: -0.3 }}>
+                Confirm Will
+              </Text>
+              <TouchableOpacity onPress={() => setShowConfirmModal(false)} activeOpacity={0.7} style={{ padding: 4 }}>
+                <CloseIcon color="#6B7280" size={20} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={{ alignItems: 'center', marginBottom: 12 }}>
-                <Text style={{ fontSize: 40, marginBottom: 6 }}>📜</Text>
-                <Text style={{ color: '#1F2937', fontSize: 18, fontWeight: '700' }}>Save Your Islamic Will</Text>
-                <Text style={{ color: '#6B7280', fontSize: 14, marginTop: 2 }}>Your will will be encrypted and stored securely.</Text>
+                <WillIcon color="#C9A44B" size={32} />
+                <Text style={{ color: '#032A24', fontSize: 18, fontWeight: '700', marginTop: 6 }}>Save Your Islamic Will</Text>
+                <Text style={{ color: '#6B7280', fontSize: 13, marginTop: 2 }}>Your will will be encrypted and stored securely.</Text>
               </View>
 
               <View style={{
                 backgroundColor: '#FAFAF7',
                 padding: 12,
-                borderRadius: 8,
+                borderRadius: 10,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
+                borderColor: 'rgba(3, 42, 36, 0.04)',
                 marginBottom: 12,
               }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Executor</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>{willData.executorName}</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Executor</Text>
+                  <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>{willData.executorName}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Bequests</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Bequests</Text>
+                  <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>
                     {willData.bequests.filter((b) => b.name).length}
                   </Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Heirs</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Heirs</Text>
+                  <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>
                     {heirs.filter((h) => h.relation || h.name).length}
                   </Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Witnesses</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Witnesses</Text>
+                  <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>
                     {willData.witnesses.filter((w) => w.name).length}/2
                   </Text>
                 </View>
               </View>
 
-              {error ? <Text style={{ color: '#DC2626', fontSize: 13, marginBottom: 8 }}>{error}</Text> : null}
+              {error ? <Text style={{ color: '#DC2626', fontSize: 12, marginBottom: 8 }}>{error}</Text> : null}
 
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 <TouchableOpacity
                   style={{
                     flex: 1,
-                    backgroundColor: '#F4F5F1',
+                    backgroundColor: '#F3F4F6',
                     paddingVertical: 10,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     alignItems: 'center',
                   }}
                   onPress={() => setShowConfirmModal(false)}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#6B7280', fontSize: 15, fontWeight: '500' }}>Cancel</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '500' }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={{
                     flex: 2,
-                    backgroundColor: '#0B342B',
+                    backgroundColor: '#032A24',
                     paddingVertical: 10,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     alignItems: 'center',
-                    opacity: processing ? 0.6 : 1,
-                    shadowColor: '#0B342B',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 8,
-                    elevation: 4,
+                    opacity: processing ? 0.5 : 1,
                   }}
                   onPress={confirmSaveWill}
                   disabled={processing}
+                  activeOpacity={0.7}
                 >
                   {processing ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <ActivityIndicator size="small" color="#FFFFFF" />
-                      <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>Saving...</Text>
+                      <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Saving...</Text>
                     </View>
                   ) : (
-                    <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>Save Will</Text>
+                    <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Save Will</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -1240,91 +1699,90 @@ const Wills = () => {
 
       {/* Success Modal */}
       <Modal visible={showSuccessModal} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
+            borderRadius: 20,
+            padding: 24,
             width: '100%',
-            maxWidth: 400,
+            maxWidth: 420,
             maxHeight: '90%',
           }}>
             <View style={{
-              backgroundColor: '#0B342B',
+              backgroundColor: '#032A24',
               padding: 16,
-              borderTopLeftRadius: 12,
-              borderTopRightRadius: 12,
-              margin: -20,
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              margin: -24,
               marginBottom: 16,
               flexDirection: 'row',
               justifyContent: 'space-between',
               alignItems: 'center',
             }}>
-              <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700' }}>Will Saved</Text>
-              <TouchableOpacity onPress={() => setShowSuccessModal(false)}>
-                <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 20 }}>✕</Text>
+              <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700', letterSpacing: -0.3 }}>
+                Will Saved
+              </Text>
+              <TouchableOpacity onPress={() => setShowSuccessModal(false)} activeOpacity={0.7} style={{ padding: 4 }}>
+                <CloseIcon color="rgba(255,255,255,0.6)" size={20} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={{ alignItems: 'center', marginBottom: 16 }}>
                 <View style={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: 32,
-                  backgroundColor: 'rgba(11, 52, 43, 0.1)',
+                  width: 60,
+                  height: 60,
+                  borderRadius: 30,
+                  backgroundColor: 'rgba(63, 175, 115, 0.08)',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  borderWidth: 4,
-                  borderColor: 'rgba(11, 52, 43, 0.2)',
+                  borderWidth: 3,
+                  borderColor: 'rgba(63, 175, 115, 0.12)',
                 }}>
-                  <Text style={{ color: '#0B342B', fontSize: 32 }}>✓</Text>
+                  <CheckIcon color="#3FAF73" size={30} />
                 </View>
-                <Text style={{ color: '#6B7280', fontSize: 14, marginTop: 8 }}>Your Islamic Will has been created</Text>
-                <Text style={{ color: '#1F2937', fontSize: 20, fontWeight: '700', marginTop: 2 }}>Successfully Saved</Text>
+                <Text style={{ color: '#6B7280', fontSize: 13, marginTop: 8 }}>Your Islamic Will has been created</Text>
+                <Text style={{ color: '#032A24', fontSize: 18, fontWeight: '700', marginTop: 2 }}>Successfully Saved</Text>
               </View>
 
               <View style={{
-                backgroundColor: '#FAFAF7',
+                backgroundColor: 'rgba(63, 175, 115, 0.04)',
                 padding: 12,
-                borderRadius: 8,
+                borderRadius: 10,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
+                borderColor: 'rgba(63, 175, 115, 0.06)',
                 marginBottom: 16,
               }}>
-                <Text style={{ color: '#6B7280', fontSize: 14, textAlign: 'center', lineHeight: 20 }}>
+                <Text style={{ color: '#6B7280', fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
                   Your will is encrypted and stored securely. Share the downloaded file with your lawyer and executor.
                 </Text>
               </View>
 
               <TouchableOpacity
                 style={{
-                  backgroundColor: '#0B342B',
+                  backgroundColor: '#032A24',
                   paddingVertical: 10,
-                  borderRadius: 8,
+                  borderRadius: 10,
                   alignItems: 'center',
                   marginBottom: 10,
-                  shadowColor: '#0B342B',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.2,
-                  shadowRadius: 8,
-                  elevation: 4,
                 }}
                 onPress={generatePDF}
+                activeOpacity={0.7}
               >
-                <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>Download PDF</Text>
+                <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Download PDF</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={{
-                  backgroundColor: '#F4F5F1',
+                  backgroundColor: '#F3F4F6',
                   paddingVertical: 10,
-                  borderRadius: 8,
+                  borderRadius: 10,
                   alignItems: 'center',
                 }}
                 onPress={() => setShowSuccessModal(false)}
+                activeOpacity={0.7}
               >
-                <Text style={{ color: '#6B7280', fontSize: 15, fontWeight: '500' }}>Done</Text>
+                <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '500' }}>Done</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -1335,28 +1793,28 @@ const Wills = () => {
       {success ? (
         <View style={{
           position: 'absolute',
-          top: 60,
-          right: 16,
-          left: 16,
-          backgroundColor: '#0B342B',
-          paddingHorizontal: 16,
-          paddingVertical: 12,
-          borderRadius: 12,
+          top: Platform.OS === 'ios' ? 60 : 40,
+          right: 20,
+          left: 20,
+          backgroundColor: '#032A24',
+          paddingHorizontal: 18,
+          paddingVertical: 14,
+          borderRadius: 14,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          shadowColor: '#0B342B',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          elevation: 4,
+          shadowColor: '#032A24',
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.2,
+          shadowRadius: 16,
+          elevation: 8,
         }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text style={{ color: '#C9A44B', fontSize: 16 }}>✓</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <CheckIcon color="#C9A44B" size={18} />
             <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '500', flex: 1 }}>{success}</Text>
           </View>
-          <TouchableOpacity onPress={() => setSuccess('')}>
-            <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 16 }}>✕</Text>
+          <TouchableOpacity onPress={() => setSuccess('')} activeOpacity={0.7} style={{ padding: 4 }}>
+            <CloseIcon color="rgba(255,255,255,0.5)" size={18} />
           </TouchableOpacity>
         </View>
       ) : null}

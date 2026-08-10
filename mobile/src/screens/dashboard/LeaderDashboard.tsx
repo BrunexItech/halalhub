@@ -10,11 +10,113 @@ import {
   RefreshControl,
   Modal,
   Platform,
+  Dimensions,
+  LayoutAnimation,
+  UIManager,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { leaderService, walletService } from '../../api/client';
+import Svg, { Path, Circle, Rect } from 'react-native-svg';
+
+// Enable LayoutAnimation for Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const { width } = Dimensions.get('window');
+
+// ===== PROFESSIONAL SVG ICONS =====
+const BackIcon = ({ color = '#032A24', size = 24 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M15 18L9 12L15 6" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const DashboardIcon = ({ color = '#C9A44B', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Rect x="3" y="3" width="7" height="7" rx="1" stroke={color} strokeWidth="1.5"/>
+    <Rect x="14" y="3" width="7" height="7" rx="1" stroke={color} strokeWidth="1.5"/>
+    <Rect x="3" y="14" width="7" height="7" rx="1" stroke={color} strokeWidth="1.5"/>
+    <Rect x="14" y="14" width="7" height="7" rx="1" stroke={color} strokeWidth="1.5"/>
+  </Svg>
+);
+
+const WalletIcon = ({ color = '#FFFFFF', size = 18 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Rect x="2" y="5" width="20" height="14" rx="2" stroke={color} strokeWidth="1.5"/>
+    <Path d="M16 13C16 12.4477 16.4477 12 17 12H20C20.5523 12 21 12.4477 21 13V15C21 15.5523 20.5523 16 20 16H17C16.4477 16 16 15.5523 16 15V13Z" fill={color} opacity="0.1" stroke={color} strokeWidth="1.5"/>
+    <Circle cx="18" cy="14" r="0.5" fill={color}/>
+  </Svg>
+);
+
+const UsersIcon = ({ color = '#6B7280', size = 16 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <Circle cx="9" cy="7" r="4" stroke={color} strokeWidth="1.5"/>
+    <Path d="M23 21v-2a4 4 0 00-3-3.87" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <Path d="M16 3.13a4 4 0 010 7.75" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </Svg>
+);
+
+const HeartIcon = ({ color = '#6B7280', size = 16 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" stroke={color} strokeWidth="1.5"/>
+  </Svg>
+);
+
+const AwardIcon = ({ color = '#6B7280', size = 16 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="8" r="6" stroke={color} strokeWidth="1.5"/>
+    <Path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" stroke={color} strokeWidth="1.5" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const CheckIcon = ({ color = '#FFFFFF', size = 12 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M5 12L10 17L20 7" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const CloseIcon = ({ color = '#6B7280', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M18 6L6 18M6 6L18 18" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const ShareIcon = ({ color = '#C9A44B', size = 14 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <Path d="M12 2v12m0 0l3-3m-3 3l-3-3" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const ShieldIcon = ({ color = '#C9A44B', size = 14 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <Path d="M9 12l2 2 4-4" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const ChevronDownIcon = ({ color = '#6B7280', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M6 9L12 15L18 9" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const ChevronUpIcon = ({ color = '#6B7280', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M18 15L12 9L6 15" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const PlusIcon = ({ color = '#C9A44B', size = 16 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.5"/>
+    <Path d="M12 8V16" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <Path d="M8 12H16" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </Svg>
+);
 
 const LeaderDashboard = () => {
   const navigation = useNavigation();
@@ -50,11 +152,18 @@ const LeaderDashboard = () => {
     notes: '',
   });
 
+  const [contributionsExpanded, setContributionsExpanded] = useState(false);
+
   const quickAmounts = [500, 1000, 2500, 5000, 10000];
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  const toggleContributions = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setContributionsExpanded(!contributionsExpanded);
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -235,8 +344,8 @@ const LeaderDashboard = () => {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <ActivityIndicator size="large" color="#C9A44B" />
-          <Text style={{ color: '#6B7280', marginTop: 12, fontSize: 14 }}>Loading...</Text>
+          <ActivityIndicator size="large" color="#032A24" />
+          <Text style={{ color: '#6B7280', marginTop: 16, fontSize: 14 }}>Loading...</Text>
         </View>
       </SafeAreaView>
     );
@@ -245,154 +354,254 @@ const LeaderDashboard = () => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
       <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+        contentContainerStyle={{
+          paddingTop: 36,
+          paddingHorizontal: 20,
+          paddingBottom: 40,
+        }}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#C9A44B" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#032A24" />}
       >
-        <View style={{ maxWidth: 700, width: '100%', alignSelf: 'center' }}>
-          {/* Toast Notifications - Success */}
+        <View style={{ maxWidth: 800, width: '100%', alignSelf: 'center' }}>
+          {/* ===== PREMIUM HEADER WITH AURA ===== */}
+          <View style={{
+            backgroundColor: '#032A24',
+            borderRadius: 18,
+            paddingHorizontal: 20,
+            paddingTop: 30,
+            paddingBottom: 20,
+            marginBottom: 20,
+            borderWidth: 1,
+            borderColor: 'rgba(201, 164, 75, 0.12)',
+            shadowColor: '#C9A44B',
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.06,
+            shadowRadius: 24,
+            elevation: 6,
+            overflow: 'hidden',
+          }}>
+            {/* Aura Glow Effect */}
+            <View style={{
+              position: 'absolute',
+              top: -80,
+              right: -60,
+              width: 200,
+              height: 200,
+              borderRadius: 100,
+              backgroundColor: 'rgba(201, 164, 75, 0.04)',
+            }} />
+            <View style={{
+              position: 'absolute',
+              bottom: -60,
+              left: -40,
+              width: 160,
+              height: 160,
+              borderRadius: 80,
+              backgroundColor: 'rgba(201, 164, 75, 0.03)',
+            }} />
+            <View style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 2,
+              backgroundColor: '#C9A44B',
+              opacity: 0.15,
+            }} />
+
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                activeOpacity={0.7}
+                style={{
+                  padding: 8,
+                  marginRight: 14,
+                  borderRadius: 12,
+                  backgroundColor: 'rgba(201, 164, 75, 0.06)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(201, 164, 75, 0.06)',
+                }}
+              >
+                <BackIcon color="#C9A44B" size={20} />
+              </TouchableOpacity>
+
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                  <View style={{
+                    width: 4,
+                    height: 4,
+                    borderRadius: 2,
+                    backgroundColor: '#C9A44B',
+                    opacity: 0.6,
+                  }} />
+                  <Text style={{
+                    color: '#C9A44B',
+                    fontSize: 11,
+                    fontWeight: '500',
+                    letterSpacing: 1.2,
+                    textTransform: 'uppercase',
+                  }}>
+                    Dashboard
+                  </Text>
+                </View>
+                <Text style={{
+                  color: '#FFFFFF',
+                  fontSize: 22,
+                  fontWeight: '700',
+                  letterSpacing: -0.4,
+                  marginBottom: 1,
+                }}>
+                  Leader Dashboard
+                </Text>
+                <Text style={{
+                  color: 'rgba(255,255,255,0.4)',
+                  fontSize: 12,
+                  letterSpacing: 0.2,
+                }}>
+                  Manage your pension and supporters
+                </Text>
+              </View>
+
+              {/* Premium Icon Badge */}
+              <View style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: 'rgba(201, 164, 75, 0.06)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 1,
+                borderColor: 'rgba(201, 164, 75, 0.08)',
+              }}>
+                <View style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: 3,
+                  backgroundColor: '#C9A44B',
+                  opacity: 0.3,
+                }} />
+              </View>
+            </View>
+          </View>
+
+          {/* ===== SUCCESS/ERROR TOASTS ===== */}
           {success ? (
             <View style={{
-              backgroundColor: '#FFFFFF',
-              borderLeftWidth: 4,
-              borderLeftColor: '#3FAF73',
+              backgroundColor: 'rgba(63, 175, 115, 0.04)',
+              borderWidth: 1,
+              borderColor: 'rgba(63, 175, 115, 0.08)',
               borderRadius: 12,
-              padding: 12,
-              marginBottom: 12,
+              padding: 14,
+              marginBottom: 14,
               flexDirection: 'row',
               justifyContent: 'space-between',
               alignItems: 'center',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.04,
-              shadowRadius: 4,
-              elevation: 1,
             }}>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: '#3FAF73', fontSize: 13, fontWeight: '500' }}>Success</Text>
-                <Text style={{ color: '#6B7280', fontSize: 13 }}>{success}</Text>
-              </View>
-              <TouchableOpacity onPress={() => setSuccess('')}>
-                <Text style={{ color: '#6B7280', fontSize: 16 }}>✕</Text>
+              <Text style={{ color: '#3FAF73', fontSize: 13, flex: 1 }}>{success}</Text>
+              <TouchableOpacity onPress={() => setSuccess('')} activeOpacity={0.7} style={{ padding: 4 }}>
+                <CloseIcon color="#6B7280" size={16} />
               </TouchableOpacity>
             </View>
           ) : null}
 
           {error ? (
             <View style={{
-              backgroundColor: '#FFFFFF',
-              borderLeftWidth: 4,
-              borderLeftColor: '#DC2626',
+              backgroundColor: '#FEF2F2',
+              borderWidth: 1,
+              borderColor: '#FECACA',
               borderRadius: 12,
-              padding: 12,
-              marginBottom: 12,
+              padding: 14,
+              marginBottom: 14,
               flexDirection: 'row',
               justifyContent: 'space-between',
               alignItems: 'center',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.04,
-              shadowRadius: 4,
-              elevation: 1,
             }}>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: '#DC2626', fontSize: 13, fontWeight: '500' }}>Error</Text>
-                <Text style={{ color: '#6B7280', fontSize: 13 }}>{error}</Text>
-              </View>
-              <TouchableOpacity onPress={() => setError('')}>
-                <Text style={{ color: '#6B7280', fontSize: 16 }}>✕</Text>
+              <Text style={{ color: '#DC2626', fontSize: 13, flex: 1 }}>{error}</Text>
+              <TouchableOpacity
+                style={{ backgroundColor: '#DC2626', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 6 }}
+                onPress={() => setError('')}
+              >
+                <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '600' }}>Dismiss</Text>
               </TouchableOpacity>
             </View>
           ) : null}
 
-          {/* Hero Section */}
+          {/* ===== PROFILE HERO SECTION ===== */}
           <View style={{
             backgroundColor: '#032A24',
-            borderRadius: 16,
+            borderRadius: 18,
             padding: 20,
             marginBottom: 16,
             overflow: 'hidden',
             borderWidth: 1,
             borderColor: 'rgba(201, 164, 75, 0.1)',
-            shadowColor: '#000',
+            shadowColor: '#032A24',
             shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.1,
-            shadowRadius: 8,
+            shadowOpacity: 0.08,
+            shadowRadius: 16,
             elevation: 4,
           }}>
-            <View style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, backgroundColor: 'rgba(201, 164, 75, 0.05)', borderRadius: 999 }} />
-            <View style={{ position: 'absolute', bottom: -30, left: -30, width: 80, height: 80, backgroundColor: 'rgba(201, 164, 75, 0.05)', borderRadius: 999 }} />
+            <View style={{ position: 'absolute', top: -60, right: -60, width: 140, height: 140, backgroundColor: 'rgba(201, 164, 75, 0.03)', borderRadius: 999 }} />
+            <View style={{ position: 'absolute', bottom: -40, left: -40, width: 100, height: 100, backgroundColor: 'rgba(201, 164, 75, 0.03)', borderRadius: 999 }} />
 
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <View style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 26,
-                  backgroundColor: 'rgba(201, 164, 75, 0.1)',
+                  width: 56,
+                  height: 56,
+                  borderRadius: 28,
+                  backgroundColor: 'rgba(201, 164, 75, 0.08)',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  borderWidth: 1,
-                  borderColor: 'rgba(201, 164, 75, 0.2)',
+                  borderWidth: 2,
+                  borderColor: 'rgba(201, 164, 75, 0.15)',
                 }}>
-                  <Text style={{ color: '#C9A44B', fontSize: 18, fontWeight: '700' }}>
+                  <Text style={{ color: '#C9A44B', fontSize: 20, fontWeight: '700', letterSpacing: -0.5 }}>
                     {getInitials()}
                   </Text>
                 </View>
                 <View>
-                  <Text style={{ color: '#FFFFFF', fontSize: 20, fontWeight: '700' }}>
+                  <Text style={{ color: '#FFFFFF', fontSize: 20, fontWeight: '700', letterSpacing: -0.3 }}>
                     {getDisplayName()}
                   </Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
-                    <Text style={{ color: '#C9A44B', fontSize: 14 }}>
+                    <Text style={{ color: '#C9A44B', fontSize: 13 }}>
                       {getLeaderTypeLabel(leaderType)}
                     </Text>
-                    <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: 'rgba(201, 164, 75, 0.4)' }} />
-                    <Text style={{ color: 'rgba(201, 164, 75, 0.7)', fontSize: 14 }}>
+                    <View style={{ width: 3, height: 3, borderRadius: 1.5, backgroundColor: 'rgba(201, 164, 75, 0.3)' }} />
+                    <Text style={{ color: 'rgba(201, 164, 75, 0.5)', fontSize: 13 }}>
                       {profile?.years_of_service || 0} years
                     </Text>
                     {profile?.is_verified && (
                       <View style={{
-                        backgroundColor: 'rgba(63, 175, 115, 0.2)',
-                        paddingHorizontal: 6,
+                        backgroundColor: 'rgba(63, 175, 115, 0.12)',
+                        paddingHorizontal: 8,
                         paddingVertical: 2,
-                        borderRadius: 999,
+                        borderRadius: 8,
                         borderWidth: 1,
-                        borderColor: 'rgba(63, 175, 115, 0.3)',
+                        borderColor: 'rgba(63, 175, 115, 0.15)',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 4,
                       }}>
-                        <Text style={{ color: '#D1FAE5', fontSize: 11, fontWeight: '500' }}>Verified</Text>
+                        <CheckIcon color="#3FAF73" size={10} />
+                        <Text style={{ color: '#3FAF73', fontSize: 10, fontWeight: '500' }}>Verified</Text>
                       </View>
                     )}
                     <View style={{
-                      backgroundColor: isPublic ? 'rgba(63, 175, 115, 0.2)' : 'rgba(255,255,255,0.1)',
-                      paddingHorizontal: 6,
+                      backgroundColor: isPublic ? 'rgba(63, 175, 115, 0.08)' : 'rgba(255,255,255,0.05)',
+                      paddingHorizontal: 8,
                       paddingVertical: 2,
-                      borderRadius: 999,
+                      borderRadius: 8,
                       borderWidth: 1,
-                      borderColor: isPublic ? 'rgba(63, 175, 115, 0.3)' : 'rgba(255,255,255,0.1)',
+                      borderColor: isPublic ? 'rgba(63, 175, 115, 0.12)' : 'rgba(255,255,255,0.06)',
                     }}>
                       <Text style={{
-                        color: isPublic ? '#D1FAE5' : '#B7C0BA',
-                        fontSize: 11,
+                        color: isPublic ? '#3FAF73' : 'rgba(255,255,255,0.3)',
+                        fontSize: 10,
                         fontWeight: '500',
                       }}>
                         {isPublic ? 'Public' : 'Private'}
-                      </Text>
-                    </View>
-                    <View style={{
-                      backgroundColor: profile?.status === 'approved' ? 'rgba(63, 175, 115, 0.2)' : 'rgba(254, 243, 199, 0.2)',
-                      paddingHorizontal: 6,
-                      paddingVertical: 2,
-                      borderRadius: 999,
-                      borderWidth: 1,
-                      borderColor: profile?.status === 'approved' ? 'rgba(63, 175, 115, 0.3)' : 'rgba(254, 243, 199, 0.3)',
-                    }}>
-                      <Text style={{
-                        color: profile?.status === 'approved' ? '#D1FAE5' : '#FCD34D',
-                        fontSize: 11,
-                        fontWeight: '500',
-                      }}>
-                        {profile?.status || 'pending'}
                       </Text>
                     </View>
                   </View>
@@ -402,24 +611,32 @@ const LeaderDashboard = () => {
               <TouchableOpacity
                 style={{
                   paddingHorizontal: 14,
-                  paddingVertical: 6,
-                  borderRadius: 8,
+                  paddingVertical: 8,
+                  borderRadius: 10,
                   backgroundColor: isPublic
-                    ? 'rgba(63, 175, 115, 0.2)'
+                    ? 'rgba(63, 175, 115, 0.12)'
                     : profile?.status === 'approved'
                       ? '#C9A44B'
-                      : '#6B7280',
-                  opacity: isPublic ? 1 : profile?.status === 'approved' ? 1 : 0.5,
+                      : 'rgba(255,255,255,0.05)',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
                 }}
                 onPress={handleShareLink}
                 disabled={processing || isPublic || profile?.status !== 'approved'}
+                activeOpacity={0.7}
               >
+                {isPublic ? (
+                  <CheckIcon color="#3FAF73" size={12} />
+                ) : (
+                  <ShareIcon color={profile?.status === 'approved' ? '#032A24' : 'rgba(255,255,255,0.3)'} size={12} />
+                )}
                 <Text style={{
-                  color: isPublic ? '#D1FAE5' : profile?.status === 'approved' ? '#032A24' : '#FFFFFF',
-                  fontSize: 13,
+                  color: isPublic ? '#3FAF73' : profile?.status === 'approved' ? '#032A24' : 'rgba(255,255,255,0.3)',
+                  fontSize: 12,
                   fontWeight: '600',
                 }}>
-                  {isPublic ? '✓ Profile is Public' : processing ? 'Processing...' : 'Share Support Link'}
+                  {isPublic ? 'Profile is Public' : processing ? 'Processing...' : 'Share Support Link'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -431,56 +648,86 @@ const LeaderDashboard = () => {
               marginTop: 16,
               paddingTop: 16,
               borderTopWidth: 1,
-              borderTopColor: 'rgba(201, 164, 75, 0.1)',
+              borderTopColor: 'rgba(201, 164, 75, 0.06)',
             }}>
               {[
-                { label: 'Total Pension', value: formatCurrency(pensionData.totalAmount) },
-                { label: 'Supporters', value: pensionData.totalSupporters },
-                { label: 'Transactions', value: pensionData.totalTransactions },
-                { label: 'Wallet Balance', value: formatCurrency(walletBalance) },
+                { label: 'Total Pension', value: formatCurrency(pensionData.totalAmount), color: '#C9A44B' },
+                { label: 'Supporters', value: pensionData.totalSupporters, color: '#FFFFFF' },
+                { label: 'Transactions', value: pensionData.totalTransactions, color: '#FFFFFF' },
+                { label: 'Wallet Balance', value: formatCurrency(walletBalance), color: '#3FAF73' },
               ].map((item, index) => (
                 <View key={index} style={{ flex: 1, minWidth: 60 }}>
-                  <Text style={{ color: 'rgba(201, 164, 75, 0.5)', fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                     {item.label}
                   </Text>
-                  <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700' }}>{item.value}</Text>
+                  <Text style={{ color: item.color, fontSize: 18, fontWeight: '700', letterSpacing: -0.2 }}>
+                    {item.value}
+                  </Text>
                 </View>
               ))}
             </View>
           </View>
 
-          {/* Quick Actions */}
+          {/* ===== QUICK ACTIONS ===== */}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
             {[
-              { label: 'Add to Pension', action: () => setShowContributeModal(true) },
-              { label: 'Request Withdrawal', action: () => setShowWithdrawModal(true) },
-              { label: `View Supporters (${supporters.length})`, action: () => setShowSupportersModal(true) },
-              { label: 'Refresh', action: fetchData },
+              { 
+                label: 'Add to Pension', 
+                action: () => setShowContributeModal(true), 
+                icon: <PlusIcon color="#C9A44B" size={14} />, 
+                color: '#032A24',
+                textColor: '#FFFFFF',
+              },
+              { 
+                label: 'Request Withdrawal', 
+                action: () => setShowWithdrawModal(true), 
+                icon: <WalletIcon color="#032A24" size={14} />, 
+                color: '#FFFFFF',
+                textColor: '#032A24',
+              },
+              { 
+                label: `Supporters (${supporters.length})`, 
+                action: () => setShowSupportersModal(true), 
+                icon: <UsersIcon color="#032A24" size={14} />, 
+                color: '#FFFFFF',
+                textColor: '#032A24',
+              },
+              { 
+                label: 'Refresh', 
+                action: fetchData, 
+                icon: null, 
+                color: '#FFFFFF',
+                textColor: '#032A24',
+              },
             ].map((item, index) => (
               <TouchableOpacity
                 key={index}
                 style={{
                   flex: 1,
-                  minWidth: 80,
-                  backgroundColor: index === 0 ? '#0B342B' : '#FFFFFF',
-                  paddingVertical: 8,
-                  paddingHorizontal: 10,
-                  borderRadius: 8,
-                  borderWidth: index === 0 ? 0 : 1,
-                  borderColor: '#E8EEF4',
-                  shadowColor: index === 0 ? '#0B342B' : 'transparent',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: index === 0 ? 0.1 : 0,
-                  shadowRadius: 8,
-                  elevation: index === 0 ? 2 : 0,
+                  minWidth: 70,
+                  backgroundColor: item.color,
+                  paddingVertical: 10,
+                  paddingHorizontal: 8,
+                  borderRadius: 12,
+                  borderWidth: item.color === '#FFFFFF' ? 1 : 0,
+                  borderColor: 'rgba(3, 42, 36, 0.06)',
                   alignItems: 'center',
+                  justifyContent: 'center',
+                  shadowColor: item.color === '#032A24' ? '#032A24' : 'transparent',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: item.color === '#032A24' ? 0.08 : 0,
+                  shadowRadius: 12,
+                  elevation: item.color === '#032A24' ? 2 : 0,
                 }}
                 onPress={item.action}
+                activeOpacity={0.7}
               >
+                {item.icon && <View style={{ marginBottom: 2 }}>{item.icon}</View>}
                 <Text style={{
-                  color: index === 0 ? '#FFFFFF' : '#1F2937',
-                  fontSize: 13,
+                  color: item.textColor,
+                  fontSize: 11,
                   fontWeight: '500',
+                  textAlign: 'center',
                 }}>
                   {item.label}
                 </Text>
@@ -488,131 +735,176 @@ const LeaderDashboard = () => {
             ))}
           </View>
 
-          {/* Contribution History */}
+          {/* ===== COLLAPSIBLE CONTRIBUTION HISTORY ===== */}
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 12,
+            borderRadius: 16,
             borderWidth: 1,
-            borderColor: '#E8EEF4',
-            overflow: 'hidden',
-            shadowColor: '#000',
+            borderColor: 'rgba(3, 42, 36, 0.06)',
+            shadowColor: '#032A24',
             shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.04,
-            shadowRadius: 4,
+            shadowOpacity: 0.02,
+            shadowRadius: 8,
             elevation: 1,
+            overflow: 'hidden',
           }}>
-            <View style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              paddingHorizontal: 16,
-              paddingVertical: 12,
-              borderBottomWidth: 1,
-              borderBottomColor: '#F4F5F1',
-            }}>
-              <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>Recent Contributions</Text>
-              <Text style={{ color: '#6B7280', fontSize: 13 }}>{contributions.length} entries</Text>
-            </View>
-
-            {contributions.length === 0 ? (
-              <View style={{ padding: 24, alignItems: 'center' }}>
-                <Text style={{ color: '#6B7280', fontSize: 14 }}>No contributions yet</Text>
+            <TouchableOpacity
+              onPress={toggleContributions}
+              activeOpacity={0.7}
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                paddingHorizontal: 16,
+                paddingVertical: 14,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <View style={{
+                  width: 3,
+                  height: 16,
+                  backgroundColor: '#C9A44B',
+                  borderRadius: 2,
+                }} />
+                <Text style={{ color: '#032A24', fontSize: 14, fontWeight: '600', letterSpacing: -0.2 }}>
+                  Recent Contributions
+                </Text>
+                <Text style={{ color: '#8B8A86', fontSize: 12 }}>
+                  {contributions.length} entries
+                </Text>
               </View>
-            ) : (
-              contributions.map((contrib, index) => {
-                const badge = getStatusBadge(contrib.status);
-                return (
-                  <View key={contrib.id} style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    paddingHorizontal: 16,
-                    paddingVertical: 10,
-                    borderBottomWidth: index < contributions.length - 1 ? 1 : 0,
-                    borderBottomColor: '#F4F5F1',
-                    backgroundColor: index % 2 === 0 ? '#FFFFFF' : '#FAFAF7',
-                  }}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '500' }}>
-                        {contrib.is_self_contribution ? 'Self' : (contrib.supporter_name || 'Anonymous')}
-                      </Text>
-                      <Text style={{ color: '#6B7280', fontSize: 12 }}>
-                        {formatDate(contrib.contribution_date)}
-                      </Text>
-                    </View>
-                    <View style={{ alignItems: 'flex-end' }}>
-                      <Text style={{ color: '#0B342B', fontSize: 14, fontWeight: '700' }}>
-                        {formatCurrency(contrib.amount)}
-                      </Text>
-                      <View style={{
-                        backgroundColor: badge.bg,
-                        paddingHorizontal: 6,
-                        paddingVertical: 2,
-                        borderRadius: 999,
-                        borderWidth: 1,
-                        borderColor: 'rgba(0,0,0,0.05)',
-                      }}>
-                        <Text style={{ color: badge.text, fontSize: 11, fontWeight: '500', textTransform: 'capitalize' }}>
-                          {contrib.status || 'pending'}
-                        </Text>
-                      </View>
-                    </View>
+              {contributionsExpanded ? (
+                <ChevronUpIcon color="#6B7280" size={18} />
+              ) : (
+                <ChevronDownIcon color="#6B7280" size={18} />
+              )}
+            </TouchableOpacity>
+
+            {contributionsExpanded && (
+              <View style={{ paddingBottom: 16 }}>
+                {contributions.length === 0 ? (
+                  <View style={{ padding: 32, alignItems: 'center' }}>
+                    <Text style={{ color: '#9CA3AF', fontSize: 13 }}>No contributions yet</Text>
                   </View>
-                );
-              })
+                ) : (
+                  contributions.map((contrib, index) => {
+                    const badge = getStatusBadge(contrib.status);
+                    return (
+                      <View key={contrib.id} style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        paddingHorizontal: 16,
+                        paddingVertical: 10,
+                        borderBottomWidth: index < contributions.length - 1 ? 1 : 0,
+                        borderBottomColor: 'rgba(3, 42, 36, 0.03)',
+                        backgroundColor: index % 2 === 0 ? '#FFFFFF' : 'rgba(3, 42, 36, 0.01)',
+                      }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '500' }}>
+                            {contrib.is_self_contribution ? 'Self' : (contrib.supporter_name || 'Anonymous')}
+                          </Text>
+                          <Text style={{ color: '#8B8A86', fontSize: 11 }}>
+                            {formatDate(contrib.contribution_date)}
+                          </Text>
+                        </View>
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '700' }}>
+                            {formatCurrency(contrib.amount)}
+                          </Text>
+                          <View style={{
+                            backgroundColor: badge.bg,
+                            paddingHorizontal: 6,
+                            paddingVertical: 2,
+                            borderRadius: 6,
+                            borderWidth: 1,
+                            borderColor: 'rgba(0,0,0,0.04)',
+                          }}>
+                            <Text style={{ color: badge.text, fontSize: 9, fontWeight: '500', textTransform: 'capitalize' }}>
+                              {contrib.status || 'pending'}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                    );
+                  })
+                )}
+              </View>
             )}
+          </View>
+
+          {/* ===== FOOTER ===== */}
+          <View style={{ alignItems: 'center', marginTop: 24 }}>
+            <Text style={{
+              color: 'rgba(201, 164, 75, 0.2)',
+              fontSize: 9,
+              letterSpacing: 1,
+              fontWeight: '500',
+            }}>
+              Itqaan · Leader Pension Program
+            </Text>
           </View>
         </View>
       </ScrollView>
 
+      {/* ===== MODALS (Preserved with premium styling) ===== */}
       {/* Contribute Modal */}
       <Modal visible={showContributeModal} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
+            borderRadius: 20,
+            padding: 24,
             width: '100%',
-            maxWidth: 400,
+            maxWidth: 420,
             maxHeight: '90%',
           }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ color: '#1F2937', fontSize: 18, fontWeight: '700' }}>Add to Pension</Text>
-              <TouchableOpacity onPress={() => setShowContributeModal(false)}>
-                <Text style={{ color: '#6B7280', fontSize: 20 }}>✕</Text>
+              <Text style={{ color: '#032A24', fontSize: 18, fontWeight: '700', letterSpacing: -0.3 }}>
+                Add to Pension
+              </Text>
+              <TouchableOpacity onPress={() => setShowContributeModal(false)} activeOpacity={0.7} style={{ padding: 4 }}>
+                <CloseIcon color="#6B7280" size={20} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={{
-                backgroundColor: '#FAFAF7',
+                backgroundColor: 'rgba(3, 42, 36, 0.02)',
                 padding: 12,
-                borderRadius: 8,
+                borderRadius: 10,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
+                borderColor: 'rgba(3, 42, 36, 0.04)',
                 marginBottom: 12,
               }}>
-                <Text style={{ color: '#6B7280', fontSize: 13 }}>Available Balance</Text>
-                <Text style={{ color: '#0B342B', fontSize: 20, fontWeight: '700' }}>{formatCurrency(walletBalance)}</Text>
+                <Text style={{ color: '#6B7280', fontSize: 12 }}>Available Balance</Text>
+                <Text style={{ color: '#032A24', fontSize: 20, fontWeight: '700', letterSpacing: -0.3 }}>
+                  {formatCurrency(walletBalance)}
+                </Text>
               </View>
 
               <View style={{ marginBottom: 12 }}>
-                <Text style={{ color: '#6B7280', fontSize: 13, fontWeight: '500', marginBottom: 6 }}>Amount</Text>
+                <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '600', letterSpacing: 0.5, marginBottom: 6 }}>
+                  Amount
+                </Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
                   {quickAmounts.map((val) => (
                     <TouchableOpacity
                       key={val}
                       style={{
                         paddingHorizontal: 10,
-                        paddingVertical: 4,
-                        borderRadius: 999,
-                        backgroundColor: parseFloat(contributeAmount) === val ? '#0B342B' : '#FAFAF7',
+                        paddingVertical: 5,
+                        borderRadius: 20,
+                        backgroundColor: parseFloat(contributeAmount) === val ? '#032A24' : '#FAFAF7',
+                        borderWidth: 1,
+                        borderColor: parseFloat(contributeAmount) === val ? '#032A24' : 'transparent',
                       }}
                       onPress={() => setContributeAmount(val.toString())}
+                      activeOpacity={0.7}
                     >
                       <Text style={{
                         color: parseFloat(contributeAmount) === val ? '#FFFFFF' : '#6B7280',
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: '600',
                       }}>
                         {formatCurrency(val)}
@@ -622,11 +914,11 @@ const LeaderDashboard = () => {
                 </View>
                 <TextInput
                   style={{
-                    backgroundColor: '#FFFFFF',
+                    backgroundColor: '#FAFAF7',
                     borderWidth: 1,
-                    borderColor: '#E8EEF4',
-                    borderRadius: 8,
-                    paddingHorizontal: 12,
+                    borderColor: 'rgba(3, 42, 36, 0.06)',
+                    borderRadius: 10,
+                    paddingHorizontal: 14,
                     paddingVertical: 8,
                     color: '#1F2937',
                     fontSize: 14,
@@ -634,7 +926,7 @@ const LeaderDashboard = () => {
                   value={contributeAmount}
                   onChangeText={setContributeAmount}
                   placeholder="Enter amount"
-                  placeholderTextColor="rgba(107, 114, 128, 0.5)"
+                  placeholderTextColor="#9CA3AF"
                   keyboardType="numeric"
                 />
               </View>
@@ -643,39 +935,36 @@ const LeaderDashboard = () => {
                 <TouchableOpacity
                   style={{
                     flex: 1,
-                    backgroundColor: '#F4F5F1',
+                    backgroundColor: '#F3F4F6',
                     paddingVertical: 10,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     alignItems: 'center',
                   }}
                   onPress={() => setShowContributeModal(false)}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#6B7280', fontSize: 15, fontWeight: '500' }}>Cancel</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '500' }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={{
                     flex: 2,
-                    backgroundColor: '#0B342B',
+                    backgroundColor: '#032A24',
                     paddingVertical: 10,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     alignItems: 'center',
-                    opacity: (processing || !contributeAmount) ? 0.6 : 1,
-                    shadowColor: '#0B342B',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 8,
-                    elevation: 4,
+                    opacity: (processing || !contributeAmount) ? 0.5 : 1,
                   }}
                   onPress={handleSelfContribute}
                   disabled={processing || !contributeAmount}
+                  activeOpacity={0.7}
                 >
                   {processing ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <ActivityIndicator size="small" color="#FFFFFF" />
-                      <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>Processing...</Text>
+                      <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Processing...</Text>
                     </View>
                   ) : (
-                    <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>Contribute</Text>
+                    <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Contribute</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -686,55 +975,61 @@ const LeaderDashboard = () => {
 
       {/* Withdrawal Modal */}
       <Modal visible={showWithdrawModal} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
+            borderRadius: 20,
+            padding: 24,
             width: '100%',
-            maxWidth: 400,
+            maxWidth: 420,
             maxHeight: '90%',
           }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ color: '#1F2937', fontSize: 18, fontWeight: '700' }}>Request Withdrawal</Text>
-              <TouchableOpacity onPress={() => setShowWithdrawModal(false)}>
-                <Text style={{ color: '#6B7280', fontSize: 20 }}>✕</Text>
+              <Text style={{ color: '#032A24', fontSize: 18, fontWeight: '700', letterSpacing: -0.3 }}>
+                Request Withdrawal
+              </Text>
+              <TouchableOpacity onPress={() => setShowWithdrawModal(false)} activeOpacity={0.7} style={{ padding: 4 }}>
+                <CloseIcon color="#6B7280" size={20} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={{
-                backgroundColor: '#FEF3C7',
+                backgroundColor: 'rgba(217, 119, 6, 0.04)',
                 padding: 10,
                 borderRadius: 8,
                 borderWidth: 1,
-                borderColor: '#FDE68A',
+                borderColor: 'rgba(217, 119, 6, 0.08)',
                 marginBottom: 12,
               }}>
-                <Text style={{ color: '#D97706', fontSize: 13, textAlign: 'center' }}>Admin approval required</Text>
+                <Text style={{ color: '#D97706', fontSize: 12, textAlign: 'center' }}>Admin approval required</Text>
               </View>
 
               <View style={{
-                backgroundColor: '#FAFAF7',
+                backgroundColor: 'rgba(3, 42, 36, 0.02)',
                 padding: 12,
-                borderRadius: 8,
+                borderRadius: 10,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
+                borderColor: 'rgba(3, 42, 36, 0.04)',
                 marginBottom: 12,
               }}>
-                <Text style={{ color: '#6B7280', fontSize: 13 }}>Available</Text>
-                <Text style={{ color: '#0B342B', fontSize: 20, fontWeight: '700' }}>{formatCurrency(pensionData.totalAmount)}</Text>
+                <Text style={{ color: '#6B7280', fontSize: 12 }}>Available</Text>
+                <Text style={{ color: '#032A24', fontSize: 20, fontWeight: '700', letterSpacing: -0.3 }}>
+                  {formatCurrency(pensionData.totalAmount)}
+                </Text>
               </View>
 
               <View style={{ marginBottom: 12 }}>
-                <Text style={{ color: '#6B7280', fontSize: 13, fontWeight: '500', marginBottom: 4 }}>Amount</Text>
+                <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                  Amount
+                </Text>
                 <TextInput
                   style={{
-                    backgroundColor: '#FFFFFF',
+                    backgroundColor: '#FAFAF7',
                     borderWidth: 1,
-                    borderColor: '#E8EEF4',
-                    borderRadius: 8,
-                    paddingHorizontal: 12,
+                    borderColor: 'rgba(3, 42, 36, 0.06)',
+                    borderRadius: 10,
+                    paddingHorizontal: 14,
                     paddingVertical: 8,
                     color: '#1F2937',
                     fontSize: 14,
@@ -742,21 +1037,23 @@ const LeaderDashboard = () => {
                   value={withdrawData.amount}
                   onChangeText={(text) => setWithdrawData({ ...withdrawData, amount: text })}
                   placeholder="Enter amount"
-                  placeholderTextColor="rgba(107, 114, 128, 0.5)"
+                  placeholderTextColor="#9CA3AF"
                   keyboardType="numeric"
                 />
-                <Text style={{ color: '#6B7280', fontSize: 11, marginTop: 2 }}>Minimum: KES 100</Text>
+                <Text style={{ color: '#6B7280', fontSize: 10, marginTop: 2 }}>Minimum: KES 100</Text>
               </View>
 
               <View style={{ marginBottom: 12 }}>
-                <Text style={{ color: '#6B7280', fontSize: 13, fontWeight: '500', marginBottom: 4 }}>Notes</Text>
+                <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                  Notes
+                </Text>
                 <TextInput
                   style={{
-                    backgroundColor: '#FFFFFF',
+                    backgroundColor: '#FAFAF7',
                     borderWidth: 1,
-                    borderColor: '#E8EEF4',
-                    borderRadius: 8,
-                    paddingHorizontal: 12,
+                    borderColor: 'rgba(3, 42, 36, 0.06)',
+                    borderRadius: 10,
+                    paddingHorizontal: 14,
                     paddingVertical: 8,
                     color: '#1F2937',
                     fontSize: 14,
@@ -766,7 +1063,7 @@ const LeaderDashboard = () => {
                   value={withdrawData.notes}
                   onChangeText={(text) => setWithdrawData({ ...withdrawData, notes: text })}
                   placeholder="Optional notes"
-                  placeholderTextColor="rgba(107, 114, 128, 0.5)"
+                  placeholderTextColor="#9CA3AF"
                   multiline
                 />
               </View>
@@ -775,39 +1072,36 @@ const LeaderDashboard = () => {
                 <TouchableOpacity
                   style={{
                     flex: 1,
-                    backgroundColor: '#F4F5F1',
+                    backgroundColor: '#F3F4F6',
                     paddingVertical: 10,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     alignItems: 'center',
                   }}
                   onPress={() => setShowWithdrawModal(false)}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#6B7280', fontSize: 15, fontWeight: '500' }}>Cancel</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '500' }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={{
                     flex: 2,
-                    backgroundColor: '#0B342B',
+                    backgroundColor: '#032A24',
                     paddingVertical: 10,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     alignItems: 'center',
-                    opacity: (processing || !withdrawData.amount) ? 0.6 : 1,
-                    shadowColor: '#0B342B',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 8,
-                    elevation: 4,
+                    opacity: (processing || !withdrawData.amount) ? 0.5 : 1,
                   }}
                   onPress={handleWithdrawRequest}
                   disabled={processing || !withdrawData.amount}
+                  activeOpacity={0.7}
                 >
                   {processing ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <ActivityIndicator size="small" color="#FFFFFF" />
-                      <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>Submitting...</Text>
+                      <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Submitting...</Text>
                     </View>
                   ) : (
-                    <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>Submit Request</Text>
+                    <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Submit Request</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -818,26 +1112,28 @@ const LeaderDashboard = () => {
 
       {/* Supporters Modal */}
       <Modal visible={showSupportersModal} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
+            borderRadius: 20,
+            padding: 24,
             width: '100%',
-            maxWidth: 500,
+            maxWidth: 420,
             maxHeight: '90%',
           }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ color: '#1F2937', fontSize: 18, fontWeight: '700' }}>Supporters</Text>
-              <TouchableOpacity onPress={() => setShowSupportersModal(false)}>
-                <Text style={{ color: '#6B7280', fontSize: 20 }}>✕</Text>
+              <Text style={{ color: '#032A24', fontSize: 18, fontWeight: '700', letterSpacing: -0.3 }}>
+                Supporters
+              </Text>
+              <TouchableOpacity onPress={() => setShowSupportersModal(false)} activeOpacity={0.7} style={{ padding: 4 }}>
+                <CloseIcon color="#6B7280" size={20} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               {supporters.length === 0 ? (
                 <View style={{ alignItems: 'center', paddingVertical: 24 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>No supporters yet</Text>
+                  <Text style={{ color: '#9CA3AF', fontSize: 13 }}>No supporters yet</Text>
                 </View>
               ) : (
                 supporters.map((supporter) => (
@@ -847,22 +1143,22 @@ const LeaderDashboard = () => {
                     alignItems: 'center',
                     backgroundColor: '#FAFAF7',
                     padding: 12,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     borderWidth: 1,
-                    borderColor: '#E8EEF4',
-                    marginBottom: 6,
+                    borderColor: 'rgba(3, 42, 36, 0.04)',
+                    marginBottom: 8,
                   }}>
                     <View>
-                      <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '500' }}>
+                      <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '500' }}>
                         {supporter.supporter_name || 'Anonymous'}
                       </Text>
-                      <Text style={{ color: '#6B7280', fontSize: 13 }}>{supporter.supporter_phone || ''}</Text>
+                      <Text style={{ color: '#6B7280', fontSize: 11 }}>{supporter.supporter_phone || ''}</Text>
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
-                      <Text style={{ color: '#0B342B', fontSize: 14, fontWeight: '700' }}>
+                      <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '700' }}>
                         {formatCurrency(supporter.amount)}
                       </Text>
-                      <Text style={{ color: '#6B7280', fontSize: 12, textTransform: 'capitalize' }}>
+                      <Text style={{ color: '#6B7280', fontSize: 10, textTransform: 'capitalize' }}>
                         {supporter.frequency || 'once'}
                       </Text>
                     </View>
@@ -876,56 +1172,63 @@ const LeaderDashboard = () => {
 
       {/* Share Modal */}
       <Modal visible={showShareModal} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
+            borderRadius: 20,
+            padding: 24,
             width: '100%',
-            maxWidth: 400,
+            maxWidth: 420,
             maxHeight: '90%',
           }}>
             <View style={{
-              backgroundColor: '#0B342B',
+              backgroundColor: '#032A24',
               padding: 16,
-              borderTopLeftRadius: 12,
-              borderTopRightRadius: 12,
-              margin: -20,
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              margin: -24,
               marginBottom: 16,
               flexDirection: 'row',
               justifyContent: 'space-between',
               alignItems: 'center',
             }}>
-              <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700' }}>Profile Status</Text>
-              <TouchableOpacity onPress={() => setShowShareModal(false)}>
-                <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 20 }}>✕</Text>
+              <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700', letterSpacing: -0.3 }}>
+                Profile Status
+              </Text>
+              <TouchableOpacity onPress={() => setShowShareModal(false)} activeOpacity={0.7} style={{ padding: 4 }}>
+                <CloseIcon color="rgba(255,255,255,0.6)" size={20} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={{ alignItems: 'center', marginBottom: 16 }}>
                 <View style={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: 32,
-                  backgroundColor: isPublic ? 'rgba(63, 175, 115, 0.1)' : '#F3F4F6',
+                  width: 60,
+                  height: 60,
+                  borderRadius: 30,
+                  backgroundColor: isPublic ? 'rgba(63, 175, 115, 0.08)' : '#F3F4F6',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  borderWidth: 4,
-                  borderColor: isPublic ? 'rgba(63, 175, 115, 0.2)' : '#E5E7EB',
+                  borderWidth: 3,
+                  borderColor: isPublic ? 'rgba(63, 175, 115, 0.15)' : '#E5E7EB',
                 }}>
-                  <Text style={{ color: isPublic ? '#3FAF73' : '#6B7280', fontSize: 28 }}>
-                    {isPublic ? '✓' : '🔒'}
-                  </Text>
+                  {isPublic ? (
+                    <ShieldIcon color="#3FAF73" size={28} />
+                  ) : (
+                    <View style={{ width: 28, height: 28, alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={{ fontSize: 24, color: '#6B7280' }}>🔒</Text>
+                    </View>
+                  )}
                 </View>
-                <Text style={{ color: '#1F2937', fontSize: 18, fontWeight: '700', marginTop: 8 }}>
+                <Text style={{ color: '#032A24', fontSize: 18, fontWeight: '700', marginTop: 8, letterSpacing: -0.3 }}>
                   {isPublic ? 'Profile is Public' : 'Profile is Private'}
                 </Text>
                 <Text style={{
                   color: isPublic ? '#3FAF73' : '#6B7280',
-                  fontSize: 14,
+                  fontSize: 13,
                   textAlign: 'center',
                   marginTop: 4,
+                  lineHeight: 20,
                 }}>
                   {isPublic
                     ? 'Your profile is visible. People can find and support you.'
@@ -935,19 +1238,15 @@ const LeaderDashboard = () => {
 
               <TouchableOpacity
                 style={{
-                  backgroundColor: '#0B342B',
+                  backgroundColor: '#032A24',
                   paddingVertical: 10,
-                  borderRadius: 8,
+                  borderRadius: 10,
                   alignItems: 'center',
-                  shadowColor: '#0B342B',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.2,
-                  shadowRadius: 8,
-                  elevation: 4,
                 }}
                 onPress={() => setShowShareModal(false)}
+                activeOpacity={0.7}
               >
-                <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>Done</Text>
+                <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Done</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>

@@ -90,12 +90,6 @@ const Pension = () => {
     </Svg>
   );
 
-  const SendIcon = () => (
-    <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
-    </Svg>
-  );
-
   const BackIcon = () => (
     <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <Path d="M19 12H5M12 19l-7-7 7-7" />
@@ -113,12 +107,6 @@ const Pension = () => {
     <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9A44B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <Path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
       <Path d="M9 12l2 2 4-4" />
-    </Svg>
-  );
-
-  const ArrowRightIcon = () => (
-    <Svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C9A44B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M5 12h14M12 5l7 7-7 7" />
     </Svg>
   );
 
@@ -354,54 +342,10 @@ const Pension = () => {
               fontSize: 13, 
               fontWeight: '400',
               lineHeight: 22,
-              marginBottom: 18,
             }}>
               Contribute to the long-term welfare of Islamic Scholars, Imams, 
               Adhan Callers, and more through a community-powered retirement program.
             </Text>
-
-            <View style={{ 
-              flexDirection: 'row', 
-              gap: 10,
-            }}>
-              <TouchableOpacity
-                style={{
-                  backgroundColor: '#C9A44B',
-                  paddingHorizontal: 20,
-                  paddingVertical: 10,
-                  borderRadius: 8,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 8,
-                  shadowColor: '#C9A44B',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.2,
-                  shadowRadius: 12,
-                  elevation: 4,
-                }}
-                activeOpacity={0.7}
-              >
-                <SendIcon />
-                <Text style={{ color: '#032A24', fontSize: 12, fontWeight: '600' }}>Support Now</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={{
-                  backgroundColor: 'rgba(255,255,255,0.04)',
-                  paddingHorizontal: 16,
-                  paddingVertical: 10,
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.06)',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 4,
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={{ color: '#F7F6F1', fontSize: 12, fontWeight: '500' }}>Learn More</Text>
-                <ArrowRightIcon />
-              </TouchableOpacity>
-            </View>
           </View>
 
           {/* ===== ELEGANT STATS ===== */}
@@ -661,12 +605,14 @@ const Pension = () => {
                     </View>
 
                     <View style={{
-                      backgroundColor: '#032A24',
-                      paddingHorizontal: 12,
-                      paddingVertical: 5,
+                      backgroundColor: 'rgba(201, 164, 75, 0.06)',
+                      paddingHorizontal: 10,
+                      paddingVertical: 4,
                       borderRadius: 6,
+                      borderWidth: 1,
+                      borderColor: 'rgba(201, 164, 75, 0.08)',
                     }}>
-                      <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '600' }}>Support</Text>
+                      <Text style={{ color: '#C9A44B', fontSize: 9, fontWeight: '500' }}>View</Text>
                     </View>
                   </View>
 

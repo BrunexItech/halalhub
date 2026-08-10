@@ -11,10 +11,107 @@ import {
   Modal,
   Image,
   Platform,
+  Dimensions,
+  LayoutAnimation,
+  UIManager,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { clientService, cartService } from '../../api/client';
+import Svg, { Path, Circle, Rect } from 'react-native-svg';
+
+// Enable LayoutAnimation for Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const { width } = Dimensions.get('window');
+
+// ===== PROFESSIONAL SVG ICONS =====
+const BackIcon = ({ color = '#032A24', size = 24 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M15 18L9 12L15 6" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const ShopIcon = ({ color = '#C9A44B', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M5 9L6 5H18L19 9M5 9H19M5 9L3 11V13H21V11L19 9M5 9V13M19 9V13M5 13H19V19C19 19.5523 18.5523 20 18 20H6C5.44772 20 5 19.5523 5 19V13Z" stroke={color} strokeWidth="1.5" strokeLinejoin="round"/>
+    <Path d="M9 13V20" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <Path d="M15 13V20" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <Circle cx="8" cy="16" r="1" fill={color} opacity="0.5"/>
+    <Circle cx="16" cy="16" r="1" fill={color} opacity="0.5"/>
+  </Svg>
+);
+
+const SearchIcon = ({ color = '#6B7280', size = 18 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="11" cy="11" r="7" stroke={color} strokeWidth="1.5"/>
+    <Path d="M16.5 16.5L21 21" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </Svg>
+);
+
+const CartIcon = ({ color = '#FFFFFF', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="9" cy="21" r="1.5" stroke={color} strokeWidth="1.5"/>
+    <Circle cx="19" cy="21" r="1.5" stroke={color} strokeWidth="1.5"/>
+    <Path d="M2 3H4L8 15H20L22 7H6" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const UserIcon = ({ color = '#6B7280', size = 14 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="8" r="4" stroke={color} strokeWidth="1.5"/>
+    <Path d="M5.5 20C5.5 16.6863 8.18629 14 11.5 14H12.5C15.8137 14 18.5 16.6863 18.5 20" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </Svg>
+);
+
+const StarIcon = ({ color = '#C9A44B', size = 12 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke={color} strokeWidth="1.5" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const HeartIcon = ({ color = '#6B7280', size = 18, filled = false }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path 
+      d="M12 21.35L10.55 20.03C5.4 15.36 2 12.28 2 8.5C2 5.42 4.42 3 7.5 3C9.24 3 10.91 3.81 12 5.09C13.09 3.81 14.76 3 16.5 3C19.58 3 22 5.42 22 8.5C22 12.28 18.6 15.36 13.45 20.04L12 21.35Z" 
+      fill={filled ? '#DC2626' : 'none'} 
+      stroke={filled ? '#DC2626' : color} 
+      strokeWidth="1.5"
+    />
+  </Svg>
+);
+
+const CloseIcon = ({ color = '#6B7280', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M18 6L6 18M6 6L18 18" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const CheckIcon = ({ color = '#FFFFFF', size = 16 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M5 12L10 17L20 7" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const ChevronDownIcon = ({ color = '#6B7280', size = 18 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M6 9L12 15L18 9" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const ChevronUpIcon = ({ color = '#6B7280', size = 18 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M18 15L12 9L6 15" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const FilterIcon = ({ color = '#6B7280', size = 18 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M3 6H21M6 12H18M10 18H14" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </Svg>
+);
 
 const Ecommerce = () => {
   const navigation = useNavigation();
@@ -54,6 +151,7 @@ const Ecommerce = () => {
   const [categories, setCategories] = useState<string[]>(['All']);
   const [vendors, setVendors] = useState<string[]>(['All']);
   const [isButcheryMode, setIsButcheryMode] = useState(category === 'butchery');
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   const priceRanges = [
     { label: 'All', value: 'All' },
@@ -78,6 +176,11 @@ const Ecommerce = () => {
   useEffect(() => {
     applyFilters();
   }, [searchQuery, selectedCategory, selectedVendor, selectedPriceRange, sortBy, products, isButcheryMode]);
+
+  const toggleFilters = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setFiltersExpanded(!filtersExpanded);
+  };
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -329,8 +432,8 @@ const Ecommerce = () => {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <ActivityIndicator size="large" color="#C9A44B" />
-          <Text style={{ color: '#6B7280', marginTop: 12, fontSize: 14 }}>Loading products...</Text>
+          <ActivityIndicator size="large" color="#032A24" />
+          <Text style={{ color: '#6B7280', marginTop: 16, fontSize: 14 }}>Loading products...</Text>
         </View>
       </SafeAreaView>
     );
@@ -339,99 +442,189 @@ const Ecommerce = () => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
       <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+        contentContainerStyle={{
+          paddingTop: Platform.OS === 'ios' ? 8 : 12,
+          paddingHorizontal: 20,
+          paddingBottom: 40,
+        }}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#C9A44B" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#032A24" />}
       >
         <View style={{ maxWidth: 800, width: '100%', alignSelf: 'center' }}>
-          {/* Header */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
-            <View>
-              <Text style={{ color: '#1F2937', fontSize: 24, fontWeight: '700' }}>
-                {isButcheryMode ? 'Halal Butchery' : 'Halal Market'}
-              </Text>
-              <Text style={{ color: '#6B7280', fontSize: 14, marginTop: 2 }}>
-                {isButcheryMode
-                  ? 'Fresh halal-certified meat from trusted butchers'
-                  : 'Shop halal-certified products from trusted vendors'}
-              </Text>
-            </View>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {isAuthenticated && (
-                <View style={{
-                  backgroundColor: '#D1FAE5',
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
-                  borderRadius: 999,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 4,
-                }}>
-                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#3FAF73' }} />
-                  <Text style={{ color: '#3FAF73', fontSize: 13, fontWeight: '500' }}>{user?.fullName || 'Guest'}</Text>
+          {/* ===== PREMIUM HEADER ===== */}
+          <View style={{
+            backgroundColor: '#032A24',
+            borderRadius: 18,
+            paddingHorizontal: 18,
+            paddingVertical: 16,
+            marginBottom: 20,
+            borderWidth: 1,
+            borderColor: 'rgba(201, 164, 75, 0.15)',
+            shadowColor: '#032A24',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.08,
+            shadowRadius: 16,
+            elevation: 4,
+          }}>
+            <View style={{
+              position: 'absolute',
+              top: 0,
+              left: 40,
+              right: 40,
+              height: 2,
+              backgroundColor: '#C9A44B',
+              opacity: 0.3,
+            }} />
+
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                activeOpacity={0.7}
+                style={{
+                  padding: 6,
+                  marginRight: 12,
+                  borderRadius: 10,
+                  backgroundColor: 'rgba(201, 164, 75, 0.08)',
+                }}
+              >
+                <BackIcon color="#C9A44B" size={22} />
+              </TouchableOpacity>
+
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <ShopIcon color="#C9A44B" size={18} />
+                  <Text style={{
+                    color: '#C9A44B',
+                    fontSize: 12,
+                    fontWeight: '600',
+                    letterSpacing: 0.8,
+                    textTransform: 'uppercase',
+                  }}>
+                    {isButcheryMode ? 'Halal Butchery' : 'Halal Market'}
+                  </Text>
                 </View>
-              )}
+                <Text style={{
+                  color: '#FFFFFF',
+                  fontSize: 18,
+                  fontWeight: '700',
+                  letterSpacing: -0.3,
+                  marginTop: 2,
+                }}>
+                  {isButcheryMode ? 'Fresh Halal Meat' : 'Shop with Peace of Mind'}
+                </Text>
+                <Text style={{
+                  color: 'rgba(255,255,255,0.5)',
+                  fontSize: 12,
+                  letterSpacing: 0.2,
+                  marginTop: 1,
+                }}>
+                  {isButcheryMode ? '100% halal-certified meat' : '100% halal-certified products'}
+                </Text>
+              </View>
+
+              <View style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                backgroundColor: 'rgba(201, 164, 75, 0.08)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 1,
+                borderColor: 'rgba(201, 164, 75, 0.1)',
+              }}>
+                <View style={{
+                  width: 4,
+                  height: 4,
+                  borderRadius: 2,
+                  backgroundColor: '#C9A44B',
+                  opacity: 0.5,
+                }} />
+              </View>
+            </View>
+          </View>
+
+          {/* ===== USER & CART ROW ===== */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
+            {isAuthenticated && (
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+                backgroundColor: 'rgba(63, 175, 115, 0.06)',
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: 'rgba(63, 175, 115, 0.08)',
+              }}>
+                <UserIcon color="#3FAF73" size={14} />
+                <Text style={{ color: '#3FAF73', fontSize: 12, fontWeight: '500' }}>{user?.fullName || 'Guest'}</Text>
+              </View>
+            )}
+            
+            <View style={{ flexDirection: 'row', gap: 8 }}>
               <TouchableOpacity
                 style={{
                   position: 'relative',
-                  backgroundColor: '#0B342B',
+                  backgroundColor: '#032A24',
                   paddingHorizontal: 14,
                   paddingVertical: 8,
                   borderRadius: 10,
                   flexDirection: 'row',
                   alignItems: 'center',
-                  gap: 4,
-                  shadowColor: '#0B342B',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.2,
-                  shadowRadius: 8,
-                  elevation: 4,
+                  gap: 6,
                 }}
                 onPress={() => setShowCart(true)}
+                activeOpacity={0.7}
               >
-                <Text style={{ fontSize: 16 }}>🛒</Text>
-                <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '500' }}>Cart</Text>
+                <CartIcon color="#FFFFFF" size={18} />
+                <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '500' }}>Cart</Text>
                 {cart.length > 0 && (
                   <View style={{
                     position: 'absolute',
-                    top: -6,
-                    right: -6,
-                    width: 20,
-                    height: 20,
-                    borderRadius: 10,
+                    top: -4,
+                    right: -4,
+                    width: 18,
+                    height: 18,
+                    borderRadius: 9,
                     backgroundColor: '#DC2626',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}>
-                    <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '700' }}>{getCartItemCount()}</Text>
+                    <Text style={{ color: '#FFFFFF', fontSize: 9, fontWeight: '700' }}>{getCartItemCount()}</Text>
                   </View>
                 )}
               </TouchableOpacity>
+              
               {!isAuthenticated ? (
                 <TouchableOpacity
                   style={{
-                    backgroundColor: '#1F2937',
+                    backgroundColor: 'rgba(3, 42, 36, 0.06)',
                     paddingHorizontal: 14,
                     paddingVertical: 8,
                     borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: 'rgba(3, 42, 36, 0.08)',
                   }}
                   onPress={() => navigation.navigate('RegisterRole' as never)}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '500' }}>Sign In / Register</Text>
+                  <Text style={{ color: '#032A24', fontSize: 12, fontWeight: '500' }}>Sign In</Text>
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
                   style={{
-                    backgroundColor: '#FFFFFF',
-                    paddingHorizontal: 12,
+                    backgroundColor: 'rgba(3, 42, 36, 0.04)',
+                    paddingHorizontal: 14,
                     paddingVertical: 8,
                     borderRadius: 10,
                     borderWidth: 1,
-                    borderColor: '#E8EEF4',
+                    borderColor: 'rgba(3, 42, 36, 0.06)',
                   }}
                   onPress={() => setShowOrderHistory(!showOrderHistory)}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '500' }}>Orders</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 12, fontWeight: '500' }}>Orders</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -443,15 +636,15 @@ const Ecommerce = () => {
               borderWidth: 1,
               borderColor: '#FECACA',
               borderRadius: 12,
-              padding: 12,
-              marginBottom: 12,
+              padding: 14,
+              marginBottom: 14,
               flexDirection: 'row',
               justifyContent: 'space-between',
               alignItems: 'center',
             }}>
-              <Text style={{ color: '#DC2626', fontSize: 13 }}>{error}</Text>
+              <Text style={{ color: '#DC2626', fontSize: 13, flex: 1 }}>{error}</Text>
               <TouchableOpacity
-                style={{ backgroundColor: '#DC2626', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}
+                style={{ backgroundColor: '#DC2626', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 6 }}
                 onPress={() => { setError(''); fetchProducts(); }}
               >
                 <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '600' }}>Retry</Text>
@@ -459,219 +652,174 @@ const Ecommerce = () => {
             </View>
           ) : null}
 
-          {/* Hero */}
+          {/* ===== COLLAPSIBLE SEARCH & FILTERS ===== */}
           <View style={{
-            backgroundColor: '#0B342B',
+            backgroundColor: '#FFFFFF',
             borderRadius: 16,
-            padding: 20,
+            borderWidth: 1,
+            borderColor: 'rgba(3, 42, 36, 0.06)',
+            shadowColor: '#032A24',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.02,
+            shadowRadius: 8,
+            elevation: 1,
             marginBottom: 16,
             overflow: 'hidden',
           }}>
-            <View style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, backgroundColor: 'rgba(201, 164, 75, 0.05)', borderRadius: 999 }} />
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <View style={{ flex: 1 }}>
+            <TouchableOpacity
+              onPress={toggleFilters}
+              activeOpacity={0.7}
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: 16,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <View style={{
-                  alignSelf: 'flex-start',
-                  backgroundColor: 'rgba(255,255,255,0.2)',
-                  paddingHorizontal: 10,
-                  paddingVertical: 4,
-                  borderRadius: 999,
-                  marginBottom: 6,
-                }}>
-                  <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '500' }}>
-                    {isButcheryMode ? 'Halal Butchery' : 'Welcome to Halal Market'}
-                  </Text>
-                </View>
-                <Text style={{ color: '#FFFFFF', fontSize: 24, fontWeight: '700' }}>
-                  {isButcheryMode ? 'Fresh Halal Meat' : 'Shop with Peace of Mind'}
+                  width: 3,
+                  height: 16,
+                  backgroundColor: '#C9A44B',
+                  borderRadius: 2,
+                }} />
+                <FilterIcon color="#032A24" size={16} />
+                <Text style={{ color: '#032A24', fontSize: 15, fontWeight: '600', letterSpacing: -0.2 }}>
+                  Search & Filters
                 </Text>
-                <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, marginTop: 2 }}>
-                  {isButcheryMode
-                    ? '100% halal-certified meat from trusted butchers'
-                    : '100% halal-certified products from trusted sellers.'}
+                <Text style={{ color: '#8B8A86', fontSize: 10 }}>
+                  {filteredProducts.length} products
                 </Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-                  <View style={{
-                    backgroundColor: 'rgba(255,255,255,0.1)',
-                    paddingHorizontal: 10,
-                    paddingVertical: 4,
-                    borderRadius: 999,
-                  }}>
-                    <Text style={{ color: '#FFFFFF', fontSize: 12 }}>{filteredProducts.length} Products</Text>
-                  </View>
-                  <View style={{
-                    backgroundColor: 'rgba(255,255,255,0.1)',
-                    paddingHorizontal: 10,
-                    paddingVertical: 4,
-                    borderRadius: 999,
-                  }}>
-                    <Text style={{ color: '#FFFFFF', fontSize: 12 }}>100% Halal Certified</Text>
-                  </View>
-                  {isButcheryMode && (
-                    <View style={{
-                      backgroundColor: 'rgba(255,255,255,0.1)',
-                      paddingHorizontal: 10,
-                      paddingVertical: 4,
-                      borderRadius: 999,
-                    }}>
-                      <Text style={{ color: '#FFFFFF', fontSize: 12 }}>Fresh Meat</Text>
+              </View>
+              {filtersExpanded ? (
+                <ChevronUpIcon color="#6B7280" size={18} />
+              ) : (
+                <ChevronDownIcon color="#6B7280" size={18} />
+              )}
+            </TouchableOpacity>
+
+            {filtersExpanded && (
+              <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                  <View style={{ flex: 1, minWidth: 130 }}>
+                    <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                      Search
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FAFAF7', borderRadius: 10, borderWidth: 1, borderColor: 'rgba(3, 42, 36, 0.06)', paddingHorizontal: 12 }}>
+                      <SearchIcon color="#9CA3AF" size={14} />
+                      <TextInput
+                        style={{
+                          flex: 1,
+                          paddingVertical: 8,
+                          paddingHorizontal: 10,
+                          color: '#1F2937',
+                          fontSize: 14,
+                        }}
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        placeholder={isButcheryMode ? 'Search meat...' : 'Search products...'}
+                        placeholderTextColor="#9CA3AF"
+                      />
                     </View>
-                  )}
+                  </View>
+                  <View style={{ flex: 1, minWidth: 90 }}>
+                    <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                      Category
+                    </Text>
+                    <View style={{
+                      backgroundColor: '#FAFAF7',
+                      borderWidth: 1,
+                      borderColor: 'rgba(3, 42, 36, 0.06)',
+                      borderRadius: 10,
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                    }}>
+                      <TextInput
+                        style={{ color: '#1F2937', fontSize: 14, padding: 0 }}
+                        value={selectedCategory}
+                        onChangeText={(text) => setSelectedCategory(text)}
+                        placeholder="All"
+                        placeholderTextColor="#9CA3AF"
+                      />
+                    </View>
+                  </View>
+                  <View style={{ flex: 0.7, minWidth: 80 }}>
+                    <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                      Price
+                    </Text>
+                    <View style={{
+                      backgroundColor: '#FAFAF7',
+                      borderWidth: 1,
+                      borderColor: 'rgba(3, 42, 36, 0.06)',
+                      borderRadius: 10,
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                    }}>
+                      <TextInput
+                        style={{ color: '#1F2937', fontSize: 14, padding: 0 }}
+                        value={selectedPriceRange}
+                        onChangeText={(text) => setSelectedPriceRange(text)}
+                        placeholder="All"
+                        placeholderTextColor="#9CA3AF"
+                      />
+                    </View>
+                  </View>
+                  <View style={{ flex: 0.7, minWidth: 80 }}>
+                    <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                      Sort By
+                    </Text>
+                    <View style={{
+                      backgroundColor: '#FAFAF7',
+                      borderWidth: 1,
+                      borderColor: 'rgba(3, 42, 36, 0.06)',
+                      borderRadius: 10,
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                    }}>
+                      <TextInput
+                        style={{ color: '#1F2937', fontSize: 14, padding: 0 }}
+                        value={sortBy}
+                        onChangeText={(text) => setSortBy(text)}
+                        placeholder="Popular"
+                        placeholderTextColor="#9CA3AF"
+                      />
+                    </View>
+                  </View>
+                </View>
+
+                <View style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginTop: 12,
+                  paddingTop: 12,
+                  borderTopWidth: 1,
+                  borderTopColor: 'rgba(3, 42, 36, 0.04)',
+                }}>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>
+                    <Text style={{ fontWeight: '600', color: '#032A24' }}>{filteredProducts.length}</Text> products found
+                  </Text>
+                  <TouchableOpacity onPress={fetchProducts} activeOpacity={0.7}>
+                    <Text style={{ color: '#6B7280', fontSize: 12 }}>↻ Refresh</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
-              <Text style={{ fontSize: 48, opacity: 0.8 }}>{isButcheryMode ? '🥩' : '🛍️'}</Text>
-            </View>
+            )}
           </View>
 
-          {/* Search & Filter */}
-          <View style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: 12,
-            padding: 16,
-            marginBottom: 16,
-            borderWidth: 1,
-            borderColor: '#E8EEF4',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.04,
-            shadowRadius: 4,
-            elevation: 1,
-          }}>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-              <View style={{ flex: 1, minWidth: 140 }}>
-                <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
-                  Search
-                </Text>
-                <TextInput
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderWidth: 1,
-                    borderColor: '#E8EEF4',
-                    borderRadius: 8,
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
-                    paddingLeft: 36,
-                    color: '#1F2937',
-                    fontSize: 14,
-                  }}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  placeholder={isButcheryMode ? 'Search meat products...' : 'Search products...'}
-                />
-              </View>
-              <View style={{ flex: 0.7, minWidth: 100 }}>
-                <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
-                  Category
-                </Text>
-                <View style={{
-                  backgroundColor: '#FFFFFF',
-                  borderWidth: 1,
-                  borderColor: '#E8EEF4',
-                  borderRadius: 8,
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
-                }}>
-                  <TextInput
-                    style={{ color: '#1F2937', fontSize: 14, padding: 0 }}
-                    value={selectedCategory}
-                    onChangeText={(text) => setSelectedCategory(text)}
-                    placeholder="All"
-                  />
-                </View>
-              </View>
-              <View style={{ flex: 0.7, minWidth: 100 }}>
-                <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
-                  Vendor
-                </Text>
-                <View style={{
-                  backgroundColor: '#FFFFFF',
-                  borderWidth: 1,
-                  borderColor: '#E8EEF4',
-                  borderRadius: 8,
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
-                }}>
-                  <TextInput
-                    style={{ color: '#1F2937', fontSize: 14, padding: 0 }}
-                    value={selectedVendor}
-                    onChangeText={(text) => setSelectedVendor(text)}
-                    placeholder="All"
-                  />
-                </View>
-              </View>
-              <View style={{ flex: 0.7, minWidth: 100 }}>
-                <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
-                  Price
-                </Text>
-                <View style={{
-                  backgroundColor: '#FFFFFF',
-                  borderWidth: 1,
-                  borderColor: '#E8EEF4',
-                  borderRadius: 8,
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
-                }}>
-                  <TextInput
-                    style={{ color: '#1F2937', fontSize: 14, padding: 0 }}
-                    value={selectedPriceRange}
-                    onChangeText={(text) => setSelectedPriceRange(text)}
-                    placeholder="All"
-                  />
-                </View>
-              </View>
-              <View style={{ flex: 0.7, minWidth: 100 }}>
-                <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
-                  Sort
-                </Text>
-                <View style={{
-                  backgroundColor: '#FFFFFF',
-                  borderWidth: 1,
-                  borderColor: '#E8EEF4',
-                  borderRadius: 8,
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
-                }}>
-                  <TextInput
-                    style={{ color: '#1F2937', fontSize: 14, padding: 0 }}
-                    value={sortBy}
-                    onChangeText={(text) => setSortBy(text)}
-                    placeholder="Popular"
-                  />
-                </View>
-              </View>
-            </View>
-
-            <View style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: 8,
-              marginTop: 12,
-              paddingTop: 12,
-              borderTopWidth: 1,
-              borderTopColor: '#F4F5F1',
-            }}>
-              <Text style={{ color: '#6B7280', fontSize: 14 }}>{filteredProducts.length} products found</Text>
-              <TouchableOpacity onPress={fetchProducts}>
-                <Text style={{ color: '#0B342B', fontSize: 14, fontWeight: '500' }}>↻ Refresh</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Products Grid */}
+          {/* ===== PREMIUM PRODUCT CARDS ===== */}
           {filteredProducts.length === 0 ? (
             <View style={{
               backgroundColor: '#FFFFFF',
-              borderRadius: 12,
-              padding: 40,
+              borderRadius: 16,
+              padding: 48,
               alignItems: 'center',
               borderWidth: 1,
-              borderColor: '#E8EEF4',
+              borderColor: 'rgba(3, 42, 36, 0.06)',
             }}>
               <Text style={{ fontSize: 40, marginBottom: 8 }}>🔍</Text>
-              <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '600' }}>No products found</Text>
-              <Text style={{ color: '#6B7280', fontSize: 14, marginTop: 2 }}>Try adjusting your search or filters</Text>
+              <Text style={{ color: '#032A24', fontSize: 16, fontWeight: '600' }}>No products found</Text>
+              <Text style={{ color: '#6B7280', fontSize: 13, marginTop: 2 }}>Try adjusting your search or filters</Text>
             </View>
           ) : (
             filteredProducts.map((product) => {
@@ -683,74 +831,117 @@ const Ecommerce = () => {
                   key={product.id}
                   style={{
                     backgroundColor: '#FFFFFF',
-                    borderRadius: 12,
-                    marginBottom: 12,
+                    borderRadius: 16,
+                    marginBottom: 14,
                     borderWidth: 1,
-                    borderColor: '#E8EEF4',
+                    borderColor: 'rgba(3, 42, 36, 0.06)',
                     overflow: 'hidden',
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 2 },
+                    shadowColor: '#032A24',
+                    shadowOffset: { width: 0, height: 4 },
                     shadowOpacity: 0.04,
-                    shadowRadius: 4,
-                    elevation: 1,
+                    shadowRadius: 12,
+                    elevation: 2,
                   }}
                   onPress={() => {
                     setSelectedProduct(product);
                     setShowProductModal(true);
                   }}
+                  activeOpacity={0.7}
                 >
                   <Image
-                    source={{ uri: product.images?.[0] || 'https://via.placeholder.com/400x300/0B342B/fff?text=Product' }}
-                    style={{ width: '100%', height: 180 }}
+                    source={{ uri: product.images?.[0] || 'https://via.placeholder.com/400x300/032A24/C9A44B?text=Product' }}
+                    style={{ width: '100%', height: 190 }}
                     resizeMode="cover"
                   />
+
+                  {/* Wishlist Button */}
+                  <TouchableOpacity
+                    style={{
+                      position: 'absolute',
+                      top: 12,
+                      right: 12,
+                      width: 34,
+                      height: 34,
+                      borderRadius: 17,
+                      backgroundColor: 'rgba(255,255,255,0.9)',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 4,
+                      elevation: 2,
+                    }}
+                    onPress={() => toggleWishlist(product.id)}
+                    activeOpacity={0.7}
+                  >
+                    <HeartIcon color="#6B7280" size={16} filled={isInWishlist} />
+                  </TouchableOpacity>
+
                   <View style={{ padding: 14 }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ color: '#1F2937', fontSize: 15, fontWeight: '600' }} numberOfLines={1}>
+                        <Text style={{ color: '#032A24', fontSize: 15, fontWeight: '600', letterSpacing: -0.2 }} numberOfLines={1}>
                           {product.name}
                         </Text>
-                        <Text style={{ color: '#6B7280', fontSize: 13 }}>by {product.vendor_name || product.business_name || 'Vendor'}</Text>
-                        <Text style={{ color: '#C9A44B', fontSize: 13, marginTop: 2 }}>
-                          {getStars(product.rating)} {product.rating}
+                        <Text style={{ color: '#6B7280', fontSize: 12, marginTop: 1 }}>
+                          by {product.vendor_name || product.business_name || 'Vendor'}
                         </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                          <StarIcon color="#C9A44B" size={10} />
+                          <Text style={{ color: '#C9A44B', fontSize: 12, fontWeight: '600' }}>{product.rating || 0}</Text>
+                          {product.total_reviews > 0 && (
+                            <Text style={{ color: '#8B8A86', fontSize: 11 }}>({product.total_reviews})</Text>
+                          )}
+                        </View>
                       </View>
-                      <TouchableOpacity onPress={() => toggleWishlist(product.id)}>
-                        <Text style={{ fontSize: 20, color: isInWishlist ? '#DC2626' : '#6B7280' }}>
-                          {isInWishlist ? '❤️' : '🤍'}
-                        </Text>
-                      </TouchableOpacity>
+                      <View style={{ alignItems: 'flex-end' }}>
+                        {isButchery && product.price_per_kg ? (
+                          <>
+                            <Text style={{ color: '#032A24', fontSize: 16, fontWeight: '700' }}>
+                              {formatCurrency(product.price_per_kg)}
+                            </Text>
+                            <Text style={{ color: '#8B8A86', fontSize: 10 }}>/kg</Text>
+                          </>
+                        ) : (
+                          <Text style={{ color: '#032A24', fontSize: 16, fontWeight: '700' }}>
+                            {formatCurrency(product.price)}
+                          </Text>
+                        )}
+                      </View>
                     </View>
 
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
                       <View style={{
-                        backgroundColor: '#D1FAE5',
-                        paddingHorizontal: 6,
-                        paddingVertical: 2,
-                        borderRadius: 999,
+                        backgroundColor: 'rgba(63, 175, 115, 0.06)',
+                        paddingHorizontal: 8,
+                        paddingVertical: 3,
+                        borderRadius: 6,
+                        borderWidth: 1,
+                        borderColor: 'rgba(63, 175, 115, 0.08)',
                       }}>
-                        <Text style={{ color: '#3FAF73', fontSize: 11, fontWeight: '500' }}>✓ Halal</Text>
+                        <Text style={{ color: '#3FAF73', fontSize: 9, fontWeight: '500' }}>✓ Halal</Text>
                       </View>
                       <View style={{
-                        backgroundColor: '#FAFAF7',
-                        paddingHorizontal: 6,
-                        paddingVertical: 2,
-                        borderRadius: 999,
+                        backgroundColor: 'rgba(3, 42, 36, 0.04)',
+                        paddingHorizontal: 8,
+                        paddingVertical: 3,
+                        borderRadius: 6,
                         borderWidth: 1,
-                        borderColor: '#E8EEF4',
+                        borderColor: 'rgba(3, 42, 36, 0.04)',
                       }}>
-                        <Text style={{ color: '#6B7280', fontSize: 11 }}>{product.category}</Text>
+                        <Text style={{ color: '#6B7280', fontSize: 9 }}>{product.category}</Text>
                       </View>
                       {isButchery && product.meat_type && (
                         <View style={{
-                          backgroundColor: '#FAFAF7',
-                          paddingHorizontal: 6,
-                          paddingVertical: 2,
-                          borderRadius: 999,
+                          backgroundColor: 'rgba(201, 164, 75, 0.06)',
+                          paddingHorizontal: 8,
+                          paddingVertical: 3,
+                          borderRadius: 6,
                           borderWidth: 1,
-                          borderColor: '#E8EEF4',
+                          borderColor: 'rgba(201, 164, 75, 0.06)',
                         }}>
-                          <Text style={{ color: '#6B7280', fontSize: 11 }}>{product.meat_type}</Text>
+                          <Text style={{ color: '#C9A44B', fontSize: 9 }}>{product.meat_type}</Text>
                         </View>
                       )}
                     </View>
@@ -759,141 +950,125 @@ const Ecommerce = () => {
                       flexDirection: 'row',
                       justifyContent: 'space-between',
                       alignItems: 'center',
-                      marginTop: 10,
-                      paddingTop: 10,
+                      marginTop: 12,
+                      paddingTop: 12,
                       borderTopWidth: 1,
-                      borderTopColor: '#F4F5F1',
+                      borderTopColor: 'rgba(3, 42, 36, 0.04)',
                     }}>
-                      <View>
-                        {isButchery && product.price_per_kg ? (
-                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Text style={{ color: '#0B342B', fontSize: 18, fontWeight: '700' }}>{formatCurrency(product.price_per_kg)}</Text>
-                            <Text style={{ color: '#6B7280', fontSize: 13 }}>/kg</Text>
-                            {product.price && product.price > 0 && product.price !== product.price_per_kg && (
-                              <Text style={{ color: '#6B7280', fontSize: 13, textDecorationLine: 'line-through', marginLeft: 6 }}>
-                                {formatCurrency(product.price)}
-                              </Text>
-                            )}
-                          </View>
-                        ) : (
-                          <Text style={{ color: '#0B342B', fontSize: 18, fontWeight: '700' }}>{formatCurrency(product.price)}</Text>
-                        )}
-                      </View>
+                      {isButchery && product.stock_kg && (
+                        <Text style={{ color: '#6B7280', fontSize: 11 }}>Stock: {product.stock_kg} kg</Text>
+                      )}
                       <TouchableOpacity
                         style={{
-                          backgroundColor: '#0B342B',
-                          paddingHorizontal: 12,
-                          paddingVertical: 6,
-                          borderRadius: 8,
-                          opacity: processing ? 0.6 : 1,
-                          shadowColor: '#0B342B',
-                          shadowOffset: { width: 0, height: 4 },
-                          shadowOpacity: 0.2,
-                          shadowRadius: 8,
-                          elevation: 4,
+                          backgroundColor: '#032A24',
+                          paddingHorizontal: 16,
+                          paddingVertical: 8,
+                          borderRadius: 10,
+                          opacity: processing ? 0.5 : 1,
                         }}
                         onPress={() => addToCart(product)}
                         disabled={processing}
+                        activeOpacity={0.7}
                       >
-                        <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '600' }}>Add</Text>
+                        <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '600' }}>Add to Cart</Text>
                       </TouchableOpacity>
                     </View>
-                    {isButchery && product.stock_kg && (
-                      <Text style={{ color: '#6B7280', fontSize: 12, marginTop: 2 }}>Stock: {product.stock_kg} kg</Text>
-                    )}
                   </View>
                 </TouchableOpacity>
               );
             })
           )}
 
-          {/* Order History */}
+          {/* ===== COLLAPSIBLE ORDER HISTORY ===== */}
           {isAuthenticated && showOrderHistory && (
             <View style={{
               backgroundColor: '#FFFFFF',
-              borderRadius: 12,
-              padding: 16,
-              marginTop: 16,
+              borderRadius: 16,
               borderWidth: 1,
-              borderColor: '#E8EEF4',
-              shadowColor: '#000',
+              borderColor: 'rgba(3, 42, 36, 0.06)',
+              shadowColor: '#032A24',
               shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.04,
-              shadowRadius: 4,
+              shadowOpacity: 0.02,
+              shadowRadius: 8,
               elevation: 1,
+              marginTop: 16,
+              overflow: 'hidden',
             }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '700' }}>Order History</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 }}>
+                <Text style={{ color: '#032A24', fontSize: 15, fontWeight: '600', letterSpacing: -0.2 }}>
+                  Order History
+                </Text>
                 <TouchableOpacity
                   style={{
-                    backgroundColor: '#FAFAF7',
+                    backgroundColor: 'rgba(3, 42, 36, 0.04)',
                     paddingHorizontal: 10,
-                    paddingVertical: 6,
+                    paddingVertical: 4,
                     borderRadius: 8,
                   }}
                   onPress={() => setShowOrderHistory(false)}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Close</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 12 }}>Close</Text>
                 </TouchableOpacity>
               </View>
 
-              {loadingOrders ? (
-                <View style={{ alignItems: 'center', paddingVertical: 16 }}>
-                  <ActivityIndicator size="small" color="#C9A44B" />
-                </View>
-              ) : orders.length === 0 ? (
-                <View style={{ alignItems: 'center', paddingVertical: 20 }}>
-                  <Text style={{ fontSize: 32, marginBottom: 4 }}>📭</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 15, fontWeight: '600' }}>No orders yet</Text>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Start shopping to see your orders here</Text>
-                </View>
-              ) : (
-                orders.slice(0, 5).map((order) => {
-                  const badge = getStatusBadge(order.status);
-                  return (
-                    <View key={order.id} style={{
-                      backgroundColor: '#FAFAF7',
-                      padding: 12,
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      borderColor: '#E8EEF4',
-                      marginBottom: 6,
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      flexWrap: 'wrap',
-                      gap: 8,
-                    }}>
-                      <View>
-                        <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>#{order.id}</Text>
-                        <Text style={{ color: '#6B7280', fontSize: 13 }}>
-                          {new Date(order.order_date).toLocaleDateString()}
-                        </Text>
-                        <Text style={{ color: '#6B7280', fontSize: 13 }}>{order.items?.length || 0} items</Text>
-                      </View>
-                      <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '700' }}>{formatCurrency(order.total_amount)}</Text>
-                        <View style={{
-                          backgroundColor: badge.bg,
-                          paddingHorizontal: 6,
-                          paddingVertical: 2,
-                          borderRadius: 999,
-                          borderWidth: 1,
-                          borderColor: 'rgba(0,0,0,0.05)',
-                        }}>
-                          <Text style={{ color: badge.text, fontSize: 11, fontWeight: '500', textTransform: 'capitalize' }}>
-                            {order.status}
+              <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+                {loadingOrders ? (
+                  <View style={{ alignItems: 'center', paddingVertical: 16 }}>
+                    <ActivityIndicator size="small" color="#032A24" />
+                  </View>
+                ) : orders.length === 0 ? (
+                  <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+                    <Text style={{ fontSize: 32, marginBottom: 4 }}>📭</Text>
+                    <Text style={{ color: '#032A24', fontSize: 14, fontWeight: '600' }}>No orders yet</Text>
+                    <Text style={{ color: '#6B7280', fontSize: 12, marginTop: 2 }}>Start shopping to see your orders here</Text>
+                  </View>
+                ) : (
+                  orders.slice(0, 5).map((order) => {
+                    const badge = getStatusBadge(order.status);
+                    return (
+                      <View key={order.id} style={{
+                        backgroundColor: '#FAFAF7',
+                        padding: 12,
+                        borderRadius: 10,
+                        borderWidth: 1,
+                        borderColor: 'rgba(3, 42, 36, 0.04)',
+                        marginBottom: 8,
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: 6,
+                      }}>
+                        <View>
+                          <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>#{order.id}</Text>
+                          <Text style={{ color: '#6B7280', fontSize: 11 }}>
+                            {new Date(order.order_date).toLocaleDateString()}
                           </Text>
+                          <Text style={{ color: '#6B7280', fontSize: 11 }}>{order.items?.length || 0} items</Text>
+                        </View>
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '700' }}>{formatCurrency(order.total_amount)}</Text>
+                          <View style={{
+                            backgroundColor: badge.bg,
+                            paddingHorizontal: 6,
+                            paddingVertical: 2,
+                            borderRadius: 6,
+                          }}>
+                            <Text style={{ color: badge.text, fontSize: 9, fontWeight: '500', textTransform: 'capitalize' }}>
+                              {order.status}
+                            </Text>
+                          </View>
                         </View>
                       </View>
-                    </View>
-                  );
-                })
-              )}
+                    );
+                  })
+                )}
+              </View>
             </View>
           )}
 
-          {/* Stats */}
+          {/* ===== STATS ===== */}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 16 }}>
             {[
               { label: 'Halal Products', value: products.length },
@@ -903,82 +1078,98 @@ const Ecommerce = () => {
             ].map((item, index) => (
               <View key={index} style={{
                 flex: 1,
-                minWidth: 70,
+                minWidth: 60,
                 backgroundColor: '#FFFFFF',
-                borderRadius: 12,
+                borderRadius: 14,
                 padding: 12,
                 alignItems: 'center',
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
-                shadowColor: '#000',
+                borderColor: 'rgba(3, 42, 36, 0.04)',
+                shadowColor: '#032A24',
                 shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.04,
-                shadowRadius: 4,
+                shadowOpacity: 0.02,
+                shadowRadius: 8,
                 elevation: 1,
               }}>
                 <Text style={{
-                  color: item.color || '#1F2937',
+                  color: item.color || '#032A24',
                   fontSize: 18,
                   fontWeight: '700',
+                  letterSpacing: -0.2,
                 }}>
                   {item.value}
                 </Text>
-                <Text style={{ color: '#6B7280', fontSize: 11, textAlign: 'center' }}>{item.label}</Text>
+                <Text style={{ color: '#6B7280', fontSize: 10, textAlign: 'center', marginTop: 2 }}>{item.label}</Text>
               </View>
             ))}
+          </View>
+
+          {/* ===== FOOTER ===== */}
+          <View style={{ alignItems: 'center', marginTop: 24 }}>
+            <Text style={{
+              color: 'rgba(201, 164, 75, 0.2)',
+              fontSize: 9,
+              letterSpacing: 1,
+              fontWeight: '500',
+            }}>
+              Itqaan · Halal Market
+            </Text>
           </View>
         </View>
       </ScrollView>
 
+      {/* ===== MODALS (Preserved with premium styling) ===== */}
       {/* Product Detail Modal */}
       <Modal visible={showProductModal} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
+            borderRadius: 20,
+            padding: 24,
             width: '100%',
-            maxWidth: 500,
+            maxWidth: 420,
             maxHeight: '90%',
           }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ color: '#1F2937', fontSize: 20, fontWeight: '700' }}>Product Details</Text>
-              <TouchableOpacity onPress={() => setShowProductModal(false)}>
-                <Text style={{ color: '#6B7280', fontSize: 20 }}>✕</Text>
+              <Text style={{ color: '#032A24', fontSize: 18, fontWeight: '700', letterSpacing: -0.3 }}>
+                Product Details
+              </Text>
+              <TouchableOpacity onPress={() => setShowProductModal(false)} activeOpacity={0.7} style={{ padding: 4 }}>
+                <CloseIcon color="#6B7280" size={20} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <Image
-                source={{ uri: selectedProduct?.images?.[0] || 'https://via.placeholder.com/400x300/0B342B/fff?text=Product' }}
+                source={{ uri: selectedProduct?.images?.[0] || 'https://via.placeholder.com/400x300/032A24/C9A44B?text=Product' }}
                 style={{ width: '100%', height: 200, borderRadius: 12 }}
                 resizeMode="cover"
               />
 
               <View style={{ marginTop: 12 }}>
-                <Text style={{ color: '#1F2937', fontSize: 18, fontWeight: '700' }}>{selectedProduct?.name}</Text>
+                <Text style={{ color: '#032A24', fontSize: 17, fontWeight: '700' }}>{selectedProduct?.name}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
-                  <Text style={{ color: '#C9A44B', fontSize: 14 }}>{getStars(selectedProduct?.rating)} {selectedProduct?.rating}</Text>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>({selectedProduct?.reviews || 0} reviews)</Text>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>by {selectedProduct?.vendor_name || 'Vendor'}</Text>
+                  <Text style={{ color: '#C9A44B', fontSize: 13 }}>{getStars(selectedProduct?.rating)} {selectedProduct?.rating}</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 12 }}>({selectedProduct?.reviews || 0} reviews)</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 12 }}>by {selectedProduct?.vendor_name || 'Vendor'}</Text>
                 </View>
 
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
                   {(selectedProduct?.tags || []).map((tag: string, i: number) => (
                     <View key={i} style={{
-                      backgroundColor: '#FAFAF7',
-                      paddingHorizontal: 6,
+                      backgroundColor: 'rgba(3, 42, 36, 0.04)',
+                      paddingHorizontal: 8,
                       paddingVertical: 2,
-                      borderRadius: 999,
+                      borderRadius: 6,
                       borderWidth: 1,
-                      borderColor: '#E8EEF4',
+                      borderColor: 'rgba(3, 42, 36, 0.04)',
                     }}>
-                      <Text style={{ color: '#6B7280', fontSize: 11 }}>#{tag}</Text>
+                      <Text style={{ color: '#6B7280', fontSize: 9 }}>#{tag}</Text>
                     </View>
                   ))}
                 </View>
 
-                <Text style={{ color: '#6B7280', fontSize: 14, marginTop: 10, lineHeight: 20 }}>
+                <Text style={{ color: '#6B7280', fontSize: 13, marginTop: 10, lineHeight: 20 }}>
                   {selectedProduct?.description}
                 </Text>
 
@@ -989,29 +1180,27 @@ const Ecommerce = () => {
                   marginTop: 14,
                   paddingTop: 14,
                   borderTopWidth: 1,
-                  borderTopColor: '#F4F5F1',
+                  borderTopColor: 'rgba(3, 42, 36, 0.04)',
                 }}>
-                  <Text style={{ color: '#0B342B', fontSize: 24, fontWeight: '700' }}>{formatCurrency(selectedProduct?.price)}</Text>
+                  <Text style={{ color: '#032A24', fontSize: 22, fontWeight: '700', letterSpacing: -0.3 }}>
+                    {formatCurrency(selectedProduct?.price)}
+                  </Text>
                   <TouchableOpacity
                     style={{
-                      backgroundColor: '#0B342B',
+                      backgroundColor: '#032A24',
                       paddingHorizontal: 20,
                       paddingVertical: 10,
-                      borderRadius: 8,
-                      opacity: processing ? 0.6 : 1,
-                      shadowColor: '#0B342B',
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.2,
-                      shadowRadius: 8,
-                      elevation: 4,
+                      borderRadius: 10,
+                      opacity: processing ? 0.5 : 1,
                     }}
                     onPress={() => {
                       addToCart(selectedProduct);
                       setShowProductModal(false);
                     }}
                     disabled={processing}
+                    activeOpacity={0.7}
                   >
-                    <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>Add to Cart</Text>
+                    <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Add to Cart</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -1022,19 +1211,21 @@ const Ecommerce = () => {
 
       {/* Cart Modal */}
       <Modal visible={showCart} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
+            borderRadius: 20,
+            padding: 24,
             width: '100%',
-            maxWidth: 500,
+            maxWidth: 420,
             maxHeight: '90%',
           }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ color: '#1F2937', fontSize: 20, fontWeight: '700' }}>Your Cart</Text>
-              <TouchableOpacity onPress={() => setShowCart(false)}>
-                <Text style={{ color: '#6B7280', fontSize: 20 }}>✕</Text>
+              <Text style={{ color: '#032A24', fontSize: 18, fontWeight: '700', letterSpacing: -0.3 }}>
+                Your Cart
+              </Text>
+              <TouchableOpacity onPress={() => setShowCart(false)} activeOpacity={0.7} style={{ padding: 4 }}>
+                <CloseIcon color="#6B7280" size={20} />
               </TouchableOpacity>
             </View>
 
@@ -1042,8 +1233,8 @@ const Ecommerce = () => {
               {cart.length === 0 ? (
                 <View style={{ alignItems: 'center', paddingVertical: 40 }}>
                   <Text style={{ fontSize: 40, marginBottom: 8 }}>🛒</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '600' }}>Your cart is empty</Text>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Start shopping to add items</Text>
+                  <Text style={{ color: '#032A24', fontSize: 16, fontWeight: '600' }}>Your cart is empty</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Start shopping to add items</Text>
                 </View>
               ) : (
                 <>
@@ -1054,66 +1245,68 @@ const Ecommerce = () => {
                       alignItems: 'center',
                       paddingVertical: 10,
                       borderBottomWidth: 1,
-                      borderBottomColor: '#F4F5F1',
+                      borderBottomColor: 'rgba(3, 42, 36, 0.04)',
                     }}>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '500' }} numberOfLines={1}>
+                        <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '500' }} numberOfLines={1}>
                           {item.name}
                         </Text>
-                        <Text style={{ color: '#6B7280', fontSize: 13 }}>{formatCurrency(item.price)} x {item.quantity}</Text>
+                        <Text style={{ color: '#6B7280', fontSize: 12 }}>{formatCurrency(item.price)} x {item.quantity}</Text>
                       </View>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                         <TouchableOpacity
                           style={{
-                            backgroundColor: '#F4F5F1',
-                            width: 28,
-                            height: 28,
+                            backgroundColor: '#F3F4F6',
+                            width: 26,
+                            height: 26,
                             borderRadius: 6,
                             alignItems: 'center',
                             justifyContent: 'center',
                           }}
                           onPress={() => updateQuantity(item.id, (item.quantity || 1) - 1)}
+                          activeOpacity={0.7}
                         >
-                          <Text style={{ color: '#6B7280', fontSize: 16 }}>−</Text>
+                          <Text style={{ color: '#6B7280', fontSize: 14 }}>−</Text>
                         </TouchableOpacity>
-                        <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600', width: 24, textAlign: 'center' }}>
+                        <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600', width: 20, textAlign: 'center' }}>
                           {item.quantity || 1}
                         </Text>
                         <TouchableOpacity
                           style={{
-                            backgroundColor: '#F4F5F1',
-                            width: 28,
-                            height: 28,
+                            backgroundColor: '#F3F4F6',
+                            width: 26,
+                            height: 26,
                             borderRadius: 6,
                             alignItems: 'center',
                             justifyContent: 'center',
                           }}
                           onPress={() => updateQuantity(item.id, (item.quantity || 1) + 1)}
+                          activeOpacity={0.7}
                         >
-                          <Text style={{ color: '#6B7280', fontSize: 16 }}>+</Text>
+                          <Text style={{ color: '#6B7280', fontSize: 14 }}>+</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => removeFromCart(item.id)}>
-                          <Text style={{ color: '#DC2626', fontSize: 16 }}>✕</Text>
+                        <TouchableOpacity onPress={() => removeFromCart(item.id)} activeOpacity={0.7}>
+                          <CloseIcon color="#DC2626" size={16} />
                         </TouchableOpacity>
                       </View>
                     </View>
                   ))}
 
                   <View style={{
-                    backgroundColor: '#FAFAF7',
+                    backgroundColor: 'rgba(3, 42, 36, 0.02)',
                     padding: 12,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     marginTop: 12,
                     borderWidth: 1,
-                    borderColor: '#E8EEF4',
+                    borderColor: 'rgba(3, 42, 36, 0.04)',
                   }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                      <Text style={{ color: '#6B7280', fontSize: 14 }}>Subtotal</Text>
-                      <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>{formatCurrency(getCartTotal())}</Text>
+                      <Text style={{ color: '#6B7280', fontSize: 13 }}>Subtotal</Text>
+                      <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>{formatCurrency(getCartTotal())}</Text>
                     </View>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 }}>
-                      <Text style={{ color: '#6B7280', fontSize: 14 }}>Delivery</Text>
-                      <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>{formatCurrency(500)}</Text>
+                      <Text style={{ color: '#6B7280', fontSize: 13 }}>Delivery</Text>
+                      <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>{formatCurrency(500)}</Text>
                     </View>
                     <View style={{
                       flexDirection: 'row',
@@ -1121,29 +1314,25 @@ const Ecommerce = () => {
                       paddingTop: 8,
                       marginTop: 8,
                       borderTopWidth: 1,
-                      borderTopColor: '#E8EEF4',
+                      borderTopColor: 'rgba(3, 42, 36, 0.04)',
                     }}>
-                      <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '700' }}>Total</Text>
-                      <Text style={{ color: '#0B342B', fontSize: 16, fontWeight: '700' }}>{formatCurrency(getCartTotal() + 500)}</Text>
+                      <Text style={{ color: '#032A24', fontSize: 15, fontWeight: '700' }}>Total</Text>
+                      <Text style={{ color: '#C9A44B', fontSize: 15, fontWeight: '700' }}>{formatCurrency(getCartTotal() + 500)}</Text>
                     </View>
                   </View>
 
                   <TouchableOpacity
                     style={{
-                      backgroundColor: '#0B342B',
+                      backgroundColor: '#032A24',
                       paddingVertical: 12,
-                      borderRadius: 8,
+                      borderRadius: 10,
                       alignItems: 'center',
                       marginTop: 12,
-                      shadowColor: '#0B342B',
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.2,
-                      shadowRadius: 8,
-                      elevation: 4,
                     }}
                     onPress={handleCheckout}
+                    activeOpacity={0.7}
                   >
-                    <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '600' }}>Checkout</Text>
+                    <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>Checkout</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -1154,19 +1343,21 @@ const Ecommerce = () => {
 
       {/* Checkout Modal */}
       <Modal visible={showCheckoutModal} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
+            borderRadius: 20,
+            padding: 24,
             width: '100%',
-            maxWidth: 400,
+            maxWidth: 420,
             maxHeight: '90%',
           }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ color: '#1F2937', fontSize: 18, fontWeight: '700' }}>Order Summary</Text>
-              <TouchableOpacity onPress={() => setShowCheckoutModal(false)}>
-                <Text style={{ color: '#6B7280', fontSize: 20 }}>✕</Text>
+              <Text style={{ color: '#032A24', fontSize: 18, fontWeight: '700', letterSpacing: -0.3 }}>
+                Order Summary
+              </Text>
+              <TouchableOpacity onPress={() => setShowCheckoutModal(false)} activeOpacity={0.7} style={{ padding: 4 }}>
+                <CloseIcon color="#6B7280" size={20} />
               </TouchableOpacity>
             </View>
 
@@ -1177,30 +1368,30 @@ const Ecommerce = () => {
                   justifyContent: 'space-between',
                   paddingVertical: 6,
                   borderBottomWidth: 1,
-                  borderBottomColor: '#F4F5F1',
+                  borderBottomColor: 'rgba(3, 42, 36, 0.04)',
                 }}>
-                  <Text style={{ color: '#1F2937', fontSize: 14 }}>{item.name} x{item.quantity}</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>{item.name} x{item.quantity}</Text>
+                  <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>
                     {formatCurrency((item.price || 0) * (item.quantity || 1))}
                   </Text>
                 </View>
               ))}
 
               <View style={{
-                backgroundColor: '#FAFAF7',
+                backgroundColor: 'rgba(3, 42, 36, 0.02)',
                 padding: 12,
-                borderRadius: 8,
+                borderRadius: 10,
                 marginTop: 12,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
+                borderColor: 'rgba(3, 42, 36, 0.04)',
               }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Subtotal</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>{formatCurrency(getCartTotal())}</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Subtotal</Text>
+                  <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>{formatCurrency(getCartTotal())}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Delivery</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>{formatCurrency(500)}</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Delivery</Text>
+                  <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>{formatCurrency(500)}</Text>
                 </View>
                 <View style={{
                   flexDirection: 'row',
@@ -1208,52 +1399,49 @@ const Ecommerce = () => {
                   paddingTop: 8,
                   marginTop: 8,
                   borderTopWidth: 1,
-                  borderTopColor: '#E8EEF4',
+                  borderTopColor: 'rgba(3, 42, 36, 0.04)',
                 }}>
-                  <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '700' }}>Total</Text>
-                  <Text style={{ color: '#0B342B', fontSize: 16, fontWeight: '700' }}>{formatCurrency(getCartTotal() + 500)}</Text>
+                  <Text style={{ color: '#032A24', fontSize: 15, fontWeight: '700' }}>Total</Text>
+                  <Text style={{ color: '#C9A44B', fontSize: 15, fontWeight: '700' }}>{formatCurrency(getCartTotal() + 500)}</Text>
                 </View>
               </View>
 
-              {error ? <Text style={{ color: '#DC2626', fontSize: 13, marginTop: 8 }}>{error}</Text> : null}
+              {error ? <Text style={{ color: '#DC2626', fontSize: 12, marginTop: 8 }}>{error}</Text> : null}
 
               <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
                 <TouchableOpacity
                   style={{
                     flex: 1,
-                    backgroundColor: '#F4F5F1',
+                    backgroundColor: '#F3F4F6',
                     paddingVertical: 10,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     alignItems: 'center',
                   }}
                   onPress={() => setShowCheckoutModal(false)}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#6B7280', fontSize: 15, fontWeight: '500' }}>Cancel</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '500' }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={{
                     flex: 2,
-                    backgroundColor: '#0B342B',
+                    backgroundColor: '#032A24',
                     paddingVertical: 10,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     alignItems: 'center',
-                    opacity: processing ? 0.6 : 1,
-                    shadowColor: '#0B342B',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 8,
-                    elevation: 4,
+                    opacity: processing ? 0.5 : 1,
                   }}
                   onPress={confirmOrder}
                   disabled={processing}
+                  activeOpacity={0.7}
                 >
                   {processing ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <ActivityIndicator size="small" color="#FFFFFF" />
-                      <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>Processing...</Text>
+                      <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Processing...</Text>
                     </View>
                   ) : (
-                    <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>Place Order</Text>
+                    <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Place Order</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -1264,38 +1452,40 @@ const Ecommerce = () => {
 
       {/* Success Modal */}
       <Modal visible={showSuccessModal} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
+            borderRadius: 20,
+            padding: 24,
             width: '100%',
-            maxWidth: 400,
+            maxWidth: 420,
             maxHeight: '90%',
           }}>
             <View style={{
-              backgroundColor: '#0B342B',
+              backgroundColor: '#032A24',
               padding: 16,
-              borderTopLeftRadius: 12,
-              borderTopRightRadius: 12,
-              margin: -20,
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              margin: -24,
               marginBottom: 16,
               flexDirection: 'row',
               justifyContent: 'space-between',
               alignItems: 'center',
             }}>
-              <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700' }}>Order Placed!</Text>
-              <TouchableOpacity onPress={() => setShowSuccessModal(false)}>
-                <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 20 }}>✕</Text>
+              <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700', letterSpacing: -0.3 }}>
+                Order Placed!
+              </Text>
+              <TouchableOpacity onPress={() => setShowSuccessModal(false)} activeOpacity={0.7} style={{ padding: 4 }}>
+                <CloseIcon color="rgba(255,255,255,0.6)" size={20} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={{ alignItems: 'center', marginBottom: 16 }}>
                 <Text style={{ fontSize: 48, marginBottom: 8 }}>🎉</Text>
-                <Text style={{ color: '#1F2937', fontSize: 20, fontWeight: '700' }}>Order Confirmed!</Text>
-                <Text style={{ color: '#6B7280', fontSize: 14, marginTop: 2 }}>Order #{orderNumber}</Text>
-                <Text style={{ color: '#6B7280', fontSize: 14, marginTop: 8, textAlign: 'center', lineHeight: 20 }}>
+                <Text style={{ color: '#032A24', fontSize: 18, fontWeight: '700' }}>Order Confirmed!</Text>
+                <Text style={{ color: '#6B7280', fontSize: 13, marginTop: 2 }}>Order #{orderNumber}</Text>
+                <Text style={{ color: '#6B7280', fontSize: 13, marginTop: 8, textAlign: 'center', lineHeight: 20 }}>
                   Your order has been placed successfully.
                 </Text>
               </View>
@@ -1304,34 +1494,31 @@ const Ecommerce = () => {
                 <TouchableOpacity
                   style={{
                     flex: 1,
-                    backgroundColor: '#0B342B',
+                    backgroundColor: '#032A24',
                     paddingVertical: 10,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     alignItems: 'center',
-                    shadowColor: '#0B342B',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 8,
-                    elevation: 4,
                   }}
                   onPress={() => {
                     setShowSuccessModal(false);
                     setShowOrderHistory(true);
                   }}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>View Orders</Text>
+                  <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>View Orders</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={{
                     flex: 1,
-                    backgroundColor: '#F4F5F1',
+                    backgroundColor: '#F3F4F6',
                     paddingVertical: 10,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     alignItems: 'center',
                   }}
                   onPress={() => setShowSuccessModal(false)}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#6B7280', fontSize: 15, fontWeight: '500' }}>Continue Shopping</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '500' }}>Continue Shopping</Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -1343,28 +1530,28 @@ const Ecommerce = () => {
       {success ? (
         <View style={{
           position: 'absolute',
-          top: 60,
-          right: 16,
-          left: 16,
-          backgroundColor: '#0B342B',
-          paddingHorizontal: 16,
-          paddingVertical: 12,
-          borderRadius: 12,
+          top: Platform.OS === 'ios' ? 60 : 40,
+          right: 20,
+          left: 20,
+          backgroundColor: '#032A24',
+          paddingHorizontal: 18,
+          paddingVertical: 14,
+          borderRadius: 14,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          shadowColor: '#0B342B',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          elevation: 4,
+          shadowColor: '#032A24',
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.2,
+          shadowRadius: 16,
+          elevation: 8,
         }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text style={{ color: '#C9A44B', fontSize: 16 }}>✓</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <CheckIcon color="#C9A44B" size={18} />
             <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '500', flex: 1 }}>{success}</Text>
           </View>
-          <TouchableOpacity onPress={() => setSuccess('')}>
-            <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 16 }}>✕</Text>
+          <TouchableOpacity onPress={() => setSuccess('')} activeOpacity={0.7} style={{ padding: 4 }}>
+            <CloseIcon color="rgba(255,255,255,0.5)" size={18} />
           </TouchableOpacity>
         </View>
       ) : null}

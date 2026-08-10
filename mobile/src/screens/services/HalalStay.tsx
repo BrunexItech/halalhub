@@ -11,10 +11,114 @@ import {
   Modal,
   Image,
   Platform,
+  Dimensions,
+  LayoutAnimation,
+  UIManager,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { clientService } from '../../api/client';
+import Svg, { Path, Circle, Rect } from 'react-native-svg';
+
+// Enable LayoutAnimation for Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const { width } = Dimensions.get('window');
+
+// ===== PROFESSIONAL SVG ICONS =====
+const BackIcon = ({ color = '#032A24', size = 24 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M15 18L9 12L15 6" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const HomeIcon = ({ color = '#C9A44B', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M3 12L5 10.5M5 10.5L12 3L19 10.5M5 10.5V19C5 19.5523 5.44772 20 6 20H10M19 10.5L21 12M19 10.5V19C19 19.5523 18.5523 20 18 20H14" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <Path d="M10 14H14V20H10V14Z" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const SearchIcon = ({ color = '#6B7280', size = 18 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="11" cy="11" r="7" stroke={color} strokeWidth="1.5"/>
+    <Path d="M16.5 16.5L21 21" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </Svg>
+);
+
+const LocationIcon = ({ color = '#6B7280', size = 14 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" stroke={color} strokeWidth="1.5"/>
+    <Circle cx="12" cy="10" r="3" stroke={color} strokeWidth="1.5"/>
+  </Svg>
+);
+
+const UserIcon = ({ color = '#6B7280', size = 14 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="8" r="4" stroke={color} strokeWidth="1.5"/>
+    <Path d="M5.5 20C5.5 16.6863 8.18629 14 11.5 14H12.5C15.8137 14 18.5 16.6863 18.5 20" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </Svg>
+);
+
+const CalendarIcon = ({ color = '#6B7280', size = 14 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Rect x="3" y="6" width="18" height="16" rx="2" stroke={color} strokeWidth="1.5"/>
+    <Path d="M3 10H21" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <Path d="M8 2V6" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <Path d="M16 2V6" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </Svg>
+);
+
+const BedIcon = ({ color = '#6B7280', size = 14 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M4 15V9C4 7.89543 4.89543 7 6 7H18C19.1046 7 20 7.89543 20 9V15M4 15V19M4 15H20M20 15V19" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <Path d="M8 11H10" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <Path d="M14 11H16" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </Svg>
+);
+
+const StarIcon = ({ color = '#C9A44B', size = 12 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke={color} strokeWidth="1.5" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const CheckIcon = ({ color = '#FFFFFF', size = 16 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M5 12L10 17L20 7" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const CloseIcon = ({ color = '#6B7280', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M18 6L6 18M6 6L18 18" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const ChevronDownIcon = ({ color = '#6B7280', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M6 9L12 15L18 9" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const ChevronUpIcon = ({ color = '#6B7280', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M18 15L12 9L6 15" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const HeartIcon = ({ color = '#6B7280', size = 18, filled = false }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path 
+      d="M12 21.35L10.55 20.03C5.4 15.36 2 12.28 2 8.5C2 5.42 4.42 3 7.5 3C9.24 3 10.91 3.81 12 5.09C13.09 3.81 14.76 3 16.5 3C19.58 3 22 5.42 22 8.5C22 12.28 18.6 15.36 13.45 20.04L12 21.35Z" 
+      fill={filled ? '#DC2626' : 'none'} 
+      stroke={filled ? '#DC2626' : color} 
+      strokeWidth="1.5"
+    />
+  </Svg>
+);
 
 const HalalStay = () => {
   const navigation = useNavigation();
@@ -57,6 +161,10 @@ const HalalStay = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
   const [bookingData, setBookingData] = useState<any>(null);
+  
+  // Collapsible sections
+  const [filtersExpanded, setFiltersExpanded] = useState(true);
+  const [bookingsExpanded, setBookingsExpanded] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -72,6 +180,16 @@ const HalalStay = () => {
       fetchBookings();
     }
   }, [isAuthenticated]);
+
+  const toggleFilters = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setFiltersExpanded(!filtersExpanded);
+  };
+
+  const toggleBookings = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setBookingsExpanded(!bookingsExpanded);
+  };
 
   const fetchProperties = async () => {
     setLoading(true);
@@ -304,8 +422,8 @@ const HalalStay = () => {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <ActivityIndicator size="large" color="#C9A44B" />
-          <Text style={{ color: '#6B7280', marginTop: 12, fontSize: 14 }}>Loading properties...</Text>
+          <ActivityIndicator size="large" color="#032A24" />
+          <Text style={{ color: '#6B7280', marginTop: 16, fontSize: 14 }}>Loading properties...</Text>
         </View>
       </SafeAreaView>
     );
@@ -314,61 +432,103 @@ const HalalStay = () => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
       <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+        contentContainerStyle={{
+          paddingTop: Platform.OS === 'ios' ? 8 : 12,
+          paddingHorizontal: 20,
+          paddingBottom: 40,
+        }}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#C9A44B" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#032A24" />}
       >
         <View style={{ maxWidth: 800, width: '100%', alignSelf: 'center' }}>
-          {/* Hero Section */}
+          {/* ===== PREMIUM HEADER ===== */}
           <View style={{
-            backgroundColor: '#0B342B',
-            borderRadius: 16,
-            padding: 20,
-            marginBottom: 16,
-            overflow: 'hidden',
+            backgroundColor: '#032A24',
+            borderRadius: 18,
+            paddingHorizontal: 18,
+            paddingVertical: 16,
+            marginBottom: 24,
             borderWidth: 1,
             borderColor: 'rgba(201, 164, 75, 0.15)',
-            shadowColor: '#000',
+            shadowColor: '#032A24',
             shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.1,
-            shadowRadius: 8,
+            shadowOpacity: 0.08,
+            shadowRadius: 16,
             elevation: 4,
           }}>
-            <View style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, backgroundColor: 'rgba(201, 164, 75, 0.05)', borderRadius: 999 }} />
-            <View style={{ position: 'absolute', bottom: -30, left: -30, width: 80, height: 80, backgroundColor: 'rgba(201, 164, 75, 0.05)', borderRadius: 999 }} />
+            <View style={{
+              position: 'absolute',
+              top: 0,
+              left: 40,
+              right: 40,
+              height: 2,
+              backgroundColor: '#C9A44B',
+              opacity: 0.3,
+            }} />
 
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
-              <View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                  <Text style={{ color: '#C9A44B', fontSize: 12, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                activeOpacity={0.7}
+                style={{
+                  padding: 6,
+                  marginRight: 12,
+                  borderRadius: 10,
+                  backgroundColor: 'rgba(201, 164, 75, 0.08)',
+                }}
+              >
+                <BackIcon color="#C9A44B" size={22} />
+              </TouchableOpacity>
+
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <HomeIcon color="#C9A44B" size={18} />
+                  <Text style={{
+                    color: '#C9A44B',
+                    fontSize: 12,
+                    fontWeight: '600',
+                    letterSpacing: 0.8,
+                    textTransform: 'uppercase',
+                  }}>
                     HalalStay
                   </Text>
-                  <View style={{ width: 1, height: 14, backgroundColor: 'rgba(201, 164, 75, 0.3)' }} />
-                  <Text style={{ color: 'rgba(201, 164, 75, 0.6)', fontSize: 12, fontWeight: '500' }}>
-                    Halal-Friendly Accommodation
-                  </Text>
                 </View>
-                <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '700' }}>Find Your Perfect Halal Stay</Text>
-                <Text style={{ color: 'rgba(183, 192, 186, 0.7)', fontSize: 14, marginTop: 4, maxWidth: 400, lineHeight: 20 }}>
-                  Discover accommodation that respects your values, privacy, and worship needs across Kenya.
+                <Text style={{
+                  color: '#FFFFFF',
+                  fontSize: 18,
+                  fontWeight: '700',
+                  letterSpacing: -0.3,
+                  marginTop: 2,
+                }}>
+                  Find Your Perfect Halal Stay
+                </Text>
+                <Text style={{
+                  color: 'rgba(255,255,255,0.5)',
+                  fontSize: 12,
+                  letterSpacing: 0.2,
+                  marginTop: 1,
+                }}>
+                  Halal-friendly · Private · Values-respecting
                 </Text>
               </View>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                {!isAuthenticated && (
-                  <TouchableOpacity
-                    style={{
-                      backgroundColor: 'rgba(255,255,255,0.1)',
-                      paddingHorizontal: 16,
-                      paddingVertical: 8,
-                      borderRadius: 10,
-                      borderWidth: 1,
-                      borderColor: 'rgba(255,255,255,0.2)',
-                    }}
-                    onPress={() => navigation.navigate('Auth' as never)}
-                  >
-                    <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '500' }}>Sign In</Text>
-                  </TouchableOpacity>
-                )}
+
+              <View style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                backgroundColor: 'rgba(201, 164, 75, 0.08)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 1,
+                borderColor: 'rgba(201, 164, 75, 0.1)',
+              }}>
+                <View style={{
+                  width: 4,
+                  height: 4,
+                  borderRadius: 2,
+                  backgroundColor: '#C9A44B',
+                  opacity: 0.5,
+                }} />
               </View>
             </View>
           </View>
@@ -379,15 +539,15 @@ const HalalStay = () => {
               borderWidth: 1,
               borderColor: '#FECACA',
               borderRadius: 12,
-              padding: 12,
-              marginBottom: 12,
+              padding: 14,
+              marginBottom: 16,
               flexDirection: 'row',
               justifyContent: 'space-between',
               alignItems: 'center',
             }}>
-              <Text style={{ color: '#DC2626', fontSize: 13 }}>{error}</Text>
+              <Text style={{ color: '#DC2626', fontSize: 13, flex: 1 }}>{error}</Text>
               <TouchableOpacity
-                style={{ backgroundColor: '#DC2626', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}
+                style={{ backgroundColor: '#DC2626', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 6 }}
                 onPress={() => setError('')}
               >
                 <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '600' }}>Dismiss</Text>
@@ -395,220 +555,263 @@ const HalalStay = () => {
             </View>
           ) : null}
 
-          {/* Search Section */}
+          {/* ===== COLLAPSIBLE SEARCH/FILTERS ===== */}
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 12,
-            padding: 16,
-            marginBottom: 16,
+            borderRadius: 16,
             borderWidth: 1,
-            borderColor: '#E8EEF4',
-            shadowColor: '#000',
+            borderColor: 'rgba(3, 42, 36, 0.06)',
+            shadowColor: '#032A24',
             shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.04,
-            shadowRadius: 4,
+            shadowOpacity: 0.02,
+            shadowRadius: 8,
             elevation: 1,
+            marginBottom: 16,
+            overflow: 'hidden',
           }}>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-              <View style={{ flex: 1, minWidth: 140 }}>
-                <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
-                  Search
-                </Text>
-                <TextInput
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderWidth: 1,
-                    borderColor: '#E8EEF4',
-                    borderRadius: 8,
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
-                    paddingLeft: 36,
-                    color: '#1F2937',
-                    fontSize: 14,
-                  }}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  placeholder="Search by name or location..."
-                />
-              </View>
-              <View style={{ flex: 1, minWidth: 100 }}>
-                <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
-                  Location
-                </Text>
+            <TouchableOpacity
+              onPress={toggleFilters}
+              activeOpacity={0.7}
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: 16,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <View style={{
-                  backgroundColor: '#FFFFFF',
-                  borderWidth: 1,
-                  borderColor: '#E8EEF4',
-                  borderRadius: 8,
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
-                }}>
-                  <TextInput
-                    style={{ color: '#1F2937', fontSize: 14, padding: 0 }}
-                    value={selectedLocation}
-                    onChangeText={(text) => setSelectedLocation(text)}
-                    placeholder="All"
-                  />
-                </View>
-              </View>
-              <View style={{ flex: 1, minWidth: 100 }}>
-                <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
-                  Property Type
+                  width: 3,
+                  height: 16,
+                  backgroundColor: '#C9A44B',
+                  borderRadius: 2,
+                }} />
+                <SearchIcon color="#032A24" size={16} />
+                <Text style={{ color: '#032A24', fontSize: 15, fontWeight: '600', letterSpacing: -0.2 }}>
+                  Search & Filters
                 </Text>
-                <View style={{
-                  backgroundColor: '#FFFFFF',
-                  borderWidth: 1,
-                  borderColor: '#E8EEF4',
-                  borderRadius: 8,
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
-                }}>
-                  <TextInput
-                    style={{ color: '#1F2937', fontSize: 14, padding: 0 }}
-                    value={selectedType}
-                    onChangeText={(text) => setSelectedType(text)}
-                    placeholder="All"
-                  />
-                </View>
-              </View>
-              <View style={{ flex: 0.7, minWidth: 80 }}>
-                <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
-                  Guests
+                <Text style={{ color: '#8B8A86', fontSize: 10 }}>
+                  {filteredProperties.length} properties
                 </Text>
-                <TextInput
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderWidth: 1,
-                    borderColor: '#E8EEF4',
-                    borderRadius: 8,
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
-                    color: '#1F2937',
-                    fontSize: 14,
-                  }}
-                  value={String(guests)}
-                  onChangeText={(text) => setGuests(Math.max(1, parseInt(text) || 1))}
-                  keyboardType="numeric"
-                />
               </View>
-            </View>
+              {filtersExpanded ? (
+                <ChevronUpIcon color="#6B7280" size={18} />
+              ) : (
+                <ChevronDownIcon color="#6B7280" size={18} />
+              )}
+            </TouchableOpacity>
 
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 10 }}>
-              <View style={{ flex: 1, minWidth: 120 }}>
-                <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
-                  Check-in
-                </Text>
-                <TextInput
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderWidth: 1,
-                    borderColor: '#E8EEF4',
-                    borderRadius: 8,
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
-                    color: '#1F2937',
-                    fontSize: 14,
-                  }}
-                  value={checkIn}
-                  onChangeText={setCheckIn}
-                  placeholder="YYYY-MM-DD"
-                />
-              </View>
-              <View style={{ flex: 1, minWidth: 120 }}>
-                <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
-                  Check-out
-                </Text>
-                <TextInput
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderWidth: 1,
-                    borderColor: '#E8EEF4',
-                    borderRadius: 8,
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
-                    color: '#1F2937',
-                    fontSize: 14,
-                  }}
-                  value={checkOut}
-                  onChangeText={setCheckOut}
-                  placeholder="YYYY-MM-DD"
-                />
-              </View>
-              <View style={{ flex: 0.7, minWidth: 80 }}>
-                <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
-                  Rooms
-                </Text>
-                <TextInput
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderWidth: 1,
-                    borderColor: '#E8EEF4',
-                    borderRadius: 8,
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
-                    color: '#1F2937',
-                    fontSize: 14,
-                  }}
-                  value={String(rooms)}
-                  onChangeText={(text) => setRooms(Math.max(1, parseInt(text) || 1))}
-                  keyboardType="numeric"
-                />
-              </View>
-              <View style={{ flex: 1, minWidth: 100 }}>
-                <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
-                  Max Price
-                </Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <TextInput
-                    style={{
-                      flex: 1,
-                      backgroundColor: '#FFFFFF',
+            {filtersExpanded && (
+              <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                  <View style={{ flex: 1, minWidth: 130 }}>
+                    <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                      Search
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FAFAF7', borderRadius: 10, borderWidth: 1, borderColor: 'rgba(3, 42, 36, 0.06)', paddingHorizontal: 12 }}>
+                      <SearchIcon color="#9CA3AF" size={14} />
+                      <TextInput
+                        style={{
+                          flex: 1,
+                          paddingVertical: 8,
+                          paddingHorizontal: 10,
+                          color: '#1F2937',
+                          fontSize: 14,
+                        }}
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        placeholder="Search by name or location..."
+                        placeholderTextColor="#9CA3AF"
+                      />
+                    </View>
+                  </View>
+                  <View style={{ flex: 1, minWidth: 90 }}>
+                    <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                      Location
+                    </Text>
+                    <View style={{
+                      backgroundColor: '#FAFAF7',
                       borderWidth: 1,
-                      borderColor: '#E8EEF4',
-                      borderRadius: 8,
+                      borderColor: 'rgba(3, 42, 36, 0.06)',
+                      borderRadius: 10,
                       paddingHorizontal: 12,
-                      paddingVertical: 8,
-                      color: '#1F2937',
-                      fontSize: 14,
-                    }}
-                    value={String(priceRange[1])}
-                    onChangeText={(text) => setPriceRange([priceRange[0], parseInt(text) || 0])}
-                    keyboardType="numeric"
-                  />
-                  <Text style={{ color: '#0B342B', fontSize: 14, fontWeight: '600' }}>{formatCurrency(priceRange[1])}</Text>
+                      paddingVertical: 6,
+                    }}>
+                      <TextInput
+                        style={{ color: '#1F2937', fontSize: 14, padding: 0 }}
+                        value={selectedLocation}
+                        onChangeText={(text) => setSelectedLocation(text)}
+                        placeholder="All"
+                        placeholderTextColor="#9CA3AF"
+                      />
+                    </View>
+                  </View>
+                  <View style={{ flex: 1, minWidth: 90 }}>
+                    <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                      Property Type
+                    </Text>
+                    <View style={{
+                      backgroundColor: '#FAFAF7',
+                      borderWidth: 1,
+                      borderColor: 'rgba(3, 42, 36, 0.06)',
+                      borderRadius: 10,
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                    }}>
+                      <TextInput
+                        style={{ color: '#1F2937', fontSize: 14, padding: 0 }}
+                        value={selectedType}
+                        onChangeText={(text) => setSelectedType(text)}
+                        placeholder="All"
+                        placeholderTextColor="#9CA3AF"
+                      />
+                    </View>
+                  </View>
+                  <View style={{ flex: 0.6, minWidth: 70 }}>
+                    <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                      Guests
+                    </Text>
+                    <TextInput
+                      style={{
+                        backgroundColor: '#FAFAF7',
+                        borderWidth: 1,
+                        borderColor: 'rgba(3, 42, 36, 0.06)',
+                        borderRadius: 10,
+                        paddingHorizontal: 14,
+                        paddingVertical: 8,
+                        color: '#1F2937',
+                        fontSize: 14,
+                      }}
+                      value={String(guests)}
+                      onChangeText={(text) => setGuests(Math.max(1, parseInt(text) || 1))}
+                      keyboardType="numeric"
+                      placeholderTextColor="#9CA3AF"
+                    />
+                  </View>
+                </View>
+
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 10 }}>
+                  <View style={{ flex: 1, minWidth: 110 }}>
+                    <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                      Check-in
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FAFAF7', borderRadius: 10, borderWidth: 1, borderColor: 'rgba(3, 42, 36, 0.06)', paddingHorizontal: 12 }}>
+                      <CalendarIcon color="#9CA3AF" size={14} />
+                      <TextInput
+                        style={{
+                          flex: 1,
+                          paddingVertical: 8,
+                          paddingHorizontal: 10,
+                          color: '#1F2937',
+                          fontSize: 14,
+                        }}
+                        value={checkIn}
+                        onChangeText={setCheckIn}
+                        placeholder="YYYY-MM-DD"
+                        placeholderTextColor="#9CA3AF"
+                      />
+                    </View>
+                  </View>
+                  <View style={{ flex: 1, minWidth: 110 }}>
+                    <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                      Check-out
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FAFAF7', borderRadius: 10, borderWidth: 1, borderColor: 'rgba(3, 42, 36, 0.06)', paddingHorizontal: 12 }}>
+                      <CalendarIcon color="#9CA3AF" size={14} />
+                      <TextInput
+                        style={{
+                          flex: 1,
+                          paddingVertical: 8,
+                          paddingHorizontal: 10,
+                          color: '#1F2937',
+                          fontSize: 14,
+                        }}
+                        value={checkOut}
+                        onChangeText={setCheckOut}
+                        placeholder="YYYY-MM-DD"
+                        placeholderTextColor="#9CA3AF"
+                      />
+                    </View>
+                  </View>
+                  <View style={{ flex: 0.6, minWidth: 70 }}>
+                    <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                      Rooms
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FAFAF7', borderRadius: 10, borderWidth: 1, borderColor: 'rgba(3, 42, 36, 0.06)', paddingHorizontal: 12 }}>
+                      <BedIcon color="#9CA3AF" size={14} />
+                      <TextInput
+                        style={{
+                          flex: 1,
+                          paddingVertical: 8,
+                          paddingHorizontal: 10,
+                          color: '#1F2937',
+                          fontSize: 14,
+                        }}
+                        value={String(rooms)}
+                        onChangeText={(text) => setRooms(Math.max(1, parseInt(text) || 1))}
+                        keyboardType="numeric"
+                        placeholderTextColor="#9CA3AF"
+                      />
+                    </View>
+                  </View>
+                  <View style={{ flex: 1, minWidth: 90 }}>
+                    <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                      Max Price
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <TextInput
+                        style={{
+                          flex: 1,
+                          backgroundColor: '#FAFAF7',
+                          borderWidth: 1,
+                          borderColor: 'rgba(3, 42, 36, 0.06)',
+                          borderRadius: 10,
+                          paddingHorizontal: 14,
+                          paddingVertical: 8,
+                          color: '#1F2937',
+                          fontSize: 14,
+                        }}
+                        value={String(priceRange[1])}
+                        onChangeText={(text) => setPriceRange([priceRange[0], parseInt(text) || 0])}
+                        keyboardType="numeric"
+                        placeholderTextColor="#9CA3AF"
+                      />
+                      <Text style={{ color: '#C9A44B', fontSize: 12, fontWeight: '600' }}>{formatCurrency(priceRange[1])}</Text>
+                    </View>
+                  </View>
+                </View>
+
+                <View style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginTop: 12,
+                  paddingTop: 12,
+                  borderTopWidth: 1,
+                  borderTopColor: 'rgba(3, 42, 36, 0.04)',
+                }}>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>
+                    <Text style={{ fontWeight: '600', color: '#032A24' }}>{filteredProperties.length}</Text> properties found
+                  </Text>
+                  {checkIn && checkOut && (
+                    <Text style={{ color: '#C9A44B', fontSize: 13, fontWeight: '600' }}>
+                      {calculateNights()} nights
+                    </Text>
+                  )}
                 </View>
               </View>
-            </View>
-
-            <View style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: 8,
-              marginTop: 12,
-              paddingTop: 12,
-              borderTopWidth: 1,
-              borderTopColor: '#F4F5F1',
-            }}>
-              <Text style={{ color: '#6B7280', fontSize: 14 }}>{filteredProperties.length} properties found</Text>
-              {checkIn && checkOut ? (
-                <Text style={{ color: '#0B342B', fontSize: 14, fontWeight: '600' }}>
-                  {calculateNights()} nights
-                </Text>
-              ) : null}
-            </View>
+            )}
           </View>
 
-          {/* Properties Grid */}
+          {/* ===== PREMIUM PROPERTY CARDS ===== */}
           {filteredProperties.length === 0 ? (
             <View style={{
               backgroundColor: '#FFFFFF',
-              borderRadius: 12,
-              padding: 40,
+              borderRadius: 16,
+              padding: 48,
               alignItems: 'center',
               borderWidth: 1,
-              borderColor: '#E8EEF4',
+              borderColor: 'rgba(3, 42, 36, 0.06)',
             }}>
               <Text style={{ color: '#6B7280', fontSize: 14 }}>No properties found. Try adjusting your filters.</Text>
             </View>
@@ -618,126 +821,198 @@ const HalalStay = () => {
               const availableRooms = getAvailableRooms(property);
               const maxGuestsPerRoom = getMaxGuestsPerRoom(property);
               const isInWishlist = wishlist.includes(property.id);
+              const pct = property.total_rooms ? Math.round(((property.total_rooms - availableRooms) / property.total_rooms) * 100) : 0;
 
               return (
                 <View key={property.id} style={{
                   backgroundColor: '#FFFFFF',
-                  borderRadius: 12,
-                  marginBottom: 12,
+                  borderRadius: 16,
+                  marginBottom: 14,
                   borderWidth: 1,
-                  borderColor: '#E8EEF4',
+                  borderColor: 'rgba(3, 42, 36, 0.06)',
                   overflow: 'hidden',
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
+                  shadowColor: '#032A24',
+                  shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.04,
-                  shadowRadius: 4,
-                  elevation: 1,
+                  shadowRadius: 12,
+                  elevation: 2,
                   opacity: fullyBooked ? 0.7 : 1,
                 }}>
                   <Image
-                    source={{ uri: property.images?.[0] || 'https://via.placeholder.com/400x300/0B342B/fff?text=HalalStay' }}
-                    style={{ width: '100%', height: 180 }}
+                    source={{ uri: property.images?.[0] || 'https://via.placeholder.com/400x300/032A24/C9A44B?text=HalalStay' }}
+                    style={{ width: '100%', height: 200 }}
                     resizeMode="cover"
                   />
-                  <View style={{ padding: 14 }}>
+                  
+                  {/* Wishlist Button */}
+                  <TouchableOpacity
+                    style={{
+                      position: 'absolute',
+                      top: 12,
+                      right: 12,
+                      width: 36,
+                      height: 36,
+                      borderRadius: 18,
+                      backgroundColor: 'rgba(255,255,255,0.9)',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 4,
+                      elevation: 2,
+                    }}
+                    onPress={() => toggleWishlist(property.id)}
+                    activeOpacity={0.7}
+                  >
+                    <HeartIcon color="#6B7280" size={16} filled={isInWishlist} />
+                  </TouchableOpacity>
+
+                  {/* Availability Badge */}
+                  {fullyBooked && (
+                    <View style={{
+                      position: 'absolute',
+                      top: 12,
+                      left: 12,
+                      backgroundColor: 'rgba(220, 38, 38, 0.9)',
+                      paddingHorizontal: 10,
+                      paddingVertical: 4,
+                      borderRadius: 8,
+                    }}>
+                      <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '600' }}>Fully Booked</Text>
+                    </View>
+                  )}
+
+                  <View style={{ padding: 16 }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '700' }}>{property.title}</Text>
-                        <Text style={{ color: '#6B7280', fontSize: 14 }}>{property.location || property.county}</Text>
+                        <Text style={{ color: '#032A24', fontSize: 16, fontWeight: '700', letterSpacing: -0.2 }}>
+                          {property.title}
+                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                          <LocationIcon color="#6B7280" size={12} />
+                          <Text style={{ color: '#6B7280', fontSize: 13 }}>{property.location || property.county}</Text>
+                        </View>
                       </View>
                       <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={{ color: '#0B342B', fontSize: 16, fontWeight: '700' }}>{formatCurrency(property.price_per_night)}</Text>
-                        <Text style={{ color: '#6B7280', fontSize: 12 }}>per night</Text>
+                        <Text style={{ color: '#032A24', fontSize: 18, fontWeight: '700', letterSpacing: -0.3 }}>
+                          {formatCurrency(property.price_per_night)}
+                        </Text>
+                        <Text style={{ color: '#8B8A86', fontSize: 11 }}>per night</Text>
                       </View>
                     </View>
 
-                    <Text style={{ color: '#6B7280', fontSize: 14, marginTop: 4 }} numberOfLines={2}>
+                    <Text style={{ color: '#6B7280', fontSize: 13, marginTop: 6, lineHeight: 20 }} numberOfLines={2}>
                       {property.description}
                     </Text>
 
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
-                      {(property.amenities || []).slice(0, 3).map((amenity: string, i: number) => (
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 10 }}>
+                      {(property.amenities || []).slice(0, 4).map((amenity: string, i: number) => (
                         <View key={i} style={{
-                          backgroundColor: '#FAFAF7',
-                          paddingHorizontal: 6,
-                          paddingVertical: 2,
-                          borderRadius: 999,
+                          backgroundColor: 'rgba(3, 42, 36, 0.03)',
+                          paddingHorizontal: 8,
+                          paddingVertical: 3,
+                          borderRadius: 6,
                           borderWidth: 1,
-                          borderColor: '#E8EEF4',
+                          borderColor: 'rgba(3, 42, 36, 0.04)',
                         }}>
-                          <Text style={{ color: '#6B7280', fontSize: 11 }}>{amenity}</Text>
+                          <Text style={{ color: '#6B7280', fontSize: 10 }}>{amenity}</Text>
                         </View>
                       ))}
-                      {(property.amenities || []).length > 3 && (
+                      {(property.amenities || []).length > 4 && (
                         <View style={{
-                          backgroundColor: '#FAFAF7',
-                          paddingHorizontal: 6,
-                          paddingVertical: 2,
-                          borderRadius: 999,
+                          backgroundColor: 'rgba(3, 42, 36, 0.03)',
+                          paddingHorizontal: 8,
+                          paddingVertical: 3,
+                          borderRadius: 6,
                           borderWidth: 1,
-                          borderColor: '#E8EEF4',
+                          borderColor: 'rgba(3, 42, 36, 0.04)',
                         }}>
-                          <Text style={{ color: '#6B7280', fontSize: 11 }}>+{(property.amenities || []).length - 3}</Text>
+                          <Text style={{ color: '#6B7280', fontSize: 10 }}>+{(property.amenities || []).length - 4}</Text>
                         </View>
                       )}
                     </View>
 
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 8 }}>
-                      <Text style={{ color: '#6B7280', fontSize: 13 }}>{property.bedrooms} bed{property.bedrooms > 1 ? 's' : ''}</Text>
-                      <Text style={{ color: '#6B7280', fontSize: 13 }}>{property.max_guests} guests</Text>
-                      <Text style={{ color: '#6B7280', fontSize: 13 }}>Max {maxGuestsPerRoom} guests/room</Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 10 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <BedIcon color="#6B7280" size={12} />
+                        <Text style={{ color: '#6B7280', fontSize: 12 }}>{property.bedrooms} bed{property.bedrooms > 1 ? 's' : ''}</Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <UserIcon color="#6B7280" size={12} />
+                        <Text style={{ color: '#6B7280', fontSize: 12 }}>{property.max_guests} guests</Text>
+                      </View>
                       {property.min_stay > 1 && (
-                        <Text style={{ color: '#D97706', fontSize: 13 }}>Min {property.min_stay} nights</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <CalendarIcon color="#D97706" size={12} />
+                          <Text style={{ color: '#D97706', fontSize: 12 }}>Min {property.min_stay} nights</Text>
+                        </View>
                       )}
                     </View>
+
+                    {/* Availability Bar */}
+                    {!fullyBooked && property.total_rooms && (
+                      <View style={{ marginTop: 10 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
+                          <Text style={{ color: '#6B7280', fontSize: 10 }}>
+                            {availableRooms} rooms available
+                          </Text>
+                          <Text style={{ color: '#6B7280', fontSize: 10 }}>
+                            {pct}% booked
+                          </Text>
+                        </View>
+                        <View style={{
+                          height: 3,
+                          backgroundColor: '#F3F4F6',
+                          borderRadius: 2,
+                          overflow: 'hidden',
+                        }}>
+                          <View style={{
+                            height: '100%',
+                            width: `${Math.min(pct, 100)}%`,
+                            backgroundColor: '#032A24',
+                            borderRadius: 2,
+                          }} />
+                        </View>
+                      </View>
+                    )}
 
                     <View style={{
                       flexDirection: 'row',
                       justifyContent: 'space-between',
                       alignItems: 'center',
-                      marginTop: 10,
-                      paddingTop: 10,
+                      marginTop: 12,
+                      paddingTop: 12,
                       borderTopWidth: 1,
-                      borderTopColor: '#F4F5F1',
+                      borderTopColor: 'rgba(3, 42, 36, 0.04)',
                     }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Text style={{ color: '#C9A44B', fontSize: 14 }}>★</Text>
-                        <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>{property.rating || 'New'}</Text>
+                        <StarIcon color="#C9A44B" size={12} />
+                        <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>{property.rating || 'New'}</Text>
                         {property.total_reviews > 0 && (
-                          <Text style={{ color: '#6B7280', fontSize: 14 }}>({property.total_reviews})</Text>
+                          <Text style={{ color: '#8B8A86', fontSize: 12 }}>({property.total_reviews})</Text>
                         )}
                       </View>
-                      <View style={{ flexDirection: 'row', gap: 8 }}>
-                        <TouchableOpacity onPress={() => toggleWishlist(property.id)}>
-                          <Text style={{ fontSize: 20, color: isInWishlist ? '#DC2626' : '#6B7280' }}>
-                            {isInWishlist ? '❤️' : '🤍'}
-                          </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={{
-                            paddingHorizontal: 14,
-                            paddingVertical: 6,
-                            borderRadius: 8,
-                            backgroundColor: (fullyBooked || !property.is_active) ? '#F4F5F1' : '#0B342B',
-                            opacity: (fullyBooked || !property.is_active) ? 0.6 : 1,
-                            shadowColor: (fullyBooked || !property.is_active) ? 'transparent' : '#0B342B',
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: (fullyBooked || !property.is_active) ? 0 : 0.2,
-                            shadowRadius: 8,
-                            elevation: (fullyBooked || !property.is_active) ? 0 : 4,
-                          }}
-                          onPress={() => handleBookNow(property)}
-                          disabled={fullyBooked || !property.is_active}
-                        >
-                          <Text style={{
-                            color: (fullyBooked || !property.is_active) ? '#6B7280' : '#FFFFFF',
-                            fontSize: 13,
-                            fontWeight: '600',
-                          }}>
-                            {fullyBooked ? 'Fully Booked' : property.is_active ? 'Book Now' : 'Unavailable'}
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
+                      <TouchableOpacity
+                        style={{
+                          paddingHorizontal: 18,
+                          paddingVertical: 8,
+                          borderRadius: 10,
+                          backgroundColor: (fullyBooked || !property.is_active) ? '#F3F4F6' : '#032A24',
+                          opacity: (fullyBooked || !property.is_active) ? 0.6 : 1,
+                        }}
+                        onPress={() => handleBookNow(property)}
+                        disabled={fullyBooked || !property.is_active}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={{
+                          color: (fullyBooked || !property.is_active) ? '#6B7280' : '#FFFFFF',
+                          fontSize: 12,
+                          fontWeight: '600',
+                        }}>
+                          {fullyBooked ? 'Fully Booked' : property.is_active ? 'Book Now' : 'Unavailable'}
+                        </Text>
+                      </TouchableOpacity>
                     </View>
                   </View>
                 </View>
@@ -745,116 +1020,171 @@ const HalalStay = () => {
             })
           )}
 
-          {/* My Bookings */}
+          {/* ===== COLLAPSIBLE MY BOOKINGS ===== */}
           {isAuthenticated && (
             <View style={{
               backgroundColor: '#FFFFFF',
-              borderRadius: 12,
-              padding: 16,
-              marginTop: 16,
+              borderRadius: 16,
               borderWidth: 1,
-              borderColor: '#E8EEF4',
-              shadowColor: '#000',
+              borderColor: 'rgba(3, 42, 36, 0.06)',
+              shadowColor: '#032A24',
               shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.04,
-              shadowRadius: 4,
+              shadowOpacity: 0.02,
+              shadowRadius: 8,
               elevation: 1,
+              marginTop: 16,
+              overflow: 'hidden',
             }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '700' }}>My Bookings</Text>
-                <TouchableOpacity onPress={fetchBookings}>
-                  <Text style={{ color: '#0B342B', fontSize: 13, fontWeight: '500' }}>Refresh</Text>
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity
+                onPress={toggleBookings}
+                activeOpacity={0.7}
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: 16,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <View style={{
+                    width: 3,
+                    height: 16,
+                    backgroundColor: '#C9A44B',
+                    borderRadius: 2,
+                  }} />
+                  <HomeIcon color="#032A24" size={16} />
+                  <Text style={{ color: '#032A24', fontSize: 15, fontWeight: '600', letterSpacing: -0.2 }}>
+                    My Bookings
+                  </Text>
+                  {bookings.length > 0 && (
+                    <View style={{
+                      backgroundColor: 'rgba(3, 42, 36, 0.06)',
+                      paddingHorizontal: 8,
+                      paddingVertical: 2,
+                      borderRadius: 8,
+                    }}>
+                      <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '500' }}>
+                        {bookings.length}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <TouchableOpacity onPress={fetchBookings} activeOpacity={0.7}>
+                    <Text style={{ color: '#6B7280', fontSize: 11 }}>Refresh</Text>
+                  </TouchableOpacity>
+                  {bookingsExpanded ? (
+                    <ChevronUpIcon color="#6B7280" size={18} />
+                  ) : (
+                    <ChevronDownIcon color="#6B7280" size={18} />
+                  )}
+                </View>
+              </TouchableOpacity>
 
-              {loadingBookings ? (
-                <View style={{ alignItems: 'center', paddingVertical: 20 }}>
-                  <ActivityIndicator size="small" color="#C9A44B" />
-                </View>
-              ) : bookings.length === 0 ? (
-                <View style={{ alignItems: 'center', paddingVertical: 20 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>No bookings yet. Start your first HalalStay!</Text>
-                </View>
-              ) : (
-                bookings.slice(0, 5).map((booking) => {
-                  const status = getStatusBadge(booking.status);
-                  return (
-                    <TouchableOpacity
-                      key={booking.id}
-                      style={{
-                        backgroundColor: '#FAFAF7',
-                        padding: 12,
-                        borderRadius: 8,
-                        borderWidth: 1,
-                        borderColor: '#E8EEF4',
-                        marginBottom: 6,
-                      }}
-                      onPress={() => viewBookingDetails(booking)}
-                    >
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }} numberOfLines={1}>
-                            {booking.listing_title || 'Property'}
-                          </Text>
-                          <Text style={{ color: '#6B7280', fontSize: 13 }}>
-                            {formatDate(booking.check_in)} → {formatDate(booking.check_out)}
-                          </Text>
-                          <Text style={{ color: '#6B7280', fontSize: 13 }}>{booking.guests} guests</Text>
-                        </View>
-                        <View style={{ alignItems: 'flex-end' }}>
-                          <Text style={{ color: '#0B342B', fontSize: 14, fontWeight: '700' }}>
-                            {formatCurrency(booking.total_price)}
-                          </Text>
-                          <View style={{
-                            backgroundColor: status.style.bg,
-                            paddingHorizontal: 6,
-                            paddingVertical: 2,
-                            borderRadius: 999,
+              {bookingsExpanded && (
+                <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+                  {loadingBookings ? (
+                    <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+                      <ActivityIndicator size="small" color="#032A24" />
+                    </View>
+                  ) : bookings.length === 0 ? (
+                    <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+                      <Text style={{ color: '#9CA3AF', fontSize: 13 }}>No bookings yet.</Text>
+                      <Text style={{ color: '#9CA3AF', fontSize: 11, marginTop: 2 }}>Start your first HalalStay!</Text>
+                    </View>
+                  ) : (
+                    bookings.slice(0, 5).map((booking) => {
+                      const status = getStatusBadge(booking.status);
+                      return (
+                        <TouchableOpacity
+                          key={booking.id}
+                          style={{
+                            backgroundColor: '#FAFAF7',
+                            padding: 12,
+                            borderRadius: 10,
                             borderWidth: 1,
-                            borderColor: 'rgba(0,0,0,0.05)',
-                          }}>
-                            <Text style={{ color: status.style.text, fontSize: 11, fontWeight: '500' }}>{status.label}</Text>
+                            borderColor: 'rgba(3, 42, 36, 0.04)',
+                            marginBottom: 8,
+                          }}
+                          onPress={() => viewBookingDetails(booking)}
+                          activeOpacity={0.7}
+                        >
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }} numberOfLines={1}>
+                                {booking.listing_title || 'Property'}
+                              </Text>
+                              <Text style={{ color: '#6B7280', fontSize: 11 }}>
+                                {formatDate(booking.check_in)} → {formatDate(booking.check_out)}
+                              </Text>
+                              <Text style={{ color: '#6B7280', fontSize: 11 }}>{booking.guests} guests</Text>
+                            </View>
+                            <View style={{ alignItems: 'flex-end' }}>
+                              <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '700' }}>
+                                {formatCurrency(booking.total_price)}
+                              </Text>
+                              <View style={{
+                                backgroundColor: status.style.bg,
+                                paddingHorizontal: 6,
+                                paddingVertical: 2,
+                                borderRadius: 6,
+                              }}>
+                                <Text style={{ color: status.style.text, fontSize: 9, fontWeight: '500' }}>{status.label}</Text>
+                              </View>
+                            </View>
                           </View>
-                          <Text style={{ color: '#6B7280', fontSize: 11, marginTop: 2 }}>
-                            {booking.payment_status === 'completed' ? 'Paid' : 'Pending Payment'}
-                          </Text>
-                        </View>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })
+                        </TouchableOpacity>
+                      );
+                    })
+                  )}
+                </View>
               )}
             </View>
           )}
+
+          {/* Footer */}
+          <View style={{ alignItems: 'center', marginTop: 24 }}>
+            <Text style={{
+              color: 'rgba(201, 164, 75, 0.2)',
+              fontSize: 9,
+              letterSpacing: 1,
+              fontWeight: '500',
+            }}>
+              Itqaan · HalalStay Services
+            </Text>
+          </View>
         </View>
       </ScrollView>
 
+      {/* Modals preserved with premium styling */}
       {/* Booking Modal */}
       <Modal visible={showBookingModal} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
+            borderRadius: 20,
+            padding: 24,
             width: '100%',
-            maxWidth: 500,
+            maxWidth: 420,
             maxHeight: '90%',
           }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ color: '#1F2937', fontSize: 20, fontWeight: '700' }}>Confirm Booking</Text>
-              <TouchableOpacity onPress={() => setShowBookingModal(false)}>
-                <Text style={{ color: '#6B7280', fontSize: 20 }}>✕</Text>
+              <Text style={{ color: '#032A24', fontSize: 18, fontWeight: '700', letterSpacing: -0.3 }}>
+                Confirm Booking
+              </Text>
+              <TouchableOpacity onPress={() => setShowBookingModal(false)} activeOpacity={0.7} style={{ padding: 4 }}>
+                <CloseIcon color="#6B7280" size={20} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={{ marginBottom: 12 }}>
-                <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '700' }}>{selectedProperty?.title}</Text>
-                <Text style={{ color: '#6B7280', fontSize: 14 }}>{selectedProperty?.location || selectedProperty?.county}</Text>
+                <Text style={{ color: '#032A24', fontSize: 16, fontWeight: '700' }}>{selectedProperty?.title}</Text>
+                <Text style={{ color: '#6B7280', fontSize: 13 }}>{selectedProperty?.location || selectedProperty?.county}</Text>
                 {selectedProperty?.available_rooms !== undefined && (
-                  <Text style={{ color: selectedProperty.available_rooms <= 3 ? '#D97706' : '#3FAF73', fontSize: 14, marginTop: 2 }}>
+                  <Text style={{ color: selectedProperty.available_rooms <= 3 ? '#D97706' : '#3FAF73', fontSize: 13, marginTop: 2 }}>
                     {selectedProperty.available_rooms} room{selectedProperty.available_rooms > 1 ? 's' : ''} available
-                    <Text style={{ color: '#6B7280', fontSize: 13 }}> (Max {selectedProperty.max_guests_per_room || 2} guests per room)</Text>
+                    <Text style={{ color: '#6B7280', fontSize: 12 }}> (Max {selectedProperty.max_guests_per_room || 2} guests/room)</Text>
                   </Text>
                 )}
               </View>
@@ -862,203 +1192,193 @@ const HalalStay = () => {
               <View style={{
                 backgroundColor: '#FAFAF7',
                 padding: 12,
-                borderRadius: 8,
+                borderRadius: 10,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
+                borderColor: 'rgba(3, 42, 36, 0.04)',
                 marginBottom: 12,
               }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Check-in</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>{formatDate(checkIn)}</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Check-in</Text>
+                  <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>{formatDate(checkIn)}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Check-out</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>{formatDate(checkOut)}</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Check-out</Text>
+                  <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>{formatDate(checkOut)}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Nights</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>{calculateNights()}</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Nights</Text>
+                  <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>{calculateNights()}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Rooms</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>{rooms}</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Rooms</Text>
+                  <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>{rooms}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Guests</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>{guests}</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Guests</Text>
+                  <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>{guests}</Text>
                 </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Max Guests Allowed</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>
-                    {rooms * (selectedProperty?.max_guests_per_room || 2)}
-                  </Text>
-                </View>
-                {selectedProperty?.min_stay > 1 && (
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                    <Text style={{ color: '#D97706', fontSize: 14 }}>Minimum Stay</Text>
-                    <Text style={{ color: '#D97706', fontSize: 14, fontWeight: '600' }}>
-                      {selectedProperty.min_stay} night{selectedProperty.min_stay > 1 ? 's' : ''}
-                    </Text>
-                  </View>
-                )}
               </View>
 
               <View style={{
                 backgroundColor: '#FAFAF7',
                 padding: 12,
-                borderRadius: 8,
+                borderRadius: 10,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
+                borderColor: 'rgba(3, 42, 36, 0.04)',
                 marginBottom: 12,
               }}>
-                <Text style={{ color: '#6B7280', fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
+                <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '600', letterSpacing: 0.5, marginBottom: 6 }}>
                   Guest Details
                 </Text>
                 <View style={{ marginBottom: 6 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Full Name</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '500', marginBottom: 2 }}>Full Name</Text>
                   <TextInput
                     style={{
                       backgroundColor: '#FFFFFF',
                       borderWidth: 1,
-                      borderColor: '#E8EEF4',
-                      borderRadius: 6,
+                      borderColor: 'rgba(3, 42, 36, 0.06)',
+                      borderRadius: 8,
                       paddingHorizontal: 10,
                       paddingVertical: 6,
                       color: '#1F2937',
-                      fontSize: 14,
+                      fontSize: 13,
                     }}
                     value={guestName}
                     onChangeText={setGuestName}
                     placeholder="Enter your full name"
+                    placeholderTextColor="#9CA3AF"
                   />
                 </View>
                 <View style={{ marginBottom: 6 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Email</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '500', marginBottom: 2 }}>Email</Text>
                   <TextInput
                     style={{
                       backgroundColor: '#FFFFFF',
                       borderWidth: 1,
-                      borderColor: '#E8EEF4',
-                      borderRadius: 6,
+                      borderColor: 'rgba(3, 42, 36, 0.06)',
+                      borderRadius: 8,
                       paddingHorizontal: 10,
                       paddingVertical: 6,
                       color: '#1F2937',
-                      fontSize: 14,
+                      fontSize: 13,
                     }}
                     value={guestEmail}
                     onChangeText={setGuestEmail}
                     placeholder="Enter your email"
+                    placeholderTextColor="#9CA3AF"
                     keyboardType="email-address"
                     autoCapitalize="none"
                   />
                 </View>
                 <View style={{ marginBottom: 6 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Phone</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '500', marginBottom: 2 }}>Phone</Text>
                   <TextInput
                     style={{
                       backgroundColor: '#FFFFFF',
                       borderWidth: 1,
-                      borderColor: '#E8EEF4',
-                      borderRadius: 6,
+                      borderColor: 'rgba(3, 42, 36, 0.06)',
+                      borderRadius: 8,
                       paddingHorizontal: 10,
                       paddingVertical: 6,
                       color: '#1F2937',
-                      fontSize: 14,
+                      fontSize: 13,
                     }}
                     value={guestPhone}
                     onChangeText={setGuestPhone}
                     placeholder="Enter your phone number"
+                    placeholderTextColor="#9CA3AF"
                   />
                 </View>
                 <View>
-                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Special Requests (Optional)</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '500', marginBottom: 2 }}>Special Requests</Text>
                   <TextInput
                     style={{
                       backgroundColor: '#FFFFFF',
                       borderWidth: 1,
-                      borderColor: '#E8EEF4',
-                      borderRadius: 6,
+                      borderColor: 'rgba(3, 42, 36, 0.06)',
+                      borderRadius: 8,
                       paddingHorizontal: 10,
                       paddingVertical: 6,
                       color: '#1F2937',
-                      fontSize: 14,
+                      fontSize: 13,
                       minHeight: 50,
                       textAlignVertical: 'top',
                     }}
                     value={specialRequests}
                     onChangeText={setSpecialRequests}
                     placeholder="Any special requests?"
+                    placeholderTextColor="#9CA3AF"
                     multiline
                   />
                 </View>
               </View>
 
               <View style={{
-                backgroundColor: '#FAFAF7',
+                backgroundColor: 'rgba(3, 42, 36, 0.02)',
                 padding: 12,
-                borderRadius: 8,
+                borderRadius: 10,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
+                borderColor: 'rgba(3, 42, 36, 0.04)',
                 marginBottom: 12,
               }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Price per night</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>{formatCurrency(selectedProperty?.price_per_night)}</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Price per night</Text>
+                  <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>{formatCurrency(selectedProperty?.price_per_night)}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Rooms</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>× {rooms}</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Rooms</Text>
+                  <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>× {rooms}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Nights</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>× {calculateNights()}</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Nights</Text>
+                  <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>× {calculateNights()}</Text>
                 </View>
                 <View style={{
                   flexDirection: 'row',
                   justifyContent: 'space-between',
                   paddingVertical: 6,
                   borderTopWidth: 1,
-                  borderTopColor: '#E8EEF4',
+                  borderTopColor: 'rgba(3, 42, 36, 0.04)',
                   marginTop: 4,
                 }}>
-                  <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '600' }}>Total</Text>
-                  <Text style={{ color: '#0B342B', fontSize: 16, fontWeight: '700' }}>{formatCurrency(calculateTotal())}</Text>
+                  <Text style={{ color: '#032A24', fontSize: 15, fontWeight: '600' }}>Total</Text>
+                  <Text style={{ color: '#C9A44B', fontSize: 15, fontWeight: '700' }}>{formatCurrency(calculateTotal())}</Text>
                 </View>
               </View>
 
               <View style={{
                 backgroundColor: '#FAFAF7',
                 padding: 12,
-                borderRadius: 8,
+                borderRadius: 10,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
+                borderColor: 'rgba(3, 42, 36, 0.04)',
                 marginBottom: 12,
               }}>
-                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
                   <TouchableOpacity
                     style={{
                       width: 20,
                       height: 20,
                       borderRadius: 4,
                       borderWidth: 2,
-                      borderColor: termsAccepted ? '#0B342B' : '#E8EEF4',
-                      backgroundColor: termsAccepted ? '#0B342B' : 'transparent',
+                      borderColor: termsAccepted ? '#032A24' : 'rgba(3, 42, 36, 0.12)',
+                      backgroundColor: termsAccepted ? '#032A24' : 'transparent',
                       alignItems: 'center',
                       justifyContent: 'center',
                       marginTop: 2,
                     }}
                     onPress={() => setTermsAccepted(!termsAccepted)}
                   >
-                    {termsAccepted && <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>✓</Text>}
+                    {termsAccepted && <CheckIcon color="#FFFFFF" size={12} />}
                   </TouchableOpacity>
                   <View>
                     <TouchableOpacity onPress={() => setTermsAccepted(!termsAccepted)}>
-                      <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '500' }}>
+                      <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '500' }}>
                         I agree to the Terms & Conditions
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={openTermsModal}>
-                      <Text style={{ color: '#0B342B', fontSize: 13, fontWeight: '500', marginTop: 2 }}>
+                      <Text style={{ color: '#C9A44B', fontSize: 12, fontWeight: '500', marginTop: 2 }}>
                         Read Full Terms & Conditions
                       </Text>
                     </TouchableOpacity>
@@ -1066,45 +1386,42 @@ const HalalStay = () => {
                 </View>
               </View>
 
-              {error ? <Text style={{ color: '#DC2626', fontSize: 13, marginBottom: 8 }}>{error}</Text> : null}
+              {error ? <Text style={{ color: '#DC2626', fontSize: 12, marginBottom: 8 }}>{error}</Text> : null}
 
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 <TouchableOpacity
                   style={{
                     flex: 1,
-                    backgroundColor: '#F4F5F1',
+                    backgroundColor: '#F3F4F6',
                     paddingVertical: 10,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     alignItems: 'center',
                   }}
                   onPress={() => setShowBookingModal(false)}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#6B7280', fontSize: 15, fontWeight: '500' }}>Cancel</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '500' }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={{
                     flex: 2,
-                    backgroundColor: '#0B342B',
+                    backgroundColor: '#032A24',
                     paddingVertical: 10,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     alignItems: 'center',
-                    opacity: (processing || !termsAccepted || !guestName || !guestEmail || !guestPhone) ? 0.6 : 1,
-                    shadowColor: '#0B342B',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 8,
-                    elevation: 4,
+                    opacity: (processing || !termsAccepted || !guestName || !guestEmail || !guestPhone) ? 0.5 : 1,
                   }}
                   onPress={confirmBooking}
                   disabled={processing || !termsAccepted || !guestName || !guestEmail || !guestPhone}
+                  activeOpacity={0.7}
                 >
                   {processing ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <ActivityIndicator size="small" color="#FFFFFF" />
-                      <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>Processing...</Text>
+                      <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Processing...</Text>
                     </View>
                   ) : (
-                    <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>Confirm Booking</Text>
+                    <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Confirm Booking</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -1115,19 +1432,21 @@ const HalalStay = () => {
 
       {/* Terms Modal */}
       <Modal visible={showTermsModal} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
+            borderRadius: 20,
+            padding: 24,
             width: '100%',
-            maxWidth: 500,
+            maxWidth: 420,
             maxHeight: '90%',
           }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ color: '#1F2937', fontSize: 20, fontWeight: '700' }}>Terms & Conditions</Text>
-              <TouchableOpacity onPress={() => setShowTermsModal(false)}>
-                <Text style={{ color: '#6B7280', fontSize: 20 }}>✕</Text>
+              <Text style={{ color: '#032A24', fontSize: 18, fontWeight: '700', letterSpacing: -0.3 }}>
+                Terms & Conditions
+              </Text>
+              <TouchableOpacity onPress={() => setShowTermsModal(false)} activeOpacity={0.7} style={{ padding: 4 }}>
+                <CloseIcon color="#6B7280" size={20} />
               </TouchableOpacity>
             </View>
 
@@ -1146,16 +1465,16 @@ const HalalStay = () => {
                 <View style={{
                   backgroundColor: '#FAFAF7',
                   padding: 14,
-                  borderRadius: 8,
+                  borderRadius: 10,
                   borderWidth: 1,
-                  borderColor: '#E8EEF4',
+                  borderColor: 'rgba(3, 42, 36, 0.04)',
                   marginBottom: 10,
                 }}>
-                  <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '700', marginBottom: 6 }}>1. HalalStay Platform Terms</Text>
-                  <Text style={{ color: '#6B7280', fontSize: 14, lineHeight: 20 }}>
+                  <Text style={{ color: '#032A24', fontSize: 15, fontWeight: '700', marginBottom: 6 }}>1. HalalStay Platform Terms</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 13, lineHeight: 20 }}>
                     HalalStay is a platform for halal-friendly accommodation. By using this platform, you agree to:
                   </Text>
-                  <Text style={{ color: '#6B7280', fontSize: 14, lineHeight: 20, marginTop: 4 }}>
+                  <Text style={{ color: '#6B7280', fontSize: 13, lineHeight: 20, marginTop: 4 }}>
                     • Only book accommodation that aligns with Islamic values{'\n'}
                     • Respect the privacy and property of hosts and guests{'\n'}
                     • Provide accurate and truthful information{'\n'}
@@ -1166,13 +1485,13 @@ const HalalStay = () => {
                 <View style={{
                   backgroundColor: '#FAFAF7',
                   padding: 14,
-                  borderRadius: 8,
+                  borderRadius: 10,
                   borderWidth: 1,
-                  borderColor: '#E8EEF4',
+                  borderColor: 'rgba(3, 42, 36, 0.04)',
                   marginBottom: 10,
                 }}>
-                  <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '700', marginBottom: 6 }}>2. Property Terms & Conditions</Text>
-                  <Text style={{ color: '#6B7280', fontSize: 14, lineHeight: 20 }}>
+                  <Text style={{ color: '#032A24', fontSize: 15, fontWeight: '700', marginBottom: 6 }}>2. Property Terms</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 13, lineHeight: 20 }}>
                     Each property has specific rules. Please review them carefully.
                   </Text>
                 </View>
@@ -1180,13 +1499,13 @@ const HalalStay = () => {
                 <View style={{
                   backgroundColor: '#FAFAF7',
                   padding: 14,
-                  borderRadius: 8,
+                  borderRadius: 10,
                   borderWidth: 1,
-                  borderColor: '#E8EEF4',
+                  borderColor: 'rgba(3, 42, 36, 0.04)',
                   marginBottom: 10,
                 }}>
-                  <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '700', marginBottom: 6 }}>3. Cancellation & Refund Policy</Text>
-                  <Text style={{ color: '#6B7280', fontSize: 14, lineHeight: 20 }}>
+                  <Text style={{ color: '#032A24', fontSize: 15, fontWeight: '700', marginBottom: 6 }}>3. Cancellation Policy</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 13, lineHeight: 20 }}>
                     Cancellations must be made by the vendor. Guests cannot cancel bookings directly.
                   </Text>
                 </View>
@@ -1194,13 +1513,13 @@ const HalalStay = () => {
                 <View style={{
                   backgroundColor: '#FAFAF7',
                   padding: 14,
-                  borderRadius: 8,
+                  borderRadius: 10,
                   borderWidth: 1,
-                  borderColor: '#E8EEF4',
+                  borderColor: 'rgba(3, 42, 36, 0.04)',
                   marginBottom: 10,
                 }}>
-                  <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '700', marginBottom: 6 }}>4. Guest Responsibilities</Text>
-                  <Text style={{ color: '#6B7280', fontSize: 14, lineHeight: 20 }}>
+                  <Text style={{ color: '#032A24', fontSize: 15, fontWeight: '700', marginBottom: 6 }}>4. Guest Responsibilities</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 13, lineHeight: 20 }}>
                     • Respect the property and its contents{'\n'}
                     • Follow all property rules and guidelines{'\n'}
                     • Provide accurate guest information{'\n'}
@@ -1213,7 +1532,7 @@ const HalalStay = () => {
 
               {!termsScrollComplete && (
                 <View style={{ alignItems: 'center', paddingVertical: 8 }}>
-                  <Text style={{ color: '#C9A44B', fontSize: 14, fontWeight: '600' }}>Scroll to the bottom to accept</Text>
+                  <Text style={{ color: '#C9A44B', fontSize: 13, fontWeight: '600' }}>Scroll to the bottom to accept</Text>
                 </View>
               )}
             </ScrollView>
@@ -1222,30 +1541,32 @@ const HalalStay = () => {
               <TouchableOpacity
                 style={{
                   flex: 1,
-                  backgroundColor: '#F4F5F1',
+                  backgroundColor: '#F3F4F6',
                   paddingVertical: 10,
-                  borderRadius: 8,
+                  borderRadius: 10,
                   alignItems: 'center',
                 }}
                 onPress={() => setShowTermsModal(false)}
+                activeOpacity={0.7}
               >
-                <Text style={{ color: '#6B7280', fontSize: 15, fontWeight: '500' }}>Cancel</Text>
+                <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '500' }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={{
                   flex: 2,
-                  backgroundColor: termsScrollComplete ? '#0B342B' : '#F4F5F1',
+                  backgroundColor: termsScrollComplete ? '#032A24' : '#F3F4F6',
                   paddingVertical: 10,
-                  borderRadius: 8,
+                  borderRadius: 10,
                   alignItems: 'center',
                   opacity: termsScrollComplete ? 1 : 0.6,
                 }}
                 onPress={acceptTerms}
                 disabled={!termsScrollComplete}
+                activeOpacity={0.7}
               >
                 <Text style={{
                   color: termsScrollComplete ? '#FFFFFF' : '#6B7280',
-                  fontSize: 15,
+                  fontSize: 14,
                   fontWeight: '600',
                 }}>
                   {termsScrollComplete ? 'Accept Terms' : 'Please read all terms'}
@@ -1258,49 +1579,51 @@ const HalalStay = () => {
 
       {/* Success Modal */}
       <Modal visible={showSuccessModal} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
+            borderRadius: 20,
+            padding: 24,
             width: '100%',
-            maxWidth: 400,
+            maxWidth: 420,
             maxHeight: '90%',
           }}>
             <View style={{
-              backgroundColor: '#0B342B',
+              backgroundColor: '#032A24',
               padding: 16,
-              borderTopLeftRadius: 12,
-              borderTopRightRadius: 12,
-              margin: -20,
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              margin: -24,
               marginBottom: 16,
               flexDirection: 'row',
               justifyContent: 'space-between',
               alignItems: 'center',
             }}>
-              <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700' }}>Booking Confirmed!</Text>
-              <TouchableOpacity onPress={() => setShowSuccessModal(false)}>
-                <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 20 }}>✕</Text>
+              <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700', letterSpacing: -0.3 }}>
+                Booking Confirmed!
+              </Text>
+              <TouchableOpacity onPress={() => setShowSuccessModal(false)} activeOpacity={0.7} style={{ padding: 4 }}>
+                <CloseIcon color="rgba(255,255,255,0.6)" size={20} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={{ alignItems: 'center', marginBottom: 16 }}>
                 <View style={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: 32,
-                  backgroundColor: 'rgba(11, 52, 43, 0.1)',
+                  width: 60,
+                  height: 60,
+                  borderRadius: 30,
+                  backgroundColor: 'rgba(63, 175, 115, 0.08)',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  borderWidth: 4,
-                  borderColor: 'rgba(11, 52, 43, 0.2)',
+                  borderWidth: 3,
+                  borderColor: 'rgba(63, 175, 115, 0.12)',
                 }}>
-                  <Text style={{ color: '#0B342B', fontSize: 32 }}>✓</Text>
+                  <CheckIcon color="#3FAF73" size={30} />
                 </View>
-                <Text style={{ color: '#6B7280', fontSize: 14, marginTop: 6 }}>Booking confirmed for</Text>
-                <Text style={{ color: '#1F2937', fontSize: 18, fontWeight: '700', marginTop: 2 }}>{bookingData?.propertyName}</Text>
-                <Text style={{ color: '#6B7280', fontSize: 13, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', marginTop: 2 }}>
+                <Text style={{ color: '#6B7280', fontSize: 13, marginTop: 6 }}>Booking confirmed for</Text>
+                <Text style={{ color: '#032A24', fontSize: 18, fontWeight: '700', marginTop: 2 }}>{bookingData?.propertyName}</Text>
+                <Text style={{ color: '#6B7280', fontSize: 12, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', marginTop: 2 }}>
                   Ref: {bookingData?.bookingRef}
                 </Text>
               </View>
@@ -1308,74 +1631,64 @@ const HalalStay = () => {
               <View style={{
                 backgroundColor: '#FAFAF7',
                 padding: 12,
-                borderRadius: 8,
+                borderRadius: 10,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
+                borderColor: 'rgba(3, 42, 36, 0.04)',
                 marginBottom: 12,
               }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Check-in</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>{formatDate(bookingData?.checkIn)}</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Check-in</Text>
+                  <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>{formatDate(bookingData?.checkIn)}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Check-out</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>{formatDate(bookingData?.checkOut)}</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Check-out</Text>
+                  <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>{formatDate(bookingData?.checkOut)}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Rooms</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>{bookingData?.rooms}</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Rooms</Text>
+                  <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>{bookingData?.rooms}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Guests</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>{bookingData?.guests}</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Guests</Text>
+                  <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>{bookingData?.guests}</Text>
                 </View>
                 <View style={{
                   flexDirection: 'row',
                   justifyContent: 'space-between',
                   paddingVertical: 6,
                   borderTopWidth: 1,
-                  borderTopColor: '#E8EEF4',
+                  borderTopColor: 'rgba(3, 42, 36, 0.04)',
                   marginTop: 4,
                 }}>
-                  <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '600' }}>Total</Text>
-                  <Text style={{ color: '#0B342B', fontSize: 16, fontWeight: '700' }}>{formatCurrency(bookingData?.total)}</Text>
+                  <Text style={{ color: '#032A24', fontSize: 15, fontWeight: '600' }}>Total</Text>
+                  <Text style={{ color: '#C9A44B', fontSize: 15, fontWeight: '700' }}>{formatCurrency(bookingData?.total)}</Text>
                 </View>
-                {bookingData?.roomsLeft !== undefined && (
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                    <Text style={{ color: '#6B7280', fontSize: 14 }}>Rooms Left</Text>
-                    <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>{bookingData.roomsLeft}</Text>
-                  </View>
-                )}
               </View>
 
               <View style={{
-                backgroundColor: '#FAFAF7',
-                padding: 10,
-                borderRadius: 8,
+                backgroundColor: 'rgba(201, 164, 75, 0.04)',
+                padding: 12,
+                borderRadius: 10,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
+                borderColor: 'rgba(201, 164, 75, 0.06)',
                 marginBottom: 16,
               }}>
-                <Text style={{ color: '#6B7280', fontSize: 14, textAlign: 'center', fontStyle: 'italic', lineHeight: 18 }}>
+                <Text style={{ color: '#6B7280', fontSize: 13, textAlign: 'center', fontStyle: 'italic', lineHeight: 20 }}>
                   "The best provision is piety." — Quran 2:197
                 </Text>
               </View>
 
               <TouchableOpacity
                 style={{
-                  backgroundColor: '#0B342B',
+                  backgroundColor: '#032A24',
                   paddingVertical: 10,
-                  borderRadius: 8,
+                  borderRadius: 10,
                   alignItems: 'center',
-                  shadowColor: '#0B342B',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.2,
-                  shadowRadius: 8,
-                  elevation: 4,
                 }}
                 onPress={() => setShowSuccessModal(false)}
+                activeOpacity={0.7}
               >
-                <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>Done</Text>
+                <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Done</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -1384,124 +1697,105 @@ const HalalStay = () => {
 
       {/* Booking Details Modal */}
       <Modal visible={showBookingDetailsModal} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
+            borderRadius: 20,
+            padding: 24,
             width: '100%',
-            maxWidth: 400,
+            maxWidth: 420,
             maxHeight: '90%',
           }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ color: '#1F2937', fontSize: 18, fontWeight: '700' }}>Booking Details</Text>
-              <TouchableOpacity onPress={() => setShowBookingDetailsModal(false)}>
-                <Text style={{ color: '#6B7280', fontSize: 20 }}>✕</Text>
+              <Text style={{ color: '#032A24', fontSize: 18, fontWeight: '700', letterSpacing: -0.3 }}>
+                Booking Details
+              </Text>
+              <TouchableOpacity onPress={() => setShowBookingDetailsModal(false)} activeOpacity={0.7} style={{ padding: 4 }}>
+                <CloseIcon color="#6B7280" size={20} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={{ marginBottom: 12 }}>
-                <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '700' }}>{selectedBooking?.listing_title || 'Property'}</Text>
-                <Text style={{ color: '#6B7280', fontSize: 14 }}>Ref: {selectedBooking?.id || 'N/A'}</Text>
-                <Text style={{ color: '#6B7280', fontSize: 14 }}>{selectedBooking?.listing_location || 'Location not specified'}</Text>
+                <Text style={{ color: '#032A24', fontSize: 16, fontWeight: '700' }}>{selectedBooking?.listing_title || 'Property'}</Text>
+                <Text style={{ color: '#6B7280', fontSize: 13 }}>Ref: {selectedBooking?.id || 'N/A'}</Text>
+                <Text style={{ color: '#6B7280', fontSize: 13 }}>{selectedBooking?.listing_location || 'Location not specified'}</Text>
               </View>
 
               <View style={{
                 backgroundColor: '#FAFAF7',
                 padding: 12,
-                borderRadius: 8,
+                borderRadius: 10,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
+                borderColor: 'rgba(3, 42, 36, 0.04)',
                 marginBottom: 12,
               }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Check-in</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>{formatDate(selectedBooking?.check_in)}</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Check-in</Text>
+                  <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>{formatDate(selectedBooking?.check_in)}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Check-out</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>{formatDate(selectedBooking?.check_out)}</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Check-out</Text>
+                  <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>{formatDate(selectedBooking?.check_out)}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Guests</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>{selectedBooking?.guests}</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Guests</Text>
+                  <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>{selectedBooking?.guests}</Text>
                 </View>
                 <View style={{
                   flexDirection: 'row',
                   justifyContent: 'space-between',
                   paddingVertical: 6,
                   borderTopWidth: 1,
-                  borderTopColor: '#E8EEF4',
+                  borderTopColor: 'rgba(3, 42, 36, 0.04)',
                   marginTop: 4,
                 }}>
-                  <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '600' }}>Total</Text>
-                  <Text style={{ color: '#0B342B', fontSize: 16, fontWeight: '700' }}>{formatCurrency(selectedBooking?.total_price)}</Text>
+                  <Text style={{ color: '#032A24', fontSize: 15, fontWeight: '600' }}>Total</Text>
+                  <Text style={{ color: '#C9A44B', fontSize: 15, fontWeight: '700' }}>{formatCurrency(selectedBooking?.total_price)}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Status</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Status</Text>
                   <View style={{
                     backgroundColor: getStatusBadge(selectedBooking?.status).style.bg,
                     paddingHorizontal: 6,
                     paddingVertical: 2,
-                    borderRadius: 999,
-                    borderWidth: 1,
-                    borderColor: 'rgba(0,0,0,0.05)',
+                    borderRadius: 6,
                   }}>
                     <Text style={{
                       color: getStatusBadge(selectedBooking?.status).style.text,
-                      fontSize: 12,
+                      fontSize: 11,
                       fontWeight: '500',
                     }}>
                       {getStatusBadge(selectedBooking?.status).label}
                     </Text>
                   </View>
                 </View>
-                {selectedBooking?.special_requests && (
-                  <View style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    paddingVertical: 6,
-                    borderTopWidth: 1,
-                    borderTopColor: '#E8EEF4',
-                    marginTop: 4,
-                  }}>
-                    <Text style={{ color: '#6B7280', fontSize: 14 }}>Special Requests</Text>
-                    <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600', textAlign: 'right', flex: 1, marginLeft: 8 }}>
-                      {selectedBooking.special_requests}
-                    </Text>
-                  </View>
-                )}
               </View>
 
               <View style={{
-                backgroundColor: '#FEF3C7',
-                padding: 10,
-                borderRadius: 8,
+                backgroundColor: 'rgba(217, 119, 6, 0.04)',
+                padding: 12,
+                borderRadius: 10,
                 borderWidth: 1,
-                borderColor: '#FDE68A',
-                marginBottom: 12,
+                borderColor: 'rgba(217, 119, 6, 0.08)',
+                marginBottom: 16,
               }}>
-                <Text style={{ color: '#D97706', fontSize: 14, lineHeight: 18 }}>
+                <Text style={{ color: '#D97706', fontSize: 13, lineHeight: 20 }}>
                   <Text style={{ fontWeight: '600' }}>Note:</Text> Cancellations can only be processed by the property vendor. Please contact them directly if you need to cancel.
                 </Text>
               </View>
 
               <TouchableOpacity
                 style={{
-                  backgroundColor: '#0B342B',
+                  backgroundColor: '#032A24',
                   paddingVertical: 10,
-                  borderRadius: 8,
+                  borderRadius: 10,
                   alignItems: 'center',
-                  shadowColor: '#0B342B',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.2,
-                  shadowRadius: 8,
-                  elevation: 4,
                 }}
                 onPress={() => setShowBookingDetailsModal(false)}
+                activeOpacity={0.7}
               >
-                <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>Close</Text>
+                <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Close</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -1512,28 +1806,28 @@ const HalalStay = () => {
       {success ? (
         <View style={{
           position: 'absolute',
-          top: 60,
-          right: 16,
-          left: 16,
-          backgroundColor: '#0B342B',
-          paddingHorizontal: 16,
-          paddingVertical: 12,
-          borderRadius: 12,
+          top: Platform.OS === 'ios' ? 60 : 40,
+          right: 20,
+          left: 20,
+          backgroundColor: '#032A24',
+          paddingHorizontal: 18,
+          paddingVertical: 14,
+          borderRadius: 14,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          shadowColor: '#0B342B',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          elevation: 4,
+          shadowColor: '#032A24',
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.2,
+          shadowRadius: 16,
+          elevation: 8,
         }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text style={{ color: '#C9A44B', fontSize: 16 }}>✓</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <CheckIcon color="#C9A44B" size={18} />
             <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '500', flex: 1 }}>{success}</Text>
           </View>
-          <TouchableOpacity onPress={() => setSuccess('')}>
-            <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 16 }}>✕</Text>
+          <TouchableOpacity onPress={() => setSuccess('')} activeOpacity={0.7} style={{ padding: 4 }}>
+            <CloseIcon color="rgba(255,255,255,0.5)" size={18} />
           </TouchableOpacity>
         </View>
       ) : null}

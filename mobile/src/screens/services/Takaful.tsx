@@ -11,9 +11,81 @@ import {
   RefreshControl,
   Modal,
   Alert,
+  Dimensions,
+  LayoutAnimation,
+  UIManager,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { takafulService } from '../../api/client';
+import Svg, { Path, Circle, Rect } from 'react-native-svg';
+
+// Enable LayoutAnimation for Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const { width } = Dimensions.get('window');
+
+// Professional SVG Icons
+const BackIcon = ({ color = '#032A24', size = 24 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M15 18L9 12L15 6" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const ShieldIcon = ({ color = '#C9A44B', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M12 3L5 7V12C5 15.866 8.13401 19 12 19C15.866 19 19 15.866 19 12V7L12 3Z" stroke={color} strokeWidth="1.5" strokeLinejoin="round"/>
+    <Path d="M9 12L11 14L15 10" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const WalletIcon = ({ color = '#032A24', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Rect x="2" y="5" width="20" height="14" rx="2" stroke={color} strokeWidth="1.5"/>
+    <Path d="M16 13C16 12.4477 16.4477 12 17 12H20C20.5523 12 21 12.4477 21 13V15C21 15.5523 20.5523 16 20 16H17C16.4477 16 16 15.5523 16 15V13Z" fill={color} opacity="0.1" stroke={color} strokeWidth="1.5"/>
+    <Circle cx="18" cy="14" r="0.5" fill={color}/>
+  </Svg>
+);
+
+const UserIcon = ({ color = '#032A24', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="8" r="4" stroke={color} strokeWidth="1.5"/>
+    <Path d="M5.5 20C5.5 16.6863 8.18629 14 11.5 14H12.5C15.8137 14 18.5 16.6863 18.5 20" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </Svg>
+);
+
+const ClaimIcon = ({ color = '#032A24', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke={color} strokeWidth="1.5" strokeLinejoin="round"/>
+    <Path d="M12 8V13" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <Circle cx="12" cy="16" r="1" fill={color} opacity="0.5"/>
+  </Svg>
+);
+
+const CheckIcon = ({ color = '#FFFFFF', size = 16 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M5 12L10 17L20 7" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const CloseIcon = ({ color = '#6B7280', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M18 6L6 18M6 6L18 18" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const ChevronDownIcon = ({ color = '#6B7280', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M6 9L12 15L18 9" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const ChevronUpIcon = ({ color = '#6B7280', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M18 15L12 9L6 15" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
 
 const Takaful = () => {
   const navigation = useNavigation();
@@ -51,12 +123,20 @@ const Takaful = () => {
   const [modalData, setModalData] = useState<any>(null);
   const [paymentData, setPaymentData] = useState<any>(null);
 
+  // State for collapsible claims
+  const [claimsExpanded, setClaimsExpanded] = useState(false);
+
   const relations = ['Spouse', 'Child', 'Parent', 'Sibling', 'Other'];
   const claimTypes = ['Medical', 'Accidental Death', 'Total Disability', 'Partial Disability', 'Other'];
 
   useEffect(() => {
     fetchAllData();
   }, []);
+
+  const toggleClaims = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setClaimsExpanded(!claimsExpanded);
+  };
 
   const fetchAllData = async () => {
     setLoading(true);
@@ -338,12 +418,18 @@ const Takaful = () => {
     return labels[type] || type;
   };
 
+  // Responsive sizing
+  const isSmallDevice = width < 380;
+  const cardPadding = isSmallDevice ? 14 : 18;
+  const headerFontSize = isSmallDevice ? 16 : 18;
+  const titleFontSize = isSmallDevice ? 20 : 22;
+
   if (loading) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <ActivityIndicator size="large" color="#C9A44B" />
-          <Text style={{ color: '#6B7280', marginTop: 12, fontSize: 14 }}>Loading Takaful plans...</Text>
+          <ActivityIndicator size="large" color="#032A24" />
+          <Text style={{ color: '#6B7280', marginTop: 16, fontSize: 14 }}>Loading Takaful plans...</Text>
         </View>
       </SafeAreaView>
     );
@@ -352,11 +438,71 @@ const Takaful = () => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
       <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+        contentContainerStyle={{
+          paddingTop: Platform.OS === 'ios' ? 8 : 12,
+          paddingHorizontal: 16,
+          paddingBottom: 40,
+        }}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#C9A44B" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#032A24" />}
       >
         <View style={{ maxWidth: 800, width: '100%', alignSelf: 'center' }}>
+          {/* Premium Navigation Header - Emerald with Gold Border */}
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: '#032A24',
+            borderRadius: 14,
+            paddingHorizontal: 16,
+            paddingVertical: 14,
+            marginBottom: 20,
+            borderWidth: 1.5,
+            borderColor: '#C9A44B',
+            shadowColor: '#032A24',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.1,
+            shadowRadius: 12,
+            elevation: 3,
+          }}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              activeOpacity={0.7}
+              style={{
+                padding: 6,
+                marginRight: 10,
+                borderRadius: 8,
+              }}
+            >
+              <BackIcon color="#C9A44B" size={22} />
+            </TouchableOpacity>
+
+            <View style={{ flex: 1 }}>
+              <Text style={{
+                color: '#FFFFFF',
+                fontSize: headerFontSize,
+                fontWeight: '600',
+                letterSpacing: -0.2,
+              }}>
+                Takaful
+              </Text>
+              <Text style={{
+                color: 'rgba(201, 164, 75, 0.7)',
+                fontSize: 10,
+                letterSpacing: 0.3,
+              }}>
+                Tabarru Model · Mutual Protection
+              </Text>
+            </View>
+
+            <View style={{
+              width: 6,
+              height: 6,
+              borderRadius: 3,
+              backgroundColor: '#C9A44B',
+              opacity: 0.6,
+            }} />
+          </View>
+
           {error ? (
             <View style={{
               backgroundColor: '#FEF2F2',
@@ -364,14 +510,16 @@ const Takaful = () => {
               borderColor: '#FECACA',
               borderRadius: 12,
               padding: 12,
-              marginBottom: 12,
+              marginBottom: 14,
               flexDirection: 'row',
               justifyContent: 'space-between',
               alignItems: 'center',
             }}>
-              <Text style={{ color: '#DC2626', fontSize: 13 }}>{error}</Text>
+              <Text style={{ color: '#DC2626', fontSize: 13, flex: 1, marginRight: 10 }}>
+                {error}
+              </Text>
               <TouchableOpacity
-                style={{ backgroundColor: '#DC2626', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}
+                style={{ backgroundColor: '#DC2626', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 6 }}
                 onPress={() => { setError(''); fetchAllData(); }}
               >
                 <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '600' }}>Retry</Text>
@@ -379,62 +527,72 @@ const Takaful = () => {
             </View>
           ) : null}
 
-          {/* Hero Section */}
+          {/* Hero Section - Emerald with Gold Border */}
           <View style={{
-            backgroundColor: '#0B342B',
+            backgroundColor: '#032A24',
             borderRadius: 16,
-            padding: 20,
-            marginBottom: 16,
+            padding: cardPadding,
+            marginBottom: 20,
             borderWidth: 1,
-            borderColor: 'rgba(201, 164, 75, 0.15)',
-            shadowColor: '#000',
+            borderColor: 'rgba(201, 164, 75, 0.2)',
+            shadowColor: '#032A24',
             shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.1,
-            shadowRadius: 8,
-            elevation: 4,
+            shadowOpacity: 0.08,
+            shadowRadius: 16,
+            elevation: 3,
           }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
-              <View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <View style={{ flex: 1, marginRight: 10 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                  <Text style={{ fontSize: 16 }}>🛡️</Text>
-                  <Text style={{ color: 'rgba(183, 192, 186, 0.7)', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1 }}>
-                    Takaful
+                  <ShieldIcon color="#C9A44B" size={16} />
+                  <Text style={{ color: '#C9A44B', fontSize: 9, fontWeight: '600', letterSpacing: 0.5 }}>
+                    Takaful · Tabarru
                   </Text>
-                  <View style={{ width: 1, height: 12, backgroundColor: 'rgba(201, 164, 75, 0.2)' }} />
-                  <Text style={{ color: '#C9A44B', fontSize: 10, fontWeight: '500' }}>Tabarru Model</Text>
                 </View>
-                <Text style={{ color: '#F7F6F1', fontSize: 18, fontWeight: '700' }}>Your Takaful Status</Text>
-                <Text style={{ color: 'rgba(183, 192, 186, 0.7)', fontSize: 13, marginTop: 2 }}>
+                <Text style={{
+                  color: '#FFFFFF',
+                  fontSize: titleFontSize,
+                  fontWeight: '700',
+                  letterSpacing: -0.3,
+                  marginBottom: 2,
+                }}>
+                  Your Takaful Status
+                </Text>
+                <Text style={{
+                  color: 'rgba(255,255,255,0.5)',
+                  fontSize: 12,
+                  lineHeight: 18,
+                }}>
                   Mutual protection through shared responsibility
                 </Text>
               </View>
               {myPolicy ? (
                 <View style={{
-                  backgroundColor: 'rgba(255,255,255,0.1)',
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
-                  borderRadius: 999,
+                  backgroundColor: 'rgba(201, 164, 75, 0.12)',
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                  borderRadius: 10,
                   borderWidth: 1,
-                  borderColor: 'rgba(201, 164, 75, 0.15)',
+                  borderColor: 'rgba(201, 164, 75, 0.2)',
                 }}>
                   <Text style={{
                     color: getStatusBadge(myPolicy.status).text,
-                    fontSize: 10,
+                    fontSize: 9,
                     fontWeight: '600',
                   }}>
-                    {getStatusLabel(myPolicy.status)} · {myPolicy.planName}
+                    {getStatusLabel(myPolicy.status)}
                   </Text>
                 </View>
               ) : (
                 <View style={{
-                  backgroundColor: 'rgba(255,255,255,0.1)',
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
-                  borderRadius: 999,
+                  backgroundColor: 'rgba(255,255,255,0.05)',
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                  borderRadius: 10,
                   borderWidth: 1,
-                  borderColor: 'rgba(201, 164, 75, 0.15)',
+                  borderColor: 'rgba(255,255,255,0.06)',
                 }}>
-                  <Text style={{ color: 'rgba(183, 192, 186, 0.7)', fontSize: 10 }}>No active policy</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 9 }}>No policy</Text>
                 </View>
               )}
             </View>
@@ -443,10 +601,10 @@ const Takaful = () => {
               flexDirection: 'row',
               flexWrap: 'wrap',
               justifyContent: 'space-between',
-              marginTop: 16,
-              paddingTop: 16,
+              marginTop: 14,
+              paddingTop: 14,
               borderTopWidth: 1,
-              borderTopColor: 'rgba(201, 164, 75, 0.12)',
+              borderTopColor: 'rgba(201, 164, 75, 0.08)',
             }}>
               {[
                 { label: 'Pool Members', value: poolStats.members.toLocaleString() },
@@ -454,88 +612,29 @@ const Takaful = () => {
                 { label: 'Claims Paid', value: `${poolStats.claimsPaid}%`, color: '#3FAF73' },
                 { label: 'Your Coverage', value: myPolicy ? myPolicy.members : '0' },
               ].map((item, index) => (
-                <View key={index} style={{ minWidth: 70 }}>
+                <View key={index} style={{ minWidth: 50, flex: 1 }}>
                   <Text style={{
-                    color: item.color || '#F7F6F1',
-                    fontSize: 18,
+                    color: item.color || '#FFFFFF',
+                    fontSize: isSmallDevice ? 14 : 16,
                     fontWeight: '700',
+                    letterSpacing: -0.2,
                   }}>
                     {item.value}
                   </Text>
-                  <Text style={{ color: 'rgba(183, 192, 186, 0.6)', fontSize: 10 }}>{item.label}</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 8 }}>{item.label}</Text>
                 </View>
               ))}
-            </View>
-
-            <View style={{
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              gap: 8,
-              marginTop: 16,
-              paddingTop: 16,
-              borderTopWidth: 1,
-              borderTopColor: 'rgba(201, 164, 75, 0.12)',
-            }}>
-              {!myPolicy ? (
-                <TouchableOpacity
-                  style={{
-                    backgroundColor: '#C9A44B',
-                    paddingHorizontal: 14,
-                    paddingVertical: 8,
-                    borderRadius: 8,
-                    shadowColor: '#C9A44B',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 8,
-                    elevation: 4,
-                  }}
-                  onPress={() => {
-                    // Scroll to plans section
-                  }}
-                >
-                  <Text style={{ color: '#032A24', fontSize: 12, fontWeight: '700' }}>Explore Plans</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  style={{
-                    backgroundColor: 'rgba(255,255,255,0.1)',
-                    paddingHorizontal: 14,
-                    paddingVertical: 8,
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    borderColor: 'rgba(201, 164, 75, 0.2)',
-                  }}
-                  onPress={() => {
-                    // Scroll to policy section
-                  }}
-                >
-                  <Text style={{ color: '#F7F6F1', fontSize: 12, fontWeight: '600' }}>View My Coverage</Text>
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity
-                style={{
-                  backgroundColor: 'rgba(255,255,255,0.1)',
-                  paddingHorizontal: 14,
-                  paddingVertical: 8,
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  borderColor: 'rgba(201, 164, 75, 0.2)',
-                }}
-                onPress={() => {
-                  // Scroll to pool section
-                }}
-              >
-                <Text style={{ color: '#F7F6F1', fontSize: 12, fontWeight: '600' }}>Community Pool</Text>
-              </TouchableOpacity>
             </View>
           </View>
 
           {/* Plans Section */}
-          <View style={{ marginBottom: 16 }}>
+          <View style={{ marginBottom: 20 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <View style={{ width: 4, height: 20, backgroundColor: '#0B342B', borderRadius: 2 }} />
-              <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '700' }}>Takaful Plans</Text>
-              <Text style={{ color: '#6B7280', fontSize: 10 }}>Choose your coverage</Text>
+              <View style={{ width: 3, height: 18, backgroundColor: '#C9A44B', borderRadius: 2 }} />
+              <Text style={{ color: '#032A24', fontSize: isSmallDevice ? 16 : 17, fontWeight: '700', letterSpacing: -0.2 }}>
+                Takaful Plans
+              </Text>
+              <Text style={{ color: '#8B8A86', fontSize: 10 }}>Choose coverage</Text>
             </View>
 
             {plans.map((plan) => {
@@ -545,76 +644,94 @@ const Takaful = () => {
                   key={plan.id}
                   style={{
                     backgroundColor: '#FFFFFF',
-                    borderRadius: 12,
-                    padding: 14,
+                    borderRadius: 14,
+                    padding: cardPadding,
                     marginBottom: 10,
-                    borderWidth: 2,
-                    borderColor: isSelected ? '#0B342B' : 'rgba(11, 52, 43, 0.08)',
-                    shadowColor: isSelected ? '#0B342B' : 'transparent',
+                    borderWidth: 1.5,
+                    borderColor: isSelected ? '#C9A44B' : 'rgba(3, 42, 36, 0.06)',
+                    shadowColor: isSelected ? '#C9A44B' : 'transparent',
                     shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: isSelected ? 0.1 : 0,
-                    shadowRadius: 8,
+                    shadowOpacity: isSelected ? 0.08 : 0,
+                    shadowRadius: 12,
                     elevation: isSelected ? 2 : 0,
                   }}
                   onPress={() => setSelectedPlan(plan)}
                 >
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                        <Text style={{ color: '#1F2937', fontSize: 15, fontWeight: '700' }}>{plan.name}</Text>
-                        {myPolicy ? (
+                    <View style={{ flex: 1, marginRight: 8 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                        <Text style={{ color: '#032A24', fontSize: isSmallDevice ? 14 : 15, fontWeight: '600', letterSpacing: -0.2 }}>
+                          {plan.name}
+                        </Text>
+                        {myPolicy && (
                           <View style={{
-                            backgroundColor: 'rgba(63, 175, 115, 0.1)',
-                            paddingHorizontal: 8,
-                            paddingVertical: 2,
-                            borderRadius: 999,
+                            backgroundColor: 'rgba(63, 175, 115, 0.08)',
+                            paddingHorizontal: 6,
+                            paddingVertical: 1,
+                            borderRadius: 8,
                             borderWidth: 1,
-                            borderColor: 'rgba(63, 175, 115, 0.2)',
+                            borderColor: 'rgba(63, 175, 115, 0.1)',
                           }}>
-                            <Text style={{ color: '#3FAF73', fontSize: 9, fontWeight: '600' }}>✓ Enrolled</Text>
+                            <Text style={{ color: '#3FAF73', fontSize: 8, fontWeight: '600' }}>Enrolled</Text>
                           </View>
-                        ) : null}
+                        )}
                         <View style={{
-                          backgroundColor: plan.type === 'family' ? 'rgba(11, 52, 43, 0.1)' :
-                                         plan.type === 'business' ? 'rgba(201, 164, 75, 0.1)' :
-                                         'rgba(11, 52, 43, 0.05)',
-                          paddingHorizontal: 8,
-                          paddingVertical: 2,
-                          borderRadius: 999,
+                          backgroundColor: plan.type === 'family' ? 'rgba(3, 42, 36, 0.06)' :
+                                         plan.type === 'business' ? 'rgba(201, 164, 75, 0.08)' :
+                                         'rgba(3, 42, 36, 0.04)',
+                          paddingHorizontal: 6,
+                          paddingVertical: 1,
+                          borderRadius: 6,
                         }}>
                           <Text style={{
-                            color: plan.type === 'family' ? '#0B342B' :
+                            color: plan.type === 'family' ? '#032A24' :
                                    plan.type === 'business' ? '#C9A44B' :
-                                   '#0B342B',
-                            fontSize: 10,
+                                   '#032A24',
+                            fontSize: 8,
                             fontWeight: '500',
                           }}>
                             {getPlanTypeLabel(plan.type)}
                           </Text>
                         </View>
                       </View>
-                      <Text style={{ color: '#6B7280', fontSize: 13, marginTop: 2 }}>{plan.description}</Text>
+                      <Text style={{ color: '#6B7280', fontSize: 12, marginTop: 1 }} numberOfLines={1}>
+                        {plan.description}
+                      </Text>
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
-                      <Text style={{ color: '#0B342B', fontSize: 14, fontWeight: '700' }}>{formatCurrency(plan.monthlyCost)}</Text>
-                      <Text style={{ color: '#6B7280', fontSize: 10 }}>per month</Text>
+                      <Text style={{ color: '#032A24', fontSize: isSmallDevice ? 13 : 14, fontWeight: '700' }}>
+                        {formatCurrency(plan.monthlyCost)}
+                      </Text>
+                      <Text style={{ color: '#8B8A86', fontSize: 8 }}>per month</Text>
                     </View>
                   </View>
 
                   {plan.benefits && plan.benefits.length > 0 && (
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-                      {plan.benefits.map((benefit: string, index: number) => (
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
+                      {plan.benefits.slice(0, 3).map((benefit: string, index: number) => (
                         <View key={index} style={{
                           backgroundColor: '#FAFAF7',
-                          paddingHorizontal: 8,
+                          paddingHorizontal: 6,
                           paddingVertical: 2,
-                          borderRadius: 999,
+                          borderRadius: 6,
                           borderWidth: 1,
-                          borderColor: 'rgba(11, 52, 43, 0.06)',
+                          borderColor: 'rgba(3, 42, 36, 0.04)',
                         }}>
-                          <Text style={{ color: '#1F2937', fontSize: 10 }}>{benefit}</Text>
+                          <Text style={{ color: '#6B7280', fontSize: 8 }}>{benefit}</Text>
                         </View>
                       ))}
+                      {plan.benefits.length > 3 && (
+                        <View style={{
+                          backgroundColor: '#FAFAF7',
+                          paddingHorizontal: 6,
+                          paddingVertical: 2,
+                          borderRadius: 6,
+                          borderWidth: 1,
+                          borderColor: 'rgba(3, 42, 36, 0.04)',
+                        }}>
+                          <Text style={{ color: '#6B7280', fontSize: 8 }}>+{plan.benefits.length - 3}</Text>
+                        </View>
+                      )}
                     </View>
                   )}
 
@@ -625,50 +742,48 @@ const Takaful = () => {
                     marginTop: 10,
                     paddingTop: 10,
                     borderTopWidth: 1,
-                    borderTopColor: 'rgba(11, 52, 43, 0.06)',
+                    borderTopColor: 'rgba(3, 42, 36, 0.04)',
                   }}>
                     <View>
-                      <Text style={{ color: '#6B7280', fontSize: 10 }}>Coverage up to</Text>
-                      <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '700' }}>{formatCurrency(plan.maxCoverage)}</Text>
+                      <Text style={{ color: '#8B8A86', fontSize: 8 }}>Coverage up to</Text>
+                      <Text style={{ color: '#032A24', fontSize: 12, fontWeight: '700' }}>
+                        {formatCurrency(plan.maxCoverage)}
+                      </Text>
                     </View>
                     {!myPolicy ? (
                       <TouchableOpacity
                         style={{
-                          backgroundColor: isSelected ? '#0B342B' : '#FFFFFF',
+                          backgroundColor: isSelected ? '#032A24' : '#FFFFFF',
                           paddingHorizontal: 14,
                           paddingVertical: 6,
                           borderRadius: 8,
                           borderWidth: isSelected ? 0 : 1,
-                          borderColor: 'rgba(11, 52, 43, 0.12)',
-                          shadowColor: isSelected ? '#0B342B' : 'transparent',
-                          shadowOffset: { width: 0, height: 4 },
-                          shadowOpacity: isSelected ? 0.2 : 0,
-                          shadowRadius: 8,
-                          elevation: isSelected ? 4 : 0,
+                          borderColor: 'rgba(3, 42, 36, 0.1)',
                         }}
                         onPress={(e) => {
                           e.stopPropagation();
                           handleEnroll(plan);
                         }}
+                        activeOpacity={0.7}
                       >
                         <Text style={{
-                          color: isSelected ? '#F7F6F1' : '#6B7280',
-                          fontSize: 12,
+                          color: isSelected ? '#FFFFFF' : '#6B7280',
+                          fontSize: 11,
                           fontWeight: '600',
                         }}>
-                          {isSelected ? 'Enroll Now' : 'Select Plan'}
+                          {isSelected ? 'Enroll' : 'Select'}
                         </Text>
                       </TouchableOpacity>
                     ) : myPolicy && selectedPlan?.id === plan.id ? (
                       <View style={{
-                        backgroundColor: 'rgba(63, 175, 115, 0.1)',
+                        backgroundColor: 'rgba(63, 175, 115, 0.06)',
                         paddingHorizontal: 10,
-                        paddingVertical: 4,
-                        borderRadius: 8,
+                        paddingVertical: 3,
+                        borderRadius: 6,
                         borderWidth: 1,
-                        borderColor: 'rgba(63, 175, 115, 0.2)',
+                        borderColor: 'rgba(63, 175, 115, 0.1)',
                       }}>
-                        <Text style={{ color: '#3FAF73', fontSize: 12, fontWeight: '600' }}>✓ Active</Text>
+                        <Text style={{ color: '#3FAF73', fontSize: 10, fontWeight: '600' }}>Active</Text>
                       </View>
                     ) : null}
                   </View>
@@ -678,12 +793,12 @@ const Takaful = () => {
 
             {/* Tabarru Info */}
             <View style={{
-              backgroundColor: '#FAFAF7',
+              backgroundColor: 'rgba(201, 164, 75, 0.04)',
               borderRadius: 12,
               padding: 14,
               borderWidth: 1,
-              borderColor: 'rgba(11, 52, 43, 0.08)',
-              marginTop: 6,
+              borderColor: 'rgba(201, 164, 75, 0.08)',
+              marginTop: 4,
               flexDirection: 'row',
               gap: 10,
             }}>
@@ -691,53 +806,54 @@ const Takaful = () => {
                 width: 36,
                 height: 36,
                 borderRadius: 8,
-                backgroundColor: 'rgba(11, 52, 43, 0.05)',
+                backgroundColor: 'rgba(201, 164, 75, 0.08)',
                 alignItems: 'center',
                 justifyContent: 'center',
+                borderWidth: 1,
+                borderColor: 'rgba(201, 164, 75, 0.08)',
               }}>
-                <Text style={{ fontSize: 18 }}>🛡️</Text>
+                <ShieldIcon color="#C9A44B" size={16} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: '#1F2937', fontSize: 12, fontWeight: '700' }}>What is Tabarru?</Text>
-                <Text style={{ color: '#6B7280', fontSize: 12, lineHeight: 18, marginTop: 2 }}>
-                  Tabarru means "donation" in Arabic. In Takaful, participants donate part of their contributions
-                  to a pool to help fellow members in need.
+                <Text style={{ color: '#032A24', fontSize: 12, fontWeight: '600' }}>What is Tabarru?</Text>
+                <Text style={{ color: '#6B7280', fontSize: 11, lineHeight: 16, marginTop: 1 }}>
+                  Participants donate part of their contributions to a pool to help fellow members in need.
                 </Text>
               </View>
             </View>
           </View>
 
-          {/* My Policy */}
+          {/* My Policy Section */}
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 12,
-            padding: 16,
-            marginBottom: 16,
+            borderRadius: 14,
+            padding: cardPadding,
+            marginBottom: 20,
             borderWidth: 1,
-            borderColor: 'rgba(11, 52, 43, 0.08)',
-            shadowColor: '#000',
+            borderColor: 'rgba(3, 42, 36, 0.06)',
+            shadowColor: '#032A24',
             shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.04,
-            shadowRadius: 4,
+            shadowOpacity: 0.02,
+            shadowRadius: 8,
             elevation: 1,
           }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={{ fontSize: 16 }}>👤</Text>
-                <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '700' }}>My Coverage</Text>
+                <UserIcon color="#032A24" size={16} />
+                <Text style={{ color: '#032A24', fontSize: isSmallDevice ? 15 : 16, fontWeight: '700', letterSpacing: -0.2 }}>
+                  My Coverage
+                </Text>
               </View>
               {myPolicy && (
                 <View style={{
                   backgroundColor: getStatusBadge(myPolicy.status).bg,
-                  paddingHorizontal: 10,
-                  paddingVertical: 3,
-                  borderRadius: 999,
-                  borderWidth: 1,
-                  borderColor: 'rgba(0,0,0,0.05)',
+                  paddingHorizontal: 8,
+                  paddingVertical: 2,
+                  borderRadius: 8,
                 }}>
                   <Text style={{
                     color: getStatusBadge(myPolicy.status).text,
-                    fontSize: 10,
+                    fontSize: 9,
                     fontWeight: '600',
                   }}>
                     {getStatusLabel(myPolicy.status)}
@@ -748,11 +864,11 @@ const Takaful = () => {
 
             {loadingPolicy ? (
               <View style={{ alignItems: 'center', paddingVertical: 20 }}>
-                <ActivityIndicator size="small" color="#C9A44B" />
+                <ActivityIndicator size="small" color="#032A24" />
               </View>
             ) : myPolicy ? (
               <View>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
                   {[
                     { label: 'Plan', value: myPolicy.planName },
                     { label: 'Monthly', value: formatCurrency(myPolicy.monthlyContribution) },
@@ -761,16 +877,16 @@ const Takaful = () => {
                   ].map((item, index) => (
                     <View key={index} style={{
                       flex: 1,
-                      minWidth: 70,
+                      minWidth: 50,
                       backgroundColor: '#FAFAF7',
                       padding: 8,
                       borderRadius: 8,
                       alignItems: 'center',
                       borderWidth: 1,
-                      borderColor: 'rgba(11, 52, 43, 0.06)',
+                      borderColor: 'rgba(3, 42, 36, 0.04)',
                     }}>
-                      <Text style={{ color: '#6B7280', fontSize: 10 }}>{item.label}</Text>
-                      <Text style={{ color: '#1F2937', fontSize: 12, fontWeight: '600' }} numberOfLines={1}>
+                      <Text style={{ color: '#8B8A86', fontSize: 8 }}>{item.label}</Text>
+                      <Text style={{ color: '#032A24', fontSize: 11, fontWeight: '600' }} numberOfLines={1}>
                         {item.value}
                       </Text>
                     </View>
@@ -778,17 +894,17 @@ const Takaful = () => {
                 </View>
 
                 {/* Family Members */}
-                <View style={{ marginBottom: 12 }}>
+                <View style={{ marginBottom: 10 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                    <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                      👤 Family Members
+                    <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', letterSpacing: 0.3 }}>
+                      Family Members
                     </Text>
-                    <TouchableOpacity onPress={() => setShowAddMember(true)}>
-                      <Text style={{ color: '#0B342B', fontSize: 10, fontWeight: '600' }}>+ Add Member</Text>
+                    <TouchableOpacity onPress={() => setShowAddMember(true)} activeOpacity={0.7}>
+                      <Text style={{ color: '#C9A44B', fontSize: 10, fontWeight: '600' }}>+ Add</Text>
                     </TouchableOpacity>
                   </View>
                   {familyMembers.length === 0 ? (
-                    <Text style={{ color: '#6B7280', fontSize: 12, textAlign: 'center', paddingVertical: 6 }}>
+                    <Text style={{ color: '#9CA3AF', fontSize: 11, textAlign: 'center', paddingVertical: 6 }}>
                       No family members added
                     </Text>
                   ) : (
@@ -799,21 +915,23 @@ const Takaful = () => {
                         alignItems: 'center',
                         paddingVertical: 6,
                         borderBottomWidth: 1,
-                        borderBottomColor: 'rgba(11, 52, 43, 0.06)',
+                        borderBottomColor: 'rgba(3, 42, 36, 0.04)',
                       }}>
-                        <Text style={{ color: '#1F2937', fontSize: 13, fontWeight: '500' }}>{member.name}</Text>
+                        <Text style={{ color: '#032A24', fontSize: 12, fontWeight: '500' }}>{member.name}</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                           <View style={{
                             backgroundColor: '#FAFAF7',
                             paddingHorizontal: 6,
-                            paddingVertical: 2,
-                            borderRadius: 999,
+                            paddingVertical: 1,
+                            borderRadius: 6,
+                            borderWidth: 1,
+                            borderColor: 'rgba(3, 42, 36, 0.04)',
                           }}>
-                            <Text style={{ color: '#0B342B', fontSize: 10 }}>{member.relation}</Text>
+                            <Text style={{ color: '#6B7280', fontSize: 8 }}>{member.relation}</Text>
                           </View>
-                          <Text style={{ color: '#6B7280', fontSize: 10 }}>{member.age} yrs</Text>
-                          <TouchableOpacity onPress={() => handleRemoveMember(member.id)}>
-                            <Text style={{ color: '#DC2626', fontSize: 10 }}>Remove</Text>
+                          <Text style={{ color: '#9CA3AF', fontSize: 9 }}>{member.age}y</Text>
+                          <TouchableOpacity onPress={() => handleRemoveMember(member.id)} activeOpacity={0.7}>
+                            <Text style={{ color: '#DC2626', fontSize: 9 }}>Remove</Text>
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -821,230 +939,288 @@ const Takaful = () => {
                   )}
                 </View>
 
-                {/* Monthly Payment Button */}
+                {/* Monthly Payment */}
                 <View style={{
-                  backgroundColor: '#FAFAF7',
+                  backgroundColor: 'rgba(3, 42, 36, 0.02)',
                   padding: 14,
-                  borderRadius: 8,
+                  borderRadius: 10,
                   borderWidth: 1,
-                  borderColor: 'rgba(11, 52, 43, 0.08)',
+                  borderColor: 'rgba(3, 42, 36, 0.04)',
                   marginBottom: 10,
                 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                     <View>
-                      <Text style={{ color: '#1F2937', fontSize: 13, fontWeight: '600' }}>Monthly Contribution</Text>
-                      <Text style={{ color: '#0B342B', fontSize: 16, fontWeight: '700' }}>{formatCurrency(myPolicy.monthlyContribution)}</Text>
-                      <Text style={{ color: '#6B7280', fontSize: 9 }}>
-                        Due: {new Date().toLocaleDateString('en-KE', { month: 'long', year: 'numeric' })}
+                      <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '500' }}>Monthly Contribution</Text>
+                      <Text style={{ color: '#032A24', fontSize: isSmallDevice ? 15 : 16, fontWeight: '700', letterSpacing: -0.2 }}>
+                        {formatCurrency(myPolicy.monthlyContribution)}
+                      </Text>
+                      <Text style={{ color: '#9CA3AF', fontSize: 8 }}>
+                        Due: {new Date().toLocaleDateString('en-KE', { month: 'short', year: 'numeric' })}
                       </Text>
                     </View>
                     <TouchableOpacity
                       style={{
                         backgroundColor: '#C9A44B',
-                        paddingHorizontal: 16,
-                        paddingVertical: 10,
+                        paddingHorizontal: 14,
+                        paddingVertical: 8,
                         borderRadius: 8,
-                        shadowColor: '#C9A44B',
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: 0.2,
-                        shadowRadius: 8,
-                        elevation: 4,
-                        opacity: processing ? 0.6 : 1,
+                        opacity: processing ? 0.5 : 1,
                       }}
                       onPress={handlePayMonthly}
                       disabled={processing}
+                      activeOpacity={0.7}
                     >
                       {processing ? (
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                           <ActivityIndicator size="small" color="#032A24" />
-                          <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>Processing...</Text>
+                          <Text style={{ color: '#032A24', fontSize: 11, fontWeight: '600' }}>Processing</Text>
                         </View>
                       ) : (
-                        <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>
-                          Pay Now ({formatCurrency(myPolicy.monthlyContribution)})
-                        </Text>
+                        <Text style={{ color: '#032A24', fontSize: 11, fontWeight: '600' }}>Pay Now</Text>
                       )}
                     </TouchableOpacity>
                   </View>
-                  <Text style={{ color: '#6B7280', fontSize: 9, textAlign: 'center', marginTop: 6 }}>
-                    Pay your monthly contribution to maintain your Takaful coverage
-                  </Text>
                 </View>
 
                 <TouchableOpacity
                   style={{
-                    backgroundColor: '#0B342B',
+                    backgroundColor: '#032A24',
                     paddingVertical: 10,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     alignItems: 'center',
-                    shadowColor: '#0B342B',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 8,
-                    elevation: 4,
                   }}
                   onPress={() => setShowClaimForm(true)}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#F7F6F1', fontSize: 14, fontWeight: '600' }}>File a Claim</Text>
+                  <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '600' }}>File a Claim</Text>
                 </TouchableOpacity>
               </View>
             ) : (
               <View style={{ alignItems: 'center', paddingVertical: 20 }}>
                 <View style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 26,
-                  backgroundColor: 'rgba(11, 52, 43, 0.05)',
+                  width: 48,
+                  height: 48,
+                  borderRadius: 24,
+                  backgroundColor: 'rgba(3, 42, 36, 0.04)',
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderWidth: 2,
-                  borderColor: 'rgba(11, 52, 43, 0.08)',
+                  borderColor: 'rgba(3, 42, 36, 0.06)',
                 }}>
-                  <Text style={{ fontSize: 24 }}>🛡️</Text>
+                  <ShieldIcon color="#032A24" size={20} />
                 </View>
-                <Text style={{ color: '#1F2937', fontSize: 15, fontWeight: '600', marginTop: 8 }}>No Active Policy</Text>
-                <Text style={{ color: '#6B7280', fontSize: 13, marginTop: 2 }}>Enroll in a Takaful plan to get covered</Text>
+                <Text style={{ color: '#032A24', fontSize: 14, fontWeight: '600', marginTop: 8 }}>
+                  No Active Policy
+                </Text>
+                <Text style={{ color: '#6B7280', fontSize: 11, marginTop: 1 }}>
+                  Enroll in a Takaful plan to get covered
+                </Text>
               </View>
             )}
           </View>
 
-          {/* Pool Stats & Claims */}
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-            <View style={{
-              flex: 1,
-              minWidth: 150,
-              backgroundColor: '#FFFFFF',
-              borderRadius: 12,
-              padding: 14,
-              borderWidth: 1,
-              borderColor: 'rgba(11, 52, 43, 0.08)',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.04,
-              shadowRadius: 4,
-              elevation: 1,
-            }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={{ fontSize: 16 }}>💰</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 15, fontWeight: '700' }}>Pool Statistics</Text>
-                </View>
-                <View style={{
-                  backgroundColor: 'rgba(201, 164, 75, 0.1)',
-                  paddingHorizontal: 8,
-                  paddingVertical: 2,
-                  borderRadius: 999,
-                  borderWidth: 1,
-                  borderColor: 'rgba(201, 164, 75, 0.18)',
-                }}>
-                  <Text style={{ color: '#C9A44B', fontSize: 10, fontWeight: '600' }}>Barakah</Text>
-                </View>
+          {/* Pool Stats */}
+          <View style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: 14,
+            padding: cardPadding,
+            marginBottom: 14,
+            borderWidth: 1,
+            borderColor: 'rgba(3, 42, 36, 0.06)',
+            shadowColor: '#032A24',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.02,
+            shadowRadius: 8,
+            elevation: 1,
+          }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <WalletIcon color="#032A24" size={18} />
+                <Text style={{ color: '#032A24', fontSize: isSmallDevice ? 15 : 16, fontWeight: '700', letterSpacing: -0.2 }}>
+                  Pool Statistics
+                </Text>
               </View>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                {[
-                  { label: 'Members', value: poolStats.members.toLocaleString() },
-                  { label: 'Balance', value: formatCurrency(poolStats.balance), color: '#0B342B' },
-                  { label: 'Claims', value: `${poolStats.claimsPaid}%`, color: '#3FAF73' },
-                ].map((item, index) => (
-                  <View key={index} style={{
-                    flex: 1,
-                    minWidth: 60,
-                    backgroundColor: '#FAFAF7',
-                    padding: 8,
-                    borderRadius: 8,
-                    alignItems: 'center',
-                    borderWidth: 1,
-                    borderColor: 'rgba(11, 52, 43, 0.06)',
-                  }}>
-                    <Text style={{ color: item.color || '#1F2937', fontSize: 14, fontWeight: '700' }}>{item.value}</Text>
-                    <Text style={{ color: '#6B7280', fontSize: 10 }}>{item.label}</Text>
-                  </View>
-                ))}
+              <View style={{
+                backgroundColor: 'rgba(201, 164, 75, 0.08)',
+                paddingHorizontal: 8,
+                paddingVertical: 2,
+                borderRadius: 6,
+                borderWidth: 1,
+                borderColor: 'rgba(201, 164, 75, 0.08)',
+              }}>
+                <Text style={{ color: '#C9A44B', fontSize: 8, fontWeight: '600' }}>Barakah</Text>
               </View>
             </View>
 
-            <View style={{
-              flex: 1,
-              minWidth: 150,
-              backgroundColor: '#FFFFFF',
-              borderRadius: 12,
-              padding: 14,
-              borderWidth: 1,
-              borderColor: 'rgba(11, 52, 43, 0.08)',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.04,
-              shadowRadius: 4,
-              elevation: 1,
-            }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={{ fontSize: 16 }}>📄</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 15, fontWeight: '700' }}>Recent Claims</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+              {[
+                { label: 'Total Members', value: poolStats.members.toLocaleString() },
+                { label: 'Pool Balance', value: formatCurrency(poolStats.balance), color: '#C9A44B' },
+                { label: 'Claims Paid', value: `${poolStats.claimsPaid}%`, color: '#3FAF73' },
+                { label: 'Surplus', value: formatCurrency(poolStats.surplus), color: '#032A24' },
+              ].map((item, index) => (
+                <View key={index} style={{
+                  flex: 1,
+                  minWidth: 70,
+                  backgroundColor: '#FAFAF7',
+                  padding: 10,
+                  borderRadius: 8,
+                  alignItems: 'center',
+                  borderWidth: 1,
+                  borderColor: 'rgba(3, 42, 36, 0.04)',
+                }}>
+                  <Text style={{
+                    color: item.color || '#032A24',
+                    fontSize: isSmallDevice ? 14 : 16,
+                    fontWeight: '700',
+                    letterSpacing: -0.2,
+                  }}>
+                    {item.value}
+                  </Text>
+                  <Text style={{ color: '#6B7280', fontSize: 8, marginTop: 2 }}>{item.label}</Text>
                 </View>
-                <TouchableOpacity onPress={fetchClaims}>
-                  <Text style={{ color: '#6B7280', fontSize: 10 }}>Refresh</Text>
-                </TouchableOpacity>
-              </View>
+              ))}
+            </View>
+          </View>
 
-              {claims.length === 0 ? (
-                <View style={{ alignItems: 'center', paddingVertical: 12 }}>
-                  <Text style={{ color: '#E5E7EB', fontSize: 24, marginBottom: 4 }}>—</Text>
-                  <Text style={{ color: '#6B7280', fontSize: 12 }}>No claims submitted</Text>
-                </View>
-              ) : (
-                claims.slice(0, 3).map((claim) => {
-                  const badge = getStatusBadge(claim.status);
-                  return (
-                    <View key={claim.id} style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      paddingVertical: 8,
-                      borderBottomWidth: 1,
-                      borderBottomColor: '#F4F5F1',
-                    }}>
-                      <View>
-                        <Text style={{ color: '#1F2937', fontSize: 13, fontWeight: '500' }}>{claim.type}</Text>
-                        <Text style={{ color: '#6B7280', fontSize: 10 }}>{formatDate(claim.date)}</Text>
-                      </View>
-                      <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={{ color: '#1F2937', fontSize: 13, fontWeight: '700' }}>{formatCurrency(claim.amount)}</Text>
-                        <View style={{
-                          backgroundColor: badge.bg,
-                          paddingHorizontal: 6,
-                          paddingVertical: 1,
-                          borderRadius: 999,
-                          borderWidth: 1,
-                          borderColor: 'rgba(0,0,0,0.05)',
-                        }}>
-                          <Text style={{ color: badge.text, fontSize: 10, fontWeight: '500' }}>{getStatusLabel(claim.status)}</Text>
+          {/* Recent Claims - Collapsible */}
+          <View style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: 14,
+            borderWidth: 1,
+            borderColor: 'rgba(3, 42, 36, 0.06)',
+            shadowColor: '#032A24',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.02,
+            shadowRadius: 8,
+            elevation: 1,
+            overflow: 'hidden',
+          }}>
+            <TouchableOpacity
+              onPress={toggleClaims}
+              activeOpacity={0.7}
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: cardPadding,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <ClaimIcon color="#032A24" size={18} />
+                <Text style={{ color: '#032A24', fontSize: isSmallDevice ? 15 : 16, fontWeight: '700', letterSpacing: -0.2 }}>
+                  Recent Claims
+                </Text>
+                {claims.length > 0 && (
+                  <View style={{
+                    backgroundColor: 'rgba(3, 42, 36, 0.06)',
+                    paddingHorizontal: 8,
+                    paddingVertical: 2,
+                    borderRadius: 10,
+                  }}>
+                    <Text style={{ color: '#6B7280', fontSize: 9, fontWeight: '500' }}>
+                      {claims.length}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={{ color: '#8B8A86', fontSize: 9 }}>
+                  {claimsExpanded ? 'Hide' : 'Show'}
+                </Text>
+                {claimsExpanded ? (
+                  <ChevronUpIcon color="#6B7280" size={18} />
+                ) : (
+                  <ChevronDownIcon color="#6B7280" size={18} />
+                )}
+              </View>
+            </TouchableOpacity>
+
+            {claimsExpanded && (
+              <View style={{ paddingHorizontal: cardPadding, paddingBottom: cardPadding }}>
+                {claims.length === 0 ? (
+                  <View style={{ alignItems: 'center', paddingVertical: 16 }}>
+                    <Text style={{ color: '#E5E7EB', fontSize: 24 }}>—</Text>
+                    <Text style={{ color: '#6B7280', fontSize: 11, marginTop: 4 }}>No claims submitted</Text>
+                  </View>
+                ) : (
+                  claims.slice(0, 5).map((claim, index) => {
+                    const badge = getStatusBadge(claim.status);
+                    return (
+                      <View 
+                        key={claim.id} 
+                        style={{
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          paddingVertical: 10,
+                          borderBottomWidth: index < claims.slice(0, 5).length - 1 ? 1 : 0,
+                          borderBottomColor: '#F3F4F6',
+                        }}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '500' }}>{claim.type}</Text>
+                          <Text style={{ color: '#9CA3AF', fontSize: 9 }}>{formatDate(claim.date)}</Text>
+                          <Text style={{ color: '#6B7280', fontSize: 10, marginTop: 1 }} numberOfLines={1}>
+                            {claim.description || 'No description'}
+                          </Text>
+                        </View>
+                        <View style={{ alignItems: 'flex-end', marginLeft: 10 }}>
+                          <Text style={{ color: '#032A24', fontSize: 14, fontWeight: '700' }}>
+                            {formatCurrency(claim.amount)}
+                          </Text>
+                          <View style={{
+                            backgroundColor: badge.bg,
+                            paddingHorizontal: 8,
+                            paddingVertical: 2,
+                            borderRadius: 6,
+                            marginTop: 2,
+                          }}>
+                            <Text style={{ color: badge.text, fontSize: 9, fontWeight: '500' }}>
+                              {getStatusLabel(claim.status)}
+                            </Text>
+                          </View>
                         </View>
                       </View>
-                    </View>
-                  );
-                })
-              )}
-            </View>
+                    );
+                  })
+                )}
+              </View>
+            )}
+          </View>
+
+          {/* Footer */}
+          <View style={{ alignItems: 'center', marginTop: 20 }}>
+            <Text style={{
+              color: 'rgba(201, 164, 75, 0.2)',
+              fontSize: 9,
+              letterSpacing: 1,
+              fontWeight: '500',
+            }}>
+              Mutual Protection · Shared Responsibility
+            </Text>
           </View>
         </View>
       </ScrollView>
 
+      {/* Modals - Same as before */}
       {/* Enrollment Confirmation Modal */}
       <Modal visible={showConfirmModal} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
+            borderRadius: 18,
+            padding: 22,
             width: '100%',
             maxWidth: 400,
             maxHeight: '90%',
           }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ color: '#1F2937', fontSize: 18, fontWeight: '700' }}>Confirm Enrollment</Text>
-              <TouchableOpacity onPress={() => setShowConfirmModal(false)}>
-                <Text style={{ color: '#6B7280', fontSize: 20 }}>✕</Text>
+              <Text style={{ color: '#032A24', fontSize: 18, fontWeight: '700', letterSpacing: -0.3 }}>
+                Confirm Enrollment
+              </Text>
+              <TouchableOpacity onPress={() => setShowConfirmModal(false)} activeOpacity={0.7} style={{ padding: 4 }}>
+                <CloseIcon color="#6B7280" size={20} />
               </TouchableOpacity>
             </View>
 
@@ -1053,92 +1229,91 @@ const Takaful = () => {
                 <View style={{
                   width: 44,
                   height: 44,
-                  borderRadius: 8,
-                  backgroundColor: 'rgba(11, 52, 43, 0.05)',
+                  borderRadius: 10,
+                  backgroundColor: 'rgba(201, 164, 75, 0.08)',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  borderWidth: 1,
+                  borderColor: 'rgba(201, 164, 75, 0.08)',
                 }}>
-                  <Text style={{ fontSize: 22 }}>🛡️</Text>
+                  <ShieldIcon color="#C9A44B" size={20} />
                 </View>
-                <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '700', marginTop: 6 }}>{selectedPlan?.name}</Text>
-                <Text style={{ color: '#6B7280', fontSize: 13 }}>{selectedPlan ? getPlanTypeLabel(selectedPlan.type) : ''}</Text>
+                <Text style={{ color: '#032A24', fontSize: 16, fontWeight: '700', marginTop: 4 }}>{selectedPlan?.name}</Text>
+                <Text style={{ color: '#6B7280', fontSize: 12 }}>{selectedPlan ? getPlanTypeLabel(selectedPlan.type) : ''}</Text>
               </View>
 
               <View style={{
                 backgroundColor: '#FAFAF7',
-                borderRadius: 8,
+                borderRadius: 10,
                 padding: 12,
                 borderWidth: 1,
-                borderColor: 'rgba(11, 52, 43, 0.06)',
+                borderColor: 'rgba(3, 42, 36, 0.04)',
                 marginBottom: 12,
               }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 12 }}>Monthly Contribution</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 12, fontWeight: '600' }}>{formatCurrency(selectedPlan?.monthlyCost)}</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
+                  <Text style={{ color: '#6B7280', fontSize: 11 }}>Monthly Contribution</Text>
+                  <Text style={{ color: '#032A24', fontSize: 11, fontWeight: '600' }}>
+                    {formatCurrency(selectedPlan?.monthlyCost)}
+                  </Text>
                 </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 12 }}>Annual Cost</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 12, fontWeight: '600' }}>{formatCurrency(selectedPlan?.annualCost)}</Text>
-                </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ color: '#6B7280', fontSize: 12 }}>Coverage Amount</Text>
-                  <Text style={{ color: '#0B342B', fontSize: 12, fontWeight: '700' }}>{formatCurrency(selectedPlan?.maxCoverage)}</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
+                  <Text style={{ color: '#6B7280', fontSize: 11 }}>Coverage Amount</Text>
+                  <Text style={{ color: '#C9A44B', fontSize: 11, fontWeight: '700' }}>
+                    {formatCurrency(selectedPlan?.maxCoverage)}
+                  </Text>
                 </View>
               </View>
 
               <View style={{
-                backgroundColor: '#FAFAF7',
-                borderRadius: 8,
+                backgroundColor: 'rgba(201, 164, 75, 0.04)',
                 padding: 10,
+                borderRadius: 8,
                 borderWidth: 1,
-                borderColor: 'rgba(11, 52, 43, 0.06)',
+                borderColor: 'rgba(201, 164, 75, 0.06)',
                 marginBottom: 16,
               }}>
-                <Text style={{ color: '#6B7280', fontSize: 12, textAlign: 'center', lineHeight: 18 }}>
-                  This is a <Text style={{ fontWeight: '600', color: '#0B342B' }}>Tabarru</Text> (donation) based Takaful.
-                  By enrolling, you agree to participate in mutual guarantee and cooperation.
+                <Text style={{ color: '#6B7280', fontSize: 11, textAlign: 'center', lineHeight: 16 }}>
+                  This is a <Text style={{ fontWeight: '600', color: '#032A24' }}>Tabarru</Text> based Takaful.
+                  You agree to mutual guarantee and cooperation.
                 </Text>
               </View>
 
-              {error ? <Text style={{ color: '#DC2626', fontSize: 12, marginBottom: 8 }}>{error}</Text> : null}
+              {error ? <Text style={{ color: '#DC2626', fontSize: 11, marginBottom: 8 }}>{error}</Text> : null}
 
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 <TouchableOpacity
                   style={{
                     flex: 1,
-                    backgroundColor: '#F4F5F1',
+                    backgroundColor: '#F3F4F6',
                     paddingVertical: 10,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     alignItems: 'center',
                   }}
                   onPress={() => setShowConfirmModal(false)}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#6B7280', fontSize: 15, fontWeight: '500' }}>Cancel</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '500' }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={{
                     flex: 2,
-                    backgroundColor: '#0B342B',
+                    backgroundColor: '#032A24',
                     paddingVertical: 10,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     alignItems: 'center',
-                    opacity: processing ? 0.6 : 1,
-                    shadowColor: '#0B342B',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 8,
-                    elevation: 4,
+                    opacity: processing ? 0.5 : 1,
                   }}
                   onPress={confirmEnrollment}
                   disabled={processing}
+                  activeOpacity={0.7}
                 >
                   {processing ? (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                       <ActivityIndicator size="small" color="#FFFFFF" />
-                      <Text style={{ color: '#F7F6F1', fontSize: 15, fontWeight: '600' }}>Processing...</Text>
+                      <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Processing...</Text>
                     </View>
                   ) : (
-                    <Text style={{ color: '#F7F6F1', fontSize: 15, fontWeight: '600' }}>Confirm Enrollment</Text>
+                    <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Confirm</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -1149,102 +1324,106 @@ const Takaful = () => {
 
       {/* Enrollment Success Modal */}
       <Modal visible={showSuccessModal} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
+            borderRadius: 18,
+            padding: 22,
             width: '100%',
             maxWidth: 400,
             maxHeight: '90%',
           }}>
             <View style={{
-              backgroundColor: '#0B342B',
+              backgroundColor: '#032A24',
               padding: 16,
-              borderTopLeftRadius: 12,
-              borderTopRightRadius: 12,
-              margin: -20,
+              borderTopLeftRadius: 14,
+              borderTopRightRadius: 14,
+              margin: -22,
               marginBottom: 16,
               flexDirection: 'row',
               justifyContent: 'space-between',
               alignItems: 'center',
             }}>
-              <Text style={{ color: '#F7F6F1', fontSize: 18, fontWeight: '700' }}>Enrollment Successful!</Text>
-              <TouchableOpacity onPress={() => setShowSuccessModal(false)}>
-                <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 20 }}>✕</Text>
+              <Text style={{ color: '#FFFFFF', fontSize: 17, fontWeight: '700', letterSpacing: -0.3 }}>
+                Enrollment Successful!
+              </Text>
+              <TouchableOpacity onPress={() => setShowSuccessModal(false)} activeOpacity={0.7} style={{ padding: 4 }}>
+                <CloseIcon color="rgba(255,255,255,0.6)" size={20} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={{ alignItems: 'center', marginBottom: 16 }}>
                 <View style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 28,
-                  backgroundColor: 'rgba(63, 175, 115, 0.1)',
+                  width: 52,
+                  height: 52,
+                  borderRadius: 26,
+                  backgroundColor: 'rgba(63, 175, 115, 0.08)',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  borderWidth: 4,
-                  borderColor: 'rgba(63, 175, 115, 0.2)',
+                  borderWidth: 3,
+                  borderColor: 'rgba(63, 175, 115, 0.12)',
                 }}>
-                  <Text style={{ color: '#3FAF73', fontSize: 28 }}>✓</Text>
+                  <CheckIcon color="#3FAF73" size={26} />
                 </View>
-                <Text style={{ color: '#6B7280', fontSize: 12, marginTop: 8 }}>You're now covered under</Text>
-                <Text style={{ color: '#1F2937', fontSize: 18, fontWeight: '700' }}>{modalData?.planName}</Text>
+                <Text style={{ color: '#6B7280', fontSize: 11, marginTop: 6 }}>You're now covered under</Text>
+                <Text style={{ color: '#032A24', fontSize: 17, fontWeight: '700', letterSpacing: -0.3 }}>
+                  {modalData?.planName}
+                </Text>
               </View>
 
               <View style={{
                 backgroundColor: '#FAFAF7',
-                borderRadius: 8,
+                borderRadius: 10,
                 padding: 12,
                 borderWidth: 1,
-                borderColor: 'rgba(11, 52, 43, 0.06)',
+                borderColor: 'rgba(3, 42, 36, 0.04)',
                 marginBottom: 12,
               }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 12 }}>Monthly Contribution</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 12, fontWeight: '600' }}>{formatCurrency(modalData?.monthlyCost)}</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
+                  <Text style={{ color: '#6B7280', fontSize: 11 }}>Monthly Contribution</Text>
+                  <Text style={{ color: '#032A24', fontSize: 11, fontWeight: '600' }}>
+                    {formatCurrency(modalData?.monthlyCost)}
+                  </Text>
                 </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 12 }}>Coverage</Text>
-                  <Text style={{ color: '#0B342B', fontSize: 12, fontWeight: '700' }}>{formatCurrency(modalData?.coverage)}</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
+                  <Text style={{ color: '#6B7280', fontSize: 11 }}>Coverage</Text>
+                  <Text style={{ color: '#C9A44B', fontSize: 11, fontWeight: '700' }}>
+                    {formatCurrency(modalData?.coverage)}
+                  </Text>
                 </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ color: '#6B7280', fontSize: 12 }}>Transaction ID</Text>
-                  <Text style={{ color: '#6B7280', fontSize: 11, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
+                  <Text style={{ color: '#6B7280', fontSize: 11 }}>Transaction ID</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 10, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }}>
                     {modalData?.transactionId}
                   </Text>
                 </View>
               </View>
 
               <View style={{
-                backgroundColor: '#FAFAF7',
-                borderRadius: 8,
+                backgroundColor: 'rgba(201, 164, 75, 0.04)',
                 padding: 10,
+                borderRadius: 8,
                 borderWidth: 1,
-                borderColor: 'rgba(11, 52, 43, 0.06)',
+                borderColor: 'rgba(201, 164, 75, 0.06)',
                 marginBottom: 16,
               }}>
-                <Text style={{ color: '#6B7280', fontSize: 12, textAlign: 'center', fontStyle: 'italic', lineHeight: 18 }}>
+                <Text style={{ color: '#6B7280', fontSize: 11, textAlign: 'center', fontStyle: 'italic', lineHeight: 16 }}>
                   "Cooperate in righteousness and piety" — Quran 5:2
                 </Text>
               </View>
 
               <TouchableOpacity
                 style={{
-                  backgroundColor: '#0B342B',
+                  backgroundColor: '#032A24',
                   paddingVertical: 10,
-                  borderRadius: 8,
+                  borderRadius: 10,
                   alignItems: 'center',
-                  shadowColor: '#0B342B',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.2,
-                  shadowRadius: 8,
-                  elevation: 4,
                 }}
                 onPress={() => setShowSuccessModal(false)}
+                activeOpacity={0.7}
               >
-                <Text style={{ color: '#F7F6F1', fontSize: 15, fontWeight: '600' }}>Done</Text>
+                <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Done</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -1253,11 +1432,11 @@ const Takaful = () => {
 
       {/* Payment Success Modal */}
       <Modal visible={showPaymentSuccessModal} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
+            borderRadius: 18,
+            padding: 22,
             width: '100%',
             maxWidth: 400,
             maxHeight: '90%',
@@ -1265,91 +1444,95 @@ const Takaful = () => {
             <View style={{
               backgroundColor: '#3FAF73',
               padding: 16,
-              borderTopLeftRadius: 12,
-              borderTopRightRadius: 12,
-              margin: -20,
+              borderTopLeftRadius: 14,
+              borderTopRightRadius: 14,
+              margin: -22,
               marginBottom: 16,
               flexDirection: 'row',
               justifyContent: 'space-between',
               alignItems: 'center',
             }}>
-              <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700' }}>Payment Successful!</Text>
-              <TouchableOpacity onPress={() => setShowPaymentSuccessModal(false)}>
-                <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 20 }}>✕</Text>
+              <Text style={{ color: '#FFFFFF', fontSize: 17, fontWeight: '700', letterSpacing: -0.3 }}>
+                Payment Successful!
+              </Text>
+              <TouchableOpacity onPress={() => setShowPaymentSuccessModal(false)} activeOpacity={0.7} style={{ padding: 4 }}>
+                <CloseIcon color="rgba(255,255,255,0.6)" size={20} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={{ alignItems: 'center', marginBottom: 16 }}>
                 <View style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 28,
-                  backgroundColor: 'rgba(63, 175, 115, 0.1)',
+                  width: 52,
+                  height: 52,
+                  borderRadius: 26,
+                  backgroundColor: 'rgba(63, 175, 115, 0.08)',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  borderWidth: 4,
-                  borderColor: 'rgba(63, 175, 115, 0.2)',
+                  borderWidth: 3,
+                  borderColor: 'rgba(63, 175, 115, 0.12)',
                 }}>
-                  <Text style={{ color: '#3FAF73', fontSize: 28 }}>✓</Text>
+                  <CheckIcon color="#3FAF73" size={26} />
                 </View>
-                <Text style={{ color: '#6B7280', fontSize: 12, marginTop: 8 }}>Monthly contribution paid</Text>
-                <Text style={{ color: '#1F2937', fontSize: 20, fontWeight: '700' }}>{formatCurrency(paymentData?.amount)}</Text>
-                <Text style={{ color: '#6B7280', fontSize: 12 }}>{paymentData?.date}</Text>
+                <Text style={{ color: '#6B7280', fontSize: 11, marginTop: 6 }}>Monthly contribution paid</Text>
+                <Text style={{ color: '#032A24', fontSize: 20, fontWeight: '700', letterSpacing: -0.5 }}>
+                  {formatCurrency(paymentData?.amount)}
+                </Text>
+                <Text style={{ color: '#6B7280', fontSize: 11 }}>{paymentData?.date}</Text>
               </View>
 
               <View style={{
                 backgroundColor: '#FAFAF7',
-                borderRadius: 8,
+                borderRadius: 10,
                 padding: 12,
                 borderWidth: 1,
-                borderColor: 'rgba(11, 52, 43, 0.06)',
+                borderColor: 'rgba(3, 42, 36, 0.04)',
                 marginBottom: 12,
               }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 12 }}>Contribution ID</Text>
-                  <Text style={{ color: '#6B7280', fontSize: 11, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
+                  <Text style={{ color: '#6B7280', fontSize: 11 }}>Contribution ID</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 10, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }}>
                     {paymentData?.contributionId}
                   </Text>
                 </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 12 }}>Amount</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 12, fontWeight: '600' }}>{formatCurrency(paymentData?.amount)}</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
+                  <Text style={{ color: '#6B7280', fontSize: 11 }}>Amount</Text>
+                  <Text style={{ color: '#032A24', fontSize: 11, fontWeight: '600' }}>
+                    {formatCurrency(paymentData?.amount)}
+                  </Text>
                 </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ color: '#6B7280', fontSize: 12 }}>New Balance</Text>
-                  <Text style={{ color: '#0B342B', fontSize: 12, fontWeight: '700' }}>{formatCurrency(paymentData?.newBalance)}</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
+                  <Text style={{ color: '#6B7280', fontSize: 11 }}>New Balance</Text>
+                  <Text style={{ color: '#C9A44B', fontSize: 11, fontWeight: '700' }}>
+                    {formatCurrency(paymentData?.newBalance)}
+                  </Text>
                 </View>
               </View>
 
               <View style={{
-                backgroundColor: '#FAFAF7',
-                borderRadius: 8,
+                backgroundColor: 'rgba(63, 175, 115, 0.04)',
                 padding: 10,
+                borderRadius: 8,
                 borderWidth: 1,
-                borderColor: 'rgba(11, 52, 43, 0.06)',
+                borderColor: 'rgba(63, 175, 115, 0.06)',
                 marginBottom: 16,
               }}>
-                <Text style={{ color: '#6B7280', fontSize: 12, textAlign: 'center', fontStyle: 'italic', lineHeight: 18 }}>
+                <Text style={{ color: '#6B7280', fontSize: 11, textAlign: 'center', fontStyle: 'italic', lineHeight: 16 }}>
                   Your Takaful coverage remains active. Jazakallah Khair!
                 </Text>
               </View>
 
               <TouchableOpacity
                 style={{
-                  backgroundColor: '#0B342B',
+                  backgroundColor: '#032A24',
                   paddingVertical: 10,
-                  borderRadius: 8,
+                  borderRadius: 10,
                   alignItems: 'center',
-                  shadowColor: '#0B342B',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.2,
-                  shadowRadius: 8,
-                  elevation: 4,
                 }}
                 onPress={() => setShowPaymentSuccessModal(false)}
+                activeOpacity={0.7}
               >
-                <Text style={{ color: '#F7F6F1', fontSize: 15, fontWeight: '600' }}>Done</Text>
+                <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Done</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -1358,132 +1541,131 @@ const Takaful = () => {
 
       {/* Add Family Member Modal */}
       <Modal visible={showAddMember} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
+            borderRadius: 18,
+            padding: 22,
             width: '100%',
             maxWidth: 400,
             maxHeight: '90%',
           }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={{ fontSize: 16 }}>👤</Text>
-                <Text style={{ color: '#1F2937', fontSize: 18, fontWeight: '700' }}>Add Family Member</Text>
+                <UserIcon color="#032A24" size={18} />
+                <Text style={{ color: '#032A24', fontSize: 17, fontWeight: '700', letterSpacing: -0.3 }}>
+                  Add Family Member
+                </Text>
               </View>
-              <TouchableOpacity onPress={() => setShowAddMember(false)}>
-                <Text style={{ color: '#6B7280', fontSize: 20 }}>✕</Text>
+              <TouchableOpacity onPress={() => setShowAddMember(false)} activeOpacity={0.7} style={{ padding: 4 }}>
+                <CloseIcon color="#6B7280" size={20} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={{ marginBottom: 12 }}>
-                <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+                <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
                   Full Name
                 </Text>
                 <TextInput
                   style={{
                     backgroundColor: '#FAFAF7',
                     borderWidth: 1,
-                    borderColor: 'rgba(11, 52, 43, 0.12)',
+                    borderColor: 'rgba(3, 42, 36, 0.08)',
                     borderRadius: 8,
                     paddingHorizontal: 12,
                     paddingVertical: 8,
                     color: '#1F2937',
-                    fontSize: 14,
+                    fontSize: 13,
                   }}
                   value={newMember.name}
                   onChangeText={(text) => setNewMember({ ...newMember, name: text })}
                   placeholder="Enter name"
-                  placeholderTextColor="rgba(107, 114, 128, 0.5)"
+                  placeholderTextColor="#9CA3AF"
                 />
               </View>
 
               <View style={{ marginBottom: 12 }}>
-                <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+                <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
                   Relation
                 </Text>
                 <View style={{
                   backgroundColor: '#FAFAF7',
                   borderWidth: 1,
-                  borderColor: 'rgba(11, 52, 43, 0.12)',
+                  borderColor: 'rgba(3, 42, 36, 0.08)',
                   borderRadius: 8,
                   paddingHorizontal: 12,
                   paddingVertical: 6,
                 }}>
                   <TextInput
-                    style={{ color: '#1F2937', fontSize: 14, padding: 0 }}
+                    style={{ color: '#1F2937', fontSize: 13, padding: 0 }}
                     value={newMember.relation}
                     onChangeText={(text) => setNewMember({ ...newMember, relation: text })}
                     placeholder="Select relation"
-                    placeholderTextColor="rgba(107, 114, 128, 0.5)"
+                    placeholderTextColor="#9CA3AF"
                   />
                 </View>
               </View>
 
-              <View style={{ marginBottom: 12 }}>
-                <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+              <View style={{ marginBottom: 14 }}>
+                <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
                   Age
                 </Text>
                 <TextInput
                   style={{
                     backgroundColor: '#FAFAF7',
                     borderWidth: 1,
-                    borderColor: 'rgba(11, 52, 43, 0.12)',
+                    borderColor: 'rgba(3, 42, 36, 0.08)',
                     borderRadius: 8,
                     paddingHorizontal: 12,
                     paddingVertical: 8,
                     color: '#1F2937',
-                    fontSize: 14,
+                    fontSize: 13,
                   }}
                   value={newMember.age}
                   onChangeText={(text) => setNewMember({ ...newMember, age: text })}
                   placeholder="Enter age"
-                  placeholderTextColor="rgba(107, 114, 128, 0.5)"
+                  placeholderTextColor="#9CA3AF"
                   keyboardType="numeric"
                 />
               </View>
 
-              {error ? <Text style={{ color: '#DC2626', fontSize: 12, marginBottom: 8 }}>{error}</Text> : null}
+              {error ? <Text style={{ color: '#DC2626', fontSize: 11, marginBottom: 8 }}>{error}</Text> : null}
 
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 <TouchableOpacity
                   style={{
                     flex: 1,
-                    backgroundColor: '#F4F5F1',
+                    backgroundColor: '#F3F4F6',
                     paddingVertical: 10,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     alignItems: 'center',
                   }}
                   onPress={() => setShowAddMember(false)}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#6B7280', fontSize: 15, fontWeight: '500' }}>Cancel</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '500' }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={{
                     flex: 2,
-                    backgroundColor: '#0B342B',
+                    backgroundColor: '#032A24',
                     paddingVertical: 10,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     alignItems: 'center',
-                    opacity: processing ? 0.6 : 1,
-                    shadowColor: '#0B342B',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 8,
-                    elevation: 4,
+                    opacity: processing ? 0.5 : 1,
                   }}
                   onPress={handleAddMember}
                   disabled={processing}
+                  activeOpacity={0.7}
                 >
                   {processing ? (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                       <ActivityIndicator size="small" color="#FFFFFF" />
-                      <Text style={{ color: '#F7F6F1', fontSize: 15, fontWeight: '600' }}>Adding...</Text>
+                      <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Adding...</Text>
                     </View>
                   ) : (
-                    <Text style={{ color: '#F7F6F1', fontSize: 15, fontWeight: '600' }}>Add Member</Text>
+                    <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Add Member</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -1494,135 +1676,134 @@ const Takaful = () => {
 
       {/* Claim Form Modal */}
       <Modal visible={showClaimForm} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
+            borderRadius: 18,
+            padding: 22,
             width: '100%',
             maxWidth: 400,
             maxHeight: '90%',
           }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={{ fontSize: 16 }}>📄</Text>
-                <Text style={{ color: '#1F2937', fontSize: 18, fontWeight: '700' }}>File a Claim</Text>
+                <ClaimIcon color="#032A24" size={18} />
+                <Text style={{ color: '#032A24', fontSize: 17, fontWeight: '700', letterSpacing: -0.3 }}>
+                  File a Claim
+                </Text>
               </View>
-              <TouchableOpacity onPress={() => setShowClaimForm(false)}>
-                <Text style={{ color: '#6B7280', fontSize: 20 }}>✕</Text>
+              <TouchableOpacity onPress={() => setShowClaimForm(false)} activeOpacity={0.7} style={{ padding: 4 }}>
+                <CloseIcon color="#6B7280" size={20} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={{ marginBottom: 12 }}>
-                <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+                <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
                   Claim Type
                 </Text>
                 <View style={{
                   backgroundColor: '#FAFAF7',
                   borderWidth: 1,
-                  borderColor: 'rgba(11, 52, 43, 0.12)',
+                  borderColor: 'rgba(3, 42, 36, 0.08)',
                   borderRadius: 8,
                   paddingHorizontal: 12,
                   paddingVertical: 6,
                 }}>
                   <TextInput
-                    style={{ color: '#1F2937', fontSize: 14, padding: 0 }}
+                    style={{ color: '#1F2937', fontSize: 13, padding: 0 }}
                     value={claimData.type}
                     onChangeText={(text) => setClaimData({ ...claimData, type: text })}
                     placeholder="Select claim type"
-                    placeholderTextColor="rgba(107, 114, 128, 0.5)"
+                    placeholderTextColor="#9CA3AF"
                   />
                 </View>
               </View>
 
               <View style={{ marginBottom: 12 }}>
-                <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+                <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
                   Amount (KES)
                 </Text>
                 <TextInput
                   style={{
                     backgroundColor: '#FAFAF7',
                     borderWidth: 1,
-                    borderColor: 'rgba(11, 52, 43, 0.12)',
+                    borderColor: 'rgba(3, 42, 36, 0.08)',
                     borderRadius: 8,
                     paddingHorizontal: 12,
                     paddingVertical: 8,
                     color: '#1F2937',
-                    fontSize: 14,
+                    fontSize: 13,
                   }}
                   value={claimData.amount}
                   onChangeText={(text) => setClaimData({ ...claimData, amount: text })}
                   placeholder="Enter amount"
-                  placeholderTextColor="rgba(107, 114, 128, 0.5)"
+                  placeholderTextColor="#9CA3AF"
                   keyboardType="numeric"
                 />
               </View>
 
-              <View style={{ marginBottom: 12 }}>
-                <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+              <View style={{ marginBottom: 14 }}>
+                <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
                   Description
                 </Text>
                 <TextInput
                   style={{
                     backgroundColor: '#FAFAF7',
                     borderWidth: 1,
-                    borderColor: 'rgba(11, 52, 43, 0.12)',
+                    borderColor: 'rgba(3, 42, 36, 0.08)',
                     borderRadius: 8,
                     paddingHorizontal: 12,
                     paddingVertical: 8,
                     color: '#1F2937',
-                    fontSize: 14,
-                    minHeight: 80,
+                    fontSize: 13,
+                    minHeight: 70,
                     textAlignVertical: 'top',
                   }}
                   value={claimData.description}
                   onChangeText={(text) => setClaimData({ ...claimData, description: text })}
                   placeholder="Describe your claim..."
-                  placeholderTextColor="rgba(107, 114, 128, 0.5)"
+                  placeholderTextColor="#9CA3AF"
                   multiline
                 />
               </View>
 
-              {error ? <Text style={{ color: '#DC2626', fontSize: 12, marginBottom: 8 }}>{error}</Text> : null}
+              {error ? <Text style={{ color: '#DC2626', fontSize: 11, marginBottom: 8 }}>{error}</Text> : null}
 
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 <TouchableOpacity
                   style={{
                     flex: 1,
-                    backgroundColor: '#F4F5F1',
+                    backgroundColor: '#F3F4F6',
                     paddingVertical: 10,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     alignItems: 'center',
                   }}
                   onPress={() => setShowClaimForm(false)}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#6B7280', fontSize: 15, fontWeight: '500' }}>Cancel</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '500' }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={{
                     flex: 2,
-                    backgroundColor: '#0B342B',
+                    backgroundColor: '#032A24',
                     paddingVertical: 10,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     alignItems: 'center',
-                    opacity: processing ? 0.6 : 1,
-                    shadowColor: '#0B342B',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 8,
-                    elevation: 4,
+                    opacity: processing ? 0.5 : 1,
                   }}
                   onPress={handleSubmitClaim}
                   disabled={processing}
+                  activeOpacity={0.7}
                 >
                   {processing ? (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                       <ActivityIndicator size="small" color="#FFFFFF" />
-                      <Text style={{ color: '#F7F6F1', fontSize: 15, fontWeight: '600' }}>Submitting...</Text>
+                      <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Submitting...</Text>
                     </View>
                   ) : (
-                    <Text style={{ color: '#F7F6F1', fontSize: 15, fontWeight: '600' }}>Submit Claim</Text>
+                    <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Submit Claim</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -1635,28 +1816,28 @@ const Takaful = () => {
       {success ? (
         <View style={{
           position: 'absolute',
-          top: 60,
+          top: Platform.OS === 'ios' ? 60 : 40,
           right: 16,
           left: 16,
-          backgroundColor: '#0B342B',
+          backgroundColor: '#032A24',
           paddingHorizontal: 16,
           paddingVertical: 12,
           borderRadius: 12,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          shadowColor: '#0B342B',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          elevation: 4,
+          shadowColor: '#032A24',
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.2,
+          shadowRadius: 16,
+          elevation: 8,
         }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text style={{ color: '#C9A44B', fontSize: 16 }}>✓</Text>
-            <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '500', flex: 1 }}>{success}</Text>
+            <CheckIcon color="#C9A44B" size={16} />
+            <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '500', flex: 1 }}>{success}</Text>
           </View>
-          <TouchableOpacity onPress={() => setSuccess('')}>
-            <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 16 }}>✕</Text>
+          <TouchableOpacity onPress={() => setSuccess('')} activeOpacity={0.7} style={{ padding: 4 }}>
+            <CloseIcon color="rgba(255,255,255,0.5)" size={16} />
           </TouchableOpacity>
         </View>
       ) : null}

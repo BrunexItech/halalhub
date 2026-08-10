@@ -8,8 +8,55 @@ import {
   Image,
   ActivityIndicator,
   Platform,
+  Dimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import Svg, { Path, Circle, Rect } from 'react-native-svg';
+
+const { width } = Dimensions.get('window');
+
+// Professional SVG Icons
+const BackIcon = ({ color = '#032A24', size = 24 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M15 18L9 12L15 6" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const ShieldIcon = ({ color = '#C9A44B', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M12 3L5 7V12C5 15.866 8.13401 19 12 19C15.866 19 19 15.866 19 12V7L12 3Z" stroke={color} strokeWidth="1.5" strokeLinejoin="round"/>
+    <Path d="M9 12L11 14L15 10" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const TargetIcon = ({ color = '#C9A44B', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.5"/>
+    <Circle cx="12" cy="12" r="6" stroke={color} strokeWidth="1.5"/>
+    <Circle cx="12" cy="12" r="2" fill={color}/>
+  </Svg>
+);
+
+const GlobeIcon = ({ color = '#C9A44B', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.5"/>
+    <Path d="M2 12H22" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <Path d="M12 2C14.5 5.5 14.5 18.5 12 22" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <Path d="M12 2C9.5 5.5 9.5 18.5 12 22" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </Svg>
+);
+
+const HeartIcon = ({ color = '#C9A44B', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M12 21.35L10.55 20.03C5.4 15.36 2 12.28 2 8.5C2 5.42 4.42 3 7.5 3C9.24 3 10.91 3.81 12 5.09C13.09 3.81 14.76 3 16.5 3C19.58 3 22 5.42 22 8.5C22 12.28 18.6 15.36 13.45 20.04L12 21.35Z" stroke={color} strokeWidth="1.5"/>
+  </Svg>
+);
+
+const StarIcon = ({ color = '#C9A44B', size = 14 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke={color} strokeWidth="1.5" strokeLinejoin="round"/>
+  </Svg>
+);
 
 const About = () => {
   const navigation = useNavigation();
@@ -66,8 +113,8 @@ const About = () => {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <ActivityIndicator size="large" color="#C9A44B" />
-          <Text style={{ color: '#6B7280', marginTop: 12, fontSize: 14 }}>Loading...</Text>
+          <ActivityIndicator size="large" color="#032A24" />
+          <Text style={{ color: '#6B7280', marginTop: 16, fontSize: 14 }}>Loading...</Text>
         </View>
       </SafeAreaView>
     );
@@ -76,111 +123,145 @@ const About = () => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
       <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+        contentContainerStyle={{
+          paddingTop: Platform.OS === 'ios' ? 8 : 12,
+          paddingHorizontal: 20,
+          paddingBottom: 40,
+        }}
         showsVerticalScrollIndicator={false}
       >
         <View style={{ maxWidth: 800, width: '100%', alignSelf: 'center' }}>
+          {/* Premium Navigation Header */}
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: 24,
+            paddingBottom: 16,
+            borderBottomWidth: 1,
+            borderBottomColor: 'rgba(3, 42, 36, 0.04)',
+          }}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              activeOpacity={0.7}
+              style={{
+                padding: 8,
+                marginRight: 12,
+                marginLeft: -8,
+                borderRadius: 10,
+              }}
+            >
+              <BackIcon color="#032A24" size={24} />
+            </TouchableOpacity>
+
+            <View style={{ flex: 1 }}>
+              <Text style={{
+                color: '#032A24',
+                fontSize: 18,
+                fontWeight: '600',
+                letterSpacing: -0.3,
+              }}>
+                About Itqaan
+              </Text>
+              <Text style={{
+                color: '#8B8A86',
+                fontSize: 12,
+                letterSpacing: 0.2,
+              }}>
+                Islamic Digital Ecosystem
+              </Text>
+            </View>
+
+            {/* Gold accent dot */}
+            <View style={{
+              width: 6,
+              height: 6,
+              borderRadius: 3,
+              backgroundColor: '#C9A44B',
+              opacity: 0.4,
+            }} />
+          </View>
+
           {/* Hero Section */}
           <View style={{
             backgroundColor: '#032A24',
-            borderRadius: 16,
-            padding: 20,
-            marginBottom: 16,
+            borderRadius: 20,
+            padding: 24,
+            marginBottom: 28,
             overflow: 'hidden',
             borderWidth: 1,
-            borderColor: 'rgba(201, 164, 75, 0.2)',
-            shadowColor: '#000',
+            borderColor: 'rgba(201, 164, 75, 0.15)',
+            shadowColor: '#032A24',
             shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.1,
-            shadowRadius: 8,
+            shadowOpacity: 0.08,
+            shadowRadius: 16,
             elevation: 4,
           }}>
-            <View style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, backgroundColor: 'rgba(201, 164, 75, 0.05)', borderRadius: 999 }} />
-            <View style={{ position: 'absolute', bottom: -30, left: -30, width: 80, height: 80, backgroundColor: 'rgba(201, 164, 75, 0.05)', borderRadius: 999 }} />
-            <View style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: [{ translateX: -150 }, { translateY: -150 }],
-              width: 300,
-              height: 300,
-              borderWidth: 1,
-              borderColor: 'rgba(201, 164, 75, 0.1)',
-              borderRadius: 999,
-            }} />
+            {/* Decorative elements */}
+            <View style={{ position: 'absolute', top: -60, right: -60, width: 160, height: 160, backgroundColor: 'rgba(201, 164, 75, 0.03)', borderRadius: 999 }} />
+            <View style={{ position: 'absolute', bottom: -40, left: -40, width: 100, height: 100, backgroundColor: 'rgba(201, 164, 75, 0.03)', borderRadius: 999 }} />
 
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-              <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <Image
-                    source={require('../../../assets/itqaan_logo.png')}
-                    style={{ height: 20, width: 60 }}
-                    resizeMode="contain"
-                  />
-                  <Text style={{ color: 'rgba(183, 192, 186, 0.7)', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1 }}>
-                    About Itqaan
-                  </Text>
-                  <View style={{ width: 1, height: 12, backgroundColor: 'rgba(201, 164, 75, 0.2)' }} />
-                  <Text style={{ color: '#C9A44B', fontSize: 10, fontWeight: '500' }}>Islamic Digital Ecosystem</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <View style={{ flex: 1, marginRight: 16 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                  <View style={{
+                    backgroundColor: 'rgba(201, 164, 75, 0.15)',
+                    paddingHorizontal: 12,
+                    paddingVertical: 4,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: 'rgba(201, 164, 75, 0.2)',
+                  }}>
+                    <Text style={{ color: '#C9A44B', fontSize: 10, fontWeight: '600', letterSpacing: 0.5 }}>
+                      Islamic Digital Ecosystem
+                    </Text>
+                  </View>
                 </View>
-                <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '700' }}>
+
+                <Text style={{
+                  color: '#FFFFFF',
+                  fontSize: 26,
+                  fontWeight: '700',
+                  letterSpacing: -0.5,
+                  marginBottom: 4,
+                }}>
                   Technology That Serves
                 </Text>
-                <Text style={{ color: '#C9A44B', fontSize: 18, fontWeight: '700' }}>
+                <Text style={{
+                  color: '#C9A44B',
+                  fontSize: 18,
+                  fontWeight: '600',
+                  letterSpacing: -0.3,
+                  marginBottom: 12,
+                }}>
                   Faith, Community & Everyday Life
                 </Text>
-                <Text style={{ color: 'rgba(183, 192, 186, 0.7)', fontSize: 14, marginTop: 6, maxWidth: 400, lineHeight: 20 }}>
+
+                <Text style={{
+                  color: 'rgba(255,255,255,0.6)',
+                  fontSize: 14,
+                  lineHeight: 22,
+                  maxWidth: 500,
+                }}>
                   Itqaan is a complete Islamic digital ecosystem designed to help Muslims access
                   trusted financial services, charitable solutions, travel experiences, and everyday
                   digital tools in one connected platform.
                 </Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-                  <TouchableOpacity
-                    style={{
-                      backgroundColor: '#C9A44B',
-                      paddingHorizontal: 16,
-                      paddingVertical: 8,
-                      borderRadius: 8,
-                      shadowColor: '#C9A44B',
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.2,
-                      shadowRadius: 8,
-                      elevation: 4,
-                    }}
-                    onPress={() => navigation.navigate('RegisterRole' as never)}
-                  >
-                    <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '700' }}>Explore Itqaan</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={{
-                      backgroundColor: 'rgba(255,255,255,0.1)',
-                      paddingHorizontal: 16,
-                      paddingVertical: 8,
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      borderColor: 'rgba(201, 164, 75, 0.3)',
-                    }}
-                  >
-                    <Text style={{ color: '#F7F6F1', fontSize: 13, fontWeight: '600' }}>Our Mission</Text>
-                  </TouchableOpacity>
-                </View>
               </View>
+
+              {/* Logo Badge */}
               <View style={{
-                width: 64,
-                height: 64,
-                borderRadius: 14,
-                backgroundColor: '#C9A44B',
+                width: 72,
+                height: 72,
+                borderRadius: 18,
+                backgroundColor: 'rgba(201, 164, 75, 0.12)',
                 alignItems: 'center',
                 justifyContent: 'center',
-                shadowColor: '#C9A44B',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 12,
-                elevation: 8,
+                borderWidth: 1,
+                borderColor: 'rgba(201, 164, 75, 0.2)',
               }}>
                 <Image
                   source={require('../../../assets/itqaan_logo.png')}
-                  style={{ height: 36, width: 36 }}
+                  style={{ height: 40, width: 40 }}
                   resizeMode="contain"
                 />
               </View>
@@ -188,145 +269,257 @@ const About = () => {
           </View>
 
           {/* Why Itqaan Exists */}
-          <View style={{ alignItems: 'center', marginBottom: 20 }}>
-            <Text style={{ color: '#C9A44B', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1 }}>
-              Why Itqaan Exists
-            </Text>
-            <Text style={{ color: '#1F2937', fontSize: 18, fontWeight: '700', marginTop: 4, textAlign: 'center' }}>
-              The Muslim Digital Experience Should Not Be Fragmented
-            </Text>
-            <View style={{
-              width: 48,
-              height: 2,
-              backgroundColor: '#C9A44B',
-              borderRadius: 999,
-              marginTop: 8,
-            }} />
-            <Text style={{ color: '#6B7280', fontSize: 14, marginTop: 10, textAlign: 'center', lineHeight: 20, maxWidth: 500 }}>
-              Muslims today often rely on many disconnected platforms for payments, giving, travel,
-              community support, and everyday services. Itqaan brings these essential services
-              together into one connected ecosystem designed around Islamic values.
-            </Text>
+          <View style={{ marginBottom: 28 }}>
+            <View style={{ alignItems: 'center' }}>
+              <View style={{
+                backgroundColor: 'rgba(201, 164, 75, 0.08)',
+                paddingHorizontal: 12,
+                paddingVertical: 4,
+                borderRadius: 12,
+                marginBottom: 8,
+              }}>
+                <Text style={{ color: '#C9A44B', fontSize: 10, fontWeight: '600', letterSpacing: 0.5 }}>
+                  Why Itqaan Exists
+                </Text>
+              </View>
+              <Text style={{
+                color: '#032A24',
+                fontSize: 22,
+                fontWeight: '700',
+                textAlign: 'center',
+                letterSpacing: -0.3,
+                marginBottom: 6,
+              }}>
+                The Muslim Digital Experience Should Not Be Fragmented
+              </Text>
+              <View style={{
+                width: 40,
+                height: 2,
+                backgroundColor: '#C9A44B',
+                borderRadius: 1,
+                marginBottom: 12,
+              }} />
+              <Text style={{
+                color: '#6B7280',
+                fontSize: 14,
+                textAlign: 'center',
+                lineHeight: 22,
+                maxWidth: 500,
+              }}>
+                Muslims today often rely on many disconnected platforms for payments, giving, travel,
+                community support, and everyday services. Itqaan brings these essential services
+                together into one connected ecosystem designed around Islamic values.
+              </Text>
+            </View>
           </View>
 
           {/* Mission, Vision, Purpose */}
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginBottom: 28 }}>
             {[
-              { number: '1', title: 'Our Mission', desc: 'To build technology that respects Islamic values, connects communities, and makes essential services more accessible to Muslims everywhere.' },
-              { number: '2', title: 'Our Vision', desc: 'A world where Muslims can access trusted, meaningful, and Sharia-conscious digital services through one connected ecosystem.' },
-              { number: '3', title: 'Our Purpose', desc: 'Technology is the tool. The purpose is to make meaningful services more accessible, transparent, and connected for the Muslim community.' },
+              { icon: ShieldIcon, title: 'Our Mission', desc: 'To build technology that respects Islamic values, connects communities, and makes essential services more accessible to Muslims everywhere.' },
+              { icon: TargetIcon, title: 'Our Vision', desc: 'A world where Muslims can access trusted, meaningful, and Sharia-conscious digital services through one connected ecosystem.' },
+              { icon: HeartIcon, title: 'Our Purpose', desc: 'Technology is the tool. The purpose is to make meaningful services more accessible, transparent, and connected for the Muslim community.' },
             ].map((item, index) => (
               <View key={index} style={{
                 flex: 1,
-                minWidth: 140,
+                minWidth: 160,
                 backgroundColor: '#FFFFFF',
-                borderRadius: 12,
-                padding: 16,
+                borderRadius: 16,
+                padding: 18,
                 borderWidth: 1,
-                borderColor: 'rgba(201, 164, 75, 0.2)',
-                shadowColor: '#000',
+                borderColor: 'rgba(201, 164, 75, 0.08)',
+                shadowColor: '#032A24',
                 shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.04,
-                shadowRadius: 4,
+                shadowOpacity: 0.02,
+                shadowRadius: 8,
                 elevation: 1,
               }}>
                 <View style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 10,
-                  backgroundColor: 'rgba(201, 164, 75, 0.2)',
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  backgroundColor: 'rgba(201, 164, 75, 0.08)',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  marginBottom: 10,
                   borderWidth: 1,
-                  borderColor: 'rgba(201, 164, 75, 0.2)',
-                  marginBottom: 8,
+                  borderColor: 'rgba(201, 164, 75, 0.08)',
                 }}>
-                  <Text style={{ color: '#C9A44B', fontSize: 16, fontWeight: '700' }}>{item.number}</Text>
+                  <item.icon color="#C9A44B" size={20} />
                 </View>
-                <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '700', marginBottom: 4 }}>{item.title}</Text>
-                <Text style={{ color: '#6B7280', fontSize: 12, lineHeight: 16 }}>{item.desc}</Text>
+                <Text style={{
+                  color: '#032A24',
+                  fontSize: 15,
+                  fontWeight: '600',
+                  marginBottom: 4,
+                  letterSpacing: -0.2,
+                }}>
+                  {item.title}
+                </Text>
+                <Text style={{
+                  color: '#6B7280',
+                  fontSize: 12,
+                  lineHeight: 18,
+                }}>
+                  {item.desc}
+                </Text>
               </View>
             ))}
           </View>
 
           {/* Ecosystem */}
-          <View style={{ marginBottom: 20 }}>
-            <View style={{ alignItems: 'center', marginBottom: 14 }}>
-              <Text style={{ color: '#C9A44B', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1 }}>
-                One Connected Platform
-              </Text>
-              <Text style={{ color: '#1F2937', fontSize: 18, fontWeight: '700', marginTop: 4 }}>The Itqaan Ecosystem</Text>
-              <View style={{
-                width: 48,
-                height: 2,
-                backgroundColor: '#C9A44B',
-                borderRadius: 999,
-                marginTop: 8,
-              }} />
-              <Text style={{ color: '#6B7280', fontSize: 14, marginTop: 8, textAlign: 'center', maxWidth: 400 }}>
-                All the services you need, designed for the Muslim community, in one trusted place.
-              </Text>
+          <View style={{ marginBottom: 28 }}>
+            <View style={{ marginBottom: 16 }}>
+              <View style={{ alignItems: 'center' }}>
+                <View style={{
+                  backgroundColor: 'rgba(201, 164, 75, 0.08)',
+                  paddingHorizontal: 12,
+                  paddingVertical: 4,
+                  borderRadius: 12,
+                  marginBottom: 6,
+                }}>
+                  <Text style={{ color: '#C9A44B', fontSize: 10, fontWeight: '600', letterSpacing: 0.5 }}>
+                    One Connected Platform
+                  </Text>
+                </View>
+                <Text style={{
+                  color: '#032A24',
+                  fontSize: 22,
+                  fontWeight: '700',
+                  letterSpacing: -0.3,
+                }}>
+                  The Itqaan Ecosystem
+                </Text>
+                <View style={{
+                  width: 40,
+                  height: 2,
+                  backgroundColor: '#C9A44B',
+                  borderRadius: 1,
+                  marginTop: 6,
+                }} />
+                <Text style={{
+                  color: '#6B7280',
+                  fontSize: 14,
+                  textAlign: 'center',
+                  marginTop: 8,
+                  maxWidth: 400,
+                }}>
+                  All the services you need, designed for the Muslim community, in one trusted place.
+                </Text>
+              </View>
             </View>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+
+            <View style={{
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              gap: 10,
+            }}>
               {ecosystemServices.map((service, index) => (
                 <View key={index} style={{
                   flex: 1,
-                  minWidth: 90,
+                  minWidth: 100,
+                  maxWidth: (width - 40 - 20) / 3,
                   backgroundColor: '#FFFFFF',
-                  borderRadius: 8,
-                  padding: 10,
+                  borderRadius: 12,
+                  padding: 12,
                   borderWidth: 1,
-                  borderColor: 'rgba(201, 164, 75, 0.15)',
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.04,
+                  borderColor: 'rgba(201, 164, 75, 0.06)',
+                  alignItems: 'center',
+                  shadowColor: '#032A24',
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.02,
                   shadowRadius: 4,
                   elevation: 1,
-                  alignItems: 'center',
                 }}>
-                  <Text style={{ color: '#1F2937', fontSize: 12, fontWeight: '600', textAlign: 'center' }}>{service.name}</Text>
-                  <Text style={{ color: '#6B7280', fontSize: 10, textAlign: 'center', marginTop: 2 }}>{service.description}</Text>
+                  <Text style={{
+                    color: '#032A24',
+                    fontSize: 11,
+                    fontWeight: '600',
+                    textAlign: 'center',
+                    letterSpacing: 0.1,
+                  }}>
+                    {service.name}
+                  </Text>
+                  <Text style={{
+                    color: '#8B8A86',
+                    fontSize: 9,
+                    textAlign: 'center',
+                    marginTop: 2,
+                  }}>
+                    {service.description}
+                  </Text>
                 </View>
               ))}
             </View>
           </View>
 
           {/* Values */}
-          <View style={{ marginBottom: 20 }}>
-            <View style={{ alignItems: 'center', marginBottom: 14 }}>
-              <Text style={{ color: '#C9A44B', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1 }}>
-                Guided by Principles
-              </Text>
-              <Text style={{ color: '#1F2937', fontSize: 18, fontWeight: '700', marginTop: 4 }}>Our Values</Text>
-              <View style={{
-                width: 48,
-                height: 2,
-                backgroundColor: '#C9A44B',
-                borderRadius: 999,
-                marginTop: 8,
-              }} />
+          <View style={{ marginBottom: 28 }}>
+            <View style={{ marginBottom: 16 }}>
+              <View style={{ alignItems: 'center' }}>
+                <View style={{
+                  backgroundColor: 'rgba(201, 164, 75, 0.08)',
+                  paddingHorizontal: 12,
+                  paddingVertical: 4,
+                  borderRadius: 12,
+                  marginBottom: 6,
+                }}>
+                  <Text style={{ color: '#C9A44B', fontSize: 10, fontWeight: '600', letterSpacing: 0.5 }}>
+                    Guided by Principles
+                  </Text>
+                </View>
+                <Text style={{
+                  color: '#032A24',
+                  fontSize: 22,
+                  fontWeight: '700',
+                  letterSpacing: -0.3,
+                }}>
+                  Our Values
+                </Text>
+                <View style={{
+                  width: 40,
+                  height: 2,
+                  backgroundColor: '#C9A44B',
+                  borderRadius: 1,
+                  marginTop: 6,
+                }} />
+              </View>
             </View>
+
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
               {values.map((value, index) => (
                 <View key={index} style={{
                   flex: 1,
-                  minWidth: 140,
+                  minWidth: 150,
                   backgroundColor: '#FFFFFF',
-                  borderRadius: 12,
-                  padding: 14,
+                  borderRadius: 16,
+                  padding: 16,
                   borderWidth: 1,
-                  borderColor: 'rgba(201, 164, 75, 0.15)',
-                  shadowColor: '#000',
+                  borderColor: 'rgba(201, 164, 75, 0.06)',
+                  shadowColor: '#032A24',
                   shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.04,
-                  shadowRadius: 4,
+                  shadowOpacity: 0.02,
+                  shadowRadius: 8,
                   elevation: 1,
                 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                    <Text style={{ color: '#C9A44B', fontSize: 14 }}>★</Text>
-                    <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '700' }}>{value.title}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                    <StarIcon color="#C9A44B" size={14} />
+                    <Text style={{
+                      color: '#032A24',
+                      fontSize: 14,
+                      fontWeight: '600',
+                      letterSpacing: -0.2,
+                    }}>
+                      {value.title}
+                    </Text>
                   </View>
-                  <Text style={{ color: '#6B7280', fontSize: 12, lineHeight: 16 }}>{value.description}</Text>
+                  <Text style={{
+                    color: '#6B7280',
+                    fontSize: 12,
+                    lineHeight: 18,
+                  }}>
+                    {value.description}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -334,19 +527,43 @@ const About = () => {
 
           {/* Sharia-Conscious Design */}
           <View style={{
-            backgroundColor: 'rgba(201, 164, 75, 0.08)',
-            borderRadius: 12,
-            padding: 16,
+            backgroundColor: 'rgba(201, 164, 75, 0.04)',
+            borderRadius: 16,
+            padding: 18,
             borderWidth: 1,
-            borderColor: 'rgba(201, 164, 75, 0.2)',
-            marginBottom: 20,
+            borderColor: 'rgba(201, 164, 75, 0.1)',
+            marginBottom: 28,
           }}>
             <View style={{ alignItems: 'center' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={{ fontSize: 16 }}>🛡️</Text>
-                <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '700' }}>Designed with Islamic Principles in Mind</Text>
+              <View style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                backgroundColor: 'rgba(201, 164, 75, 0.08)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 8,
+                borderWidth: 1,
+                borderColor: 'rgba(201, 164, 75, 0.08)',
+              }}>
+                <ShieldIcon color="#C9A44B" size={22} />
               </View>
-              <Text style={{ color: '#6B7280', fontSize: 13, textAlign: 'center', marginTop: 6, lineHeight: 18 }}>
+              <Text style={{
+                color: '#032A24',
+                fontSize: 15,
+                fontWeight: '600',
+                letterSpacing: -0.2,
+              }}>
+                Designed with Islamic Principles in Mind
+              </Text>
+              <Text style={{
+                color: '#6B7280',
+                fontSize: 13,
+                textAlign: 'center',
+                marginTop: 4,
+                lineHeight: 20,
+                maxWidth: 500,
+              }}>
                 Itqaan is built to be Sharia-conscious, transparent, and responsible. Every service is
                 designed with care for Islamic values, encouraging users to consult qualified professionals
                 for specific religious or legal guidance when needed.
@@ -355,37 +572,59 @@ const About = () => {
           </View>
 
           {/* Global Community */}
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginBottom: 28 }}>
             <View style={{ flex: 1, minWidth: 200 }}>
-              <Text style={{ color: '#C9A44B', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1 }}>
-                For Muslims Worldwide
-              </Text>
-              <Text style={{ color: '#1F2937', fontSize: 18, fontWeight: '700', marginTop: 4 }}>A Global Community</Text>
               <View style={{
-                width: 48,
+                backgroundColor: 'rgba(201, 164, 75, 0.08)',
+                paddingHorizontal: 12,
+                paddingVertical: 4,
+                borderRadius: 12,
+                alignSelf: 'flex-start',
+                marginBottom: 6,
+              }}>
+                <Text style={{ color: '#C9A44B', fontSize: 10, fontWeight: '600', letterSpacing: 0.5 }}>
+                  For Muslims Worldwide
+                </Text>
+              </View>
+              <Text style={{
+                color: '#032A24',
+                fontSize: 22,
+                fontWeight: '700',
+                letterSpacing: -0.3,
+                marginBottom: 4,
+              }}>
+                A Global Community
+              </Text>
+              <View style={{
+                width: 40,
                 height: 2,
                 backgroundColor: '#C9A44B',
-                borderRadius: 999,
-                marginTop: 8,
+                borderRadius: 1,
+                marginBottom: 10,
               }} />
-              <Text style={{ color: '#6B7280', fontSize: 14, marginTop: 10, lineHeight: 20 }}>
+              <Text style={{
+                color: '#6B7280',
+                fontSize: 14,
+                lineHeight: 22,
+              }}>
                 Itqaan is not limited by borders. Muslims around the world have different cultures,
                 languages, and needs. Our platform is designed to serve Muslims across different regions
                 while respecting local realities.
               </Text>
             </View>
+
             <View style={{
               flex: 1,
-              minWidth: 150,
+              minWidth: 160,
               backgroundColor: '#FFFFFF',
-              borderRadius: 12,
-              padding: 16,
+              borderRadius: 16,
+              padding: 18,
               borderWidth: 1,
-              borderColor: 'rgba(201, 164, 75, 0.2)',
-              shadowColor: '#000',
+              borderColor: 'rgba(201, 164, 75, 0.06)',
+              shadowColor: '#032A24',
               shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.04,
-              shadowRadius: 4,
+              shadowOpacity: 0.02,
+              shadowRadius: 8,
               elevation: 1,
             }}>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
@@ -398,21 +637,29 @@ const About = () => {
                   <View key={index} style={{
                     flex: 1,
                     minWidth: 60,
-                    backgroundColor: 'rgba(11, 52, 43, 0.03)',
+                    backgroundColor: '#FAFAF7',
                     padding: 10,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     borderWidth: 1,
-                    borderColor: 'rgba(201, 164, 75, 0.1)',
+                    borderColor: 'rgba(3, 42, 36, 0.04)',
                     alignItems: 'center',
                   }}>
                     <Text style={{
-                      color: item.color || '#0B342B',
+                      color: item.color || '#032A24',
                       fontSize: 18,
                       fontWeight: '700',
+                      letterSpacing: -0.3,
                     }}>
                       {item.value}
                     </Text>
-                    <Text style={{ color: '#6B7280', fontSize: 10, textAlign: 'center' }}>{item.label}</Text>
+                    <Text style={{
+                      color: '#6B7280',
+                      fontSize: 10,
+                      textAlign: 'center',
+                      marginTop: 2,
+                    }}>
+                      {item.label}
+                    </Text>
                   </View>
                 ))}
               </View>
@@ -422,56 +669,94 @@ const About = () => {
           {/* What Makes Us Different */}
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 12,
-            padding: 16,
+            borderRadius: 16,
+            padding: 20,
             borderWidth: 1,
-            borderColor: 'rgba(201, 164, 75, 0.2)',
-            shadowColor: '#000',
+            borderColor: 'rgba(201, 164, 75, 0.06)',
+            shadowColor: '#032A24',
             shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.04,
-            shadowRadius: 4,
+            shadowOpacity: 0.02,
+            shadowRadius: 8,
             elevation: 1,
-            marginBottom: 20,
+            marginBottom: 28,
           }}>
-            <View style={{ alignItems: 'center', marginBottom: 12 }}>
-              <Text style={{ color: '#C9A44B', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1 }}>
-                What Makes Us Different
-              </Text>
-              <Text style={{ color: '#1F2937', fontSize: 18, fontWeight: '700', marginTop: 4 }}>Built for the Muslim Community</Text>
+            <View style={{ alignItems: 'center', marginBottom: 14 }}>
               <View style={{
-                width: 48,
+                backgroundColor: 'rgba(201, 164, 75, 0.08)',
+                paddingHorizontal: 12,
+                paddingVertical: 4,
+                borderRadius: 12,
+                marginBottom: 6,
+              }}>
+                <Text style={{ color: '#C9A44B', fontSize: 10, fontWeight: '600', letterSpacing: 0.5 }}>
+                  What Makes Us Different
+                </Text>
+              </View>
+              <Text style={{
+                color: '#032A24',
+                fontSize: 20,
+                fontWeight: '700',
+                letterSpacing: -0.3,
+              }}>
+                Built for the Muslim Community
+              </Text>
+              <View style={{
+                width: 40,
                 height: 2,
                 backgroundColor: '#C9A44B',
-                borderRadius: 999,
-                marginTop: 8,
+                borderRadius: 1,
+                marginTop: 6,
               }} />
             </View>
+
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
               <View style={{
                 flex: 1,
-                minWidth: 150,
+                minWidth: 160,
                 backgroundColor: '#FAFAF7',
-                padding: 12,
-                borderRadius: 8,
+                padding: 14,
+                borderRadius: 12,
                 borderWidth: 1,
-                borderColor: 'rgba(201, 164, 75, 0.15)',
+                borderColor: 'rgba(201, 164, 75, 0.06)',
               }}>
-                <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>Not a Generic Platform</Text>
-                <Text style={{ color: '#6B7280', fontSize: 12, marginTop: 2, lineHeight: 16 }}>
+                <Text style={{
+                  color: '#032A24',
+                  fontSize: 14,
+                  fontWeight: '600',
+                  marginBottom: 4,
+                }}>
+                  Not a Generic Platform
+                </Text>
+                <Text style={{
+                  color: '#6B7280',
+                  fontSize: 12,
+                  lineHeight: 18,
+                }}>
                   Itqaan is designed around the needs and values of the Muslim community from the beginning — not a generic platform with Islamic features added later.
                 </Text>
               </View>
               <View style={{
                 flex: 1,
-                minWidth: 150,
+                minWidth: 160,
                 backgroundColor: '#FAFAF7',
-                padding: 12,
-                borderRadius: 8,
+                padding: 14,
+                borderRadius: 12,
                 borderWidth: 1,
-                borderColor: 'rgba(201, 164, 75, 0.15)',
+                borderColor: 'rgba(201, 164, 75, 0.06)',
               }}>
-                <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>Connected Ecosystem</Text>
-                <Text style={{ color: '#6B7280', fontSize: 12, marginTop: 2, lineHeight: 16 }}>
+                <Text style={{
+                  color: '#032A24',
+                  fontSize: 14,
+                  fontWeight: '600',
+                  marginBottom: 4,
+                }}>
+                  Connected Ecosystem
+                </Text>
+                <Text style={{
+                  color: '#6B7280',
+                  fontSize: 12,
+                  lineHeight: 18,
+                }}>
                   Unlike disconnected services, Itqaan brings financial tools, charitable solutions, travel services, and everyday digital experiences into one trusted platform.
                 </Text>
               </View>
@@ -481,81 +766,61 @@ const About = () => {
           {/* The Future */}
           <View style={{
             backgroundColor: '#032A24',
-            borderRadius: 12,
-            padding: 16,
+            borderRadius: 16,
+            padding: 20,
             borderWidth: 1,
-            borderColor: 'rgba(201, 164, 75, 0.2)',
+            borderColor: 'rgba(201, 164, 75, 0.12)',
             alignItems: 'center',
-            marginBottom: 20,
+            marginBottom: 28,
           }}>
-            <Text style={{ fontSize: 20, color: '#C9A44B' }}>🌿</Text>
-            <Text style={{ color: '#F7F6F1', fontSize: 15, fontWeight: '700', marginTop: 6 }}>Continuously Evolving</Text>
-            <Text style={{ color: 'rgba(183, 192, 186, 0.7)', fontSize: 13, textAlign: 'center', marginTop: 4, maxWidth: 400, lineHeight: 18 }}>
+            <View style={{
+              width: 44,
+              height: 44,
+              borderRadius: 12,
+              backgroundColor: 'rgba(201, 164, 75, 0.1)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 8,
+              borderWidth: 1,
+              borderColor: 'rgba(201, 164, 75, 0.1)',
+            }}>
+              <GlobeIcon color="#C9A44B" size={22} />
+            </View>
+            <Text style={{
+              color: '#FFFFFF',
+              fontSize: 17,
+              fontWeight: '700',
+              letterSpacing: -0.2,
+            }}>
+              Continuously Evolving
+            </Text>
+            <Text style={{
+              color: 'rgba(255,255,255,0.6)',
+              fontSize: 13,
+              textAlign: 'center',
+              marginTop: 4,
+              maxWidth: 400,
+              lineHeight: 20,
+            }}>
               The ecosystem grows as the needs of the community grow. Itqaan is committed to
               expanding its services, reaching more communities, and building trusted partnerships
               across the globe.
             </Text>
           </View>
 
-          {/* Call to Action */}
-          <View style={{
-            backgroundColor: '#032A24',
-            borderRadius: 16,
-            padding: 20,
-            alignItems: 'center',
-            borderWidth: 1,
-            borderColor: 'rgba(201, 164, 75, 0.3)',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.1,
-            shadowRadius: 8,
-            elevation: 4,
-          }}>
-            <Text style={{ color: '#F7F6F1', fontSize: 18, fontWeight: '700' }}>Join the Itqaan Community</Text>
-            <Text style={{ color: 'rgba(183, 192, 186, 0.7)', fontSize: 14, marginTop: 4, textAlign: 'center', maxWidth: 400, lineHeight: 20 }}>
-              Explore the ecosystem and discover how Itqaan can serve your needs.
-            </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
-              <TouchableOpacity
-                style={{
-                  backgroundColor: '#C9A44B',
-                  paddingHorizontal: 20,
-                  paddingVertical: 10,
-                  borderRadius: 8,
-                  shadowColor: '#C9A44B',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.2,
-                  shadowRadius: 8,
-                  elevation: 4,
-                }}
-                onPress={() => navigation.navigate('RegisterRole' as never)}
-              >
-                <Text style={{ color: '#032A24', fontSize: 14, fontWeight: '700' }}>Explore the Ecosystem</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={{
-                  backgroundColor: 'rgba(255,255,255,0.1)',
-                  paddingHorizontal: 20,
-                  paddingVertical: 10,
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  borderColor: 'rgba(201, 164, 75, 0.3)',
-                }}
-                onPress={() => navigation.navigate('Dashboard' as never)}
-              >
-                <Text style={{ color: '#F7F6F1', fontSize: 14, fontWeight: '600' }}>Discover Itqaan</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
           {/* Footer */}
-          <View style={{ alignItems: 'center', marginTop: 20 }}>
-            <Text style={{ color: 'rgba(201, 164, 75, 0.5)', fontSize: 10, letterSpacing: 1, fontWeight: '500' }}>
+          <View style={{ alignItems: 'center', marginTop: 8 }}>
+            <Text style={{
+              color: 'rgba(201, 164, 75, 0.3)',
+              fontSize: 10,
+              letterSpacing: 1.5,
+              fontWeight: '500',
+            }}>
               Built with purpose. Guided by faith. Serving the Ummah.
             </Text>
             <Image
               source={require('../../../assets/itqaan_logo.png')}
-              style={{ height: 16, width: 50, marginTop: 6, opacity: 0.3 }}
+              style={{ height: 14, width: 44, marginTop: 8, opacity: 0.15 }}
               resizeMode="contain"
             />
           </View>

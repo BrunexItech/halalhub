@@ -25,7 +25,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/itqaan_icon.png",
         "backgroundColor": "#032A24"
-      }
+      },
+      "minSdkVersion": 24
     },
     "web": {
       "favicon": "./assets/favicon.png"

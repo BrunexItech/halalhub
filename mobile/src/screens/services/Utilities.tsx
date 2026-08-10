@@ -10,10 +10,15 @@ import {
   RefreshControl,
   Modal,
   Platform,
+  StatusBar,
+  Dimensions,
 } from 'react-native';
+import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { utilityService, walletService } from '../../api/client';
+
+const { width: screenWidth } = Dimensions.get('window');
 
 const Utilities = () => {
   const navigation = useNavigation();
@@ -42,6 +47,63 @@ const Utilities = () => {
   const [paymentStatus, setPaymentStatus] = useState<any>(null);
 
   const quickAmounts = [100, 200, 500, 1000, 2000, 5000];
+
+  // Premium SVG Icons - Using proper SVG elements
+  const BackIcon = () => (
+    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M19 12H5M12 19l-7-7 7-7" />
+    </Svg>
+  );
+
+  const WalletIcon = () => (
+    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9A44B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <Rect x="2" y="4" width="20" height="16" rx="2" />
+      <Path d="M2 10h20" />
+    </Svg>
+  );
+
+  const CheckIcon = () => (
+    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3FAF73" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+      <Path d="M22 4L12 14.01l-3-3" />
+    </Svg>
+  );
+
+  const CloseIcon = () => (
+    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M18 6L6 18M6 6l12 12" />
+    </Svg>
+  );
+
+  const SendIcon = () => (
+    <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+    </Svg>
+  );
+
+  const LightningIcon = () => (
+    <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9A44B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+    </Svg>
+  );
+
+  const PlusIcon = () => (
+    <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#032A24" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M12 4v16M4 12h16" />
+    </Svg>
+  );
+
+  const XIcon = () => (
+    <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M18 6L6 18M6 6l12 12" />
+    </Svg>
+  );
+
+  const CloseModalIcon = () => (
+    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M18 6L6 18M6 6l12 12" />
+    </Svg>
+  );
 
   useEffect(() => {
     fetchAllData();
@@ -253,10 +315,10 @@ const Utilities = () => {
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, { bg: string; text: string }> = {
-      completed: { bg: '#D1FAE5', text: '#3FAF73' },
-      pending: { bg: '#FEF3C7', text: '#D97706' },
-      failed: { bg: '#FEE2E2', text: '#DC2626' },
-      processing: { bg: '#DBEAFE', text: '#3B82F6' },
+      completed: { bg: 'rgba(63, 175, 115, 0.08)', text: '#3FAF73' },
+      pending: { bg: 'rgba(217, 119, 6, 0.08)', text: '#D97706' },
+      failed: { bg: 'rgba(220, 38, 38, 0.08)', text: '#DC2626' },
+      processing: { bg: 'rgba(59, 130, 246, 0.08)', text: '#3B82F6' },
     };
     const labels: Record<string, string> = {
       completed: 'Completed',
@@ -281,9 +343,10 @@ const Utilities = () => {
   if (loading) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
+        <StatusBar barStyle="light-content" backgroundColor="#032A24" translucent={false} />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
           <ActivityIndicator size="large" color="#C9A44B" />
-          <Text style={{ color: '#6B7280', marginTop: 12, fontSize: 14 }}>Loading utility providers...</Text>
+          <Text style={{ color: '#6B7280', marginTop: 16, fontSize: 14 }}>Loading utility providers...</Text>
         </View>
       </SafeAreaView>
     );
@@ -291,19 +354,71 @@ const Utilities = () => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
+      <StatusBar barStyle="light-content" backgroundColor="#032A24" translucent={false} />
+      
+      {/* ===== EMERALD HEADER ===== */}
+      <View style={{
+        backgroundColor: '#032A24',
+        paddingTop: 12,
+        paddingBottom: 16,
+        paddingHorizontal: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(201, 164, 75, 0.08)',
+      }}>
+        <View style={{ 
+          flexDirection: 'row', 
+          alignItems: 'center',
+          maxWidth: 600, 
+          width: '100%', 
+          alignSelf: 'center',
+        }}>
+          <TouchableOpacity 
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}
+            style={{ padding: 4, marginRight: 12 }}
+          >
+            <BackIcon />
+          </TouchableOpacity>
+          <Text style={{ 
+            color: '#FFFFFF', 
+            fontSize: 16, 
+            fontWeight: '600',
+            letterSpacing: -0.2,
+          }}>
+            Utilities
+          </Text>
+          <View style={{ flex: 1 }} />
+          <View style={{
+            borderWidth: 1,
+            borderColor: 'rgba(201, 164, 75, 0.15)',
+            paddingHorizontal: 8,
+            paddingVertical: 2,
+            borderRadius: 999,
+          }}>
+            <Text style={{ color: '#C9A44B', fontSize: 7, fontWeight: '500', letterSpacing: 1, textTransform: 'uppercase' }}>
+              Pay Bills
+            </Text>
+          </View>
+        </View>
+      </View>
+
       <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+        contentContainerStyle={{ 
+          paddingTop: 0, 
+          paddingBottom: 32,
+        }}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#C9A44B" />}
       >
-        <View style={{ maxWidth: 800, width: '100%', alignSelf: 'center' }}>
-          {/* Hero Section */}
+        <View style={{ maxWidth: 600, width: '100%', alignSelf: 'center', paddingHorizontal: 16 }}>
+          
+          {/* ===== HERO CARD ===== */}
           <View style={{
             backgroundColor: '#0B342B',
             borderRadius: 16,
             padding: 20,
-            marginBottom: 16,
-            overflow: 'hidden',
+            marginTop: 16,
+            marginBottom: 20,
             borderWidth: 1,
             borderColor: 'rgba(201, 164, 75, 0.15)',
             shadowColor: '#000',
@@ -311,37 +426,59 @@ const Utilities = () => {
             shadowOpacity: 0.1,
             shadowRadius: 8,
             elevation: 4,
+            overflow: 'hidden',
           }}>
-            <View style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, backgroundColor: 'rgba(201, 164, 75, 0.05)', borderRadius: 999 }} />
-            <View style={{ position: 'absolute', bottom: -30, left: -30, width: 80, height: 80, backgroundColor: 'rgba(201, 164, 75, 0.05)', borderRadius: 999 }} />
+            <View style={{ position: 'absolute', top: -80, right: -80, width: 160, height: 160, backgroundColor: 'rgba(201, 164, 75, 0.05)', borderRadius: 999 }} />
+            <View style={{ position: 'absolute', bottom: -60, left: -60, width: 120, height: 120, backgroundColor: 'rgba(201, 164, 75, 0.05)', borderRadius: 999 }} />
 
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
-              <View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                  <Text style={{ color: '#C9A44B', fontSize: 12, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 1 }}>
-                    Utilities
+              <View style={{ flex: 1 }}>
+                <View style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  alignSelf: 'flex-start',
+                  backgroundColor: 'rgba(201, 164, 75, 0.1)',
+                  paddingHorizontal: 10,
+                  paddingVertical: 3,
+                  borderRadius: 999,
+                  borderWidth: 1,
+                  borderColor: 'rgba(201, 164, 75, 0.2)',
+                  marginBottom: 8,
+                  gap: 6,
+                }}>
+                  <LightningIcon />
+                  <Text style={{ color: '#C9A44B', fontSize: 8, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 1 }}>
+                    Utility Payments
                   </Text>
-                  <View style={{ width: 1, height: 14, backgroundColor: 'rgba(201, 164, 75, 0.3)' }} />
-                  <Text style={{ color: 'rgba(201, 164, 75, 0.6)', fontSize: 12, fontWeight: '500' }}>Pay Your Bills</Text>
                 </View>
-                <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '700' }}>Manage Your Utility Payments</Text>
-                <Text style={{ color: 'rgba(183, 192, 186, 0.7)', fontSize: 14, marginTop: 4, maxWidth: 400, lineHeight: 20 }}>
+
+                <Text style={{ color: '#FFFFFF', fontSize: 20, fontWeight: '700', letterSpacing: -0.3 }}>
+                  Manage Your Utilities
+                </Text>
+                <Text style={{ color: 'rgba(183, 192, 186, 0.7)', fontSize: 13, marginTop: 4, maxWidth: 400, lineHeight: 20 }}>
                   Pay electricity, water, internet, TV, and county rates from your wallet.
                 </Text>
               </View>
+
               <View style={{ alignItems: 'flex-end' }}>
                 <View style={{
-                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  backgroundColor: 'rgba(255,255,255,0.06)',
                   paddingHorizontal: 12,
                   paddingVertical: 6,
                   borderRadius: 999,
                   borderWidth: 1,
-                  borderColor: 'rgba(201, 164, 75, 0.15)',
+                  borderColor: 'rgba(201, 164, 75, 0.1)',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
                 }}>
-                  <Text style={{ color: '#C9A44B', fontSize: 12, fontWeight: '600' }}>Balance: {formatCurrency(balance)}</Text>
+                  <WalletIcon />
+                  <Text style={{ color: '#F7F6F1', fontSize: 12, fontWeight: '600' }}>
+                    {formatCurrency(balance)}
+                  </Text>
                 </View>
                 {accountNumber ? (
-                  <Text style={{ color: 'rgba(183, 192, 186, 0.5)', fontSize: 10, marginTop: 4 }}>
+                  <Text style={{ color: 'rgba(183, 192, 186, 0.4)', fontSize: 9, marginTop: 4, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }}>
                     Acc: {accountNumber}
                   </Text>
                 ) : null}
@@ -349,6 +486,7 @@ const Utilities = () => {
             </View>
           </View>
 
+          {/* Error */}
           {error ? (
             <View style={{
               backgroundColor: '#FEF2F2',
@@ -356,17 +494,41 @@ const Utilities = () => {
               borderColor: '#FECACA',
               borderRadius: 12,
               padding: 12,
-              marginBottom: 12,
+              marginBottom: 16,
               flexDirection: 'row',
               justifyContent: 'space-between',
               alignItems: 'center',
             }}>
-              <Text style={{ color: '#DC2626', fontSize: 13 }}>{error}</Text>
+              <Text style={{ color: '#DC2626', fontSize: 12, flex: 1 }}>{error}</Text>
               <TouchableOpacity
-                style={{ backgroundColor: '#DC2626', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}
+                style={{ backgroundColor: '#DC2626', paddingHorizontal: 14, paddingVertical: 5, borderRadius: 8 }}
                 onPress={() => setError('')}
+                activeOpacity={0.7}
               >
-                <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '600' }}>Dismiss</Text>
+                <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600' }}>Dismiss</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+
+          {/* Success */}
+          {success ? (
+            <View style={{
+              backgroundColor: '#0B342B',
+              borderRadius: 12,
+              padding: 14,
+              marginBottom: 16,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              borderWidth: 1,
+              borderColor: 'rgba(201, 164, 75, 0.15)',
+            }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <CheckIcon />
+                <Text style={{ color: '#F7F6F1', fontSize: 13, fontWeight: '500', flex: 1 }}>{success}</Text>
+              </View>
+              <TouchableOpacity onPress={() => setSuccess('')}>
+                <CloseIcon />
               </TouchableOpacity>
             </View>
           ) : null}
@@ -379,18 +541,23 @@ const Utilities = () => {
                 borderRadius: 12,
                 padding: 16,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
-                shadowColor: '#000',
+                borderColor: 'rgba(3, 42, 36, 0.06)',
+                shadowColor: '#032A24',
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.04,
                 shadowRadius: 4,
                 elevation: 1,
               }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '700' }}>Pay a Utility</Text>
-                  <TouchableOpacity onPress={() => setShowAddService(!showAddService)}>
-                    <Text style={{ color: '#0B342B', fontSize: 13, fontWeight: '500' }}>
-                      {showAddService ? 'Cancel' : '+ Save Service'}
+                  <Text style={{ color: '#032A24', fontSize: 15, fontWeight: '600' }}>Pay a Utility</Text>
+                  <TouchableOpacity 
+                    onPress={() => setShowAddService(!showAddService)}
+                    activeOpacity={0.7}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                  >
+                    <PlusIcon />
+                    <Text style={{ color: '#032A24', fontSize: 12, fontWeight: '500' }}>
+                      {showAddService ? 'Cancel' : 'Save Service'}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -401,78 +568,81 @@ const Utilities = () => {
                     padding: 14,
                     borderRadius: 8,
                     borderWidth: 1,
-                    borderColor: 'rgba(11, 52, 43, 0.06)',
+                    borderColor: 'rgba(3, 42, 36, 0.04)',
                     marginBottom: 12,
                   }}>
-                    <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600', marginBottom: 8 }}>Save a Service</Text>
+                    <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600', marginBottom: 8 }}>Save a Service</Text>
                     <View style={{ marginBottom: 8 }}>
-                      <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+                      <Text style={{ color: '#6B7280', fontSize: 9, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
                         Nickname
                       </Text>
                       <TextInput
                         style={{
                           backgroundColor: '#FFFFFF',
                           borderWidth: 1,
-                          borderColor: '#E8EEF4',
+                          borderColor: 'rgba(3, 42, 36, 0.06)',
                           borderRadius: 8,
                           paddingHorizontal: 12,
                           paddingVertical: 8,
-                          color: '#1F2937',
-                          fontSize: 14,
+                          color: '#032A24',
+                          fontSize: 13,
                         }}
                         value={newService.nickname}
                         onChangeText={(text) => setNewService({ ...newService, nickname: text })}
                         placeholder="e.g., Home Electricity"
+                        placeholderTextColor="rgba(107, 114, 128, 0.4)"
                       />
                     </View>
                     <View style={{ marginBottom: 8 }}>
-                      <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+                      <Text style={{ color: '#6B7280', fontSize: 9, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
                         Account / Meter Number
                       </Text>
                       <TextInput
                         style={{
                           backgroundColor: '#FFFFFF',
                           borderWidth: 1,
-                          borderColor: '#E8EEF4',
+                          borderColor: 'rgba(3, 42, 36, 0.06)',
                           borderRadius: 8,
                           paddingHorizontal: 12,
                           paddingVertical: 8,
-                          color: '#1F2937',
-                          fontSize: 14,
+                          color: '#032A24',
+                          fontSize: 13,
                         }}
                         value={newService.accountNumber}
                         onChangeText={(text) => setNewService({ ...newService, accountNumber: text })}
                         placeholder="Enter account number"
+                        placeholderTextColor="rgba(107, 114, 128, 0.4)"
                       />
                     </View>
                     <TouchableOpacity
                       style={{
-                        backgroundColor: '#0B342B',
+                        backgroundColor: '#032A24',
                         paddingVertical: 8,
                         borderRadius: 8,
                         alignItems: 'center',
                       }}
                       onPress={handleAddService}
+                      activeOpacity={0.7}
                     >
-                      <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Save Service</Text>
+                      <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '600' }}>Save Service</Text>
                     </TouchableOpacity>
                   </View>
                 )}
 
                 <View style={{ marginBottom: 10 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+                  <Text style={{ color: '#6B7280', fontSize: 9, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
                     Select Utility
                   </Text>
                   <View style={{
                     backgroundColor: '#FAFAF7',
                     borderWidth: 1,
-                    borderColor: '#E8EEF4',
+                    borderColor: 'rgba(3, 42, 36, 0.04)',
                     borderRadius: 8,
                     paddingHorizontal: 12,
                     paddingVertical: 8,
                   }}>
                     <TextInput
-                      style={{ color: '#1F2937', fontSize: 14, padding: 0 }}
+                      style={{ color: '#032A24', fontSize: 13, padding: 0 }}
                       value={selectedUtility?.name || ''}
                       onChangeText={(text) => {
                         const utility = utilities.find((u) => u.name === text);
@@ -480,24 +650,25 @@ const Utilities = () => {
                         setValidationError('');
                       }}
                       placeholder="Choose a utility..."
+                      placeholderTextColor="rgba(107, 114, 128, 0.4)"
                     />
                   </View>
                 </View>
 
                 <View style={{ marginBottom: 10 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+                  <Text style={{ color: '#6B7280', fontSize: 9, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
                     {selectedUtility?.fields?.[0] || 'Account Number'}
                   </Text>
                   <TextInput
                     style={{
                       backgroundColor: '#FAFAF7',
                       borderWidth: 1,
-                      borderColor: '#E8EEF4',
+                      borderColor: 'rgba(3, 42, 36, 0.04)',
                       borderRadius: 8,
                       paddingHorizontal: 12,
                       paddingVertical: 8,
-                      color: '#1F2937',
-                      fontSize: 14,
+                      color: '#032A24',
+                      fontSize: 13,
                     }}
                     value={accountNumberInput}
                     onChangeText={(text) => {
@@ -505,11 +676,12 @@ const Utilities = () => {
                       setValidationError('');
                     }}
                     placeholder={`Enter ${selectedUtility?.fields?.[0]?.toLowerCase() || 'account number'}`}
+                    placeholderTextColor="rgba(107, 114, 128, 0.4)"
                   />
                 </View>
 
                 <View style={{ marginBottom: 10 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+                  <Text style={{ color: '#6B7280', fontSize: 9, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
                     Amount (KES)
                   </Text>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
@@ -520,13 +692,16 @@ const Utilities = () => {
                           paddingHorizontal: 10,
                           paddingVertical: 4,
                           borderRadius: 999,
-                          backgroundColor: parseFloat(amount) === val ? '#0B342B' : '#F3F4F6',
+                          backgroundColor: parseFloat(amount) === val ? '#032A24' : '#FAFAF7',
+                          borderWidth: 1,
+                          borderColor: parseFloat(amount) === val ? '#032A24' : 'rgba(3, 42, 36, 0.04)',
                         }}
                         onPress={() => handleQuickAmount(val)}
+                        activeOpacity={0.7}
                       >
                         <Text style={{
                           color: parseFloat(amount) === val ? '#FFFFFF' : '#6B7280',
-                          fontSize: 11,
+                          fontSize: 9,
                           fontWeight: '600',
                         }}>
                           {formatCurrency(val)}
@@ -538,12 +713,12 @@ const Utilities = () => {
                     style={{
                       backgroundColor: '#FAFAF7',
                       borderWidth: 1,
-                      borderColor: '#E8EEF4',
+                      borderColor: 'rgba(3, 42, 36, 0.04)',
                       borderRadius: 8,
                       paddingHorizontal: 12,
                       paddingVertical: 8,
-                      color: '#1F2937',
-                      fontSize: 14,
+                      color: '#032A24',
+                      fontSize: 13,
                     }}
                     value={amount}
                     onChangeText={(text) => {
@@ -551,6 +726,7 @@ const Utilities = () => {
                       setValidationError('');
                     }}
                     placeholder="Enter custom amount"
+                    placeholderTextColor="rgba(107, 114, 128, 0.4)"
                     keyboardType="numeric"
                   />
                 </View>
@@ -564,7 +740,7 @@ const Utilities = () => {
                     padding: 10,
                     marginBottom: 10,
                   }}>
-                    <Text style={{ color: '#DC2626', fontSize: 13 }}>{validationError}</Text>
+                    <Text style={{ color: '#DC2626', fontSize: 12 }}>{validationError}</Text>
                   </View>
                 ) : null}
 
@@ -574,72 +750,66 @@ const Utilities = () => {
                     padding: 12,
                     borderRadius: 8,
                     borderWidth: 1,
-                    borderColor: 'rgba(11, 52, 43, 0.06)',
+                    borderColor: 'rgba(3, 42, 36, 0.04)',
                     marginBottom: 12,
                   }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 }}>
-                      <Text style={{ color: '#6B7280', fontSize: 13 }}>Paybill</Text>
-                      <Text style={{ color: '#1F2937', fontSize: 13, fontWeight: '600' }}>{selectedUtility.paybill}</Text>
+                      <Text style={{ color: '#6B7280', fontSize: 12 }}>Paybill</Text>
+                      <Text style={{ color: '#032A24', fontSize: 12, fontWeight: '600' }}>{selectedUtility.paybill}</Text>
                     </View>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 }}>
-                      <Text style={{ color: '#6B7280', fontSize: 13 }}>Account</Text>
-                      <Text style={{ color: '#1F2937', fontSize: 13, fontWeight: '600' }}>{accountNumberInput}</Text>
+                      <Text style={{ color: '#6B7280', fontSize: 12 }}>Account</Text>
+                      <Text style={{ color: '#032A24', fontSize: 12, fontWeight: '600' }}>{accountNumberInput}</Text>
                     </View>
                     <View style={{
                       flexDirection: 'row',
                       justifyContent: 'space-between',
                       paddingVertical: 4,
                       borderTopWidth: 1,
-                      borderTopColor: 'rgba(11, 52, 43, 0.08)',
+                      borderTopColor: 'rgba(3, 42, 36, 0.04)',
                       marginTop: 4,
                     }}>
-                      <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>Total</Text>
-                      <Text style={{ color: '#0B342B', fontSize: 14, fontWeight: '700' }}>{formatCurrency(parseFloat(amount) || 0)}</Text>
+                      <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>Total</Text>
+                      <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '700' }}>{formatCurrency(parseFloat(amount) || 0)}</Text>
                     </View>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 }}>
-                      <Text style={{ color: '#6B7280', fontSize: 13 }}>Wallet Balance</Text>
+                      <Text style={{ color: '#6B7280', fontSize: 12 }}>Wallet Balance</Text>
                       <Text style={{
                         color: parseFloat(amount) > balance ? '#DC2626' : '#3FAF73',
-                        fontSize: 13,
+                        fontSize: 12,
                         fontWeight: '600',
                       }}>
                         {formatCurrency(balance)}
                       </Text>
                     </View>
-                    {accountNumber ? (
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 }}>
-                        <Text style={{ color: '#6B7280', fontSize: 13 }}>Account</Text>
-                        <Text style={{ color: '#6B7280', fontSize: 12, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }}>
-                          {accountNumber}
-                        </Text>
-                      </View>
-                    ) : null}
                   </View>
                 ) : null}
 
                 <TouchableOpacity
                   style={{
-                    backgroundColor: '#0B342B',
+                    backgroundColor: '#032A24',
                     paddingVertical: 10,
                     borderRadius: 8,
                     alignItems: 'center',
                     opacity: (processing || !amount || parseFloat(amount) > balance) ? 0.6 : 1,
-                    shadowColor: '#0B342B',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 8,
-                    elevation: 4,
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    gap: 8,
                   }}
                   onPress={handlePayment}
                   disabled={processing || !amount || parseFloat(amount) > balance}
+                  activeOpacity={0.7}
                 >
                   {processing ? (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <>
                       <ActivityIndicator size="small" color="#FFFFFF" />
-                      <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>Processing...</Text>
-                    </View>
+                      <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Processing...</Text>
+                    </>
                   ) : (
-                    <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>Pay from Wallet</Text>
+                    <>
+                      <SendIcon />
+                      <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Pay from Wallet</Text>
+                    </>
                   )}
                 </TouchableOpacity>
               </View>
@@ -650,17 +820,17 @@ const Utilities = () => {
                 borderRadius: 12,
                 padding: 16,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
-                shadowColor: '#000',
+                borderColor: 'rgba(3, 42, 36, 0.06)',
+                shadowColor: '#032A24',
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.04,
                 shadowRadius: 4,
                 elevation: 1,
               }}>
-                <Text style={{ color: '#1F2937', fontSize: 15, fontWeight: '700', marginBottom: 10 }}>All Utility Providers</Text>
+                <Text style={{ color: '#032A24', fontSize: 14, fontWeight: '600', marginBottom: 10 }}>All Utility Providers</Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                   {utilities.map((utility) => {
-                    const bgColor = utility.color || '#0B342B';
+                    const bgColor = utility.color || '#032A24';
                     const isSelected = selectedUtility?.id === utility.id;
                     return (
                       <TouchableOpacity
@@ -671,14 +841,15 @@ const Utilities = () => {
                           padding: 10,
                           borderRadius: 10,
                           borderWidth: 2,
-                          borderColor: isSelected ? '#0B342B' : 'rgba(11, 52, 43, 0.08)',
-                          backgroundColor: isSelected ? '#FAFAF7' : '#FFFFFF',
+                          borderColor: isSelected ? '#032A24' : 'rgba(3, 42, 36, 0.04)',
+                          backgroundColor: isSelected ? 'rgba(3, 42, 36, 0.02)' : '#FFFFFF',
                           alignItems: 'center',
                         }}
                         onPress={() => {
                           setSelectedUtility(utility);
                           setValidationError('');
                         }}
+                        activeOpacity={0.7}
                       >
                         <View style={{
                           width: 36,
@@ -690,10 +861,10 @@ const Utilities = () => {
                         }}>
                           <Text style={{ color: '#FFFFFF', fontSize: 16 }}>{getUtilityIcon(utility.category)}</Text>
                         </View>
-                        <Text style={{ color: '#1F2937', fontSize: 12, fontWeight: '500', marginTop: 4 }} numberOfLines={1}>
+                        <Text style={{ color: '#032A24', fontSize: 11, fontWeight: '500', marginTop: 4 }} numberOfLines={1}>
                           {utility.name}
                         </Text>
-                        <Text style={{ color: '#6B7280', fontSize: 10, textTransform: 'capitalize' }}>
+                        <Text style={{ color: '#9CA3AF', fontSize: 9, textTransform: 'capitalize' }}>
                           {utility.category}
                         </Text>
                       </TouchableOpacity>
@@ -711,24 +882,22 @@ const Utilities = () => {
                 borderRadius: 12,
                 padding: 16,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
-                shadowColor: '#000',
+                borderColor: 'rgba(3, 42, 36, 0.06)',
+                shadowColor: '#032A24',
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.04,
                 shadowRadius: 4,
                 elevation: 1,
               }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                  <Text style={{ fontSize: 16 }}>💰</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '700' }}>Wallet Balance</Text>
-                </View>
-                <Text style={{ color: '#0B342B', fontSize: 24, fontWeight: '700' }}>{formatCurrency(balance)}</Text>
+                <Text style={{ color: '#6B7280', fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+                  Wallet Balance
+                </Text>
+                <Text style={{ color: '#032A24', fontSize: 22, fontWeight: '700' }}>{formatCurrency(balance)}</Text>
                 {accountNumber ? (
-                  <Text style={{ color: '#6B7280', fontSize: 10, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', marginTop: 2 }}>
+                  <Text style={{ color: '#9CA3AF', fontSize: 9, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', marginTop: 2 }}>
                     Acc: {accountNumber}
                   </Text>
                 ) : null}
-                <Text style={{ color: '#6B7280', fontSize: 12, marginTop: 2 }}>Available for utility payments</Text>
                 <TouchableOpacity
                   style={{
                     backgroundColor: '#FAFAF7',
@@ -737,11 +906,12 @@ const Utilities = () => {
                     alignItems: 'center',
                     marginTop: 8,
                     borderWidth: 1,
-                    borderColor: '#E8EEF4',
+                    borderColor: 'rgba(3, 42, 36, 0.04)',
                   }}
                   onPress={() => navigation.navigate('Wallet' as never)}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#0B342B', fontSize: 13, fontWeight: '600' }}>Top Up Wallet</Text>
+                  <Text style={{ color: '#032A24', fontSize: 12, fontWeight: '500' }}>Top Up Wallet</Text>
                 </TouchableOpacity>
               </View>
 
@@ -751,20 +921,20 @@ const Utilities = () => {
                 borderRadius: 12,
                 padding: 16,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
-                shadowColor: '#000',
+                borderColor: 'rgba(3, 42, 36, 0.06)',
+                shadowColor: '#032A24',
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.04,
                 shadowRadius: 4,
                 elevation: 1,
               }}>
-                <Text style={{ color: '#1F2937', fontSize: 15, fontWeight: '700', marginBottom: 10 }}>Saved Services</Text>
+                <Text style={{ color: '#032A24', fontSize: 14, fontWeight: '600', marginBottom: 10 }}>Saved Services</Text>
 
                 {savedServices.length === 0 ? (
                   <View style={{ alignItems: 'center', paddingVertical: 16 }}>
-                    <Text style={{ color: '#6B7280', fontSize: 13 }}>No saved services</Text>
-                    <TouchableOpacity onPress={() => setShowAddService(true)}>
-                      <Text style={{ color: '#0B342B', fontSize: 12, fontWeight: '500', marginTop: 4 }}>+ Add a service</Text>
+                    <Text style={{ color: '#9CA3AF', fontSize: 12 }}>No saved services</Text>
+                    <TouchableOpacity onPress={() => setShowAddService(true)} activeOpacity={0.7}>
+                      <Text style={{ color: '#032A24', fontSize: 11, fontWeight: '500', marginTop: 4 }}>+ Add a service</Text>
                     </TouchableOpacity>
                   </View>
                 ) : (
@@ -776,19 +946,20 @@ const Utilities = () => {
                         padding: 10,
                         borderRadius: 8,
                         borderWidth: 1,
-                        borderColor: 'rgba(11, 52, 43, 0.06)',
+                        borderColor: 'rgba(3, 42, 36, 0.03)',
                         marginBottom: 6,
                       }}
                       onPress={() => handleSavedServiceClick(service)}
+                      activeOpacity={0.7}
                     >
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <View>
-                          <Text style={{ color: '#1F2937', fontSize: 13, fontWeight: '500' }}>{service.nickname}</Text>
-                          <Text style={{ color: '#6B7280', fontSize: 12 }}>{service.utility_name || 'Unknown'}</Text>
-                          <Text style={{ color: '#6B7280', fontSize: 11 }}>Account: {service.account_number}</Text>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ color: '#032A24', fontSize: 12, fontWeight: '500' }}>{service.nickname}</Text>
+                          <Text style={{ color: '#9CA3AF', fontSize: 10 }}>{service.utility_name || 'Unknown'}</Text>
+                          <Text style={{ color: '#9CA3AF', fontSize: 9 }}>Account: {service.account_number}</Text>
                         </View>
-                        <TouchableOpacity onPress={() => removeSavedService(service.id)}>
-                          <Text style={{ color: '#6B7280', fontSize: 14 }}>✕</Text>
+                        <TouchableOpacity onPress={() => removeSavedService(service.id)} activeOpacity={0.7}>
+                          <XIcon />
                         </TouchableOpacity>
                       </View>
                     </TouchableOpacity>
@@ -802,17 +973,17 @@ const Utilities = () => {
                 borderRadius: 12,
                 padding: 16,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
-                shadowColor: '#000',
+                borderColor: 'rgba(3, 42, 36, 0.06)',
+                shadowColor: '#032A24',
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.04,
                 shadowRadius: 4,
                 elevation: 1,
               }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <Text style={{ color: '#1F2937', fontSize: 15, fontWeight: '700' }}>Recent Payments</Text>
-                  <TouchableOpacity onPress={fetchPaymentHistory}>
-                    <Text style={{ color: '#0B342B', fontSize: 12, fontWeight: '500' }}>Refresh</Text>
+                  <Text style={{ color: '#032A24', fontSize: 14, fontWeight: '600' }}>Recent Payments</Text>
+                  <TouchableOpacity onPress={fetchPaymentHistory} activeOpacity={0.7}>
+                    <Text style={{ color: '#6B7280', fontSize: 11 }}>Refresh</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -821,7 +992,7 @@ const Utilities = () => {
                     <ActivityIndicator size="small" color="#C9A44B" />
                   </View>
                 ) : paymentHistory.length === 0 ? (
-                  <Text style={{ color: '#6B7280', fontSize: 13, textAlign: 'center', paddingVertical: 12 }}>
+                  <Text style={{ color: '#9CA3AF', fontSize: 12, textAlign: 'center', paddingVertical: 12 }}>
                     No payments yet
                   </Text>
                 ) : (
@@ -834,27 +1005,25 @@ const Utilities = () => {
                         alignItems: 'center',
                         paddingVertical: 8,
                         borderBottomWidth: 1,
-                        borderBottomColor: '#F4F5F1',
+                        borderBottomColor: 'rgba(3, 42, 36, 0.03)',
                       }}>
                         <View style={{ flex: 1 }}>
-                          <Text style={{ color: '#1F2937', fontSize: 13, fontWeight: '500' }} numberOfLines={1}>
+                          <Text style={{ color: '#032A24', fontSize: 12, fontWeight: '500' }} numberOfLines={1}>
                             {payment.utility_name || 'Utility'}
                           </Text>
-                          <Text style={{ color: '#6B7280', fontSize: 11 }}>{formatDate(payment.paid_at || payment.createdat)}</Text>
+                          <Text style={{ color: '#9CA3AF', fontSize: 9 }}>{formatDate(payment.paid_at || payment.createdat)}</Text>
                         </View>
                         <View style={{ alignItems: 'flex-end' }}>
-                          <Text style={{ color: '#0B342B', fontSize: 13, fontWeight: '600' }}>
+                          <Text style={{ color: '#032A24', fontSize: 12, fontWeight: '600' }}>
                             {formatCurrency(payment.amount)}
                           </Text>
                           <View style={{
                             backgroundColor: status.style.bg,
                             paddingHorizontal: 6,
                             paddingVertical: 1,
-                            borderRadius: 999,
-                            borderWidth: 1,
-                            borderColor: 'rgba(0,0,0,0.05)',
+                            borderRadius: 8,
                           }}>
-                            <Text style={{ color: status.style.text, fontSize: 10, fontWeight: '500' }}>{status.label}</Text>
+                            <Text style={{ color: status.style.text, fontSize: 8, fontWeight: '500' }}>{status.label}</Text>
                           </View>
                         </View>
                       </View>
@@ -867,7 +1036,7 @@ const Utilities = () => {
         </View>
       </ScrollView>
 
-      {/* Confirmation Modal */}
+      {/* ===== CONFIRMATION MODAL ===== */}
       <Modal visible={showConfirmModal} transparent animationType="fade">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
           <View style={{
@@ -877,18 +1046,23 @@ const Utilities = () => {
             width: '100%',
             maxWidth: 400,
             maxHeight: '90%',
+            shadowColor: '#032A24',
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.15,
+            shadowRadius: 24,
+            elevation: 8,
           }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ color: '#1F2937', fontSize: 18, fontWeight: '700' }}>Confirm Payment</Text>
-              <TouchableOpacity onPress={() => setShowConfirmModal(false)}>
-                <Text style={{ color: '#6B7280', fontSize: 20 }}>✕</Text>
+              <Text style={{ color: '#032A24', fontSize: 18, fontWeight: '700' }}>Confirm Payment</Text>
+              <TouchableOpacity onPress={() => setShowConfirmModal(false)} activeOpacity={0.7}>
+                <CloseModalIcon />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={{ alignItems: 'center', marginBottom: 12 }}>
-                <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '700' }}>{selectedUtility?.name}</Text>
-                <Text style={{ color: '#6B7280', fontSize: 14 }}>Paybill: {selectedUtility?.paybill}</Text>
+                <Text style={{ color: '#032A24', fontSize: 16, fontWeight: '600' }}>{selectedUtility?.name}</Text>
+                <Text style={{ color: '#6B7280', fontSize: 13 }}>Paybill: {selectedUtility?.paybill}</Text>
               </View>
 
               <View style={{
@@ -896,82 +1070,81 @@ const Utilities = () => {
                 padding: 12,
                 borderRadius: 8,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
+                borderColor: 'rgba(3, 42, 36, 0.04)',
                 marginBottom: 12,
               }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Account</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>{accountNumberInput}</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Account</Text>
+                  <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>{accountNumberInput}</Text>
                 </View>
                 <View style={{
                   flexDirection: 'row',
                   justifyContent: 'space-between',
                   paddingVertical: 6,
                   borderTopWidth: 1,
-                  borderTopColor: '#E8EEF4',
+                  borderTopColor: 'rgba(3, 42, 36, 0.04)',
                   marginTop: 4,
                 }}>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>Amount</Text>
-                  <Text style={{ color: '#0B342B', fontSize: 14, fontWeight: '700' }}>{formatCurrency(parseFloat(amount) || 0)}</Text>
+                  <Text style={{ color: '#032A24', fontSize: 14, fontWeight: '600' }}>Amount</Text>
+                  <Text style={{ color: '#032A24', fontSize: 14, fontWeight: '700' }}>{formatCurrency(parseFloat(amount) || 0)}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Wallet Balance After</Text>
-                  <Text style={{ color: '#3FAF73', fontSize: 14, fontWeight: '600' }}>{formatCurrency(balance - parseFloat(amount))}</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Wallet Balance After</Text>
+                  <Text style={{ color: '#3FAF73', fontSize: 13, fontWeight: '600' }}>{formatCurrency(balance - parseFloat(amount))}</Text>
                 </View>
               </View>
 
               <View style={{
-                backgroundColor: 'rgba(63, 175, 115, 0.05)',
+                backgroundColor: 'rgba(201, 164, 75, 0.04)',
                 padding: 10,
                 borderRadius: 8,
                 borderWidth: 1,
-                borderColor: 'rgba(63, 175, 115, 0.1)',
+                borderColor: 'rgba(201, 164, 75, 0.08)',
                 marginBottom: 12,
               }}>
-                <Text style={{ color: '#0B342B', fontSize: 13, textAlign: 'center', lineHeight: 18 }}>
+                <Text style={{ color: '#032A24', fontSize: 12, textAlign: 'center', lineHeight: 18 }}>
                   This payment will be deducted from your Itqaan wallet balance.
                 </Text>
               </View>
 
-              {error ? <Text style={{ color: '#DC2626', fontSize: 13, marginBottom: 8 }}>{error}</Text> : null}
+              {error ? <Text style={{ color: '#DC2626', fontSize: 12, marginBottom: 8 }}>{error}</Text> : null}
 
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 <TouchableOpacity
                   style={{
                     flex: 1,
-                    backgroundColor: '#F4F5F1',
+                    backgroundColor: '#FAFAF7',
                     paddingVertical: 10,
                     borderRadius: 8,
                     alignItems: 'center',
+                    borderWidth: 1,
+                    borderColor: 'rgba(3, 42, 36, 0.04)',
                   }}
                   onPress={() => setShowConfirmModal(false)}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#6B7280', fontSize: 15, fontWeight: '500' }}>Cancel</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '500' }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={{
                     flex: 2,
-                    backgroundColor: '#0B342B',
+                    backgroundColor: '#032A24',
                     paddingVertical: 10,
                     borderRadius: 8,
                     alignItems: 'center',
                     opacity: processing ? 0.6 : 1,
-                    shadowColor: '#0B342B',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 8,
-                    elevation: 4,
                   }}
                   onPress={confirmPayment}
                   disabled={processing}
+                  activeOpacity={0.7}
                 >
                   {processing ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <ActivityIndicator size="small" color="#FFFFFF" />
-                      <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>Processing...</Text>
+                      <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Processing...</Text>
                     </View>
                   ) : (
-                    <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>Confirm Payment</Text>
+                    <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Confirm Payment</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -980,7 +1153,7 @@ const Utilities = () => {
         </View>
       </Modal>
 
-      {/* Receipt Modal */}
+      {/* ===== RECEIPT MODAL ===== */}
       <Modal visible={showReceiptModal} transparent animationType="fade">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
           <View style={{
@@ -990,6 +1163,11 @@ const Utilities = () => {
             width: '100%',
             maxWidth: 400,
             maxHeight: '90%',
+            shadowColor: '#032A24',
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.15,
+            shadowRadius: 24,
+            elevation: 8,
           }}>
             <View style={{
               backgroundColor: '#0B342B',
@@ -1003,8 +1181,8 @@ const Utilities = () => {
               alignItems: 'center',
             }}>
               <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700' }}>Payment Successful</Text>
-              <TouchableOpacity onPress={closeReceipt}>
-                <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 20 }}>✕</Text>
+              <TouchableOpacity onPress={closeReceipt} activeOpacity={0.7}>
+                <CloseIcon />
               </TouchableOpacity>
             </View>
 
@@ -1014,17 +1192,17 @@ const Utilities = () => {
                   width: 56,
                   height: 56,
                   borderRadius: 28,
-                  backgroundColor: 'rgba(63, 175, 115, 0.1)',
+                  backgroundColor: 'rgba(63, 175, 115, 0.08)',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  borderWidth: 4,
-                  borderColor: 'rgba(63, 175, 115, 0.2)',
+                  borderWidth: 2,
+                  borderColor: 'rgba(63, 175, 115, 0.15)',
                 }}>
-                  <Text style={{ color: '#3FAF73', fontSize: 28 }}>✓</Text>
+                  <CheckIcon />
                 </View>
-                <Text style={{ color: '#6B7280', fontSize: 13, marginTop: 6 }}>Payment to</Text>
-                <Text style={{ color: '#1F2937', fontSize: 18, fontWeight: '700' }}>{paymentStatus?.utility}</Text>
-                <Text style={{ color: '#6B7280', fontSize: 12, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', marginTop: 2 }}>
+                <Text style={{ color: '#6B7280', fontSize: 12, marginTop: 6 }}>Payment to</Text>
+                <Text style={{ color: '#032A24', fontSize: 18, fontWeight: '700' }}>{paymentStatus?.utility}</Text>
+                <Text style={{ color: '#6B7280', fontSize: 11, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', marginTop: 2 }}>
                   Ref: {paymentStatus?.ref}
                 </Text>
               </View>
@@ -1034,68 +1212,53 @@ const Utilities = () => {
                 padding: 12,
                 borderRadius: 8,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
+                borderColor: 'rgba(3, 42, 36, 0.04)',
                 marginBottom: 12,
               }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Account</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 13, fontWeight: '600' }}>{paymentStatus?.account}</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 12 }}>Account</Text>
+                  <Text style={{ color: '#032A24', fontSize: 12, fontWeight: '600' }}>{paymentStatus?.account}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Paybill</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 13, fontWeight: '600' }}>{paymentStatus?.paybill}</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 12 }}>Paybill</Text>
+                  <Text style={{ color: '#032A24', fontSize: 12, fontWeight: '600' }}>{paymentStatus?.paybill}</Text>
                 </View>
                 <View style={{
                   flexDirection: 'row',
                   justifyContent: 'space-between',
                   paddingVertical: 6,
                   borderTopWidth: 1,
-                  borderTopColor: '#E8EEF4',
+                  borderTopColor: 'rgba(3, 42, 36, 0.04)',
                   marginTop: 4,
                 }}>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>Amount</Text>
-                  <Text style={{ color: '#0B342B', fontSize: 14, fontWeight: '700' }}>{formatCurrency(paymentStatus?.amount)}</Text>
+                  <Text style={{ color: '#032A24', fontSize: 14, fontWeight: '600' }}>Amount</Text>
+                  <Text style={{ color: '#032A24', fontSize: 14, fontWeight: '700' }}>{formatCurrency(paymentStatus?.amount)}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Date</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 13, fontWeight: '600' }}>{paymentStatus?.date}</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 12 }}>Date</Text>
+                  <Text style={{ color: '#032A24', fontSize: 12, fontWeight: '600' }}>{paymentStatus?.date}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Payment Method</Text>
-                  <Text style={{ color: '#3FAF73', fontSize: 13, fontWeight: '600' }}>Wallet</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 12 }}>Payment Method</Text>
+                  <Text style={{ color: '#3FAF73', fontSize: 12, fontWeight: '600' }}>Wallet</Text>
                 </View>
                 {paymentStatus?.receipt ? (
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                    <Text style={{ color: '#6B7280', fontSize: 13 }}>Receipt</Text>
-                    <Text style={{ color: '#1F2937', fontSize: 13, fontWeight: '600' }}>{paymentStatus.receipt}</Text>
-                  </View>
-                ) : null}
-                {paymentStatus?.accountNumber ? (
-                  <View style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    paddingVertical: 6,
-                    borderTopWidth: 1,
-                    borderTopColor: '#E8EEF4',
-                    marginTop: 4,
-                  }}>
-                    <Text style={{ color: '#6B7280', fontSize: 13 }}>Virtual Account</Text>
-                    <Text style={{ color: '#6B7280', fontSize: 12, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }}>
-                      {paymentStatus.accountNumber}
-                    </Text>
+                    <Text style={{ color: '#6B7280', fontSize: 12 }}>Receipt</Text>
+                    <Text style={{ color: '#032A24', fontSize: 12, fontWeight: '600' }}>{paymentStatus.receipt}</Text>
                   </View>
                 ) : null}
               </View>
 
               <View style={{
-                backgroundColor: '#FAFAF7',
+                backgroundColor: 'rgba(201, 164, 75, 0.04)',
                 padding: 10,
                 borderRadius: 8,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
+                borderColor: 'rgba(201, 164, 75, 0.08)',
                 marginBottom: 16,
               }}>
-                <Text style={{ color: '#6B7280', fontSize: 13, textAlign: 'center', fontStyle: 'italic', lineHeight: 18 }}>
+                <Text style={{ color: '#032A24', fontSize: 12, textAlign: 'center', fontStyle: 'italic', lineHeight: 18 }}>
                   "Allah has permitted trade and forbidden usury." — Quran 2:275
                 </Text>
               </View>
@@ -1104,69 +1267,36 @@ const Utilities = () => {
                 <TouchableOpacity
                   style={{
                     flex: 1,
-                    backgroundColor: '#F4F5F1',
+                    backgroundColor: '#FAFAF7',
                     paddingVertical: 10,
                     borderRadius: 8,
                     alignItems: 'center',
+                    borderWidth: 1,
+                    borderColor: 'rgba(3, 42, 36, 0.04)',
                   }}
                   onPress={closeReceipt}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#6B7280', fontSize: 15, fontWeight: '500' }}>Close</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '500' }}>Close</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={{
                     flex: 2,
-                    backgroundColor: '#0B342B',
+                    backgroundColor: '#032A24',
                     paddingVertical: 10,
                     borderRadius: 8,
                     alignItems: 'center',
-                    shadowColor: '#0B342B',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 8,
-                    elevation: 4,
                   }}
-                  onPress={() => {
-                    // Download receipt - placeholder
-                  }}
+                  onPress={() => {}}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>Download Receipt</Text>
+                  <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Download Receipt</Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
           </View>
         </View>
       </Modal>
-
-      {/* Success Toast */}
-      {success ? (
-        <View style={{
-          position: 'absolute',
-          top: 60,
-          right: 16,
-          left: 16,
-          backgroundColor: '#0B342B',
-          paddingHorizontal: 16,
-          paddingVertical: 12,
-          borderRadius: 12,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          shadowColor: '#0B342B',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          elevation: 4,
-        }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text style={{ color: '#C9A44B', fontSize: 16 }}>✓</Text>
-            <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '500', flex: 1 }}>{success}</Text>
-          </View>
-          <TouchableOpacity onPress={() => setSuccess('')}>
-            <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 16 }}>✕</Text>
-          </TouchableOpacity>
-        </View>
-      ) : null}
     </SafeAreaView>
   );
 };

@@ -11,10 +11,110 @@ import {
   Modal,
   Platform,
   Image,
+  Dimensions,
+  LayoutAnimation,
+  UIManager,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { bookingService, walletService, clientService, getImageUrl } from '../../api/client';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import Svg, { Path, Circle, Rect } from 'react-native-svg';
+
+// Enable LayoutAnimation for Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const { width } = Dimensions.get('window');
+
+// ===== PROFESSIONAL SVG ICONS =====
+const BackIcon = ({ color = '#032A24', size = 24 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M15 18L9 12L15 6" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const ScholarIcon = ({ color = '#C9A44B', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke={color} strokeWidth="1.5" strokeLinejoin="round"/>
+    <Path d="M12 8L12 12" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <Circle cx="12" cy="14" r="1" fill={color} opacity="0.5"/>
+  </Svg>
+);
+
+const SearchIcon = ({ color = '#6B7280', size = 18 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="11" cy="11" r="7" stroke={color} strokeWidth="1.5"/>
+    <Path d="M16.5 16.5L21 21" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </Svg>
+);
+
+const UserIcon = ({ color = '#6B7280', size = 14 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="8" r="4" stroke={color} strokeWidth="1.5"/>
+    <Path d="M5.5 20C5.5 16.6863 8.18629 14 11.5 14H12.5C15.8137 14 18.5 16.6863 18.5 20" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </Svg>
+);
+
+const StarIcon = ({ color = '#C9A44B', size = 12 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke={color} strokeWidth="1.5" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const ClockIcon = ({ color = '#6B7280', size = 14 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.5"/>
+    <Path d="M12 6V12L15 15" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </Svg>
+);
+
+const CalendarIcon = ({ color = '#6B7280', size = 14 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Rect x="3" y="6" width="18" height="16" rx="2" stroke={color} strokeWidth="1.5"/>
+    <Path d="M3 10H21" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <Path d="M8 2V6" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <Path d="M16 2V6" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </Svg>
+);
+
+const CloseIcon = ({ color = '#6B7280', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M18 6L6 18M6 6L18 18" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const CheckIcon = ({ color = '#FFFFFF', size = 16 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M5 12L10 17L20 7" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const ChevronDownIcon = ({ color = '#6B7280', size = 18 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M6 9L12 15L18 9" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const ChevronUpIcon = ({ color = '#6B7280', size = 18 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M18 15L12 9L6 15" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const FilterIcon = ({ color = '#6B7280', size = 18 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M3 6H21M6 12H18M10 18H14" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </Svg>
+);
+
+const VideoIcon = ({ color = '#FFFFFF', size = 14 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M15 10L20 6V18L15 14V10Z" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <Rect x="2" y="6" width="13" height="12" rx="2" stroke={color} strokeWidth="1.5"/>
+  </Svg>
+);
 
 const Kadhis = () => {
   const navigation = useNavigation();
@@ -50,7 +150,14 @@ const Kadhis = () => {
     topic: '',
   });
 
+  // Date and Time Picker states
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedTime, setSelectedTime] = useState(new Date());
+
   const [selectedProfessional, setSelectedProfessional] = useState<any>(null);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   const LEADER_TYPE_LABELS: Record<string, string> = {
     islamic_scholar: 'Islamic Scholar',
@@ -108,6 +215,11 @@ const Kadhis = () => {
     return () => clearTimeout(timer);
   }, [searchQuery, professionalType]);
 
+  const toggleFilters = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setFiltersExpanded(!filtersExpanded);
+  };
+
   const onRefresh = () => {
     setRefreshing(true);
     fetchProfessionals();
@@ -156,11 +268,14 @@ const Kadhis = () => {
     setLoadingBookings(true);
     try {
       const res = await bookingService.getBookings();
-      if (res.data.success) {
+      if (res.data && res.data.success) {
         setBookings(res.data.bookings || []);
+      } else {
+        setBookings([]);
       }
     } catch (err) {
       console.log('Error fetching bookings:', err);
+      setBookings([]);
     } finally {
       setLoadingBookings(false);
     }
@@ -186,8 +301,14 @@ const Kadhis = () => {
       return;
     }
     setSelectedProfessional(professional);
+    // Reset date/time to current
+    const now = new Date();
+    setSelectedDate(now);
+    setSelectedTime(now);
     setBookingData({
       ...bookingData,
+      date: now.toISOString().split('T')[0],
+      time: now.toTimeString().slice(0, 5),
       topic: '',
     });
     await fetchUserBalance();
@@ -197,6 +318,24 @@ const Kadhis = () => {
   const handleBookingChange = (field: string, value: string) => {
     setBookingData({ ...bookingData, [field]: value });
     setError('');
+  };
+
+  const onDateChange = (event: any, selectedDateValue: Date | undefined) => {
+    setShowDatePicker(false);
+    if (selectedDateValue) {
+      setSelectedDate(selectedDateValue);
+      const formattedDate = selectedDateValue.toISOString().split('T')[0];
+      setBookingData({ ...bookingData, date: formattedDate });
+    }
+  };
+
+  const onTimeChange = (event: any, selectedTimeValue: Date | undefined) => {
+    setShowTimePicker(false);
+    if (selectedTimeValue) {
+      setSelectedTime(selectedTimeValue);
+      const formattedTime = selectedTimeValue.toTimeString().slice(0, 5);
+      setBookingData({ ...bookingData, time: formattedTime });
+    }
   };
 
   const confirmBooking = async () => {
@@ -209,11 +348,10 @@ const Kadhis = () => {
       return;
     }
 
-    const balance = await fetchUserBalance();
     const fee = selectedProfessional?.fee || 0;
 
-    if (balance < fee) {
-      setError(`Insufficient balance. You have ${formatCurrency(balance)} but need ${formatCurrency(fee)}. Please top up your wallet.`);
+    if (userBalance < fee) {
+      setError(`Insufficient balance. You have ${formatCurrency(userBalance)} but need ${formatCurrency(fee)}. Please top up your wallet.`);
       return;
     }
 
@@ -221,14 +359,14 @@ const Kadhis = () => {
     setError('');
     try {
       const response = await bookingService.createBooking({
-        leaderId: selectedProfessional.id,
-        bookingDate: bookingData.date,
-        bookingTime: bookingData.time,
+        leader: selectedProfessional.id,
+        date: bookingData.date,
+        time: bookingData.time,
         type: 'video',
         topic: bookingData.topic,
         notes: bookingData.notes,
-        userName: user?.fullName || 'Guest',
-        userEmail: user?.email || '',
+        user_name: user?.fullName || 'Guest',
+        user_email: user?.email || '',
       });
 
       if (response.data.success) {
@@ -263,6 +401,7 @@ const Kadhis = () => {
   };
 
   const handleViewConsultations = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setShowConsultations(!showConsultations);
     if (!showConsultations && bookings.length === 0 && isAuthenticated) {
       fetchBookings();
@@ -329,8 +468,8 @@ const Kadhis = () => {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <ActivityIndicator size="large" color="#C9A44B" />
-          <Text style={{ color: '#6B7280', marginTop: 12, fontSize: 14 }}>Loading...</Text>
+          <ActivityIndicator size="large" color="#032A24" />
+          <Text style={{ color: '#6B7280', marginTop: 16, fontSize: 14 }}>Loading...</Text>
         </View>
       </SafeAreaView>
     );
@@ -339,52 +478,103 @@ const Kadhis = () => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
       <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+        contentContainerStyle={{
+          paddingTop: Platform.OS === 'ios' ? 8 : 12,
+          paddingHorizontal: 20,
+          paddingBottom: 40,
+        }}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#C9A44B" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#032A24" />}
       >
         <View style={{ maxWidth: 800, width: '100%', alignSelf: 'center' }}>
-          {/* Hero Section */}
+          {/* ===== PREMIUM HEADER ===== */}
           <View style={{
-            backgroundColor: '#0B342B',
-            borderRadius: 16,
-            padding: 20,
-            marginBottom: 16,
-            overflow: 'hidden',
+            backgroundColor: '#032A24',
+            borderRadius: 18,
+            paddingHorizontal: 18,
+            paddingVertical: 16,
+            marginBottom: 20,
             borderWidth: 1,
             borderColor: 'rgba(201, 164, 75, 0.15)',
-            shadowColor: '#000',
+            shadowColor: '#032A24',
             shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.1,
-            shadowRadius: 8,
+            shadowOpacity: 0.08,
+            shadowRadius: 16,
             elevation: 4,
           }}>
-            <View style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, backgroundColor: 'rgba(201, 164, 75, 0.05)', borderRadius: 999 }} />
-            <View style={{ position: 'absolute', bottom: -30, left: -30, width: 80, height: 80, backgroundColor: 'rgba(201, 164, 75, 0.05)', borderRadius: 999 }} />
+            <View style={{
+              position: 'absolute',
+              top: 0,
+              left: 40,
+              right: 40,
+              height: 2,
+              backgroundColor: '#C9A44B',
+              opacity: 0.3,
+            }} />
 
-            <View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                <Text style={{ color: '#C9A44B', fontSize: 12, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 1 }}>
-                  Islamic Guidance
-                </Text>
-                <View style={{ width: 1, height: 14, backgroundColor: 'rgba(201, 164, 75, 0.3)' }} />
-                <Text style={{ color: 'rgba(201, 164, 75, 0.6)', fontSize: 12, fontWeight: '500' }}>Religious Leaders</Text>
-              </View>
-              <Text style={{ color: '#FFFFFF', fontSize: 24, fontWeight: '700' }}>Guidance Rooted in Knowledge</Text>
-              <Text style={{ color: 'rgba(183, 192, 186, 0.7)', fontSize: 14, marginTop: 4, maxWidth: 400, lineHeight: 20 }}>
-                Connect with verified religious leaders for trusted guidance and consultation.
-              </Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
-                <View style={{
-                  backgroundColor: 'rgba(255,255,255,0.1)',
-                  paddingHorizontal: 14,
-                  paddingVertical: 6,
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                activeOpacity={0.7}
+                style={{
+                  padding: 6,
+                  marginRight: 12,
                   borderRadius: 10,
-                  borderWidth: 1,
-                  borderColor: 'rgba(201, 164, 75, 0.2)',
-                }}>
-                  <Text style={{ color: '#C9A44B', fontSize: 12, fontWeight: '600' }}>Verified Leaders</Text>
+                  backgroundColor: 'rgba(201, 164, 75, 0.08)',
+                }}
+              >
+                <BackIcon color="#C9A44B" size={22} />
+              </TouchableOpacity>
+
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <ScholarIcon color="#C9A44B" size={18} />
+                  <Text style={{
+                    color: '#C9A44B',
+                    fontSize: 12,
+                    fontWeight: '600',
+                    letterSpacing: 0.8,
+                    textTransform: 'uppercase',
+                  }}>
+                    Islamic Guidance
+                  </Text>
                 </View>
+                <Text style={{
+                  color: '#FFFFFF',
+                  fontSize: 18,
+                  fontWeight: '700',
+                  letterSpacing: -0.3,
+                  marginTop: 2,
+                }}>
+                  Guidance Rooted in Knowledge
+                </Text>
+                <Text style={{
+                  color: 'rgba(255,255,255,0.5)',
+                  fontSize: 12,
+                  letterSpacing: 0.2,
+                  marginTop: 1,
+                }}>
+                  Verified Religious Leaders · Trusted Guidance
+                </Text>
+              </View>
+
+              <View style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                backgroundColor: 'rgba(201, 164, 75, 0.08)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 1,
+                borderColor: 'rgba(201, 164, 75, 0.1)',
+              }}>
+                <View style={{
+                  width: 4,
+                  height: 4,
+                  borderRadius: 2,
+                  backgroundColor: '#C9A44B',
+                  opacity: 0.5,
+                }} />
               </View>
             </View>
           </View>
@@ -395,15 +585,15 @@ const Kadhis = () => {
               borderWidth: 1,
               borderColor: '#FECACA',
               borderRadius: 12,
-              padding: 12,
-              marginBottom: 12,
+              padding: 14,
+              marginBottom: 14,
               flexDirection: 'row',
               justifyContent: 'space-between',
               alignItems: 'center',
             }}>
-              <Text style={{ color: '#DC2626', fontSize: 13 }}>{error}</Text>
+              <Text style={{ color: '#DC2626', fontSize: 13, flex: 1 }}>{error}</Text>
               <TouchableOpacity
-                style={{ backgroundColor: '#DC2626', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}
+                style={{ backgroundColor: '#DC2626', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 6 }}
                 onPress={() => setError('')}
               >
                 <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '600' }}>Dismiss</Text>
@@ -411,89 +601,125 @@ const Kadhis = () => {
             </View>
           ) : null}
 
-          {/* Filters */}
+          {/* ===== COLLAPSIBLE FILTERS ===== */}
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 12,
-            padding: 16,
-            marginBottom: 16,
+            borderRadius: 16,
             borderWidth: 1,
-            borderColor: '#E8EEF4',
-            shadowColor: '#000',
+            borderColor: 'rgba(3, 42, 36, 0.06)',
+            shadowColor: '#032A24',
             shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.04,
-            shadowRadius: 4,
+            shadowOpacity: 0.02,
+            shadowRadius: 8,
             elevation: 1,
+            marginBottom: 16,
+            overflow: 'hidden',
           }}>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-              <View style={{ flex: 1, minWidth: 140 }}>
-                <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
-                  Search
-                </Text>
-                <TextInput
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderWidth: 1,
-                    borderColor: '#E8EEF4',
-                    borderRadius: 8,
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
-                    color: '#1F2937',
-                    fontSize: 14,
-                  }}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  placeholder="Search by name or expertise..."
-                />
-              </View>
-              <View style={{ flex: 0.7, minWidth: 100 }}>
-                <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
-                  Type
-                </Text>
+            <TouchableOpacity
+              onPress={toggleFilters}
+              activeOpacity={0.7}
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: 16,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <View style={{
-                  backgroundColor: '#FFFFFF',
-                  borderWidth: 1,
-                  borderColor: '#E8EEF4',
-                  borderRadius: 8,
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
+                  width: 3,
+                  height: 16,
+                  backgroundColor: '#C9A44B',
+                  borderRadius: 2,
+                }} />
+                <FilterIcon color="#032A24" size={16} />
+                <Text style={{ color: '#032A24', fontSize: 15, fontWeight: '600', letterSpacing: -0.2 }}>
+                  Search & Filters
+                </Text>
+                <Text style={{ color: '#8B8A86', fontSize: 10 }}>
+                  {professionals.length} professionals
+                </Text>
+              </View>
+              {filtersExpanded ? (
+                <ChevronUpIcon color="#6B7280" size={18} />
+              ) : (
+                <ChevronDownIcon color="#6B7280" size={18} />
+              )}
+            </TouchableOpacity>
+
+            {filtersExpanded && (
+              <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                  <View style={{ flex: 1, minWidth: 130 }}>
+                    <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                      Search
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FAFAF7', borderRadius: 10, borderWidth: 1, borderColor: 'rgba(3, 42, 36, 0.06)', paddingHorizontal: 12 }}>
+                      <SearchIcon color="#9CA3AF" size={14} />
+                      <TextInput
+                        style={{
+                          flex: 1,
+                          paddingVertical: 8,
+                          paddingHorizontal: 10,
+                          color: '#1F2937',
+                          fontSize: 14,
+                        }}
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        placeholder="Search by name or expertise..."
+                        placeholderTextColor="#9CA3AF"
+                      />
+                    </View>
+                  </View>
+                  <View style={{ flex: 0.7, minWidth: 90 }}>
+                    <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                      Type
+                    </Text>
+                    <View style={{
+                      backgroundColor: '#FAFAF7',
+                      borderWidth: 1,
+                      borderColor: 'rgba(3, 42, 36, 0.06)',
+                      borderRadius: 10,
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                    }}>
+                      <TextInput
+                        style={{ color: '#1F2937', fontSize: 14, padding: 0 }}
+                        value={professionalType}
+                        onChangeText={(text) => setProfessionalType(text)}
+                        placeholder="All Types"
+                        placeholderTextColor="#9CA3AF"
+                      />
+                    </View>
+                  </View>
+                </View>
+
+                <View style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginTop: 12,
+                  paddingTop: 12,
+                  borderTopWidth: 1,
+                  borderTopColor: 'rgba(3, 42, 36, 0.04)',
                 }}>
-                  <TextInput
-                    style={{ color: '#1F2937', fontSize: 14, padding: 0 }}
-                    value={professionalType}
-                    onChangeText={(text) => setProfessionalType(text)}
-                    placeholder="All Types"
-                  />
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>
+                    <Text style={{ fontWeight: '600', color: '#032A24' }}>{professionals.length}</Text> professionals available
+                  </Text>
                 </View>
               </View>
-            </View>
-
-            <View style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: 8,
-              marginTop: 10,
-              paddingTop: 10,
-              borderTopWidth: 1,
-              borderTopColor: '#F4F5F1',
-            }}>
-              <Text style={{ color: '#6B7280', fontSize: 14 }}>
-                {professionals.length} professional{professionals.length !== 1 ? 's' : ''} available
-              </Text>
-            </View>
+            )}
           </View>
 
-          {/* Professionals Grid */}
+          {/* ===== PREMIUM PROFESSIONAL CARDS ===== */}
           {professionals.length === 0 ? (
             <View style={{
               backgroundColor: '#FFFFFF',
-              borderRadius: 12,
-              padding: 40,
+              borderRadius: 16,
+              padding: 48,
               alignItems: 'center',
               borderWidth: 1,
-              borderColor: '#E8EEF4',
+              borderColor: 'rgba(3, 42, 36, 0.06)',
             }}>
               <Text style={{ color: '#6B7280', fontSize: 14 }}>No professionals found. Try adjusting your search.</Text>
             </View>
@@ -505,15 +731,15 @@ const Kadhis = () => {
               return (
                 <View key={professional.id} style={{
                   backgroundColor: '#FFFFFF',
-                  borderRadius: 12,
+                  borderRadius: 16,
                   padding: 16,
                   marginBottom: 12,
                   borderWidth: 1,
-                  borderColor: '#E8EEF4',
-                  shadowColor: '#000',
+                  borderColor: 'rgba(3, 42, 36, 0.06)',
+                  shadowColor: '#032A24',
                   shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.04,
-                  shadowRadius: 4,
+                  shadowOpacity: 0.02,
+                  shadowRadius: 8,
                   elevation: 1,
                 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -529,7 +755,7 @@ const Kadhis = () => {
                           width: 44,
                           height: 44,
                           borderRadius: 10,
-                          backgroundColor: '#0B342B',
+                          backgroundColor: '#032A24',
                           alignItems: 'center',
                           justifyContent: 'center',
                         }}>
@@ -539,46 +765,46 @@ const Kadhis = () => {
                         </View>
                       )}
                       <View>
-                        <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>{professional.name}</Text>
+                        <Text style={{ color: '#032A24', fontSize: 14, fontWeight: '600' }}>{professional.name}</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
                           <View style={{
                             backgroundColor: typeColor.bg,
                             paddingHorizontal: 6,
                             paddingVertical: 2,
-                            borderRadius: 999,
+                            borderRadius: 8,
                             borderWidth: 1,
-                            borderColor: 'rgba(0,0,0,0.05)',
+                            borderColor: 'rgba(0,0,0,0.04)',
                           }}>
-                            <Text style={{ color: typeColor.text, fontSize: 11, fontWeight: '500' }}>
+                            <Text style={{ color: typeColor.text, fontSize: 10, fontWeight: '500' }}>
                               {getLeaderTypeLabel(professional.leader_type)}
                             </Text>
                           </View>
                           {professional.verified && (
                             <View style={{
-                              backgroundColor: '#D1FAE5',
+                              backgroundColor: 'rgba(63, 175, 115, 0.06)',
                               paddingHorizontal: 6,
                               paddingVertical: 2,
-                              borderRadius: 999,
+                              borderRadius: 8,
                               borderWidth: 1,
-                              borderColor: '#A7F3D0',
+                              borderColor: 'rgba(63, 175, 115, 0.08)',
                             }}>
-                              <Text style={{ color: '#3FAF73', fontSize: 11, fontWeight: '500' }}>Verified</Text>
+                              <Text style={{ color: '#3FAF73', fontSize: 10, fontWeight: '500' }}>Verified</Text>
                             </View>
                           )}
                         </View>
                       </View>
                     </View>
                     <View style={{
-                      backgroundColor: professional.available ? '#D1FAE5' : '#FEE2E2',
+                      backgroundColor: professional.available ? 'rgba(63, 175, 115, 0.06)' : 'rgba(220, 38, 38, 0.06)',
                       paddingHorizontal: 8,
-                      paddingVertical: 2,
-                      borderRadius: 999,
+                      paddingVertical: 3,
+                      borderRadius: 8,
                       borderWidth: 1,
-                      borderColor: professional.available ? '#A7F3D0' : '#FCA5A5',
+                      borderColor: professional.available ? 'rgba(63, 175, 115, 0.08)' : 'rgba(220, 38, 38, 0.08)',
                     }}>
                       <Text style={{
                         color: professional.available ? '#3FAF73' : '#DC2626',
-                        fontSize: 11,
+                        fontSize: 10,
                         fontWeight: '500',
                       }}>
                         {professional.available ? 'Available' : 'Unavailable'}
@@ -587,33 +813,33 @@ const Kadhis = () => {
                   </View>
 
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
-                    {(professional.expertise || []).slice(0, 3).map((exp: string, i: number) => (
+                    {(professional.expertise || []).slice(0, 4).map((exp: string, i: number) => (
                       <View key={i} style={{
-                        backgroundColor: '#FAFAF7',
+                        backgroundColor: 'rgba(3, 42, 36, 0.03)',
                         paddingHorizontal: 6,
                         paddingVertical: 2,
-                        borderRadius: 999,
+                        borderRadius: 6,
                         borderWidth: 1,
-                        borderColor: '#E8EEF4',
+                        borderColor: 'rgba(3, 42, 36, 0.04)',
                       }}>
-                        <Text style={{ color: '#6B7280', fontSize: 11 }}>{exp}</Text>
+                        <Text style={{ color: '#6B7280', fontSize: 10 }}>{exp}</Text>
                       </View>
                     ))}
-                    {(professional.expertise || []).length > 3 && (
+                    {(professional.expertise || []).length > 4 && (
                       <View style={{
-                        backgroundColor: '#FAFAF7',
+                        backgroundColor: 'rgba(3, 42, 36, 0.03)',
                         paddingHorizontal: 6,
                         paddingVertical: 2,
-                        borderRadius: 999,
+                        borderRadius: 6,
                         borderWidth: 1,
-                        borderColor: '#E8EEF4',
+                        borderColor: 'rgba(3, 42, 36, 0.04)',
                       }}>
-                        <Text style={{ color: '#6B7280', fontSize: 11 }}>+{(professional.expertise || []).length - 3}</Text>
+                        <Text style={{ color: '#6B7280', fontSize: 10 }}>+{(professional.expertise || []).length - 4}</Text>
                       </View>
                     )}
                   </View>
 
-                  <Text style={{ color: '#6B7280', fontSize: 13, marginTop: 8 }} numberOfLines={2}>
+                  <Text style={{ color: '#6B7280', fontSize: 12, marginTop: 8, lineHeight: 18 }} numberOfLines={2}>
                     {professional.bio || 'No bio available'}
                   </Text>
 
@@ -626,14 +852,14 @@ const Kadhis = () => {
                     marginTop: 12,
                     paddingTop: 12,
                     borderTopWidth: 1,
-                    borderTopColor: '#F4F5F1',
+                    borderTopColor: 'rgba(3, 42, 36, 0.04)',
                   }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Text style={{ color: '#C9A44B', fontSize: 14 }}>★</Text>
-                      <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>{professional.rating || 0}</Text>
-                      <Text style={{ color: '#6B7280', fontSize: 14 }}>({professional.reviews || 0})</Text>
-                      <Text style={{ color: '#6B7280', fontSize: 14 }}>·</Text>
-                      <Text style={{ color: '#6B7280', fontSize: 14 }}>
+                      <StarIcon color="#C9A44B" size={12} />
+                      <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>{professional.rating || 0}</Text>
+                      <Text style={{ color: '#8B8A86', fontSize: 12 }}>({professional.reviews || 0})</Text>
+                      <Text style={{ color: '#8B8A86', fontSize: 12 }}>·</Text>
+                      <Text style={{ color: '#032A24', fontSize: 12, fontWeight: '500' }}>
                         {professional.fee ? formatCurrency(professional.fee) + '/hr' : 'Contact'}
                       </Text>
                     </View>
@@ -645,31 +871,28 @@ const Kadhis = () => {
                           backgroundColor: '#FAFAF7',
                           borderRadius: 8,
                           borderWidth: 1,
-                          borderColor: '#E8EEF4',
+                          borderColor: 'rgba(3, 42, 36, 0.06)',
                         }}
                         onPress={() => handleViewProfile(professional)}
+                        activeOpacity={0.7}
                       >
-                        <Text style={{ color: '#1F2937', fontSize: 13, fontWeight: '500' }}>Profile</Text>
+                        <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '500' }}>Profile</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={{
                           paddingHorizontal: 14,
                           paddingVertical: 6,
                           borderRadius: 8,
-                          backgroundColor: professional.available ? '#0B342B' : '#F4F5F1',
+                          backgroundColor: professional.available ? '#032A24' : '#F3F4F6',
                           opacity: professional.available ? 1 : 0.6,
-                          shadowColor: professional.available ? '#0B342B' : 'transparent',
-                          shadowOffset: { width: 0, height: 4 },
-                          shadowOpacity: professional.available ? 0.2 : 0,
-                          shadowRadius: 8,
-                          elevation: professional.available ? 4 : 0,
                         }}
                         onPress={() => professional.available && handleBook(professional)}
                         disabled={!professional.available}
+                        activeOpacity={0.7}
                       >
                         <Text style={{
                           color: professional.available ? '#FFFFFF' : '#6B7280',
-                          fontSize: 13,
+                          fontSize: 11,
                           fontWeight: '600',
                         }}>
                           {professional.available ? 'Book' : 'Unavailable'}
@@ -682,20 +905,20 @@ const Kadhis = () => {
             })
           )}
 
-          {/* My Consultations */}
+          {/* ===== MY CONSULTATIONS ===== */}
           {isAuthenticated && (
             <View style={{
               backgroundColor: '#FFFFFF',
-              borderRadius: 12,
+              borderRadius: 16,
               marginTop: 16,
               borderWidth: 1,
-              borderColor: '#E8EEF4',
-              overflow: 'hidden',
-              shadowColor: '#000',
+              borderColor: 'rgba(3, 42, 36, 0.06)',
+              shadowColor: '#032A24',
               shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.04,
-              shadowRadius: 4,
+              shadowOpacity: 0.02,
+              shadowRadius: 8,
               elevation: 1,
+              overflow: 'hidden',
             }}>
               <TouchableOpacity
                 style={{
@@ -704,9 +927,10 @@ const Kadhis = () => {
                   alignItems: 'center',
                   paddingHorizontal: 16,
                   paddingVertical: 14,
-                  backgroundColor: '#0B342B',
+                  backgroundColor: '#032A24',
                 }}
                 onPress={handleViewConsultations}
+                activeOpacity={0.7}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>My Consultations</Text>
@@ -714,18 +938,20 @@ const Kadhis = () => {
                     backgroundColor: 'rgba(255,255,255,0.1)',
                     paddingHorizontal: 8,
                     paddingVertical: 2,
-                    borderRadius: 999,
+                    borderRadius: 8,
                   }}>
-                    <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>{bookings.length}</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 10 }}>{bookings.length}</Text>
                   </View>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>
+                  <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>
                     {showConsultations ? 'Hide' : 'Show'}
                   </Text>
-                  <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 16 }}>
-                    {showConsultations ? '▲' : '▼'}
-                  </Text>
+                  {showConsultations ? (
+                    <ChevronUpIcon color="rgba(255,255,255,0.6)" size={16} />
+                  ) : (
+                    <ChevronDownIcon color="rgba(255,255,255,0.6)" size={16} />
+                  )}
                 </View>
               </TouchableOpacity>
 
@@ -733,12 +959,12 @@ const Kadhis = () => {
                 <View style={{ padding: 16 }}>
                   {loadingBookings ? (
                     <View style={{ alignItems: 'center', paddingVertical: 20 }}>
-                      <ActivityIndicator size="small" color="#C9A44B" />
+                      <ActivityIndicator size="small" color="#032A24" />
                     </View>
                   ) : latestBookings.length === 0 ? (
                     <View style={{ alignItems: 'center', paddingVertical: 20 }}>
-                      <Text style={{ color: '#6B7280', fontSize: 14 }}>No consultations booked</Text>
-                      <Text style={{ color: '#6B7280', fontSize: 13, marginTop: 2 }}>
+                      <Text style={{ color: '#9CA3AF', fontSize: 13 }}>No consultations booked</Text>
+                      <Text style={{ color: '#9CA3AF', fontSize: 11, marginTop: 2 }}>
                         Book a consultation with a religious leader
                       </Text>
                     </View>
@@ -752,51 +978,51 @@ const Kadhis = () => {
                         <View key={booking.id} style={{
                           backgroundColor: '#FAFAF7',
                           padding: 12,
-                          borderRadius: 8,
+                          borderRadius: 10,
                           borderWidth: 1,
-                          borderColor: '#E8EEF4',
-                          marginBottom: 6,
+                          borderColor: 'rgba(3, 42, 36, 0.04)',
+                          marginBottom: 8,
                         }}>
                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                             <View style={{ flex: 1 }}>
-                              <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }} numberOfLines={1}>
+                              <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }} numberOfLines={1}>
                                 {booking.leader_name || 'Leader'}
                               </Text>
-                              <Text style={{ color: '#6B7280', fontSize: 13 }}>
+                              <Text style={{ color: '#6B7280', fontSize: 11 }}>
                                 {formatDate(booking.booking_date)} at {formatTime(booking.booking_time)}
                               </Text>
-                              <Text style={{ color: '#6B7280', fontSize: 13, textTransform: 'capitalize' }}>
+                              <Text style={{ color: '#6B7280', fontSize: 11, textTransform: 'capitalize' }}>
                                 {booking.type}
                               </Text>
-                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
                                 <View style={{
                                   backgroundColor: status.style.bg,
                                   paddingHorizontal: 6,
                                   paddingVertical: 2,
-                                  borderRadius: 999,
+                                  borderRadius: 6,
                                   borderWidth: 1,
-                                  borderColor: 'rgba(0,0,0,0.05)',
+                                  borderColor: 'rgba(0,0,0,0.04)',
                                 }}>
-                                  <Text style={{ color: status.style.text, fontSize: 11, fontWeight: '500' }}>{status.label}</Text>
+                                  <Text style={{ color: status.style.text, fontSize: 9, fontWeight: '500' }}>{status.label}</Text>
                                 </View>
                               </View>
-                              {isVideo && booking.room_name && (
-                                <Text style={{ color: '#0B342B', fontSize: 11, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', marginTop: 2 }}>
-                                  Room: {booking.room_name}
-                                </Text>
-                              )}
                             </View>
                             {canJoin && (
                               <TouchableOpacity
                                 style={{
-                                  backgroundColor: '#0B342B',
+                                  backgroundColor: '#032A24',
                                   paddingHorizontal: 12,
                                   paddingVertical: 6,
                                   borderRadius: 8,
+                                  flexDirection: 'row',
+                                  alignItems: 'center',
+                                  gap: 4,
                                 }}
                                 onPress={() => handleJoinMeeting(booking)}
+                                activeOpacity={0.7}
                               >
-                                <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '600' }}>Join Call</Text>
+                                <VideoIcon color="#FFFFFF" size={12} />
+                                <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600' }}>Join</Text>
                               </TouchableOpacity>
                             )}
                           </View>
@@ -808,74 +1034,83 @@ const Kadhis = () => {
               )}
             </View>
           )}
+
+          {/* ===== FOOTER ===== */}
+          <View style={{ alignItems: 'center', marginTop: 24 }}>
+            <Text style={{
+              color: 'rgba(201, 164, 75, 0.2)',
+              fontSize: 9,
+              letterSpacing: 1,
+              fontWeight: '500',
+            }}>
+              Itqaan · Islamic Guidance
+            </Text>
+          </View>
         </View>
       </ScrollView>
 
-      {/* Booking Modal */}
+      {/* ===== BOOKING MODAL WITH DATE/TIME PICKERS ===== */}
       <Modal visible={showBookingModal} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
+            borderRadius: 20,
+            padding: 24,
             width: '100%',
-            maxWidth: 400,
+            maxWidth: 420,
             maxHeight: '90%',
           }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ color: '#1F2937', fontSize: 18, fontWeight: '700' }}>Book Consultation</Text>
-              <TouchableOpacity onPress={() => setShowBookingModal(false)}>
-                <Text style={{ color: '#6B7280', fontSize: 20 }}>✕</Text>
+              <Text style={{ color: '#032A24', fontSize: 18, fontWeight: '700', letterSpacing: -0.3 }}>
+                Book Consultation
+              </Text>
+              <TouchableOpacity onPress={() => setShowBookingModal(false)} activeOpacity={0.7} style={{ padding: 4 }}>
+                <CloseIcon color="#6B7280" size={20} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={{
-                backgroundColor: '#FAFAF7',
+                backgroundColor: 'rgba(3, 42, 36, 0.02)',
                 padding: 12,
-                borderRadius: 8,
+                borderRadius: 10,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
+                borderColor: 'rgba(3, 42, 36, 0.04)',
                 alignItems: 'center',
                 marginBottom: 12,
               }}>
-                <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '600' }}>{selectedProfessional?.name}</Text>
-                <Text style={{ color: '#6B7280', fontSize: 14 }}>
+                <Text style={{ color: '#032A24', fontSize: 15, fontWeight: '600' }}>{selectedProfessional?.name}</Text>
+                <Text style={{ color: '#6B7280', fontSize: 13 }}>
                   {getLeaderTypeLabel(selectedProfessional?.leader_type)}
                 </Text>
-                <Text style={{ color: '#0B342B', fontSize: 14, fontWeight: '600', marginTop: 2 }}>
+                <Text style={{ color: '#C9A44B', fontSize: 13, fontWeight: '600', marginTop: 2 }}>
                   {selectedProfessional?.fee ? formatCurrency(selectedProfessional.fee) + '/hr' : 'Fee upon consultation'}
                 </Text>
               </View>
 
               {selectedProfessional?.fee > 0 && (
                 <View style={{
-                  backgroundColor: userBalance >= selectedProfessional.fee ? '#FAFAF7' : '#FEF2F2',
+                  backgroundColor: userBalance >= selectedProfessional.fee ? 'rgba(3, 42, 36, 0.02)' : '#FEF2F2',
                   padding: 12,
-                  borderRadius: 8,
+                  borderRadius: 10,
                   borderWidth: 1,
-                  borderColor: userBalance >= selectedProfessional.fee ? '#E8EEF4' : '#FECACA',
+                  borderColor: userBalance >= selectedProfessional.fee ? 'rgba(3, 42, 36, 0.04)' : '#FECACA',
                   marginBottom: 12,
                 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Text style={{ color: '#6B7280', fontSize: 14 }}>Your Balance</Text>
+                    <Text style={{ color: '#6B7280', fontSize: 13 }}>Your Balance</Text>
                     <Text style={{
-                      color: userBalance >= selectedProfessional.fee ? '#0B342B' : '#DC2626',
-                      fontSize: 14,
+                      color: userBalance >= selectedProfessional.fee ? '#032A24' : '#DC2626',
+                      fontSize: 13,
                       fontWeight: '600',
                     }}>
                       {formatCurrency(userBalance)}
                     </Text>
                   </View>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 }}>
-                    <Text style={{ color: '#6B7280', fontSize: 14 }}>Consultation Fee</Text>
-                    <Text style={{ color: '#C9A44B', fontSize: 14, fontWeight: '600' }}>{formatCurrency(selectedProfessional.fee)}</Text>
+                    <Text style={{ color: '#6B7280', fontSize: 13 }}>Consultation Fee</Text>
+                    <Text style={{ color: '#C9A44B', fontSize: 13, fontWeight: '600' }}>{formatCurrency(selectedProfessional.fee)}</Text>
                   </View>
-                  {fetchingBalance && (
-                    <View style={{ alignItems: 'center', marginTop: 6 }}>
-                      <ActivityIndicator size="small" color="#C9A44B" />
-                    </View>
-                  )}
                   {userBalance < selectedProfessional.fee && !fetchingBalance && (
                     <View style={{
                       backgroundColor: '#FEF2F2',
@@ -885,12 +1120,12 @@ const Kadhis = () => {
                       borderColor: '#FECACA',
                       marginTop: 8,
                     }}>
-                      <Text style={{ color: '#DC2626', fontSize: 13, textAlign: 'center' }}>
+                      <Text style={{ color: '#DC2626', fontSize: 12, textAlign: 'center' }}>
                         Insufficient balance. You need {formatCurrency(selectedProfessional.fee)} but have {formatCurrency(userBalance)}.
                       </Text>
                       <TouchableOpacity
                         style={{
-                          backgroundColor: '#0B342B',
+                          backgroundColor: '#032A24',
                           paddingVertical: 6,
                           borderRadius: 8,
                           alignItems: 'center',
@@ -900,8 +1135,9 @@ const Kadhis = () => {
                           setShowBookingModal(false);
                           navigation.navigate('Wallet' as never);
                         }}
+                        activeOpacity={0.7}
                       >
-                        <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '600' }}>Top Up Wallet</Text>
+                        <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '600' }}>Top Up Wallet</Text>
                       </TouchableOpacity>
                     </View>
                   )}
@@ -909,12 +1145,14 @@ const Kadhis = () => {
               )}
 
               <View style={{ marginBottom: 10 }}>
-                <Text style={{ color: '#6B7280', fontSize: 13, fontWeight: '500', marginBottom: 4 }}>Consultation Topic</Text>
+                <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                  Consultation Topic *
+                </Text>
                 <View style={{
                   backgroundColor: '#FAFAF7',
                   borderWidth: 1,
-                  borderColor: '#E8EEF4',
-                  borderRadius: 8,
+                  borderColor: 'rgba(3, 42, 36, 0.06)',
+                  borderRadius: 10,
                   paddingHorizontal: 12,
                   paddingVertical: 6,
                 }}>
@@ -923,55 +1161,82 @@ const Kadhis = () => {
                     value={bookingData.topic}
                     onChangeText={(text) => handleBookingChange('topic', text)}
                     placeholder="Select a topic"
+                    placeholderTextColor="#9CA3AF"
                   />
                 </View>
               </View>
 
+              {/* Date Picker */}
               <View style={{ marginBottom: 10 }}>
-                <Text style={{ color: '#6B7280', fontSize: 13, fontWeight: '500', marginBottom: 4 }}>Date</Text>
-                <TextInput
+                <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                  Date *
+                </Text>
+                <TouchableOpacity
                   style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
                     backgroundColor: '#FAFAF7',
                     borderWidth: 1,
-                    borderColor: '#E8EEF4',
-                    borderRadius: 8,
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
-                    color: '#1F2937',
-                    fontSize: 14,
+                    borderColor: 'rgba(3, 42, 36, 0.06)',
+                    borderRadius: 10,
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
                   }}
-                  value={bookingData.date}
-                  onChangeText={(text) => handleBookingChange('date', text)}
-                  placeholder="YYYY-MM-DD"
-                />
+                  onPress={() => setShowDatePicker(true)}
+                  activeOpacity={0.7}
+                >
+                  <CalendarIcon color="#9CA3AF" size={16} />
+                  <Text style={{
+                    flex: 1,
+                    color: bookingData.date ? '#1F2937' : '#9CA3AF',
+                    fontSize: 14,
+                    paddingHorizontal: 10,
+                  }}>
+                    {bookingData.date || 'Select date'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Time Picker */}
+              <View style={{ marginBottom: 10 }}>
+                <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                  Time *
+                </Text>
+                <TouchableOpacity
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    backgroundColor: '#FAFAF7',
+                    borderWidth: 1,
+                    borderColor: 'rgba(3, 42, 36, 0.06)',
+                    borderRadius: 10,
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
+                  }}
+                  onPress={() => setShowTimePicker(true)}
+                  activeOpacity={0.7}
+                >
+                  <ClockIcon color="#9CA3AF" size={16} />
+                  <Text style={{
+                    flex: 1,
+                    color: bookingData.time ? '#1F2937' : '#9CA3AF',
+                    fontSize: 14,
+                    paddingHorizontal: 10,
+                  }}>
+                    {bookingData.time || 'Select time'}
+                  </Text>
+                </TouchableOpacity>
               </View>
 
               <View style={{ marginBottom: 10 }}>
-                <Text style={{ color: '#6B7280', fontSize: 13, fontWeight: '500', marginBottom: 4 }}>Time</Text>
-                <TextInput
-                  style={{
-                    backgroundColor: '#FAFAF7',
-                    borderWidth: 1,
-                    borderColor: '#E8EEF4',
-                    borderRadius: 8,
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
-                    color: '#1F2937',
-                    fontSize: 14,
-                  }}
-                  value={bookingData.time}
-                  onChangeText={(text) => handleBookingChange('time', text)}
-                  placeholder="HH:MM"
-                />
-              </View>
-
-              <View style={{ marginBottom: 10 }}>
-                <Text style={{ color: '#6B7280', fontSize: 13, fontWeight: '500', marginBottom: 4 }}>Consultation Type</Text>
+                <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                  Consultation Type
+                </Text>
                 <View style={{
                   backgroundColor: '#FAFAF7',
                   borderWidth: 1,
-                  borderColor: '#E8EEF4',
-                  borderRadius: 8,
+                  borderColor: 'rgba(3, 42, 36, 0.06)',
+                  borderRadius: 10,
                   paddingHorizontal: 12,
                   paddingVertical: 6,
                 }}>
@@ -980,19 +1245,22 @@ const Kadhis = () => {
                     value={bookingData.type}
                     onChangeText={(text) => handleBookingChange('type', text)}
                     placeholder="video"
+                    placeholderTextColor="#9CA3AF"
                   />
                 </View>
               </View>
 
               <View style={{ marginBottom: 12 }}>
-                <Text style={{ color: '#6B7280', fontSize: 13, fontWeight: '500', marginBottom: 4 }}>Notes</Text>
+                <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                  Notes
+                </Text>
                 <TextInput
                   style={{
                     backgroundColor: '#FAFAF7',
                     borderWidth: 1,
-                    borderColor: '#E8EEF4',
-                    borderRadius: 8,
-                    paddingHorizontal: 12,
+                    borderColor: 'rgba(3, 42, 36, 0.06)',
+                    borderRadius: 10,
+                    paddingHorizontal: 14,
                     paddingVertical: 8,
                     color: '#1F2937',
                     fontSize: 14,
@@ -1002,37 +1270,39 @@ const Kadhis = () => {
                   value={bookingData.notes}
                   onChangeText={(text) => handleBookingChange('notes', text)}
                   placeholder="Brief description of your consultation needs..."
+                  placeholderTextColor="#9CA3AF"
                   multiline
                 />
               </View>
 
               <View style={{
-                backgroundColor: '#FAFAF7',
+                backgroundColor: 'rgba(201, 164, 75, 0.04)',
                 padding: 10,
                 borderRadius: 8,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
+                borderColor: 'rgba(201, 164, 75, 0.06)',
                 marginBottom: 12,
               }}>
-                <Text style={{ color: '#6B7280', fontSize: 13, textAlign: 'center', lineHeight: 18 }}>
+                <Text style={{ color: '#6B7280', fontSize: 12, textAlign: 'center', lineHeight: 18 }}>
                   Your consultation information will be handled confidentially and only shared with the professional you are booking.
                 </Text>
               </View>
 
-              {error ? <Text style={{ color: '#DC2626', fontSize: 13, marginBottom: 8, textAlign: 'center' }}>{error}</Text> : null}
+              {error ? <Text style={{ color: '#DC2626', fontSize: 12, marginBottom: 8, textAlign: 'center' }}>{error}</Text> : null}
 
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 <TouchableOpacity
                   style={{
                     flex: 1,
-                    backgroundColor: '#F4F5F1',
+                    backgroundColor: '#F3F4F6',
                     paddingVertical: 10,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     alignItems: 'center',
                   }}
                   onPress={() => setShowBookingModal(false)}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#6B7280', fontSize: 15, fontWeight: '500' }}>Cancel</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '500' }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={{
@@ -1043,10 +1313,10 @@ const Kadhis = () => {
                       bookingData.time &&
                       bookingData.topic &&
                       !processing
-                        ? '#0B342B'
-                        : '#F4F5F1',
+                        ? '#032A24'
+                        : '#F3F4F6',
                     paddingVertical: 10,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     alignItems: 'center',
                     opacity:
                       userBalance >= (selectedProfessional?.fee || 0) &&
@@ -1056,32 +1326,6 @@ const Kadhis = () => {
                       !processing
                         ? 1
                         : 0.6,
-                    shadowColor:
-                      userBalance >= (selectedProfessional?.fee || 0) &&
-                      bookingData.date &&
-                      bookingData.time &&
-                      bookingData.topic &&
-                      !processing
-                        ? '#0B342B'
-                        : 'transparent',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity:
-                      userBalance >= (selectedProfessional?.fee || 0) &&
-                      bookingData.date &&
-                      bookingData.time &&
-                      bookingData.topic &&
-                      !processing
-                        ? 0.2
-                        : 0,
-                    shadowRadius: 8,
-                    elevation:
-                      userBalance >= (selectedProfessional?.fee || 0) &&
-                      bookingData.date &&
-                      bookingData.time &&
-                      bookingData.topic &&
-                      !processing
-                        ? 4
-                        : 0,
                   }}
                   onPress={confirmBooking}
                   disabled={
@@ -1091,11 +1335,12 @@ const Kadhis = () => {
                     !bookingData.topic ||
                     userBalance < (selectedProfessional?.fee || 0)
                   }
+                  activeOpacity={0.7}
                 >
                   {processing ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <ActivityIndicator size="small" color="#FFFFFF" />
-                      <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>Booking...</Text>
+                      <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Booking...</Text>
                     </View>
                   ) : (
                     <Text style={{
@@ -1107,7 +1352,7 @@ const Kadhis = () => {
                         !processing
                           ? '#FFFFFF'
                           : '#6B7280',
-                      fontSize: 15,
+                      fontSize: 14,
                       fontWeight: '600',
                     }}>
                       Confirm Booking
@@ -1120,21 +1365,44 @@ const Kadhis = () => {
         </View>
       </Modal>
 
+      {/* DateTimePicker for Date */}
+      {showDatePicker && (
+        <DateTimePicker
+          value={selectedDate}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={onDateChange}
+          minimumDate={new Date()}
+        />
+      )}
+
+      {/* DateTimePicker for Time */}
+      {showTimePicker && (
+        <DateTimePicker
+          value={selectedTime}
+          mode="time"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={onTimeChange}
+        />
+      )}
+
       {/* Profile Modal */}
       <Modal visible={showProfileModal} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
+            borderRadius: 20,
+            padding: 24,
             width: '100%',
-            maxWidth: 400,
+            maxWidth: 420,
             maxHeight: '90%',
           }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ color: '#1F2937', fontSize: 18, fontWeight: '700' }}>Professional Profile</Text>
-              <TouchableOpacity onPress={() => setShowProfileModal(false)}>
-                <Text style={{ color: '#6B7280', fontSize: 20 }}>✕</Text>
+              <Text style={{ color: '#032A24', fontSize: 18, fontWeight: '700', letterSpacing: -0.3 }}>
+                Professional Profile
+              </Text>
+              <TouchableOpacity onPress={() => setShowProfileModal(false)} activeOpacity={0.7} style={{ padding: 4 }}>
+                <CloseIcon color="#6B7280" size={20} />
               </TouchableOpacity>
             </View>
 
@@ -1151,7 +1419,7 @@ const Kadhis = () => {
                     width: 56,
                     height: 56,
                     borderRadius: 14,
-                    backgroundColor: '#0B342B',
+                    backgroundColor: '#032A24',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}>
@@ -1161,19 +1429,19 @@ const Kadhis = () => {
                   </View>
                 )}
                 <View>
-                  <Text style={{ color: '#1F2937', fontSize: 17, fontWeight: '700' }}>{selectedProfessional?.name}</Text>
+                  <Text style={{ color: '#032A24', fontSize: 16, fontWeight: '700' }}>{selectedProfessional?.name}</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
                     <View style={{
                       backgroundColor: getTypeColor(selectedProfessional?.leader_type).bg,
                       paddingHorizontal: 6,
                       paddingVertical: 2,
-                      borderRadius: 999,
+                      borderRadius: 8,
                       borderWidth: 1,
-                      borderColor: 'rgba(0,0,0,0.05)',
+                      borderColor: 'rgba(0,0,0,0.04)',
                     }}>
                       <Text style={{
                         color: getTypeColor(selectedProfessional?.leader_type).text,
-                        fontSize: 11,
+                        fontSize: 10,
                         fontWeight: '500',
                       }}>
                         {getLeaderTypeLabel(selectedProfessional?.leader_type)}
@@ -1181,14 +1449,14 @@ const Kadhis = () => {
                     </View>
                     {selectedProfessional?.verified && (
                       <View style={{
-                        backgroundColor: '#D1FAE5',
+                        backgroundColor: 'rgba(63, 175, 115, 0.06)',
                         paddingHorizontal: 6,
                         paddingVertical: 2,
-                        borderRadius: 999,
+                        borderRadius: 8,
                         borderWidth: 1,
-                        borderColor: '#A7F3D0',
+                        borderColor: 'rgba(63, 175, 115, 0.08)',
                       }}>
-                        <Text style={{ color: '#3FAF73', fontSize: 11, fontWeight: '500' }}>Verified</Text>
+                        <Text style={{ color: '#3FAF73', fontSize: 10, fontWeight: '500' }}>Verified</Text>
                       </View>
                     )}
                   </View>
@@ -1196,79 +1464,79 @@ const Kadhis = () => {
               </View>
 
               <View style={{
-                backgroundColor: '#FAFAF7',
+                backgroundColor: 'rgba(3, 42, 36, 0.02)',
                 padding: 12,
-                borderRadius: 8,
+                borderRadius: 10,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
+                borderColor: 'rgba(3, 42, 36, 0.04)',
                 marginBottom: 12,
               }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Experience</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>{selectedProfessional?.experience || 'N/A'}</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Experience</Text>
+                  <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>{selectedProfessional?.experience || 'N/A'}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Languages</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Languages</Text>
+                  <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>
                     {selectedProfessional?.languages?.join(', ') || 'N/A'}
                   </Text>
                 </View>
                 {selectedProfessional?.institution && (
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                    <Text style={{ color: '#6B7280', fontSize: 14 }}>Institution</Text>
-                    <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600', textAlign: 'right', flex: 1, marginLeft: 8 }}>
+                    <Text style={{ color: '#6B7280', fontSize: 13 }}>Institution</Text>
+                    <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600', textAlign: 'right', flex: 1, marginLeft: 8 }}>
                       {selectedProfessional.institution}
                     </Text>
                   </View>
                 )}
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>Rating</Text>
-                  <Text style={{ color: '#C9A44B', fontSize: 14, fontWeight: '600' }}>
+                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Rating</Text>
+                  <Text style={{ color: '#C9A44B', fontSize: 13, fontWeight: '600' }}>
                     ★ {selectedProfessional?.rating || 0} ({selectedProfessional?.reviews || 0} reviews)
                   </Text>
                 </View>
                 {selectedProfessional?.fee && (
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                    <Text style={{ color: '#6B7280', fontSize: 14 }}>Fee</Text>
-                    <Text style={{ color: '#0B342B', fontSize: 14, fontWeight: '600' }}>{formatCurrency(selectedProfessional.fee)}/hour</Text>
+                    <Text style={{ color: '#6B7280', fontSize: 13 }}>Fee</Text>
+                    <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>{formatCurrency(selectedProfessional.fee)}/hour</Text>
                   </View>
                 )}
               </View>
 
               <View style={{
-                backgroundColor: '#FAFAF7',
+                backgroundColor: 'rgba(3, 42, 36, 0.02)',
                 padding: 12,
-                borderRadius: 8,
+                borderRadius: 10,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
+                borderColor: 'rgba(3, 42, 36, 0.04)',
                 marginBottom: 12,
               }}>
-                <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600', marginBottom: 4 }}>About</Text>
-                <Text style={{ color: '#6B7280', fontSize: 14, lineHeight: 20 }}>
+                <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600', marginBottom: 4 }}>About</Text>
+                <Text style={{ color: '#6B7280', fontSize: 13, lineHeight: 20 }}>
                   {selectedProfessional?.bio || 'No bio available'}
                 </Text>
               </View>
 
               <View style={{
-                backgroundColor: '#FAFAF7',
+                backgroundColor: 'rgba(3, 42, 36, 0.02)',
                 padding: 12,
-                borderRadius: 8,
+                borderRadius: 10,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
+                borderColor: 'rgba(3, 42, 36, 0.04)',
                 marginBottom: 16,
               }}>
-                <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600', marginBottom: 6 }}>Expertise</Text>
+                <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600', marginBottom: 6 }}>Expertise</Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
                   {(selectedProfessional?.expertise || []).map((exp: string, i: number) => (
                     <View key={i} style={{
                       backgroundColor: '#FFFFFF',
                       paddingHorizontal: 8,
-                      paddingVertical: 4,
-                      borderRadius: 999,
+                      paddingVertical: 3,
+                      borderRadius: 6,
                       borderWidth: 1,
-                      borderColor: '#E8EEF4',
+                      borderColor: 'rgba(3, 42, 36, 0.04)',
                     }}>
-                      <Text style={{ color: '#6B7280', fontSize: 12 }}>{exp}</Text>
+                      <Text style={{ color: '#6B7280', fontSize: 11 }}>{exp}</Text>
                     </View>
                   ))}
                 </View>
@@ -1278,35 +1546,32 @@ const Kadhis = () => {
                 <TouchableOpacity
                   style={{
                     flex: 1,
-                    backgroundColor: '#F4F5F1',
+                    backgroundColor: '#F3F4F6',
                     paddingVertical: 10,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     alignItems: 'center',
                   }}
                   onPress={() => setShowProfileModal(false)}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#6B7280', fontSize: 15, fontWeight: '500' }}>Close</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '500' }}>Close</Text>
                 </TouchableOpacity>
                 {selectedProfessional?.available && (
                   <TouchableOpacity
                     style={{
                       flex: 1,
-                      backgroundColor: '#0B342B',
+                      backgroundColor: '#032A24',
                       paddingVertical: 10,
-                      borderRadius: 8,
+                      borderRadius: 10,
                       alignItems: 'center',
-                      shadowColor: '#0B342B',
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.2,
-                      shadowRadius: 8,
-                      elevation: 4,
                     }}
                     onPress={() => {
                       setShowProfileModal(false);
                       handleBook(selectedProfessional);
                     }}
+                    activeOpacity={0.7}
                   >
-                    <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>Book Consultation</Text>
+                    <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Book Consultation</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -1317,80 +1582,82 @@ const Kadhis = () => {
 
       {/* Success Modal */}
       <Modal visible={showSuccessModal} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
+            borderRadius: 20,
+            padding: 24,
             width: '100%',
-            maxWidth: 400,
+            maxWidth: 420,
             maxHeight: '90%',
           }}>
             <View style={{
-              backgroundColor: '#0B342B',
+              backgroundColor: '#032A24',
               padding: 16,
-              borderTopLeftRadius: 12,
-              borderTopRightRadius: 12,
-              margin: -20,
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              margin: -24,
               marginBottom: 16,
               flexDirection: 'row',
               justifyContent: 'space-between',
               alignItems: 'center',
             }}>
-              <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700' }}>Booking Confirmed</Text>
-              <TouchableOpacity onPress={() => setShowSuccessModal(false)}>
-                <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 20 }}>✕</Text>
+              <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700', letterSpacing: -0.3 }}>
+                Booking Confirmed
+              </Text>
+              <TouchableOpacity onPress={() => setShowSuccessModal(false)} activeOpacity={0.7} style={{ padding: 4 }}>
+                <CloseIcon color="rgba(255,255,255,0.6)" size={20} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={{ alignItems: 'center', marginBottom: 16 }}>
                 <View style={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: 32,
-                  backgroundColor: 'rgba(11, 52, 43, 0.1)',
+                  width: 60,
+                  height: 60,
+                  borderRadius: 30,
+                  backgroundColor: 'rgba(63, 175, 115, 0.08)',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  borderWidth: 4,
-                  borderColor: 'rgba(11, 52, 43, 0.2)',
+                  borderWidth: 3,
+                  borderColor: 'rgba(63, 175, 115, 0.12)',
                 }}>
-                  <Text style={{ color: '#0B342B', fontSize: 32 }}>✓</Text>
+                  <CheckIcon color="#3FAF73" size={30} />
                 </View>
-                <Text style={{ color: '#6B7280', fontSize: 14, marginTop: 6 }}>Consultation booked with</Text>
-                <Text style={{ color: '#1F2937', fontSize: 18, fontWeight: '700', marginTop: 2 }}>{selectedProfessional?.name}</Text>
-                <Text style={{ color: '#6B7280', fontSize: 14, marginTop: 2 }}>
+                <Text style={{ color: '#6B7280', fontSize: 13, marginTop: 6 }}>Consultation booked with</Text>
+                <Text style={{ color: '#032A24', fontSize: 18, fontWeight: '700', marginTop: 2 }}>{selectedProfessional?.name}</Text>
+                <Text style={{ color: '#6B7280', fontSize: 13, marginTop: 2 }}>
                   {bookingData.date} at {bookingData.time}
                 </Text>
                 {selectedProfessional?.fee > 0 && (
-                  <Text style={{ color: '#0B342B', fontSize: 14, fontWeight: '600', marginTop: 4 }}>
+                  <Text style={{ color: '#C9A44B', fontSize: 13, fontWeight: '600', marginTop: 4 }}>
                     Fee: {formatCurrency(selectedProfessional.fee)}
                   </Text>
                 )}
               </View>
 
               <View style={{
-                backgroundColor: '#FAFAF7',
+                backgroundColor: 'rgba(63, 175, 115, 0.04)',
                 padding: 12,
-                borderRadius: 8,
+                borderRadius: 10,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
+                borderColor: 'rgba(63, 175, 115, 0.06)',
                 marginBottom: 12,
               }}>
-                <Text style={{ color: '#6B7280', fontSize: 14, textAlign: 'center', lineHeight: 20 }}>
+                <Text style={{ color: '#6B7280', fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
                   You will receive a confirmation with details. The professional will contact you regarding your consultation.
                 </Text>
               </View>
 
               <View style={{
-                backgroundColor: '#FAFAF7',
+                backgroundColor: 'rgba(201, 164, 75, 0.04)',
                 padding: 12,
-                borderRadius: 8,
+                borderRadius: 10,
                 borderWidth: 1,
-                borderColor: '#E8EEF4',
+                borderColor: 'rgba(201, 164, 75, 0.06)',
                 marginBottom: 16,
               }}>
-                <Text style={{ color: '#6B7280', fontSize: 14, textAlign: 'center', fontStyle: 'italic', lineHeight: 20 }}>
+                <Text style={{ color: '#6B7280', fontSize: 13, textAlign: 'center', fontStyle: 'italic', lineHeight: 20 }}>
                   "And whoever is granted wisdom has indeed been granted great good." — Quran 2:269
                 </Text>
               </View>
@@ -1399,34 +1666,31 @@ const Kadhis = () => {
                 <TouchableOpacity
                   style={{
                     flex: 1,
-                    backgroundColor: '#F4F5F1',
+                    backgroundColor: '#F3F4F6',
                     paddingVertical: 10,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     alignItems: 'center',
                   }}
                   onPress={() => setShowSuccessModal(false)}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#6B7280', fontSize: 15, fontWeight: '500' }}>Done</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '500' }}>Done</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={{
                     flex: 1,
-                    backgroundColor: '#0B342B',
+                    backgroundColor: '#032A24',
                     paddingVertical: 10,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     alignItems: 'center',
-                    shadowColor: '#0B342B',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 8,
-                    elevation: 4,
                   }}
                   onPress={() => {
                     setShowSuccessModal(false);
                     setShowConsultations(true);
                   }}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>View My Consultations</Text>
+                  <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>View My Consultations</Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -1438,28 +1702,28 @@ const Kadhis = () => {
       {success ? (
         <View style={{
           position: 'absolute',
-          top: 60,
-          right: 16,
-          left: 16,
-          backgroundColor: '#0B342B',
-          paddingHorizontal: 16,
-          paddingVertical: 12,
-          borderRadius: 12,
+          top: Platform.OS === 'ios' ? 60 : 40,
+          right: 20,
+          left: 20,
+          backgroundColor: '#032A24',
+          paddingHorizontal: 18,
+          paddingVertical: 14,
+          borderRadius: 14,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          shadowColor: '#0B342B',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          elevation: 4,
+          shadowColor: '#032A24',
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.2,
+          shadowRadius: 16,
+          elevation: 8,
         }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text style={{ color: '#C9A44B', fontSize: 16 }}>✓</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <CheckIcon color="#C9A44B" size={18} />
             <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '500', flex: 1 }}>{success}</Text>
           </View>
-          <TouchableOpacity onPress={() => setSuccess('')}>
-            <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 16 }}>✕</Text>
+          <TouchableOpacity onPress={() => setSuccess('')} activeOpacity={0.7} style={{ padding: 4 }}>
+            <CloseIcon color="rgba(255,255,255,0.5)" size={18} />
           </TouchableOpacity>
         </View>
       ) : null}

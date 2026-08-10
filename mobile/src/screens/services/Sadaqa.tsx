@@ -10,10 +10,116 @@ import {
   RefreshControl,
   Platform,
   Modal,
+  Dimensions,
+  LayoutAnimation,
+  UIManager,
   Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { sadaqaService, walletService } from '../../api/client';
+import Svg, { Path, Circle, Rect } from 'react-native-svg';
+
+// Enable LayoutAnimation for Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const { width } = Dimensions.get('window');
+
+// Professional SVG Icons using react-native-svg
+const HeartIcon = ({ color = '#032A24', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path 
+      d="M12 21.35L10.55 20.03C5.4 15.36 2 12.28 2 8.5C2 5.42 4.42 3 7.5 3C9.24 3 10.91 3.81 12 5.09C13.09 3.81 14.76 3 16.5 3C19.58 3 22 5.42 22 8.5C22 12.28 18.6 15.36 13.45 20.04L12 21.35Z" 
+      fill={color} 
+      opacity="0.15" 
+      stroke={color} 
+      strokeWidth="1.5"
+    />
+  </Svg>
+);
+
+const WalletIcon = ({ color = '#FFFFFF', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Rect x="2" y="5" width="20" height="14" rx="2" stroke={color} strokeWidth="1.5"/>
+    <Path d="M16 13C16 12.4477 16.4477 12 17 12H20C20.5523 12 21 12.4477 21 13V15C21 15.5523 20.5523 16 20 16H17C16.4477 16 16 15.5523 16 15V13Z" fill={color} opacity="0.1" stroke={color} strokeWidth="1.5"/>
+    <Circle cx="18" cy="14" r="0.5" fill={color}/>
+  </Svg>
+);
+
+const SearchIcon = ({ color = '#6B7280', size = 18 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="11" cy="11" r="7" stroke={color} strokeWidth="1.5"/>
+    <Path d="M16.5 16.5L21 21" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </Svg>
+);
+
+const CheckIcon = ({ color = '#FFFFFF', size = 16 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M5 12L10 17L20 7" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const ChevronDownIcon = ({ color = '#6B7280', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M6 9L12 15L18 9" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const ChevronUpIcon = ({ color = '#6B7280', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M18 15L12 9L6 15" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const CloseIcon = ({ color = '#6B7280', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M18 6L6 18M6 6L18 18" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const DonorsIcon = ({ color = '#6B7280', size = 16 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="9" cy="8" r="3" stroke={color} strokeWidth="1.5"/>
+    <Path d="M4 18V17C4 14.7909 5.79086 13 8 13H10C12.2091 13 14 14.7909 14 17V18" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <Circle cx="17" cy="9" r="2" stroke={color} strokeWidth="1.5"/>
+    <Path d="M15 17V16C15 14.8954 15.8954 14 17 14H18C19.1046 14 20 14.8954 20 16V17" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </Svg>
+);
+
+const SuccessIcon = ({ color = '#3FAF73', size = 32 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="12" r="11" stroke={color} strokeWidth="1.5" opacity="0.2"/>
+    <Circle cx="12" cy="12" r="11" stroke={color} strokeWidth="1.5" opacity="0.1"/>
+    <Path d="M7 12L10 15L17 8" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+// Back Arrow Icon
+const BackIcon = ({ color = '#032A24', size = 24 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M15 18L9 12L15 6" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+// Unique decorative icon for Sadaqa
+const SadaqaIcon = ({ color = '#C9A44B', size = 24 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path 
+      d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" 
+      stroke={color} 
+      strokeWidth="1.5"
+      opacity="0.2"
+    />
+    <Path 
+      d="M12 16V12M12 8H12.01M8 12H16" 
+      stroke={color} 
+      strokeWidth="1.5" 
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
 
 const Sadaqa = () => {
   const navigation = useNavigation();
@@ -41,6 +147,8 @@ const Sadaqa = () => {
     uniqueCampaigns: 0,
     categoriesSupported: 0,
   });
+
+  const [recentDonationsExpanded, setRecentDonationsExpanded] = useState(false);
 
   const categories = [
     { id: 'all', label: 'All Causes' },
@@ -224,6 +332,11 @@ const Sadaqa = () => {
     setAmount(val.toString());
   };
 
+  const toggleRecentDonations = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setRecentDonationsExpanded(!recentDonationsExpanded);
+  };
+
   const formatCurrency = (amount: number) => {
     return `KES ${amount?.toLocaleString() || 0}`;
   };
@@ -267,8 +380,10 @@ const Sadaqa = () => {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <ActivityIndicator size="large" color="#C9A44B" />
-          <Text style={{ color: '#6B7280', marginTop: 12, fontSize: 14 }}>Loading causes...</Text>
+          <ActivityIndicator size="large" color="#032A24" />
+          <Text style={{ color: '#6B7280', marginTop: 16, fontSize: 14 }}>
+            Loading causes...
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -277,65 +392,174 @@ const Sadaqa = () => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
       <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+        contentContainerStyle={{ 
+          paddingTop: Platform.OS === 'ios' ? 8 : 12,
+          paddingHorizontal: 20,
+          paddingBottom: 40,
+        }}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#C9A44B" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#032A24" />}
       >
         <View style={{ maxWidth: 800, width: '100%', alignSelf: 'center' }}>
-          {/* Hero Section */}
+          {/* ===== UNIQUE PREMIUM HEADER WITH BACK ===== */}
           <View style={{
-            backgroundColor: '#0B342B',
-            borderRadius: 16,
-            padding: 20,
-            marginBottom: 16,
-            overflow: 'hidden',
+            backgroundColor: '#032A24',
+            borderRadius: 18,
+            paddingHorizontal: 18,
+            paddingVertical: 16,
+            marginBottom: 24,
             borderWidth: 1,
-            borderColor: 'rgba(201, 164, 75, 0.15)',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.1,
-            shadowRadius: 8,
-            elevation: 4,
+            borderColor: 'rgba(201, 164, 75, 0.2)',
+            shadowColor: '#032A24',
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.12,
+            shadowRadius: 20,
+            elevation: 6,
           }}>
-            <View style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, backgroundColor: 'rgba(201, 164, 75, 0.05)', borderRadius: 999 }} />
-            <View style={{ position: 'absolute', bottom: -30, left: -30, width: 80, height: 80, backgroundColor: 'rgba(201, 164, 75, 0.05)', borderRadius: 999 }} />
-
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
-              <View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                  <Text style={{ fontSize: 16 }}>❤️</Text>
-                  <Text style={{ color: 'rgba(183, 192, 186, 0.7)', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1 }}>
-                    Sadaqa
+            {/* Decorative gold accent line */}
+            <View style={{
+              position: 'absolute',
+              top: 0,
+              left: 40,
+              right: 40,
+              height: 2,
+              backgroundColor: '#C9A44B',
+              opacity: 0.3,
+            }} />
+            
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                activeOpacity={0.7}
+                style={{
+                  padding: 6,
+                  marginRight: 12,
+                  borderRadius: 10,
+                  backgroundColor: 'rgba(201, 164, 75, 0.08)',
+                }}
+              >
+                <BackIcon color="#C9A44B" size={22} />
+              </TouchableOpacity>
+              
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <SadaqaIcon color="#C9A44B" size={18} />
+                  <Text style={{
+                    color: '#C9A44B',
+                    fontSize: 12,
+                    fontWeight: '600',
+                    letterSpacing: 0.8,
+                    textTransform: 'uppercase',
+                  }}>
+                    Sadaqah Jariyah
                   </Text>
-                  <View style={{ width: 1, height: 12, backgroundColor: 'rgba(201, 164, 75, 0.2)' }} />
-                  <Text style={{ color: '#C9A44B', fontSize: 10, fontWeight: '500' }}>Voluntary Charity</Text>
                 </View>
-                <Text style={{ color: '#F7F6F1', fontSize: 22, fontWeight: '700' }}>Give Voluntary Charity</Text>
-                <Text style={{ color: 'rgba(183, 192, 186, 0.7)', fontSize: 14, marginTop: 4, maxWidth: 400 }}>
-                  Support meaningful causes through verified organizations. Every contribution makes a difference.
+                <Text style={{
+                  color: '#FFFFFF',
+                  fontSize: 18,
+                  fontWeight: '700',
+                  letterSpacing: -0.3,
+                  marginTop: 2,
+                }}>
+                  Give with purpose
+                </Text>
+                <Text style={{
+                  color: 'rgba(255,255,255,0.5)',
+                  fontSize: 12,
+                  letterSpacing: 0.2,
+                  marginTop: 1,
+                }}>
+                  Support verified causes · Lasting impact
                 </Text>
               </View>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+
+              {/* Gold decorative circle */}
+              <View style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                backgroundColor: 'rgba(201, 164, 75, 0.08)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 1,
+                borderColor: 'rgba(201, 164, 75, 0.1)',
+              }}>
                 <View style={{
-                  backgroundColor: 'rgba(255,255,255,0.1)',
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
-                  borderRadius: 999,
+                  width: 4,
+                  height: 4,
+                  borderRadius: 2,
+                  backgroundColor: '#C9A44B',
+                  opacity: 0.5,
+                }} />
+              </View>
+            </View>
+          </View>
+
+          {/* Balance Card - Premium Gold Accent */}
+          <View style={{
+            backgroundColor: '#032A24',
+            borderRadius: 16,
+            padding: 20,
+            marginBottom: 24,
+            borderWidth: 1,
+            borderColor: 'rgba(201, 164, 75, 0.12)',
+            shadowColor: '#032A24',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.12,
+            shadowRadius: 16,
+            elevation: 4,
+          }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  backgroundColor: 'rgba(201, 164, 75, 0.1)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   borderWidth: 1,
                   borderColor: 'rgba(201, 164, 75, 0.15)',
                 }}>
-                  <Text style={{ color: '#C9A44B', fontSize: 10, fontWeight: '600' }}>Sadaqah Jariyah</Text>
+                  <WalletIcon color="#C9A44B" size={22} />
                 </View>
-                <View style={{
-                  backgroundColor: 'rgba(255,255,255,0.1)',
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
-                  borderRadius: 999,
-                  borderWidth: 1,
-                  borderColor: 'rgba(201, 164, 75, 0.15)',
+                <View>
+                  <Text style={{ 
+                    color: 'rgba(255,255,255,0.5)', 
+                    fontSize: 11, 
+                    fontWeight: '500',
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.8,
+                    marginBottom: 2,
+                  }}>
+                    Available Balance
+                  </Text>
+                  <Text style={{ 
+                    color: '#FFFFFF', 
+                    fontSize: 24, 
+                    fontWeight: '700',
+                    letterSpacing: -0.3,
+                  }}>
+                    {formatCurrency(balance)}
+                  </Text>
+                </View>
+              </View>
+              <View style={{
+                backgroundColor: 'rgba(201, 164, 75, 0.12)',
+                paddingHorizontal: 14,
+                paddingVertical: 6,
+                borderRadius: 20,
+                borderWidth: 1,
+                borderColor: 'rgba(201, 164, 75, 0.15)',
+              }}>
+                <Text style={{ 
+                  color: '#C9A44B', 
+                  fontSize: 9, 
+                  fontWeight: '600',
+                  letterSpacing: 0.5,
                 }}>
-                  <Text style={{ color: '#F7F6F1', fontSize: 10, fontWeight: '600' }}>Balance: {formatCurrency(balance)}</Text>
-                </View>
+                  Sadaqah Jariyah
+                </Text>
               </View>
             </View>
           </View>
@@ -346,77 +570,110 @@ const Sadaqa = () => {
               borderWidth: 1,
               borderColor: '#FECACA',
               borderRadius: 12,
-              padding: 12,
-              marginBottom: 12,
+              padding: 14,
+              marginBottom: 20,
               flexDirection: 'row',
               justifyContent: 'space-between',
               alignItems: 'center',
             }}>
-              <Text style={{ color: '#DC2626', fontSize: 13 }}>{error}</Text>
+              <Text style={{ color: '#DC2626', fontSize: 13, flex: 1 }}>
+                {error}
+              </Text>
               <TouchableOpacity
-                style={{ backgroundColor: '#DC2626', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}
+                style={{ 
+                  backgroundColor: '#DC2626', 
+                  paddingHorizontal: 12, 
+                  paddingVertical: 5, 
+                  borderRadius: 6,
+                }}
                 onPress={() => setError('')}
               >
-                <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '600' }}>Dismiss</Text>
+                <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '600' }}>
+                  Dismiss
+                </Text>
               </TouchableOpacity>
             </View>
           ) : null}
 
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
-            {/* Causes */}
-            <View style={{ flex: 2, minWidth: 300, gap: 12 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 20 }}>
+            {/* Main Content */}
+            <View style={{ flex: 2, minWidth: 300, gap: 20 }}>
               {/* Search & Filter */}
               <View style={{
                 backgroundColor: '#FFFFFF',
-                borderRadius: 12,
-                padding: 14,
+                borderRadius: 16,
+                padding: 16,
                 borderWidth: 1,
-                borderColor: 'rgba(11, 52, 43, 0.08)',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.04,
-                shadowRadius: 4,
+                borderColor: 'rgba(3, 42, 36, 0.06)',
+                shadowColor: '#032A24',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.02,
+                shadowRadius: 8,
                 elevation: 1,
               }}>
-                <View style={{ flexDirection: 'row', gap: 10 }}>
+                <View style={{ flexDirection: 'row', gap: 12 }}>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+                    <Text style={{ 
+                      color: '#6B7280', 
+                      fontSize: 10, 
+                      fontWeight: '600',
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.8,
+                      marginBottom: 6,
+                    }}>
                       Search
                     </Text>
-                    <TextInput
-                      style={{
-                        backgroundColor: '#FAFAF7',
-                        borderWidth: 1,
-                        borderColor: 'rgba(11, 52, 43, 0.12)',
-                        borderRadius: 8,
-                        paddingHorizontal: 12,
-                        paddingVertical: 8,
-                        color: '#1F2937',
-                        fontSize: 14,
-                      }}
-                      value={searchTerm}
-                      onChangeText={setSearchTerm}
-                      placeholder="Search causes..."
-                      placeholderTextColor="rgba(107, 114, 128, 0.5)"
-                    />
+                    <View style={{ position: 'relative' }}>
+                      <View style={{ position: 'absolute', left: 12, top: 11, zIndex: 1 }}>
+                        <SearchIcon color="#9CA3AF" size={16} />
+                      </View>
+                      <TextInput
+                        style={{
+                          backgroundColor: '#FAFAF7',
+                          borderWidth: 1,
+                          borderColor: 'rgba(3, 42, 36, 0.08)',
+                          borderRadius: 10,
+                          paddingHorizontal: 36,
+                          paddingVertical: 10,
+                          color: '#1F2937',
+                          fontSize: 14,
+                        }}
+                        value={searchTerm}
+                        onChangeText={setSearchTerm}
+                        placeholder="Search causes..."
+                        placeholderTextColor="#9CA3AF"
+                      />
+                    </View>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+                    <Text style={{ 
+                      color: '#6B7280', 
+                      fontSize: 10, 
+                      fontWeight: '600',
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.8,
+                      marginBottom: 6,
+                    }}>
                       Category
                     </Text>
                     <View style={{
                       backgroundColor: '#FAFAF7',
                       borderWidth: 1,
-                      borderColor: 'rgba(11, 52, 43, 0.12)',
-                      borderRadius: 8,
-                      paddingHorizontal: 12,
+                      borderColor: 'rgba(3, 42, 36, 0.08)',
+                      borderRadius: 10,
+                      paddingHorizontal: 14,
                       paddingVertical: 6,
                     }}>
                       <TextInput
-                        style={{ color: '#1F2937', fontSize: 14, padding: 0 }}
+                        style={{ 
+                          color: '#1F2937', 
+                          fontSize: 14, 
+                          padding: 0,
+                        }}
                         value={filterCategory}
                         onChangeText={(text) => setFilterCategory(text)}
                         placeholder="all"
+                        placeholderTextColor="#9CA3AF"
                       />
                     </View>
                   </View>
@@ -427,13 +684,18 @@ const Sadaqa = () => {
               {filteredCampaigns.length === 0 ? (
                 <View style={{
                   backgroundColor: '#FFFFFF',
-                  borderRadius: 12,
-                  padding: 32,
+                  borderRadius: 16,
+                  padding: 48,
                   alignItems: 'center',
                   borderWidth: 1,
-                  borderColor: 'rgba(11, 52, 43, 0.08)',
+                  borderColor: 'rgba(3, 42, 36, 0.06)',
                 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 14 }}>No causes found. Try adjusting your search.</Text>
+                  <Text style={{ 
+                    color: '#6B7280', 
+                    fontSize: 14,
+                  }}>
+                    No causes found. Try adjusting your search.
+                  </Text>
                 </View>
               ) : (
                 filteredCampaigns.map((campaign) => {
@@ -444,78 +706,136 @@ const Sadaqa = () => {
                       key={campaign.id}
                       style={{
                         backgroundColor: '#FFFFFF',
-                        borderRadius: 12,
-                        padding: 14,
-                        borderWidth: 2,
-                        borderColor: isSelected ? '#0B342B' : 'rgba(11, 52, 43, 0.08)',
-                        shadowColor: isSelected ? '#0B342B' : 'transparent',
+                        borderRadius: 16,
+                        padding: 18,
+                        borderWidth: 1.5,
+                        borderColor: isSelected ? '#C9A44B' : 'rgba(3, 42, 36, 0.06)',
+                        shadowColor: isSelected ? '#C9A44B' : 'transparent',
                         shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: isSelected ? 0.1 : 0,
-                        shadowRadius: 8,
-                        elevation: isSelected ? 2 : 0,
+                        shadowOpacity: isSelected ? 0.08 : 0,
+                        shadowRadius: 12,
+                        elevation: isSelected ? 3 : 0,
                       }}
                       onPress={() => setSelectedCampaign(campaign)}
                     >
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <View style={{ flex: 1 }}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                            <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '700' }}>{campaign.name}</Text>
-                            <View style={{
-                              backgroundColor: 'rgba(63, 175, 115, 0.1)',
-                              paddingHorizontal: 6,
-                              paddingVertical: 1,
-                              borderRadius: 999,
-                              borderWidth: 1,
-                              borderColor: 'rgba(63, 175, 115, 0.2)',
+                        <View style={{ flex: 1, marginRight: 10 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                            <Text style={{ 
+                              color: '#032A24', 
+                              fontSize: 16, 
+                              fontWeight: '600',
+                              letterSpacing: -0.2,
                             }}>
-                              <Text style={{ color: '#3FAF73', fontSize: 9, fontWeight: '500' }}>Verified</Text>
+                              {campaign.name}
+                            </Text>
+                            <View style={{
+                              backgroundColor: 'rgba(63, 175, 115, 0.08)',
+                              paddingHorizontal: 8,
+                              paddingVertical: 2,
+                              borderRadius: 12,
+                              borderWidth: 1,
+                              borderColor: 'rgba(63, 175, 115, 0.12)',
+                            }}>
+                              <Text style={{ 
+                                color: '#3FAF73', 
+                                fontSize: 9, 
+                                fontWeight: '500',
+                              }}>
+                                Verified
+                              </Text>
                             </View>
                           </View>
-                          <Text style={{ color: '#6B7280', fontSize: 12, marginTop: 2 }}>{campaign.organization}</Text>
+                          <Text style={{ 
+                            color: '#6B7280', 
+                            fontSize: 13,
+                            marginBottom: 1,
+                          }}>
+                            {campaign.organization}
+                          </Text>
                           {campaign.location && (
-                            <Text style={{ color: '#6B7280', fontSize: 12 }}>{campaign.location}</Text>
+                            <Text style={{ 
+                              color: '#9CA3AF', 
+                              fontSize: 12,
+                            }}>
+                              {campaign.location}
+                            </Text>
                           )}
                         </View>
                         <View style={{
-                          backgroundColor: '#F3F4F6',
-                          paddingHorizontal: 8,
-                          paddingVertical: 2,
-                          borderRadius: 999,
+                          backgroundColor: 'rgba(3, 42, 36, 0.04)',
+                          paddingHorizontal: 10,
+                          paddingVertical: 4,
+                          borderRadius: 12,
                         }}>
-                          <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '500' }}>
+                          <Text style={{ 
+                            color: '#6B7280', 
+                            fontSize: 10, 
+                            fontWeight: '500',
+                          }}>
                             {categories.find(c => c.id === campaign.category)?.label || campaign.category}
                           </Text>
                         </View>
                       </View>
 
                       {campaign.description && (
-                        <Text style={{ color: '#6B7280', fontSize: 12, marginTop: 4 }} numberOfLines={2}>
+                        <Text style={{ 
+                          color: '#6B7280', 
+                          fontSize: 13,
+                          marginTop: 6,
+                          lineHeight: 20,
+                        }} numberOfLines={2}>
                           {campaign.description}
                         </Text>
                       )}
 
-                      <View style={{ marginTop: 8 }}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                          <Text style={{ color: '#6B7280', fontSize: 11 }}>Raised</Text>
-                          <Text style={{ color: '#1F2937', fontSize: 11, fontWeight: '600' }}>{formatCurrency(campaign.raised)}</Text>
+                      <View style={{ marginTop: 12 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <Text style={{ 
+                            color: '#6B7280', 
+                            fontSize: 12,
+                          }}>
+                            Raised
+                          </Text>
+                          <Text style={{ 
+                            color: '#032A24', 
+                            fontSize: 12, 
+                            fontWeight: '600',
+                          }}>
+                            {formatCurrency(campaign.raised)}
+                          </Text>
                         </View>
                         <View style={{
                           height: 4,
                           backgroundColor: '#F3F4F6',
-                          borderRadius: 999,
-                          marginTop: 4,
+                          borderRadius: 2,
                           overflow: 'hidden',
                         }}>
                           <View style={{
                             height: '100%',
                             width: `${Math.min(pct, 100)}%`,
-                            backgroundColor: '#0B342B',
-                            borderRadius: 999,
+                            backgroundColor: '#032A24',
+                            borderRadius: 2,
                           }} />
                         </View>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 }}>
-                          <Text style={{ color: '#6B7280', fontSize: 11 }}>Target: {formatCurrency(campaign.target)}</Text>
-                          <Text style={{ color: '#0B342B', fontSize: 11, fontWeight: '500' }}>{pct}%</Text>
+                        <View style={{ 
+                          flexDirection: 'row', 
+                          justifyContent: 'space-between', 
+                          marginTop: 4,
+                        }}>
+                          <Text style={{ 
+                            color: '#9CA3AF', 
+                            fontSize: 11,
+                          }}>
+                            Target: {formatCurrency(campaign.target)}
+                          </Text>
+                          <Text style={{ 
+                            color: '#032A24', 
+                            fontSize: 11, 
+                            fontWeight: '500',
+                          }}>
+                            {pct}%
+                          </Text>
                         </View>
                       </View>
 
@@ -523,14 +843,35 @@ const Sadaqa = () => {
                         flexDirection: 'row',
                         justifyContent: 'space-between',
                         alignItems: 'center',
-                        marginTop: 8,
-                        paddingTop: 8,
+                        marginTop: 12,
+                        paddingTop: 12,
                         borderTopWidth: 1,
-                        borderTopColor: 'rgba(11, 52, 43, 0.06)',
+                        borderTopColor: 'rgba(3, 42, 36, 0.04)',
                       }}>
-                        <Text style={{ color: '#6B7280', fontSize: 11 }}>{campaign.donor_count || 0} donors</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <DonorsIcon color="#9CA3AF" size={14} />
+                          <Text style={{ 
+                            color: '#9CA3AF', 
+                            fontSize: 12,
+                          }}>
+                            {campaign.donor_count || 0} donors
+                          </Text>
+                        </View>
                         {isSelected && (
-                          <Text style={{ color: '#0B342B', fontSize: 11, fontWeight: '600' }}>Selected</Text>
+                          <View style={{
+                            backgroundColor: '#C9A44B',
+                            paddingHorizontal: 10,
+                            paddingVertical: 3,
+                            borderRadius: 12,
+                          }}>
+                            <Text style={{ 
+                              color: '#032A24', 
+                              fontSize: 10, 
+                              fontWeight: '600',
+                            }}>
+                              Selected
+                            </Text>
+                          </View>
                         )}
                       </View>
                     </TouchableOpacity>
@@ -540,57 +881,92 @@ const Sadaqa = () => {
             </View>
 
             {/* Sidebar */}
-            <View style={{ flex: 1, minWidth: 200, gap: 12 }}>
+            <View style={{ flex: 1, minWidth: 240, gap: 20 }}>
               {/* Donation Form */}
               <View style={{
                 backgroundColor: '#FFFFFF',
-                borderRadius: 12,
-                padding: 14,
+                borderRadius: 16,
+                padding: 20,
                 borderWidth: 1,
-                borderColor: 'rgba(11, 52, 43, 0.08)',
-                shadowColor: '#000',
+                borderColor: 'rgba(3, 42, 36, 0.06)',
+                shadowColor: '#032A24',
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.04,
-                shadowRadius: 4,
-                elevation: 1,
+                shadowRadius: 12,
+                elevation: 2,
               }}>
-                <Text style={{ color: '#1F2937', fontSize: 16, fontWeight: '700', marginBottom: 10 }}>Give Sadaqa</Text>
+                <Text style={{ 
+                  color: '#032A24', 
+                  fontSize: 18, 
+                  fontWeight: '600',
+                  letterSpacing: -0.3,
+                  marginBottom: 16,
+                }}>
+                  Make a donation
+                </Text>
 
                 {selectedCampaign ? (
                   <View style={{
-                    backgroundColor: '#FAFAF7',
-                    padding: 10,
-                    borderRadius: 8,
+                    backgroundColor: 'rgba(3, 42, 36, 0.02)',
+                    padding: 14,
+                    borderRadius: 12,
                     borderWidth: 1,
-                    borderColor: 'rgba(11, 52, 43, 0.06)',
-                    marginBottom: 10,
+                    borderColor: 'rgba(3, 42, 36, 0.04)',
+                    marginBottom: 16,
                   }}>
-                    <Text style={{ color: '#1F2937', fontSize: 14, fontWeight: '600' }}>{selectedCampaign.name}</Text>
-                    <Text style={{ color: '#6B7280', fontSize: 12 }}>{selectedCampaign.organization}</Text>
+                    <Text style={{ 
+                      color: '#032A24', 
+                      fontSize: 14, 
+                      fontWeight: '600',
+                      marginBottom: 2,
+                    }}>
+                      {selectedCampaign.name}
+                    </Text>
+                    <Text style={{ 
+                      color: '#6B7280', 
+                      fontSize: 12,
+                    }}>
+                      {selectedCampaign.organization}
+                    </Text>
                   </View>
                 ) : (
-                  <Text style={{ color: '#6B7280', fontSize: 14, marginBottom: 10 }}>Select a cause to support</Text>
+                  <Text style={{ 
+                    color: '#6B7280', 
+                    fontSize: 14,
+                    marginBottom: 16,
+                  }}>
+                    Select a cause to support
+                  </Text>
                 )}
 
-                <View style={{ marginBottom: 10 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={{ 
+                    color: '#6B7280', 
+                    fontSize: 11, 
+                    fontWeight: '600',
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.8,
+                    marginBottom: 8,
+                  }}>
                     Amount (KES)
                   </Text>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
                     {quickAmounts.map((val) => (
                       <TouchableOpacity
                         key={val}
                         style={{
-                          paddingHorizontal: 10,
-                          paddingVertical: 4,
-                          borderRadius: 999,
-                          backgroundColor: parseFloat(amount) === val ? '#0B342B' : '#F3F4F6',
+                          paddingHorizontal: 12,
+                          paddingVertical: 6,
+                          borderRadius: 20,
+                          backgroundColor: parseFloat(amount) === val ? '#032A24' : '#F3F4F6',
+                          borderWidth: 1,
+                          borderColor: parseFloat(amount) === val ? '#032A24' : 'transparent',
                         }}
                         onPress={() => handleQuickAmount(val)}
                       >
                         <Text style={{
-                          color: parseFloat(amount) === val ? '#F7F6F1' : '#6B7280',
-                          fontSize: 10,
+                          color: parseFloat(amount) === val ? '#FFFFFF' : '#6B7280',
+                          fontSize: 11,
                           fontWeight: '600',
                         }}>
                           {formatCurrency(val)}
@@ -602,40 +978,47 @@ const Sadaqa = () => {
                     style={{
                       backgroundColor: '#FAFAF7',
                       borderWidth: 1,
-                      borderColor: 'rgba(11, 52, 43, 0.12)',
-                      borderRadius: 8,
-                      paddingHorizontal: 12,
-                      paddingVertical: 8,
+                      borderColor: 'rgba(3, 42, 36, 0.08)',
+                      borderRadius: 10,
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
                       color: '#1F2937',
                       fontSize: 14,
                     }}
                     value={amount}
                     onChangeText={setAmount}
                     placeholder="Enter custom amount"
-                    placeholderTextColor="rgba(107, 114, 128, 0.5)"
+                    placeholderTextColor="#9CA3AF"
                     keyboardType="numeric"
                   />
                 </View>
 
-                <View style={{ marginBottom: 10 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={{ 
+                    color: '#6B7280', 
+                    fontSize: 11, 
+                    fontWeight: '600',
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.8,
+                    marginBottom: 6,
+                  }}>
                     Dedication (Optional)
                   </Text>
                   <TextInput
                     style={{
                       backgroundColor: '#FAFAF7',
                       borderWidth: 1,
-                      borderColor: 'rgba(11, 52, 43, 0.12)',
-                      borderRadius: 8,
-                      paddingHorizontal: 12,
-                      paddingVertical: 8,
+                      borderColor: 'rgba(3, 42, 36, 0.08)',
+                      borderRadius: 10,
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
                       color: '#1F2937',
                       fontSize: 14,
                     }}
                     value={dedication}
                     onChangeText={setDedication}
                     placeholder="e.g., In memory of..."
-                    placeholderTextColor="rgba(107, 114, 128, 0.5)"
+                    placeholderTextColor="#9CA3AF"
                   />
                 </View>
 
@@ -643,53 +1026,73 @@ const Sadaqa = () => {
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
-                    gap: 8,
-                    marginBottom: 12,
+                    gap: 10,
+                    marginBottom: 16,
                   }}
                   onPress={() => setIsAnonymous(!isAnonymous)}
+                  activeOpacity={0.7}
                 >
                   <View style={{
-                    width: 18,
-                    height: 18,
+                    width: 20,
+                    height: 20,
                     borderRadius: 4,
                     borderWidth: 2,
-                    borderColor: isAnonymous ? '#0B342B' : 'rgba(11, 52, 43, 0.12)',
-                    backgroundColor: isAnonymous ? '#0B342B' : 'transparent',
+                    borderColor: isAnonymous ? '#032A24' : 'rgba(3, 42, 36, 0.15)',
+                    backgroundColor: isAnonymous ? '#032A24' : 'transparent',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}>
-                    {isAnonymous && <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>✓</Text>}
+                    {isAnonymous && <CheckIcon color="#FFFFFF" size={12} />}
                   </View>
-                  <Text style={{ color: '#6B7280', fontSize: 13 }}>Donate anonymously</Text>
+                  <Text style={{ 
+                    color: '#6B7280', 
+                    fontSize: 13,
+                  }}>
+                    Donate anonymously
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={{
-                    backgroundColor: '#0B342B',
-                    paddingVertical: 10,
-                    borderRadius: 8,
+                    backgroundColor: '#032A24',
+                    paddingVertical: 14,
+                    borderRadius: 12,
                     alignItems: 'center',
-                    opacity: (!selectedCampaign || !amount || processing) ? 0.6 : 1,
-                    shadowColor: '#0B342B',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 8,
-                    elevation: 4,
+                    opacity: (!selectedCampaign || !amount || processing) ? 0.5 : 1,
                   }}
                   onPress={handleDonate}
                   disabled={!selectedCampaign || !amount || processing}
+                  activeOpacity={0.7}
                 >
                   {processing ? (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                       <ActivityIndicator size="small" color="#FFFFFF" />
-                      <Text style={{ color: '#F7F6F1', fontSize: 15, fontWeight: '600' }}>Processing...</Text>
+                      <Text style={{ 
+                        color: '#FFFFFF', 
+                        fontSize: 15, 
+                        fontWeight: '600',
+                      }}>
+                        Processing...
+                      </Text>
                     </View>
                   ) : (
-                    <Text style={{ color: '#F7F6F1', fontSize: 15, fontWeight: '600' }}>Give Sadaqa</Text>
+                    <Text style={{ 
+                      color: '#FFFFFF', 
+                      fontSize: 15, 
+                      fontWeight: '600',
+                      letterSpacing: 0.3,
+                    }}>
+                      Give Sadaqah
+                    </Text>
                   )}
                 </TouchableOpacity>
 
-                <Text style={{ color: '#6B7280', fontSize: 9, textAlign: 'center', marginTop: 8 }}>
+                <Text style={{ 
+                  color: '#9CA3AF', 
+                  fontSize: 10,
+                  textAlign: 'center', 
+                  marginTop: 10,
+                }}>
                   100% reaches beneficiaries · No platform fee
                 </Text>
               </View>
@@ -697,109 +1100,184 @@ const Sadaqa = () => {
               {/* Impact Stats */}
               <View style={{
                 backgroundColor: '#FFFFFF',
-                borderRadius: 12,
-                padding: 14,
+                borderRadius: 16,
+                padding: 20,
                 borderWidth: 1,
-                borderColor: 'rgba(11, 52, 43, 0.08)',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.04,
-                shadowRadius: 4,
+                borderColor: 'rgba(3, 42, 36, 0.06)',
+                shadowColor: '#032A24',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.02,
+                shadowRadius: 8,
                 elevation: 1,
               }}>
-                <Text style={{ color: '#1F2937', fontSize: 15, fontWeight: '700', marginBottom: 10 }}>Your Impact</Text>
+                <Text style={{ 
+                  color: '#032A24', 
+                  fontSize: 16, 
+                  fontWeight: '600',
+                  letterSpacing: -0.2,
+                  marginBottom: 14,
+                }}>
+                  Your Impact
+                </Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                   {[
                     { label: 'Total Given', value: formatCurrency(summary.totalAmount || 0) },
                     { label: 'Donations', value: summary.totalDonations || 0 },
-                    { label: 'Categories', value: summary.categoriesSupported || 0, color: '#3FAF73' },
+                    { label: 'Categories', value: summary.categoriesSupported || 0, color: '#C9A44B' },
                     { label: 'Causes', value: summary.uniqueCampaigns || 0 },
                   ].map((item, index) => (
                     <View key={index} style={{
                       flex: 1,
-                      minWidth: 70,
+                      minWidth: 60,
                       backgroundColor: '#FAFAF7',
-                      borderRadius: 8,
-                      padding: 8,
+                      borderRadius: 10,
+                      padding: 10,
                       alignItems: 'center',
                       borderWidth: 1,
-                      borderColor: 'rgba(11, 52, 43, 0.06)',
+                      borderColor: 'rgba(3, 42, 36, 0.04)',
                     }}>
                       <Text style={{
-                        color: item.color || '#0B342B',
-                        fontSize: 15,
+                        color: item.color || '#032A24',
+                        fontSize: 16,
                         fontWeight: '700',
+                        letterSpacing: -0.3,
                       }}>
                         {item.value}
                       </Text>
-                      <Text style={{ color: '#6B7280', fontSize: 10 }}>{item.label}</Text>
+                      <Text style={{ 
+                        color: '#6B7280', 
+                        fontSize: 10,
+                        marginTop: 2,
+                      }}>
+                        {item.label}
+                      </Text>
                     </View>
                   ))}
                 </View>
               </View>
 
-              {/* Recent Donations */}
+              {/* Recent Donations - Collapsible */}
               <View style={{
                 backgroundColor: '#FFFFFF',
-                borderRadius: 12,
-                padding: 14,
+                borderRadius: 16,
                 borderWidth: 1,
-                borderColor: 'rgba(11, 52, 43, 0.08)',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.04,
-                shadowRadius: 4,
+                borderColor: 'rgba(3, 42, 36, 0.06)',
+                shadowColor: '#032A24',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.02,
+                shadowRadius: 8,
                 elevation: 1,
+                overflow: 'hidden',
               }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <Text style={{ color: '#1F2937', fontSize: 15, fontWeight: '700' }}>Recent Donations</Text>
-                  <TouchableOpacity onPress={fetchDonationHistory}>
-                    <Text style={{ color: '#6B7280', fontSize: 10 }}>Refresh</Text>
-                  </TouchableOpacity>
-                </View>
-
-                {loadingHistory ? (
-                  <View style={{ alignItems: 'center', paddingVertical: 12 }}>
-                    <ActivityIndicator size="small" color="#C9A44B" />
-                  </View>
-                ) : donationHistory.length === 0 ? (
-                  <Text style={{ color: '#6B7280', fontSize: 12, textAlign: 'center', paddingVertical: 12 }}>
-                    No donations yet
+                <TouchableOpacity
+                  onPress={toggleRecentDonations}
+                  activeOpacity={0.7}
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: 20,
+                  }}
+                >
+                  <Text style={{ 
+                    color: '#032A24', 
+                    fontSize: 16, 
+                    fontWeight: '600',
+                    letterSpacing: -0.2,
+                  }}>
+                    Recent Donations
                   </Text>
-                ) : (
-                  donationHistory.slice(0, 5).map((donation) => {
-                    const badge = getStatusBadge(donation.status);
-                    return (
-                      <View key={donation.id} style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        paddingVertical: 8,
-                        borderBottomWidth: 1,
-                        borderBottomColor: '#F4F5F1',
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    {donationHistory.length > 0 && (
+                      <Text style={{ 
+                        color: '#6B7280', 
+                        fontSize: 11,
                       }}>
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ color: '#1F2937', fontSize: 12, fontWeight: '500' }} numberOfLines={1}>
-                            {donation.campaign_name || 'Donation'}
-                          </Text>
-                          <Text style={{ color: '#6B7280', fontSize: 10 }}>{formatDate(donation.paid_at || donation.createdat)}</Text>
-                        </View>
-                        <View style={{ alignItems: 'flex-end' }}>
-                          <Text style={{ color: '#0B342B', fontSize: 12, fontWeight: '700' }}>{formatCurrency(donation.amount)}</Text>
-                          <View style={{
-                            backgroundColor: badge.bg,
-                            paddingHorizontal: 6,
-                            paddingVertical: 1,
-                            borderRadius: 999,
-                            borderWidth: 1,
-                            borderColor: 'rgba(0,0,0,0.05)',
-                          }}>
-                            <Text style={{ color: badge.text, fontSize: 10, fontWeight: '500' }}>{getStatusLabel(donation.status)}</Text>
-                          </View>
-                        </View>
+                        {donationHistory.length}
+                      </Text>
+                    )}
+                    {recentDonationsExpanded ? (
+                      <ChevronUpIcon color="#6B7280" size={18} />
+                    ) : (
+                      <ChevronDownIcon color="#6B7280" size={18} />
+                    )}
+                  </View>
+                </TouchableOpacity>
+
+                {recentDonationsExpanded && (
+                  <View style={{ paddingHorizontal: 20, paddingBottom: 20 }}>
+                    {loadingHistory ? (
+                      <View style={{ alignItems: 'center', paddingVertical: 16 }}>
+                        <ActivityIndicator size="small" color="#032A24" />
                       </View>
-                    );
-                  })
+                    ) : donationHistory.length === 0 ? (
+                      <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+                        <Text style={{ 
+                          color: '#9CA3AF', 
+                          fontSize: 13,
+                        }}>
+                          No donations yet
+                        </Text>
+                      </View>
+                    ) : (
+                      donationHistory.slice(0, 5).map((donation, index) => {
+                        const badge = getStatusBadge(donation.status);
+                        return (
+                          <View 
+                            key={donation.id} 
+                            style={{
+                              flexDirection: 'row',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              paddingVertical: 10,
+                              borderBottomWidth: index < donationHistory.slice(0, 5).length - 1 ? 1 : 0,
+                              borderBottomColor: '#F3F4F6',
+                            }}
+                          >
+                            <View style={{ flex: 1, marginRight: 10 }}>
+                              <Text style={{ 
+                                color: '#1F2937', 
+                                fontSize: 13, 
+                                fontWeight: '500',
+                              }} numberOfLines={1}>
+                                {donation.campaign_name || 'Donation'}
+                              </Text>
+                              <Text style={{ 
+                                color: '#9CA3AF', 
+                                fontSize: 11,
+                              }}>
+                                {formatDate(donation.paid_at || donation.createdat)}
+                              </Text>
+                            </View>
+                            <View style={{ alignItems: 'flex-end' }}>
+                              <Text style={{ 
+                                color: '#032A24', 
+                                fontSize: 14, 
+                                fontWeight: '700',
+                              }}>
+                                {formatCurrency(donation.amount)}
+                              </Text>
+                              <View style={{
+                                backgroundColor: badge.bg,
+                                paddingHorizontal: 8,
+                                paddingVertical: 2,
+                                borderRadius: 10,
+                                marginTop: 2,
+                              }}>
+                                <Text style={{ 
+                                  color: badge.text, 
+                                  fontSize: 9, 
+                                  fontWeight: '500',
+                                }}>
+                                  {getStatusLabel(donation.status)}
+                                </Text>
+                              </View>
+                            </View>
+                          </View>
+                        );
+                      })
+                    )}
+                  </View>
                 )}
               </View>
             </View>
@@ -809,126 +1287,270 @@ const Sadaqa = () => {
 
       {/* Confirmation Modal */}
       <Modal visible={showConfirmModal} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ 
+          flex: 1, 
+          backgroundColor: 'rgba(0,0,0,0.5)', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          padding: 20,
+        }}>
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
+            borderRadius: 20,
+            padding: 24,
             width: '100%',
-            maxWidth: 400,
+            maxWidth: 420,
             maxHeight: '90%',
           }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ color: '#1F2937', fontSize: 18, fontWeight: '700' }}>Confirm Sadaqa</Text>
-              <TouchableOpacity onPress={() => setShowConfirmModal(false)}>
-                <Text style={{ color: '#6B7280', fontSize: 20 }}>✕</Text>
+            <View style={{ 
+              flexDirection: 'row', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              marginBottom: 20,
+            }}>
+              <Text style={{ 
+                color: '#032A24', 
+                fontSize: 20, 
+                fontWeight: '700',
+                letterSpacing: -0.3,
+              }}>
+                Confirm Sadaqah
+              </Text>
+              <TouchableOpacity 
+                onPress={() => setShowConfirmModal(false)}
+                activeOpacity={0.7}
+                style={{ padding: 4 }}
+              >
+                <CloseIcon color="#6B7280" size={20} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={{
                 backgroundColor: '#FAFAF7',
-                borderRadius: 8,
-                padding: 12,
+                borderRadius: 12,
+                padding: 16,
                 alignItems: 'center',
                 borderWidth: 1,
-                borderColor: 'rgba(11, 52, 43, 0.06)',
-                marginBottom: 12,
+                borderColor: 'rgba(3, 42, 36, 0.04)',
+                marginBottom: 16,
               }}>
-                <Text style={{ color: '#6B7280', fontSize: 10 }}>Amount</Text>
-                <Text style={{ color: '#0B342B', fontSize: 22, fontWeight: '700' }}>{formatCurrency(parseFloat(amount) || 0)}</Text>
+                <Text style={{ 
+                  color: '#6B7280', 
+                  fontSize: 11,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.8,
+                }}>
+                  Amount
+                </Text>
+                <Text style={{ 
+                  color: '#032A24', 
+                  fontSize: 28, 
+                  fontWeight: '700',
+                  letterSpacing: -0.5,
+                }}>
+                  {formatCurrency(parseFloat(amount) || 0)}
+                </Text>
               </View>
 
               <View style={{
                 backgroundColor: '#FAFAF7',
-                borderRadius: 8,
-                padding: 12,
+                borderRadius: 12,
+                padding: 14,
                 borderWidth: 1,
-                borderColor: 'rgba(11, 52, 43, 0.06)',
-                marginBottom: 12,
+                borderColor: 'rgba(3, 42, 36, 0.04)',
+                marginBottom: 16,
               }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 12 }}>Cause</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 12, fontWeight: '600' }}>{selectedCampaign?.name}</Text>
+                <View style={{ 
+                  flexDirection: 'row', 
+                  justifyContent: 'space-between', 
+                  paddingVertical: 4,
+                }}>
+                  <Text style={{ color: '#6B7280', fontSize: 12 }}>
+                    Cause
+                  </Text>
+                  <Text style={{ 
+                    color: '#032A24', 
+                    fontSize: 12, 
+                    fontWeight: '600',
+                  }}>
+                    {selectedCampaign?.name}
+                  </Text>
                 </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 12 }}>Organization</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 12, fontWeight: '600' }}>{selectedCampaign?.organization}</Text>
+                <View style={{ 
+                  flexDirection: 'row', 
+                  justifyContent: 'space-between', 
+                  paddingVertical: 4,
+                }}>
+                  <Text style={{ color: '#6B7280', fontSize: 12 }}>
+                    Organization
+                  </Text>
+                  <Text style={{ 
+                    color: '#032A24', 
+                    fontSize: 12, 
+                    fontWeight: '600',
+                  }}>
+                    {selectedCampaign?.organization}
+                  </Text>
                 </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 12 }}>Type</Text>
-                  <Text style={{ color: '#0B342B', fontSize: 12, fontWeight: '600' }}>Sadaqah Jariyah</Text>
+                <View style={{ 
+                  flexDirection: 'row', 
+                  justifyContent: 'space-between', 
+                  paddingVertical: 4,
+                }}>
+                  <Text style={{ color: '#6B7280', fontSize: 12 }}>
+                    Type
+                  </Text>
+                  <Text style={{ 
+                    color: '#032A24', 
+                    fontSize: 12, 
+                    fontWeight: '600',
+                  }}>
+                    Sadaqah Jariyah
+                  </Text>
                 </View>
                 {dedication && (
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingTop: 4, borderTopWidth: 1, borderTopColor: 'rgba(11, 52, 43, 0.06)' }}>
-                    <Text style={{ color: '#6B7280', fontSize: 12 }}>Dedication</Text>
-                    <Text style={{ color: '#1F2937', fontSize: 12, fontWeight: '600' }}>{dedication}</Text>
+                  <View style={{ 
+                    flexDirection: 'row', 
+                    justifyContent: 'space-between', 
+                    paddingVertical: 4,
+                    borderTopWidth: 1,
+                    borderTopColor: 'rgba(3, 42, 36, 0.04)',
+                    marginTop: 4,
+                    paddingTop: 8,
+                  }}>
+                    <Text style={{ color: '#6B7280', fontSize: 12 }}>
+                      Dedication
+                    </Text>
+                    <Text style={{ 
+                      color: '#032A24', 
+                      fontSize: 12, 
+                      fontWeight: '600',
+                    }}>
+                      {dedication}
+                    </Text>
                   </View>
                 )}
                 {isAnonymous && (
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Text style={{ color: '#6B7280', fontSize: 12 }}>Anonymous</Text>
-                    <Text style={{ color: '#1F2937', fontSize: 12, fontWeight: '600' }}>Yes</Text>
+                  <View style={{ 
+                    flexDirection: 'row', 
+                    justifyContent: 'space-between', 
+                    paddingVertical: 4,
+                  }}>
+                    <Text style={{ color: '#6B7280', fontSize: 12 }}>
+                      Anonymous
+                    </Text>
+                    <Text style={{ 
+                      color: '#032A24', 
+                      fontSize: 12, 
+                      fontWeight: '600',
+                    }}>
+                      Yes
+                    </Text>
                   </View>
                 )}
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingTop: 4, borderTopWidth: 1, borderTopColor: 'rgba(11, 52, 43, 0.06)' }}>
-                  <Text style={{ color: '#6B7280', fontSize: 12 }}>Balance After</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 12, fontWeight: '600' }}>{formatCurrency(balance - parseFloat(amount))}</Text>
+                <View style={{ 
+                  flexDirection: 'row', 
+                  justifyContent: 'space-between', 
+                  paddingVertical: 4,
+                  borderTopWidth: 1,
+                  borderTopColor: 'rgba(3, 42, 36, 0.04)',
+                  marginTop: 4,
+                  paddingTop: 8,
+                }}>
+                  <Text style={{ color: '#6B7280', fontSize: 12 }}>
+                    Balance After
+                  </Text>
+                  <Text style={{ 
+                    color: '#032A24', 
+                    fontSize: 12, 
+                    fontWeight: '600',
+                  }}>
+                    {formatCurrency(balance - parseFloat(amount))}
+                  </Text>
                 </View>
               </View>
 
               <View style={{
-                backgroundColor: 'rgba(63, 175, 115, 0.05)',
-                padding: 10,
-                borderRadius: 8,
+                backgroundColor: 'rgba(63, 175, 115, 0.04)',
+                padding: 14,
+                borderRadius: 12,
                 borderWidth: 1,
-                borderColor: 'rgba(63, 175, 115, 0.1)',
-                marginBottom: 12,
+                borderColor: 'rgba(63, 175, 115, 0.08)',
+                marginBottom: 20,
               }}>
-                <Text style={{ color: '#0B342B', fontSize: 12, textAlign: 'center', lineHeight: 18 }}>
+                <Text style={{ 
+                  color: '#032A24', 
+                  fontSize: 13,
+                  textAlign: 'center', 
+                  lineHeight: 20,
+                }}>
                   "The example of those who spend their wealth in the way of Allah is like a seed of grain which grows seven spikes..." — Quran 2:261
                 </Text>
               </View>
 
-              {error ? <Text style={{ color: '#DC2626', fontSize: 12, marginBottom: 8 }}>{error}</Text> : null}
+              {error ? (
+                <Text style={{ 
+                  color: '#DC2626', 
+                  fontSize: 12,
+                  marginBottom: 12,
+                }}>
+                  {error}
+                </Text>
+              ) : null}
 
-              <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={{ flexDirection: 'row', gap: 12 }}>
                 <TouchableOpacity
                   style={{
                     flex: 1,
-                    backgroundColor: '#F4F5F1',
-                    paddingVertical: 10,
-                    borderRadius: 8,
+                    backgroundColor: '#F3F4F6',
+                    paddingVertical: 12,
+                    borderRadius: 12,
                     alignItems: 'center',
                   }}
                   onPress={() => setShowConfirmModal(false)}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#6B7280', fontSize: 15, fontWeight: '500' }}>Cancel</Text>
+                  <Text style={{ 
+                    color: '#6B7280', 
+                    fontSize: 15, 
+                    fontWeight: '500',
+                  }}>
+                    Cancel
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={{
                     flex: 2,
-                    backgroundColor: '#0B342B',
-                    paddingVertical: 10,
-                    borderRadius: 8,
+                    backgroundColor: '#032A24',
+                    paddingVertical: 12,
+                    borderRadius: 12,
                     alignItems: 'center',
-                    opacity: processing ? 0.6 : 1,
-                    shadowColor: '#0B342B',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 8,
-                    elevation: 4,
+                    opacity: processing ? 0.5 : 1,
                   }}
                   onPress={confirmDonation}
                   disabled={processing}
+                  activeOpacity={0.7}
                 >
                   {processing ? (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                       <ActivityIndicator size="small" color="#FFFFFF" />
-                      <Text style={{ color: '#F7F6F1', fontSize: 15, fontWeight: '600' }}>Processing...</Text>
+                      <Text style={{ 
+                        color: '#FFFFFF', 
+                        fontSize: 15, 
+                        fontWeight: '600',
+                      }}>
+                        Processing...
+                      </Text>
                     </View>
                   ) : (
-                    <Text style={{ color: '#F7F6F1', fontSize: 15, fontWeight: '600' }}>Confirm Donation</Text>
+                    <Text style={{ 
+                      color: '#FFFFFF', 
+                      fontSize: 15, 
+                      fontWeight: '600',
+                    }}>
+                      Confirm Donation
+                    </Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -939,124 +1561,224 @@ const Sadaqa = () => {
 
       {/* Receipt Modal */}
       <Modal visible={showReceiptModal} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ 
+          flex: 1, 
+          backgroundColor: 'rgba(0,0,0,0.5)', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          padding: 20,
+        }}>
           <View style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
+            borderRadius: 20,
+            padding: 24,
             width: '100%',
-            maxWidth: 400,
+            maxWidth: 420,
             maxHeight: '90%',
           }}>
             <View style={{
-              backgroundColor: '#0B342B',
-              padding: 16,
-              borderTopLeftRadius: 12,
-              borderTopRightRadius: 12,
-              margin: -20,
-              marginBottom: 16,
+              backgroundColor: '#032A24',
+              padding: 20,
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              margin: -24,
+              marginBottom: 20,
               flexDirection: 'row',
               justifyContent: 'space-between',
               alignItems: 'center',
             }}>
-              <Text style={{ color: '#F7F6F1', fontSize: 18, fontWeight: '700' }}>Donation Successful</Text>
-              <TouchableOpacity onPress={() => setShowReceiptModal(false)}>
-                <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 20 }}>✕</Text>
+              <Text style={{ 
+                color: '#FFFFFF', 
+                fontSize: 20, 
+                fontWeight: '700',
+                letterSpacing: -0.3,
+              }}>
+                Donation Successful
+              </Text>
+              <TouchableOpacity 
+                onPress={() => setShowReceiptModal(false)}
+                activeOpacity={0.7}
+                style={{ padding: 4 }}
+              >
+                <CloseIcon color="rgba(255,255,255,0.6)" size={20} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              <View style={{ alignItems: 'center', marginBottom: 16 }}>
+              <View style={{ alignItems: 'center', marginBottom: 20 }}>
                 <View style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 28,
-                  backgroundColor: 'rgba(63, 175, 115, 0.1)',
+                  width: 64,
+                  height: 64,
+                  borderRadius: 32,
+                  backgroundColor: 'rgba(63, 175, 115, 0.08)',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  borderWidth: 4,
-                  borderColor: 'rgba(63, 175, 115, 0.2)',
+                  borderWidth: 3,
+                  borderColor: 'rgba(63, 175, 115, 0.15)',
+                  marginBottom: 10,
                 }}>
-                  <Text style={{ color: '#3FAF73', fontSize: 28 }}>✓</Text>
+                  <SuccessIcon color="#3FAF73" size={32} />
                 </View>
-                <Text style={{ color: '#6B7280', fontSize: 12, marginTop: 8 }}>You donated to</Text>
-                <Text style={{ color: '#1F2937', fontSize: 18, fontWeight: '700' }}>{receiptData?.cause}</Text>
-                <Text style={{ color: '#0B342B', fontSize: 24, fontWeight: '700' }}>{formatCurrency(receiptData?.amount || 0)}</Text>
+                <Text style={{ 
+                  color: '#6B7280', 
+                  fontSize: 13,
+                  marginBottom: 2,
+                }}>
+                  You donated to
+                </Text>
+                <Text style={{ 
+                  color: '#032A24', 
+                  fontSize: 20, 
+                  fontWeight: '700',
+                  letterSpacing: -0.3,
+                }}>
+                  {receiptData?.cause}
+                </Text>
+                <Text style={{ 
+                  color: '#032A24', 
+                  fontSize: 28, 
+                  fontWeight: '700',
+                  letterSpacing: -0.5,
+                  marginTop: 4,
+                }}>
+                  {formatCurrency(receiptData?.amount || 0)}
+                </Text>
               </View>
 
               <View style={{
                 backgroundColor: '#FAFAF7',
-                borderRadius: 8,
-                padding: 12,
+                borderRadius: 12,
+                padding: 14,
                 borderWidth: 1,
-                borderColor: 'rgba(11, 52, 43, 0.06)',
-                marginBottom: 12,
+                borderColor: 'rgba(3, 42, 36, 0.04)',
+                marginBottom: 16,
               }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 12 }}>Reference</Text>
-                  <Text style={{ color: '#6B7280', fontSize: 11, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }}>
+                <View style={{ 
+                  flexDirection: 'row', 
+                  justifyContent: 'space-between', 
+                  paddingVertical: 4,
+                }}>
+                  <Text style={{ color: '#6B7280', fontSize: 12 }}>
+                    Reference
+                  </Text>
+                  <Text style={{ 
+                    color: '#6B7280', 
+                    fontSize: 11,
+                    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+                  }}>
                     {receiptData?.id}
                   </Text>
                 </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 12 }}>Date</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 12, fontWeight: '600' }}>{formatDate(receiptData?.date)}</Text>
+                <View style={{ 
+                  flexDirection: 'row', 
+                  justifyContent: 'space-between', 
+                  paddingVertical: 4,
+                }}>
+                  <Text style={{ color: '#6B7280', fontSize: 12 }}>
+                    Date
+                  </Text>
+                  <Text style={{ 
+                    color: '#032A24', 
+                    fontSize: 12, 
+                    fontWeight: '600',
+                  }}>
+                    {formatDate(receiptData?.date)}
+                  </Text>
                 </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 12 }}>Type</Text>
-                  <Text style={{ color: '#0B342B', fontSize: 12, fontWeight: '600' }}>Sadaqah Jariyah</Text>
+                <View style={{ 
+                  flexDirection: 'row', 
+                  justifyContent: 'space-between', 
+                  paddingVertical: 4,
+                }}>
+                  <Text style={{ color: '#6B7280', fontSize: 12 }}>
+                    Type
+                  </Text>
+                  <Text style={{ 
+                    color: '#032A24', 
+                    fontSize: 12, 
+                    fontWeight: '600',
+                  }}>
+                    Sadaqah Jariyah
+                  </Text>
                 </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ color: '#6B7280', fontSize: 12 }}>Organization</Text>
-                  <Text style={{ color: '#1F2937', fontSize: 12, fontWeight: '600' }}>{receiptData?.organization || 'N/A'}</Text>
+                <View style={{ 
+                  flexDirection: 'row', 
+                  justifyContent: 'space-between', 
+                  paddingVertical: 4,
+                }}>
+                  <Text style={{ color: '#6B7280', fontSize: 12 }}>
+                    Organization
+                  </Text>
+                  <Text style={{ 
+                    color: '#032A24', 
+                    fontSize: 12, 
+                    fontWeight: '600',
+                  }}>
+                    {receiptData?.organization || 'N/A'}
+                  </Text>
                 </View>
               </View>
 
               <View style={{
-                backgroundColor: '#FAFAF7',
-                borderRadius: 8,
-                padding: 10,
+                backgroundColor: 'rgba(63, 175, 115, 0.04)',
+                padding: 14,
+                borderRadius: 12,
                 borderWidth: 1,
-                borderColor: 'rgba(11, 52, 43, 0.06)',
-                marginBottom: 16,
+                borderColor: 'rgba(63, 175, 115, 0.08)',
+                marginBottom: 20,
               }}>
-                <Text style={{ color: '#6B7280', fontSize: 12, textAlign: 'center', lineHeight: 18, fontStyle: 'italic' }}>
+                <Text style={{ 
+                  color: '#6B7280', 
+                  fontSize: 12,
+                  textAlign: 'center', 
+                  lineHeight: 18,
+                  fontStyle: 'italic',
+                }}>
                   "The example of those who spend their wealth in the way of Allah is like a seed of grain which grows seven spikes..." — Quran 2:261
                 </Text>
               </View>
 
-              <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={{ flexDirection: 'row', gap: 12 }}>
                 <TouchableOpacity
                   style={{
                     flex: 1,
-                    backgroundColor: '#F4F5F1',
-                    paddingVertical: 10,
-                    borderRadius: 8,
+                    backgroundColor: '#F3F4F6',
+                    paddingVertical: 12,
+                    borderRadius: 12,
                     alignItems: 'center',
                   }}
                   onPress={() => setShowReceiptModal(false)}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#6B7280', fontSize: 15, fontWeight: '500' }}>Close</Text>
+                  <Text style={{ 
+                    color: '#6B7280', 
+                    fontSize: 15, 
+                    fontWeight: '500',
+                  }}>
+                    Close
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={{
                     flex: 2,
-                    backgroundColor: '#0B342B',
-                    paddingVertical: 10,
-                    borderRadius: 8,
+                    backgroundColor: '#032A24',
+                    paddingVertical: 12,
+                    borderRadius: 12,
                     alignItems: 'center',
-                    shadowColor: '#0B342B',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 8,
-                    elevation: 4,
                   }}
                   onPress={() => {
                     setShowReceiptModal(false);
                     navigation.navigate('Sadaqa' as never);
                   }}
+                  activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#F7F6F1', fontSize: 15, fontWeight: '600' }}>Done</Text>
+                  <Text style={{ 
+                    color: '#FFFFFF', 
+                    fontSize: 15, 
+                    fontWeight: '600',
+                  }}>
+                    Done
+                  </Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -1068,28 +1790,39 @@ const Sadaqa = () => {
       {success ? (
         <View style={{
           position: 'absolute',
-          top: 60,
-          right: 16,
-          left: 16,
-          backgroundColor: '#0B342B',
-          paddingHorizontal: 16,
-          paddingVertical: 12,
-          borderRadius: 12,
+          top: Platform.OS === 'ios' ? 60 : 40,
+          right: 20,
+          left: 20,
+          backgroundColor: '#032A24',
+          paddingHorizontal: 18,
+          paddingVertical: 14,
+          borderRadius: 14,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          shadowColor: '#0B342B',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          elevation: 4,
+          shadowColor: '#032A24',
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.2,
+          shadowRadius: 16,
+          elevation: 8,
         }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text style={{ color: '#C9A44B', fontSize: 16 }}>✓</Text>
-            <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '500', flex: 1 }}>{success}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <CheckIcon color="#C9A44B" size={18} />
+            <Text style={{ 
+              color: '#FFFFFF', 
+              fontSize: 14, 
+              fontWeight: '500',
+              flex: 1,
+            }}>
+              {success}
+            </Text>
           </View>
-          <TouchableOpacity onPress={() => setSuccess('')}>
-            <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 16 }}>✕</Text>
+          <TouchableOpacity 
+            onPress={() => setSuccess('')}
+            activeOpacity={0.7}
+            style={{ padding: 4 }}
+          >
+            <CloseIcon color="rgba(255,255,255,0.5)" size={18} />
           </TouchableOpacity>
         </View>
       ) : null}

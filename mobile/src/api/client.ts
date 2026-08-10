@@ -414,7 +414,7 @@ export const bookingService = {
   cancelBooking: (id) => api.put(`/bookings/${id}/cancel`),
   getBookingByRoom: (roomName) => api.get(`/bookings/room/${roomName}`),
   getBookingStats: () => api.get('/bookings/stats/summary'),
-  getLeaderTypes: () => api.get('/bookings/leader-types'),
+  getLeaderTypes: () => api.get('/leader-consultation/types/list'),
 };
 
 export const cartService = {
@@ -451,6 +451,13 @@ export const kycService = {
 export const prayerService = {
   getPrayerTimes: (lat, lng) => api.get(`/prayer/times?lat=${lat}&lng=${lng}`),
   getCityPrayerTimes: (city) => api.get(`/prayer/times/${city}`),
+};
+
+// ========================================
+// LIVEKIT SERVICE (Video/Audio Streaming)
+// ========================================
+export const livekitService = {
+  getToken: (data) => api.post('/livekit/token', data),
 };
 
 export default api;

@@ -20,7 +20,7 @@ const BANK_MASTER_ACCOUNT = process.env.BANK_MASTER_ACCOUNT || 'HALALHUB-MASTER-
 
 // Configure CORS properly
 app.use(cors({
-  origin: ['http://38.242.200.152:9999', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://127.0.0.1:5173','http://localhost:9999'],
+  origin: ['http://38.242.200.152:9999', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://127.0.0.1:5173','http://localhost:9999','https://itqaan.co.ke','https://www.itqaan.co.ke','null'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
