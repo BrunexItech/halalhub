@@ -117,7 +117,12 @@ router.get('/stats', async (req, res) => {
         (SELECT COUNT(*) FROM hajj_bookings) as total_hajj_bookings,
         (SELECT COUNT(*) FROM hajj_bookings WHERE status = 'pending') as pending_hajj_bookings,
         (SELECT COUNT(*) FROM products WHERE meat_type IS NOT NULL) as total_butchery_products,
-        (SELECT COUNT(*) FROM leaders WHERE status = 'pending') as pending_leader_profiles
+        (SELECT COUNT(*) FROM leaders WHERE status = 'pending') as pending_leader_profiles,
+        (SELECT COUNT(*) FROM takaful_plans) as total_takaful_plans,
+        (SELECT COUNT(*) FROM takaful_policies) as total_takaful_policies,
+        (SELECT COUNT(*) FROM takaful_policies WHERE status = 'active') as active_takaful_policies,
+        (SELECT COUNT(*) FROM takaful_claims WHERE status = 'pending') as pending_takaful_claims,
+        (SELECT COUNT(*) FROM takaful_claims WHERE status = 'approved') as approved_takaful_claims
     `);
     
     // Get leader type breakdown
@@ -1871,6 +1876,269 @@ router.get('/hajj/stats', async (req, res) => {
   } catch (err) {
     console.error('Error fetching Hajj stats:', err.message);
     res.status(500).json({ error: 'Failed to fetch Hajj stats' });
+  }
+});
+
+// ============================================================
+// 40. TAKAFUL ADMIN - GET OVERVIEW STATS
+// ============================================================
+router.get('/takaful/stats', async (req, res) => {
+  try {
+    const db = await getClient();
+
+    const result = await db.query(`
+      SELECT 
+        (SELECT COUNT(*) FROM takaful_plans WHERE is_active = true) as total_active_plans,
+        (SELECT COUNT(*) FROM takaful_policies) as total_policies,
+        (SELECT COUNT(*) FROM takaful_policies WHERE status = 'active') as active_policies,
+        (SELECT COUNT(*) FROM takaful_policies WHERE status = 'expired') as expired_policies,
+        (SELECT COUNT(*) FROM takaful_policies WHERE status = 'cancelled') as cancelled_policies,
+        (SELECT COUNT(*) FROM takaful_claims) as total_claims,
+        (SELECT COUNT(*) FROM takaful_claims WHERE status = 'pending') as pending_claims,
+        (SELECT COUNT(*) FROM takaful_claims WHERE status = 'approved') as approved_claims,
+        (SELECT COUNT(*) FROM takaful_claims WHERE status = 'rejected') as rejected_claims,
+        (SELECT COALESCE(SUM(premium), 0) FROM takaful_policies WHERE status = 'active') as total_active_premium,
+        (SELECT COALESCE(SUM(amount), 0) FROM takaful_claims WHERE status = 'approved') as total_approved_claims,
+        (SELECT COALESCE(SUM(amount), 0) FROM takaful_commissions WHERE status = 'pending') as pending_commissions,
+        (SELECT COALESCE(SUM(amount), 0) FROM takaful_commissions WHERE status = 'paid') as paid_commissions,
+        (SELECT pool_balance FROM takaful_pool_stats LIMIT 1) as pool_balance,
+        (SELECT total_members FROM takaful_pool_stats LIMIT 1) as pool_members
+    `);
+
+    res.json({
+      success: true,
+      stats: {
+        total_active_plans: parseInt(result.rows[0].total_active_plans) || 0,
+        total_policies: parseInt(result.rows[0].total_policies) || 0,
+        active_policies: parseInt(result.rows[0].active_policies) || 0,
+        expired_policies: parseInt(result.rows[0].expired_policies) || 0,
+        cancelled_policies: parseInt(result.rows[0].cancelled_policies) || 0,
+        total_claims: parseInt(result.rows[0].total_claims) || 0,
+        pending_claims: parseInt(result.rows[0].pending_claims) || 0,
+        approved_claims: parseInt(result.rows[0].approved_claims) || 0,
+        rejected_claims: parseInt(result.rows[0].rejected_claims) || 0,
+        total_active_premium: parseInt(result.rows[0].total_active_premium) || 0,
+        total_approved_claims: parseInt(result.rows[0].total_approved_claims) || 0,
+        pending_commissions: parseInt(result.rows[0].pending_commissions) || 0,
+        paid_commissions: parseInt(result.rows[0].paid_commissions) || 0,
+        pool_balance: parseInt(result.rows[0].pool_balance) || 0,
+        pool_members: parseInt(result.rows[0].pool_members) || 0
+      }
+    });
+
+  } catch (err) {
+    console.error('Error fetching Takaful stats:', err.message);
+    res.status(500).json({ error: 'Failed to fetch Takaful stats' });
+  }
+});
+
+// ============================================================
+// 41. TAKAFUL ADMIN - GET ALL POLICIES
+// ============================================================
+router.get('/takaful/policies', async (req, res) => {
+  try {
+    const db = await getClient();
+    const { status, user_id, limit = 100 } = req.query;
+
+    let query = `
+      SELECT 
+        p.*,
+        pl.name as plan_name,
+        pl.category as plan_category,
+        u.fullname as user_name,
+        u.email as user_email,
+        u.phone as user_phone,
+        ep.external_policy_number,
+        ep.last_sync_at
+      FROM takaful_policies p
+      JOIN takaful_plans pl ON p.plan_id = pl.id
+      JOIN users u ON p.user_id = u.id
+      LEFT JOIN takaful_external_policies ep ON p.id = ep.policy_id
+      WHERE 1=1
+    `;
+    const params = [];
+    let paramIndex = 1;
+
+    if (status && status !== 'all') {
+      query += ` AND p.status = $${paramIndex}`;
+      params.push(status);
+      paramIndex++;
+    }
+
+    if (user_id) {
+      query += ` AND p.user_id = $${paramIndex}`;
+      params.push(user_id);
+      paramIndex++;
+    }
+
+    query += ` ORDER BY p.created_at DESC LIMIT $${paramIndex}`;
+    params.push(parseInt(limit));
+
+    const result = await db.query(query, params);
+
+    res.json({
+      success: true,
+      policies: result.rows,
+      total: result.rows.length
+    });
+
+  } catch (err) {
+    console.error('Error fetching Takaful policies:', err.message);
+    res.status(500).json({ error: 'Failed to fetch policies' });
+  }
+});
+
+// ============================================================
+// 42. TAKAFUL ADMIN - GET ALL CLAIMS
+// ============================================================
+router.get('/takaful/claims', async (req, res) => {
+  try {
+    const db = await getClient();
+    const { status, user_id, limit = 100 } = req.query;
+
+    let query = `
+      SELECT 
+        c.*,
+        p.id as policy_id,
+        p.external_policy_number,
+        pl.name as plan_name,
+        u.fullname as user_name,
+        u.email as user_email,
+        u.phone as user_phone
+      FROM takaful_claims c
+      JOIN takaful_policies p ON c.policy_id = p.id
+      JOIN takaful_plans pl ON p.plan_id = pl.id
+      JOIN users u ON c.user_id = u.id
+      WHERE 1=1
+    `;
+    const params = [];
+    let paramIndex = 1;
+
+    if (status && status !== 'all') {
+      query += ` AND c.status = $${paramIndex}`;
+      params.push(status);
+      paramIndex++;
+    }
+
+    if (user_id) {
+      query += ` AND c.user_id = $${paramIndex}`;
+      params.push(user_id);
+      paramIndex++;
+    }
+
+    query += ` ORDER BY c.created_at DESC LIMIT $${paramIndex}`;
+    params.push(parseInt(limit));
+
+    const result = await db.query(query, params);
+
+    res.json({
+      success: true,
+      claims: result.rows,
+      total: result.rows.length
+    });
+
+  } catch (err) {
+    console.error('Error fetching Takaful claims:', err.message);
+    res.status(500).json({ error: 'Failed to fetch claims' });
+  }
+});
+
+// ============================================================
+// 43. TAKAFUL ADMIN - GET COMMISSIONS
+// ============================================================
+router.get('/takaful/commissions', async (req, res) => {
+  try {
+    const db = await getClient();
+    const { status, limit = 100 } = req.query;
+
+    let query = `
+      SELECT 
+        c.*,
+        p.id as policy_id,
+        p.external_policy_number,
+        pl.name as plan_name,
+        u.fullname as user_name,
+        u.email as user_email
+      FROM takaful_commissions c
+      JOIN takaful_policies p ON c.policy_id = p.id
+      JOIN takaful_plans pl ON p.plan_id = pl.id
+      JOIN users u ON p.user_id = u.id
+      WHERE 1=1
+    `;
+    const params = [];
+    let paramIndex = 1;
+
+    if (status && status !== 'all') {
+      query += ` AND c.status = $${paramIndex}`;
+      params.push(status);
+      paramIndex++;
+    }
+
+    query += ` ORDER BY c.created_at DESC LIMIT $${paramIndex}`;
+    params.push(parseInt(limit));
+
+    const result = await db.query(query, params);
+
+    // Get summary
+    const summary = await db.query(`
+      SELECT 
+        COUNT(*) as total_commissions,
+        COALESCE(SUM(amount), 0) as total_amount,
+        COALESCE(SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END), 0) as paid_amount,
+        COALESCE(SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END), 0) as pending_amount
+      FROM takaful_commissions
+    `);
+
+    res.json({
+      success: true,
+      commissions: result.rows,
+      total: result.rows.length,
+      summary: {
+        total_commissions: parseInt(summary.rows[0].total_commissions) || 0,
+        total_amount: parseInt(summary.rows[0].total_amount) || 0,
+        paid_amount: parseInt(summary.rows[0].paid_amount) || 0,
+        pending_amount: parseInt(summary.rows[0].pending_amount) || 0
+      }
+    });
+
+  } catch (err) {
+    console.error('Error fetching Takaful commissions:', err.message);
+    res.status(500).json({ error: 'Failed to fetch commissions' });
+  }
+});
+
+// ============================================================
+// 44. TAKAFUL ADMIN - MARK COMMISSION AS PAID
+// ============================================================
+router.put('/takaful/commissions/:id/pay', async (req, res) => {
+  try {
+    const db = await getClient();
+    const commissionId = req.params.id;
+    const { payment_reference } = req.body;
+
+    const result = await db.query(`
+      UPDATE takaful_commissions 
+      SET status = 'paid', 
+          paid_at = NOW(),
+          payment_reference = COALESCE($1, payment_reference),
+          updated_at = NOW()
+      WHERE id = $2 AND status = 'pending'
+      RETURNING id, amount, policy_id
+    `, [payment_reference || null, commissionId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Commission not found or already paid' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Commission marked as paid',
+      commission: result.rows[0]
+    });
+
+  } catch (err) {
+    console.error('Error paying commission:', err.message);
+    res.status(500).json({ error: 'Failed to mark commission as paid' });
   }
 });
 

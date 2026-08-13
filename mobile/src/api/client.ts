@@ -320,18 +320,42 @@ export const p2pService = {
 };
 
 export const takafulService = {
+  // Plans
   getPlans: () => api.get('/takaful/plans'),
-  getPolicy: () => api.get('/takaful/policy'),
-  enroll: (data) => api.post('/takaful/enroll', data),
-  getFamilyMembers: () => api.get('/takaful/family'),
-  addFamilyMember: (data) => api.post('/takaful/family', data),
-  removeFamilyMember: (id) => api.delete(`/takaful/family/${id}`),
-  getClaims: () => api.get('/takaful/claims'),
-  getClaimById: (id) => api.get(`/takaful/claims/${id}`),
-  submitClaim: (data) => api.post('/takaful/claims', data),
+  getPlanById: (id: string) => api.get(`/takaful/plans/${id}`),
+  getCoverageOptions: (id: string) => api.get(`/takaful/plans/${id}/coverage`),
+  
+  // Quotes
+  enquirePolicy: (data: any) => api.post('/takaful/enquire', data),
+  
+  // Policies
+  getMyPolicies: () => api.get('/takaful/policies'),
+  getPolicyById: (id: string) => api.get(`/takaful/policies/${id}`),
+  purchasePolicy: (data: any) => api.post('/takaful/purchase', data),
+  
+  // Claims
+  getUserClaims: () => api.get('/takaful/claims'),
+  getClaimById: (id: string) => api.get(`/takaful/claims/${id}`),
+  submitClaim: (data: any) => api.post('/takaful/claims', data),
+  
+  // Pool Stats
   getPoolStats: () => api.get('/takaful/pool-stats'),
+  
+  // Summary
+  getSummary: () => api.get('/takaful/summary'),
+  
+  // Admin
+  syncProducts: () => api.post('/takaful/admin/sync-products'),
+  
+  // Legacy (kept for backward compatibility)
+  getPolicy: () => api.get('/takaful/policy'),
+  enroll: (data: any) => api.post('/takaful/enroll', data),
+  getFamilyMembers: () => api.get('/takaful/family'),
+  addFamilyMember: (data: any) => api.post('/takaful/family', data),
+  removeFamilyMember: (id: string) => api.delete(`/takaful/family/${id}`),
+  getClaims: () => api.get('/takaful/claims'),
   getContributions: () => api.get('/takaful/contributions'),
-  payMonthlyContribution: (data) => api.post('/takaful/pay-monthly', data),
+  payMonthlyContribution: (data: any) => api.post('/takaful/pay-monthly', data),
 };
 
 export const pensionService = {

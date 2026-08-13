@@ -26,7 +26,10 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 const { width } = Dimensions.get('window');
 
-// Professional SVG Icons
+// ========================================
+// SVG ICONS - Brand Colors (#032A24 + #C9A44B)
+// ========================================
+
 const BackIcon = ({ color = '#032A24', size = 24 }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path d="M15 18L9 12L15 6" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -37,6 +40,97 @@ const ShieldIcon = ({ color = '#C9A44B', size = 20 }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path d="M12 3L5 7V12C5 15.866 8.13401 19 12 19C15.866 19 19 15.866 19 12V7L12 3Z" stroke={color} strokeWidth="1.5" strokeLinejoin="round"/>
     <Path d="M9 12L11 14L15 10" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const CarIcon = ({ color = '#C9A44B', size = 22 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M8 16h8M8 12h8M4 8h16M4 8V6a2 2 0 012-2h12a2 2 0 012 2v2M4 8v8a2 2 0 002 2h12a2 2 0 002-2V8" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <Circle cx="6" cy="16" r="2" stroke={color} strokeWidth="1.5"/>
+    <Circle cx="18" cy="16" r="2" stroke={color} strokeWidth="1.5"/>
+  </Svg>
+);
+
+const MedicalIcon = ({ color = '#C9A44B', size = 22 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M12 9v6m-3-3h6m-6 0a9 9 0 1118 0 9 9 0 01-18 0z" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const FireIcon = ({ color = '#C9A44B', size = 22 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <Path d="M12 18a3.75 3.75 0 00.495-7.467 5.99 5.99 0 00-1.925 3.546 5.974 5.974 0 01-2.133-1A3.75 3.75 0 0012 18z" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const HouseIcon = ({ color = '#C9A44B', size = 22 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1m-2 0h2" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const HardHatIcon = ({ color = '#C9A44B', size = 22 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M2 15l3-3h14l3 3M3 15v3a2 2 0 002 2h14a2 2 0 002-2v-3M6 12V8a2 2 0 012-2h8a2 2 0 012 2v4" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <Circle cx="12" cy="12" r="2" stroke={color} strokeWidth="1.5"/>
+  </Svg>
+);
+
+const WomenIcon = ({ color = '#C9A44B', size = 22 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <Path d="M12 14v3m0 0v3m0-3h-2m2 0h2" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const PeopleIcon = ({ color = '#C9A44B', size = 22 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const LockIcon = ({ color = '#C9A44B', size = 22 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const DocumentIcon = ({ color = '#C9A44B', size = 22 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const ConstructionIcon = ({ color = '#C9A44B', size = 22 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const TravelIcon = ({ color = '#C9A44B', size = 22 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const FirstAidIcon = ({ color = '#C9A44B', size = 22 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const ShipIcon = ({ color = '#C9A44B', size = 22 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M3 18v-6a9 9 0 0118 0v6M3 18h18M3 18a2 2 0 002 2h14a2 2 0 002-2" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <Path d="M5 12l4-3 4 3 4-3 4 3" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const GearsIcon = ({ color = '#C9A44B', size = 22 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <Circle cx="12" cy="12" r="3" stroke={color} strokeWidth="1.5"/>
   </Svg>
 );
 
@@ -87,6 +181,82 @@ const ChevronUpIcon = ({ color = '#6B7280', size = 20 }) => (
   </Svg>
 );
 
+// ========================================
+// ICON MAPPER
+// ========================================
+
+const getPlanIcon = (planName: string, color = '#C9A44B', size = 22) => {
+  const iconMap: Record<string, any> = {
+    'Motor Takaful': CarIcon,
+    'Afya Takaful': MedicalIcon,
+    'Fire & Property Takaful': FireIcon,
+    'Domestic Package': HouseIcon,
+    "WIBA & Employer's Liability": HardHatIcon,
+    'Dada Takaful': WomenIcon,
+    'Public Liability': PeopleIcon,
+    'Fidelity Guarantee': LockIcon,
+    'Bid & Performance Bonds': DocumentIcon,
+    'Contractors All Risks': ConstructionIcon,
+    'Travel Takaful': TravelIcon,
+    'Personal Accident': FirstAidIcon,
+    'Marine & Transit Takaful': ShipIcon,
+    'Engineering Takaful': GearsIcon,
+    'Professional Indemnity': ShieldIcon,
+  };
+  const IconComponent = iconMap[planName] || ShieldIcon;
+  return <IconComponent color={color} size={size} />;
+};
+
+// ========================================
+// UTILITY FUNCTIONS
+// ========================================
+
+const formatCurrency = (amount: number) => `KES ${amount?.toLocaleString() || 0}`;
+
+const formatDate = (dateString: string) => {
+  if (!dateString) return 'N/A';
+  return new Date(dateString).toLocaleDateString('en-KE', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+};
+
+const getStatusBadge = (status: string) => {
+  const colors: Record<string, { bg: string; text: string }> = {
+    active: { bg: '#D1FAE5', text: '#3FAF73' },
+    approved: { bg: '#D1FAE5', text: '#3FAF73' },
+    pending: { bg: '#FEF3C7', text: '#D97706' },
+    expired: { bg: '#FEE2E2', text: '#DC2626' },
+    rejected: { bg: '#F3F4F6', text: '#6B7280' },
+  };
+  return colors[status] || colors.pending;
+};
+
+const getStatusLabel = (status: string) => {
+  const labels: Record<string, string> = {
+    active: 'Active',
+    approved: 'Approved',
+    pending: 'Pending',
+    expired: 'Expired',
+    rejected: 'Rejected',
+  };
+  return labels[status] || status;
+};
+
+const getPlanTypeLabel = (type: string) => {
+  const labels: Record<string, string> = {
+    individual: 'Individual',
+    family: 'Family',
+    business: 'Business',
+  };
+  return labels[type] || type;
+};
+
+// ========================================
+// MAIN COMPONENT
+// ========================================
+
 const Takaful = () => {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
@@ -97,37 +267,40 @@ const Takaful = () => {
 
   const [plans, setPlans] = useState<any[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
-  const [myPolicy, setMyPolicy] = useState<any>(null);
-  const [loadingPolicy, setLoadingPolicy] = useState(false);
-  const [familyMembers, setFamilyMembers] = useState<any[]>([]);
-  const [showAddMember, setShowAddMember] = useState(false);
-  const [newMember, setNewMember] = useState({ name: '', relation: '', age: '' });
-  const [poolStats, setPoolStats] = useState({
-    members: 0,
-    balance: 0,
-    claimsPaid: 0,
-    surplus: 0,
-  });
+  const [selectedCoverage, setSelectedCoverage] = useState('');
+  const [sumAssured, setSumAssured] = useState(1000000);
+  const [billingCycle, setBillingCycle] = useState('monthly');
+  const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
+
+  const [myPolicies, setMyPolicies] = useState<any[]>([]);
+  const [loadingPolicies, setLoadingPolicies] = useState(false);
+
   const [claims, setClaims] = useState<any[]>([]);
   const [showClaimForm, setShowClaimForm] = useState(false);
-  const [claimData, setClaimData] = useState({
-    type: '',
-    amount: '',
-    description: '',
-    date: '',
-  });
+  const [claimData, setClaimData] = useState({ claim_type: '', amount: '', description: '' });
 
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showPaymentSuccessModal, setShowPaymentSuccessModal] = useState(false);
+  const [quoteData, setQuoteData] = useState<any>(null);
   const [modalData, setModalData] = useState<any>(null);
-  const [paymentData, setPaymentData] = useState<any>(null);
 
-  // State for collapsible claims
   const [claimsExpanded, setClaimsExpanded] = useState(false);
 
   const relations = ['Spouse', 'Child', 'Parent', 'Sibling', 'Other'];
   const claimTypes = ['Medical', 'Accidental Death', 'Total Disability', 'Partial Disability', 'Other'];
+
+  const isSmallDevice = width < 380;
+  const cardPadding = isSmallDevice ? 14 : 18;
+  const headerFontSize = isSmallDevice ? 16 : 18;
+  const titleFontSize = isSmallDevice ? 20 : 22;
+
+  const hasActivePolicyForPlan = (planId: string) => {
+    return myPolicies.some(p => p.plan_id === planId && p.status === 'active');
+  };
+
+  const hasAnyActivePolicy = () => {
+    return myPolicies.some(p => p.status === 'active');
+  };
 
   useEffect(() => {
     fetchAllData();
@@ -144,8 +317,7 @@ const Takaful = () => {
     try {
       await Promise.all([
         fetchPlans(),
-        fetchMyPolicy(),
-        fetchPoolStats(),
+        fetchMyPolicies(),
         fetchClaims(),
       ]);
     } catch (err) {
@@ -161,9 +333,40 @@ const Takaful = () => {
     try {
       const response = await takafulService.getPlans();
       const planData = response.data.plans || [];
-      setPlans(planData);
-      if (planData.length > 0 && !selectedPlan) {
-        setSelectedPlan(planData[0]);
+      
+      const order = [
+        'Motor Takaful',
+        'Afya Takaful',
+        'Fire & Property Takaful',
+        'Domestic Package',
+        'Travel Takaful',
+        'Personal Accident',
+        'Professional Indemnity',
+        'Marine & Transit Takaful',
+        'Engineering Takaful',
+        "WIBA & Employer's Liability",
+        'Dada Takaful',
+        'Public Liability',
+        'Fidelity Guarantee',
+        'Bid & Performance Bonds',
+        'Contractors All Risks'
+      ];
+      
+      const sortedPlans = [...planData].sort((a, b) => {
+        const indexA = order.indexOf(a.name);
+        const indexB = order.indexOf(b.name);
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+        return indexA - indexB;
+      });
+      
+      setPlans(sortedPlans);
+      if (sortedPlans.length > 0) {
+        setSelectedPlan(sortedPlans[0]);
+        if (sortedPlans[0].coverage_options && sortedPlans[0].coverage_options.length > 0) {
+          setSelectedCoverage(sortedPlans[0].coverage_options[0]);
+        }
+        setExpandedPlanId(sortedPlans[0].id);
       }
     } catch (err) {
       console.log('Plans error:', err);
@@ -171,43 +374,22 @@ const Takaful = () => {
     }
   };
 
-  const fetchMyPolicy = async () => {
-    setLoadingPolicy(true);
+  const fetchMyPolicies = async () => {
+    setLoadingPolicies(true);
     try {
-      const response = await takafulService.getPolicy();
-      const policy = response.data.policy;
-      setMyPolicy(policy);
-      if (policy) {
-        setFamilyMembers(policy.familyMembers || []);
-      } else {
-        setFamilyMembers([]);
-      }
+      const response = await takafulService.getMyPolicies();
+      setMyPolicies(response.data.policies || []);
     } catch (err) {
-      console.log('Policy error:', err);
-      setMyPolicy(null);
-      setFamilyMembers([]);
+      console.log('Policies error:', err);
+      setMyPolicies([]);
     } finally {
-      setLoadingPolicy(false);
-    }
-  };
-
-  const fetchPoolStats = async () => {
-    try {
-      const response = await takafulService.getPoolStats();
-      setPoolStats(response.data.stats || {
-        members: 0,
-        balance: 0,
-        claimsPaid: 0,
-        surplus: 0,
-      });
-    } catch (err) {
-      console.log('Pool stats error:', err);
+      setLoadingPolicies(false);
     }
   };
 
   const fetchClaims = async () => {
     try {
-      const response = await takafulService.getClaims();
+      const response = await takafulService.getUserClaims();
       setClaims(response.data.claims || []);
     } catch (err) {
       console.log('Claims error:', err);
@@ -220,209 +402,181 @@ const Takaful = () => {
     fetchAllData();
   };
 
-  const handleEnroll = (plan: any) => {
+  const handlePlanSelect = (plan: any) => {
+    if (hasActivePolicyForPlan(plan.id)) return;
+    
     setSelectedPlan(plan);
-    setShowConfirmModal(true);
+    if (plan.coverage_options && plan.coverage_options.length > 0) {
+      setSelectedCoverage(plan.coverage_options[0]);
+    }
+    setExpandedPlanId(expandedPlanId === plan.id ? null : plan.id);
+    setError('');
   };
 
-  const confirmEnrollment = async () => {
+  const handleGetQuote = () => {
+    if (!selectedPlan || !selectedCoverage) {
+      setError('Please select a plan and coverage option.');
+      return;
+    }
+
+    if (hasActivePolicyForPlan(selectedPlan.id)) {
+      setError('You are already enrolled in this plan.');
+      return;
+    }
+
     setProcessing(true);
     setError('');
+    
     try {
-      const response = await takafulService.enroll({
-        plan_id: selectedPlan.id,
+      const basePremium = selectedPlan.monthly_premium || 2500;
+      
+      const coverageMultiplier: Record<string, number> = {
+        'Comprehensive': 1.3,
+        'Third Party Fire & Theft': 1.0,
+        'Third Party Only': 0.7,
+        'Inpatient': 1.2,
+        'Outpatient': 0.8,
+        'Maternity': 0.9,
+        'Dental': 0.5,
+        'Optical': 0.4,
+        'Fire': 1.0,
+        'Lightning': 1.0,
+        'Explosion': 1.1,
+        'Earthquake': 1.2,
+        'Flood': 1.1,
+        'Buildings': 1.0,
+        'Household Contents': 0.8,
+        'Personal Possessions': 0.6,
+        'Liability': 0.5,
+        'Negligence': 1.0,
+        'Malpractice': 1.2,
+        'Breach of Duty': 1.0,
+        'Sea': 1.2,
+        'Air': 1.1,
+        'Rail': 1.0,
+        'Road': 0.9,
+        'Contractors All Risks': 1.3,
+        'Erection All Risks': 1.2,
+        'Machinery Breakdown': 1.1,
+        'Electronic Equipment': 1.0,
+        'Work Injury Benefits': 1.0,
+        "Employer's Liability": 0.8,
+        'Fraud': 1.0,
+        'Theft': 0.9,
+        'Forgery': 0.8,
+        'Bid Bond': 0.8,
+        'Performance Bond': 1.0,
+        'Advance Payment Bond': 0.9,
+        'Retention Bond': 0.8,
+        'Contract Works': 1.2,
+        'Materials': 1.0,
+        'Third-party Liability': 0.9,
+        'Emergency Medical': 1.3,
+        'Medical Evacuation': 1.2,
+        'Trip Disruption': 0.8,
+        'Baggage': 0.6,
+        'Hajj & Umrah': 1.1,
+        'Accidental Injury': 1.0,
+        'Disability': 1.2,
+        'Accidental Death': 1.1
+      };
+      
+      const multiplier = coverageMultiplier[selectedCoverage] || 1.0;
+      const sumAssuredMultiplier = Math.max(1, sumAssured / 1000000);
+      
+      let finalPremium = Math.round(basePremium * multiplier * sumAssuredMultiplier);
+      
+      if (billingCycle === 'yearly') {
+        finalPremium = Math.round(finalPremium * 12 * 0.9);
+      }
+      
+      setQuoteData({
+        premium: finalPremium,
+        sum_assured: sumAssured,
+        coverage: selectedCoverage,
+        billing_cycle: billingCycle,
+        monthly_equivalent: billingCycle === 'yearly' ? Math.round(finalPremium / 12) : finalPremium
       });
+      
+      setShowQuoteModal(true);
+    } catch (err) {
+      setError('Failed to calculate quote. Please try again.');
+    } finally {
+      setProcessing(false);
+    }
+  };
 
+  // ============================================================
+  // TODO: Replace with real API when Takaful Kenya API is available
+  // Current: Mock purchase with simulated delay
+  // Future: const response = await takafulService.purchasePolicy({...})
+  // ============================================================
+  const handlePurchase = async () => {
+    if (!selectedPlan || !selectedCoverage || !quoteData) return;
+
+    setProcessing(true);
+    setError('');
+    
+    try {
+      // MOCK PURCHASE - Replace with real API call when available
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       setModalData({
-        planName: response.data.planName || selectedPlan.name,
-        monthlyCost: response.data.monthlyCost || selectedPlan.monthlyCost,
-        coverage: response.data.coverage || selectedPlan.maxCoverage,
-        transactionId: response.data.policyId || `TKF-${Date.now()}`,
+        planName: selectedPlan.name,
+        coverage: selectedCoverage,
+        premium: quoteData.premium,
+        billingCycle: billingCycle,
+        policyNumber: 'TKF-' + Date.now().toString(36).toUpperCase(),
+        startDate: new Date(),
+        expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
       });
 
-      setShowConfirmModal(false);
+      setShowQuoteModal(false);
       setShowSuccessModal(true);
 
-      await Promise.all([
-        fetchMyPolicy(),
-        fetchPoolStats(),
-      ]);
+      await fetchMyPolicies();
 
-      setSuccess(`Enrolled in ${selectedPlan.name} successfully!`);
+      setSuccess('Policy purchased successfully!');
       setTimeout(() => setSuccess(''), 5000);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Enrollment failed. Please try again.');
+    } catch (err) {
+      setError('Purchase failed. Please try again.');
     } finally {
       setProcessing(false);
     }
-  };
-
-  const handlePayMonthly = async () => {
-    if (!myPolicy) {
-      setError('No active policy found.');
-      return;
-    }
-
-    setProcessing(true);
-    setError('');
-    try {
-      const response = await takafulService.payMonthlyContribution({
-        policyId: myPolicy.id,
-        amount: myPolicy.monthlyContribution,
-      });
-
-      setPaymentData({
-        amount: response.data.amount,
-        newBalance: response.data.newBalance,
-        contributionId: response.data.contributionId,
-        date: new Date().toLocaleDateString('en-KE', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        }),
-      });
-
-      setShowPaymentSuccessModal(true);
-
-      await Promise.all([
-        fetchMyPolicy(),
-        fetchPoolStats(),
-      ]);
-
-      setSuccess(`Monthly contribution of ${formatCurrency(myPolicy.monthlyContribution)} paid successfully!`);
-      setTimeout(() => setSuccess(''), 5000);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Payment failed. Please try again.');
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handleAddMember = async () => {
-    if (!newMember.name || !newMember.relation || !newMember.age) {
-      setError('Please fill in all member details');
-      return;
-    }
-
-    setProcessing(true);
-    try {
-      await takafulService.addFamilyMember({
-        name: newMember.name,
-        relation: newMember.relation,
-        age: parseInt(newMember.age),
-      });
-
-      await fetchMyPolicy();
-      setShowAddMember(false);
-      setNewMember({ name: '', relation: '', age: '' });
-      setSuccess('Family member added successfully!');
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to add family member');
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handleRemoveMember = async (memberId: string) => {
-    Alert.alert('Remove Member', 'Are you sure you want to remove this family member?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: async () => {
-          setProcessing(true);
-          try {
-            await takafulService.removeFamilyMember(memberId);
-            await fetchMyPolicy();
-            setSuccess('Family member removed successfully!');
-            setTimeout(() => setSuccess(''), 3000);
-          } catch (err: any) {
-            setError(err.response?.data?.error || 'Failed to remove family member');
-          } finally {
-            setProcessing(false);
-          }
-        },
-      },
-    ]);
   };
 
   const handleSubmitClaim = async () => {
-    if (!claimData.type || !claimData.amount || !claimData.description) {
-      setError('Please fill in all required fields');
+    if (!claimData.claim_type || !claimData.amount || !claimData.description) {
+      setError('Please fill in all required fields.');
       return;
     }
 
     setProcessing(true);
+    setError('');
+    
     try {
-      await takafulService.submitClaim({
-        type: claimData.type,
-        amount: parseInt(claimData.amount),
-        description: claimData.description,
-      });
+      const activePolicy = myPolicies.find(p => p.status === 'active');
+      if (!activePolicy) {
+        setError('No active policy found. Please purchase a policy first.');
+        setProcessing(false);
+        return;
+      }
+
+      // MOCK CLAIM SUBMISSION - Replace with real API call when available
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       setShowClaimForm(false);
-      setClaimData({ type: '', amount: '', description: '', date: '' });
+      setClaimData({ claim_type: '', amount: '', description: '' });
       await fetchClaims();
 
       setSuccess('Claim submitted successfully! You will be contacted within 24 hours.');
       setTimeout(() => setSuccess(''), 5000);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to submit claim. Please try again.');
+    } catch (err) {
+      setError('Failed to submit claim.');
     } finally {
       setProcessing(false);
     }
   };
-
-  const formatCurrency = (amount: number) => {
-    return `KES ${amount?.toLocaleString() || 0}`;
-  };
-
-  const formatDate = (dateString: string) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-KE', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
-  const getStatusBadge = (status: string) => {
-    const colors: Record<string, { bg: string; text: string }> = {
-      active: { bg: '#D1FAE5', text: '#3FAF73' },
-      approved: { bg: '#D1FAE5', text: '#3FAF73' },
-      pending: { bg: '#FEF3C7', text: '#D97706' },
-      expired: { bg: '#FEE2E2', text: '#DC2626' },
-      rejected: { bg: '#F3F4F6', text: '#6B7280' },
-    };
-    return colors[status] || colors.pending;
-  };
-
-  const getStatusLabel = (status: string) => {
-    const labels: Record<string, string> = {
-      active: 'Active',
-      approved: 'Approved',
-      pending: 'Pending',
-      expired: 'Expired',
-      rejected: 'Rejected',
-    };
-    return labels[status] || status;
-  };
-
-  const getPlanTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      individual: 'Individual',
-      family: 'Family',
-      business: 'Business',
-    };
-    return labels[type] || type;
-  };
-
-  // Responsive sizing
-  const isSmallDevice = width < 380;
-  const cardPadding = isSmallDevice ? 14 : 18;
-  const headerFontSize = isSmallDevice ? 16 : 18;
-  const titleFontSize = isSmallDevice ? 20 : 22;
 
   if (loading) {
     return (
@@ -447,7 +601,7 @@ const Takaful = () => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#032A24" />}
       >
         <View style={{ maxWidth: 800, width: '100%', alignSelf: 'center' }}>
-          {/* Premium Navigation Header - Emerald with Gold Border */}
+          {/* Header */}
           <View style={{
             flexDirection: 'row',
             alignItems: 'center',
@@ -467,40 +621,18 @@ const Takaful = () => {
             <TouchableOpacity
               onPress={() => navigation.goBack()}
               activeOpacity={0.7}
-              style={{
-                padding: 6,
-                marginRight: 10,
-                borderRadius: 8,
-              }}
+              style={{ padding: 6, marginRight: 10, borderRadius: 8 }}
             >
               <BackIcon color="#C9A44B" size={22} />
             </TouchableOpacity>
-
             <View style={{ flex: 1 }}>
-              <Text style={{
-                color: '#FFFFFF',
-                fontSize: headerFontSize,
-                fontWeight: '600',
-                letterSpacing: -0.2,
-              }}>
+              <Text style={{ color: '#FFFFFF', fontSize: headerFontSize, fontWeight: '600', letterSpacing: -0.2 }}>
                 Takaful
               </Text>
-              <Text style={{
-                color: 'rgba(201, 164, 75, 0.7)',
-                fontSize: 10,
-                letterSpacing: 0.3,
-              }}>
-                Tabarru Model · Mutual Protection
+              <Text style={{ color: 'rgba(201, 164, 75, 0.7)', fontSize: 10, letterSpacing: 0.3 }}>
+                Shariah-Compliant · Mutual Protection
               </Text>
             </View>
-
-            <View style={{
-              width: 6,
-              height: 6,
-              borderRadius: 3,
-              backgroundColor: '#C9A44B',
-              opacity: 0.6,
-            }} />
           </View>
 
           {error ? (
@@ -515,9 +647,7 @@ const Takaful = () => {
               justifyContent: 'space-between',
               alignItems: 'center',
             }}>
-              <Text style={{ color: '#DC2626', fontSize: 13, flex: 1, marginRight: 10 }}>
-                {error}
-              </Text>
+              <Text style={{ color: '#DC2626', fontSize: 13, flex: 1, marginRight: 10 }}>{error}</Text>
               <TouchableOpacity
                 style={{ backgroundColor: '#DC2626', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 6 }}
                 onPress={() => { setError(''); fetchAllData(); }}
@@ -527,7 +657,7 @@ const Takaful = () => {
             </View>
           ) : null}
 
-          {/* Hero Section - Emerald with Gold Border */}
+          {/* Hero Section */}
           <View style={{
             backgroundColor: '#032A24',
             borderRadius: 16,
@@ -549,24 +679,14 @@ const Takaful = () => {
                     Takaful · Tabarru
                   </Text>
                 </View>
-                <Text style={{
-                  color: '#FFFFFF',
-                  fontSize: titleFontSize,
-                  fontWeight: '700',
-                  letterSpacing: -0.3,
-                  marginBottom: 2,
-                }}>
-                  Your Takaful Status
+                <Text style={{ color: '#FFFFFF', fontSize: titleFontSize, fontWeight: '700', letterSpacing: -0.3, marginBottom: 2 }}>
+                  Islamic Protection
                 </Text>
-                <Text style={{
-                  color: 'rgba(255,255,255,0.5)',
-                  fontSize: 12,
-                  lineHeight: 18,
-                }}>
-                  Mutual protection through shared responsibility
+                <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, lineHeight: 18 }}>
+                  Ethical, transparent, and community-driven
                 </Text>
               </View>
-              {myPolicy ? (
+              {hasAnyActivePolicy() && (
                 <View style={{
                   backgroundColor: 'rgba(201, 164, 75, 0.12)',
                   paddingHorizontal: 10,
@@ -575,55 +695,9 @@ const Takaful = () => {
                   borderWidth: 1,
                   borderColor: 'rgba(201, 164, 75, 0.2)',
                 }}>
-                  <Text style={{
-                    color: getStatusBadge(myPolicy.status).text,
-                    fontSize: 9,
-                    fontWeight: '600',
-                  }}>
-                    {getStatusLabel(myPolicy.status)}
-                  </Text>
-                </View>
-              ) : (
-                <View style={{
-                  backgroundColor: 'rgba(255,255,255,0.05)',
-                  paddingHorizontal: 10,
-                  paddingVertical: 4,
-                  borderRadius: 10,
-                  borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.06)',
-                }}>
-                  <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 9 }}>No policy</Text>
+                  <Text style={{ color: '#C9A44B', fontSize: 9, fontWeight: '600' }}>✓ Active</Text>
                 </View>
               )}
-            </View>
-
-            <View style={{
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              justifyContent: 'space-between',
-              marginTop: 14,
-              paddingTop: 14,
-              borderTopWidth: 1,
-              borderTopColor: 'rgba(201, 164, 75, 0.08)',
-            }}>
-              {[
-                { label: 'Pool Members', value: poolStats.members.toLocaleString() },
-                { label: 'Pool Balance', value: formatCurrency(poolStats.balance), color: '#C9A44B' },
-                { label: 'Claims Paid', value: `${poolStats.claimsPaid}%`, color: '#3FAF73' },
-                { label: 'Your Coverage', value: myPolicy ? myPolicy.members : '0' },
-              ].map((item, index) => (
-                <View key={index} style={{ minWidth: 50, flex: 1 }}>
-                  <Text style={{
-                    color: item.color || '#FFFFFF',
-                    fontSize: isSmallDevice ? 14 : 16,
-                    fontWeight: '700',
-                    letterSpacing: -0.2,
-                  }}>
-                    {item.value}
-                  </Text>
-                  <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 8 }}>{item.label}</Text>
-                </View>
-              ))}
             </View>
           </View>
 
@@ -634,11 +708,13 @@ const Takaful = () => {
               <Text style={{ color: '#032A24', fontSize: isSmallDevice ? 16 : 17, fontWeight: '700', letterSpacing: -0.2 }}>
                 Takaful Plans
               </Text>
-              <Text style={{ color: '#8B8A86', fontSize: 10 }}>Choose coverage</Text>
+              <Text style={{ color: '#8B8A86', fontSize: 10 }}>Click to expand</Text>
             </View>
 
             {plans.map((plan) => {
-              const isSelected = selectedPlan?.id === plan.id;
+              const isExpanded = expandedPlanId === plan.id;
+              const isEnrolled = hasActivePolicyForPlan(plan.id);
+              
               return (
                 <TouchableOpacity
                   key={plan.id}
@@ -648,22 +724,28 @@ const Takaful = () => {
                     padding: cardPadding,
                     marginBottom: 10,
                     borderWidth: 1.5,
-                    borderColor: isSelected ? '#C9A44B' : 'rgba(3, 42, 36, 0.06)',
-                    shadowColor: isSelected ? '#C9A44B' : 'transparent',
+                    borderColor: isEnrolled ? '#C9A44B' : (isExpanded ? '#032A24' : 'rgba(3, 42, 36, 0.06)'),
+                    shadowColor: isExpanded ? '#032A24' : 'transparent',
                     shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: isSelected ? 0.08 : 0,
+                    shadowOpacity: isExpanded ? 0.08 : 0,
                     shadowRadius: 12,
-                    elevation: isSelected ? 2 : 0,
+                    elevation: isExpanded ? 2 : 0,
                   }}
-                  onPress={() => setSelectedPlan(plan)}
+                  onPress={() => {
+                    if (!isEnrolled) handlePlanSelect(plan);
+                  }}
+                  activeOpacity={isEnrolled ? 1 : 0.7}
                 >
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <View style={{ flex: 1, marginRight: 8 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
-                        <Text style={{ color: '#032A24', fontSize: isSmallDevice ? 14 : 15, fontWeight: '600', letterSpacing: -0.2 }}>
+                        <View style={{ marginRight: 4 }}>
+                          {getPlanIcon(plan.name, '#C9A44B', 20)}
+                        </View>
+                        <Text style={{ color: isEnrolled ? '#6B7280' : '#032A24', fontSize: isSmallDevice ? 14 : 15, fontWeight: '600', letterSpacing: -0.2 }}>
                           {plan.name}
                         </Text>
-                        {myPolicy && (
+                        {isEnrolled && (
                           <View style={{
                             backgroundColor: 'rgba(63, 175, 115, 0.08)',
                             paddingHorizontal: 6,
@@ -675,24 +757,6 @@ const Takaful = () => {
                             <Text style={{ color: '#3FAF73', fontSize: 8, fontWeight: '600' }}>Enrolled</Text>
                           </View>
                         )}
-                        <View style={{
-                          backgroundColor: plan.type === 'family' ? 'rgba(3, 42, 36, 0.06)' :
-                                         plan.type === 'business' ? 'rgba(201, 164, 75, 0.08)' :
-                                         'rgba(3, 42, 36, 0.04)',
-                          paddingHorizontal: 6,
-                          paddingVertical: 1,
-                          borderRadius: 6,
-                        }}>
-                          <Text style={{
-                            color: plan.type === 'family' ? '#032A24' :
-                                   plan.type === 'business' ? '#C9A44B' :
-                                   '#032A24',
-                            fontSize: 8,
-                            fontWeight: '500',
-                          }}>
-                            {getPlanTypeLabel(plan.type)}
-                          </Text>
-                        </View>
                       </View>
                       <Text style={{ color: '#6B7280', fontSize: 12, marginTop: 1 }} numberOfLines={1}>
                         {plan.description}
@@ -700,15 +764,15 @@ const Takaful = () => {
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
                       <Text style={{ color: '#032A24', fontSize: isSmallDevice ? 13 : 14, fontWeight: '700' }}>
-                        {formatCurrency(plan.monthlyCost)}
+                        {formatCurrency(plan.monthly_premium || plan.monthlyCost)}
                       </Text>
                       <Text style={{ color: '#8B8A86', fontSize: 8 }}>per month</Text>
                     </View>
                   </View>
 
-                  {plan.benefits && plan.benefits.length > 0 && (
+                  {plan.coverage_options && plan.coverage_options.length > 0 && (
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
-                      {plan.benefits.slice(0, 3).map((benefit: string, index: number) => (
+                      {plan.coverage_options.slice(0, 3).map((option: string, index: number) => (
                         <View key={index} style={{
                           backgroundColor: '#FAFAF7',
                           paddingHorizontal: 6,
@@ -717,10 +781,10 @@ const Takaful = () => {
                           borderWidth: 1,
                           borderColor: 'rgba(3, 42, 36, 0.04)',
                         }}>
-                          <Text style={{ color: '#6B7280', fontSize: 8 }}>{benefit}</Text>
+                          <Text style={{ color: '#6B7280', fontSize: 8 }}>{option}</Text>
                         </View>
                       ))}
-                      {plan.benefits.length > 3 && (
+                      {plan.coverage_options.length > 3 && (
                         <View style={{
                           backgroundColor: '#FAFAF7',
                           paddingHorizontal: 6,
@@ -729,7 +793,7 @@ const Takaful = () => {
                           borderWidth: 1,
                           borderColor: 'rgba(3, 42, 36, 0.04)',
                         }}>
-                          <Text style={{ color: '#6B7280', fontSize: 8 }}>+{plan.benefits.length - 3}</Text>
+                          <Text style={{ color: '#6B7280', fontSize: 8 }}>+{plan.coverage_options.length - 3}</Text>
                         </View>
                       )}
                     </View>
@@ -747,83 +811,126 @@ const Takaful = () => {
                     <View>
                       <Text style={{ color: '#8B8A86', fontSize: 8 }}>Coverage up to</Text>
                       <Text style={{ color: '#032A24', fontSize: 12, fontWeight: '700' }}>
-                        {formatCurrency(plan.maxCoverage)}
+                        {formatCurrency(plan.maxCoverage || plan.max_coverage)}
                       </Text>
                     </View>
-                    {!myPolicy ? (
-                      <TouchableOpacity
-                        style={{
-                          backgroundColor: isSelected ? '#032A24' : '#FFFFFF',
-                          paddingHorizontal: 14,
-                          paddingVertical: 6,
-                          borderRadius: 8,
-                          borderWidth: isSelected ? 0 : 1,
-                          borderColor: 'rgba(3, 42, 36, 0.1)',
-                        }}
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          handleEnroll(plan);
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={{
-                          color: isSelected ? '#FFFFFF' : '#6B7280',
-                          fontSize: 11,
-                          fontWeight: '600',
-                        }}>
-                          {isSelected ? 'Enroll' : 'Select'}
-                        </Text>
-                      </TouchableOpacity>
-                    ) : myPolicy && selectedPlan?.id === plan.id ? (
-                      <View style={{
-                        backgroundColor: 'rgba(63, 175, 115, 0.06)',
-                        paddingHorizontal: 10,
-                        paddingVertical: 3,
-                        borderRadius: 6,
-                        borderWidth: 1,
-                        borderColor: 'rgba(63, 175, 115, 0.1)',
-                      }}>
-                        <Text style={{ color: '#3FAF73', fontSize: 10, fontWeight: '600' }}>Active</Text>
-                      </View>
-                    ) : null}
+                    {isEnrolled ? (
+                      <Text style={{ color: '#C9A44B', fontSize: 10, fontWeight: '600' }}>✓ Covered</Text>
+                    ) : (
+                      <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '500' }}>
+                        {isExpanded ? 'Collapse ▲' : 'Expand ▼'}
+                      </Text>
+                    )}
                   </View>
+
+                  {/* Expanded Content */}
+                  {isExpanded && !isEnrolled && (
+                    <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(3, 42, 36, 0.06)' }}>
+                      <View style={{ backgroundColor: '#FAFAF7', borderRadius: 10, padding: 12 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                          <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', letterSpacing: 0.3 }}>
+                            Billing
+                          </Text>
+                          <View style={{ flexDirection: 'row', gap: 6 }}>
+                            <TouchableOpacity
+                              style={{
+                                paddingHorizontal: 10,
+                                paddingVertical: 4,
+                                borderRadius: 6,
+                                backgroundColor: billingCycle === 'monthly' ? '#032A24' : 'transparent',
+                              }}
+                              onPress={() => setBillingCycle('monthly')}
+                            >
+                              <Text style={{ color: billingCycle === 'monthly' ? '#FFFFFF' : '#6B7280', fontSize: 10, fontWeight: '600' }}>
+                                Monthly
+                              </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={{
+                                paddingHorizontal: 10,
+                                paddingVertical: 4,
+                                borderRadius: 6,
+                                backgroundColor: billingCycle === 'yearly' ? '#032A24' : 'transparent',
+                              }}
+                              onPress={() => setBillingCycle('yearly')}
+                            >
+                              <Text style={{ color: billingCycle === 'yearly' ? '#FFFFFF' : '#6B7280', fontSize: 10, fontWeight: '600' }}>
+                                Yearly <Text style={{ color: '#C9A44B' }}>(Save 10%)</Text>
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+
+                        <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', letterSpacing: 0.3, marginBottom: 6 }}>
+                          Coverage Options
+                        </Text>
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+                          {plan.coverage_options && plan.coverage_options.map((option: string) => (
+                            <TouchableOpacity
+                              key={option}
+                              style={{
+                                paddingHorizontal: 10,
+                                paddingVertical: 4,
+                                borderRadius: 6,
+                                borderWidth: 1,
+                                borderColor: selectedCoverage === option ? '#032A24' : 'rgba(3, 42, 36, 0.08)',
+                                backgroundColor: selectedCoverage === option ? 'rgba(3, 42, 36, 0.05)' : 'transparent',
+                              }}
+                              onPress={() => setSelectedCoverage(option)}
+                            >
+                              <Text style={{ color: selectedCoverage === option ? '#032A24' : '#6B7280', fontSize: 10 }}>
+                                {option}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <View style={{ flex: 1, minWidth: 100 }}>
+                            <Text style={{ color: '#6B7280', fontSize: 9 }}>Sum Assured</Text>
+                            <TextInput
+                              style={{
+                                backgroundColor: '#FFFFFF',
+                                borderWidth: 1,
+                                borderColor: 'rgba(3, 42, 36, 0.08)',
+                                borderRadius: 6,
+                                paddingHorizontal: 8,
+                                paddingVertical: 4,
+                                fontSize: 12,
+                                color: '#032A24',
+                              }}
+                              value={String(sumAssured)}
+                              onChangeText={(text) => setSumAssured(parseInt(text) || 0)}
+                              keyboardType="numeric"
+                            />
+                          </View>
+                          <TouchableOpacity
+                            style={{
+                              backgroundColor: '#C9A44B',
+                              paddingHorizontal: 14,
+                              paddingVertical: 8,
+                              borderRadius: 8,
+                              opacity: processing ? 0.5 : 1,
+                            }}
+                            onPress={handleGetQuote}
+                            disabled={processing}
+                          >
+                            {processing ? (
+                              <ActivityIndicator size="small" color="#032A24" />
+                            ) : (
+                              <Text style={{ color: '#032A24', fontSize: 11, fontWeight: '600' }}>Get Quote</Text>
+                            )}
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </View>
+                  )}
                 </TouchableOpacity>
               );
             })}
-
-            {/* Tabarru Info */}
-            <View style={{
-              backgroundColor: 'rgba(201, 164, 75, 0.04)',
-              borderRadius: 12,
-              padding: 14,
-              borderWidth: 1,
-              borderColor: 'rgba(201, 164, 75, 0.08)',
-              marginTop: 4,
-              flexDirection: 'row',
-              gap: 10,
-            }}>
-              <View style={{
-                width: 36,
-                height: 36,
-                borderRadius: 8,
-                backgroundColor: 'rgba(201, 164, 75, 0.08)',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: 1,
-                borderColor: 'rgba(201, 164, 75, 0.08)',
-              }}>
-                <ShieldIcon color="#C9A44B" size={16} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: '#032A24', fontSize: 12, fontWeight: '600' }}>What is Tabarru?</Text>
-                <Text style={{ color: '#6B7280', fontSize: 11, lineHeight: 16, marginTop: 1 }}>
-                  Participants donate part of their contributions to a pool to help fellow members in need.
-                </Text>
-              </View>
-            </View>
           </View>
 
-          {/* My Policy Section */}
+          {/* My Policies Section */}
           <View style={{
             backgroundColor: '#FFFFFF',
             borderRadius: 14,
@@ -841,249 +948,54 @@ const Takaful = () => {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <UserIcon color="#032A24" size={16} />
                 <Text style={{ color: '#032A24', fontSize: isSmallDevice ? 15 : 16, fontWeight: '700', letterSpacing: -0.2 }}>
-                  My Coverage
+                  My Policies
                 </Text>
               </View>
-              {myPolicy && (
-                <View style={{
-                  backgroundColor: getStatusBadge(myPolicy.status).bg,
-                  paddingHorizontal: 8,
-                  paddingVertical: 2,
-                  borderRadius: 8,
-                }}>
-                  <Text style={{
-                    color: getStatusBadge(myPolicy.status).text,
-                    fontSize: 9,
-                    fontWeight: '600',
-                  }}>
-                    {getStatusLabel(myPolicy.status)}
-                  </Text>
-                </View>
-              )}
+              <Text style={{ color: '#6B7280', fontSize: 10 }}>{myPolicies.length} total</Text>
             </View>
 
-            {loadingPolicy ? (
+            {loadingPolicies ? (
               <View style={{ alignItems: 'center', paddingVertical: 20 }}>
                 <ActivityIndicator size="small" color="#032A24" />
               </View>
-            ) : myPolicy ? (
-              <View>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-                  {[
-                    { label: 'Plan', value: myPolicy.planName },
-                    { label: 'Monthly', value: formatCurrency(myPolicy.monthlyContribution) },
-                    { label: 'Members', value: myPolicy.members },
-                    { label: 'Coverage', value: formatCurrency(myPolicy.totalCoverage) },
-                  ].map((item, index) => (
-                    <View key={index} style={{
-                      flex: 1,
-                      minWidth: 50,
-                      backgroundColor: '#FAFAF7',
-                      padding: 8,
-                      borderRadius: 8,
-                      alignItems: 'center',
-                      borderWidth: 1,
-                      borderColor: 'rgba(3, 42, 36, 0.04)',
-                    }}>
-                      <Text style={{ color: '#8B8A86', fontSize: 8 }}>{item.label}</Text>
-                      <Text style={{ color: '#032A24', fontSize: 11, fontWeight: '600' }} numberOfLines={1}>
-                        {item.value}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-
-                {/* Family Members */}
-                <View style={{ marginBottom: 10 }}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                    <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', letterSpacing: 0.3 }}>
-                      Family Members
-                    </Text>
-                    <TouchableOpacity onPress={() => setShowAddMember(true)} activeOpacity={0.7}>
-                      <Text style={{ color: '#C9A44B', fontSize: 10, fontWeight: '600' }}>+ Add</Text>
-                    </TouchableOpacity>
-                  </View>
-                  {familyMembers.length === 0 ? (
-                    <Text style={{ color: '#9CA3AF', fontSize: 11, textAlign: 'center', paddingVertical: 6 }}>
-                      No family members added
-                    </Text>
-                  ) : (
-                    familyMembers.map((member) => (
-                      <View key={member.id} style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        paddingVertical: 6,
-                        borderBottomWidth: 1,
-                        borderBottomColor: 'rgba(3, 42, 36, 0.04)',
-                      }}>
-                        <Text style={{ color: '#032A24', fontSize: 12, fontWeight: '500' }}>{member.name}</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          <View style={{
-                            backgroundColor: '#FAFAF7',
-                            paddingHorizontal: 6,
-                            paddingVertical: 1,
-                            borderRadius: 6,
-                            borderWidth: 1,
-                            borderColor: 'rgba(3, 42, 36, 0.04)',
-                          }}>
-                            <Text style={{ color: '#6B7280', fontSize: 8 }}>{member.relation}</Text>
-                          </View>
-                          <Text style={{ color: '#9CA3AF', fontSize: 9 }}>{member.age}y</Text>
-                          <TouchableOpacity onPress={() => handleRemoveMember(member.id)} activeOpacity={0.7}>
-                            <Text style={{ color: '#DC2626', fontSize: 9 }}>Remove</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    ))
-                  )}
-                </View>
-
-                {/* Monthly Payment */}
-                <View style={{
-                  backgroundColor: 'rgba(3, 42, 36, 0.02)',
-                  padding: 14,
-                  borderRadius: 10,
-                  borderWidth: 1,
-                  borderColor: 'rgba(3, 42, 36, 0.04)',
-                  marginBottom: 10,
-                }}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                    <View>
-                      <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '500' }}>Monthly Contribution</Text>
-                      <Text style={{ color: '#032A24', fontSize: isSmallDevice ? 15 : 16, fontWeight: '700', letterSpacing: -0.2 }}>
-                        {formatCurrency(myPolicy.monthlyContribution)}
-                      </Text>
-                      <Text style={{ color: '#9CA3AF', fontSize: 8 }}>
-                        Due: {new Date().toLocaleDateString('en-KE', { month: 'short', year: 'numeric' })}
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      style={{
-                        backgroundColor: '#C9A44B',
-                        paddingHorizontal: 14,
-                        paddingVertical: 8,
-                        borderRadius: 8,
-                        opacity: processing ? 0.5 : 1,
-                      }}
-                      onPress={handlePayMonthly}
-                      disabled={processing}
-                      activeOpacity={0.7}
-                    >
-                      {processing ? (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          <ActivityIndicator size="small" color="#032A24" />
-                          <Text style={{ color: '#032A24', fontSize: 11, fontWeight: '600' }}>Processing</Text>
-                        </View>
-                      ) : (
-                        <Text style={{ color: '#032A24', fontSize: 11, fontWeight: '600' }}>Pay Now</Text>
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <TouchableOpacity
-                  style={{
-                    backgroundColor: '#032A24',
-                    paddingVertical: 10,
-                    borderRadius: 10,
-                    alignItems: 'center',
-                  }}
-                  onPress={() => setShowClaimForm(true)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '600' }}>File a Claim</Text>
-                </TouchableOpacity>
+            ) : myPolicies.length === 0 ? (
+              <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+                <Text style={{ color: '#9CA3AF', fontSize: 13 }}>No policies yet</Text>
+                <Text style={{ color: '#6B7280', fontSize: 11, marginTop: 2 }}>Select a plan above to get started</Text>
               </View>
             ) : (
-              <View style={{ alignItems: 'center', paddingVertical: 20 }}>
-                <View style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 24,
-                  backgroundColor: 'rgba(3, 42, 36, 0.04)',
+              myPolicies.map((policy) => (
+                <View key={policy.id} style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  borderWidth: 2,
-                  borderColor: 'rgba(3, 42, 36, 0.06)',
+                  paddingVertical: 8,
+                  borderBottomWidth: 1,
+                  borderBottomColor: 'rgba(3, 42, 36, 0.04)',
                 }}>
-                  <ShieldIcon color="#032A24" size={20} />
+                  <View>
+                    <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>{policy.plan_name}</Text>
+                    <Text style={{ color: '#6B7280', fontSize: 10 }}>{policy.coverage_option} · {formatCurrency(policy.premium)}/mo</Text>
+                    <Text style={{ color: '#9CA3AF', fontSize: 9 }}>{formatDate(policy.start_date)} — {formatDate(policy.expiry_date)}</Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <View style={{
+                      backgroundColor: getStatusBadge(policy.status).bg,
+                      paddingHorizontal: 8,
+                      paddingVertical: 2,
+                      borderRadius: 6,
+                    }}>
+                      <Text style={{ color: getStatusBadge(policy.status).text, fontSize: 9, fontWeight: '500' }}>
+                        {getStatusLabel(policy.status)}
+                      </Text>
+                    </View>
+                  </View>
                 </View>
-                <Text style={{ color: '#032A24', fontSize: 14, fontWeight: '600', marginTop: 8 }}>
-                  No Active Policy
-                </Text>
-                <Text style={{ color: '#6B7280', fontSize: 11, marginTop: 1 }}>
-                  Enroll in a Takaful plan to get covered
-                </Text>
-              </View>
+              ))
             )}
           </View>
 
-          {/* Pool Stats */}
-          <View style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: 14,
-            padding: cardPadding,
-            marginBottom: 14,
-            borderWidth: 1,
-            borderColor: 'rgba(3, 42, 36, 0.06)',
-            shadowColor: '#032A24',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.02,
-            shadowRadius: 8,
-            elevation: 1,
-          }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <WalletIcon color="#032A24" size={18} />
-                <Text style={{ color: '#032A24', fontSize: isSmallDevice ? 15 : 16, fontWeight: '700', letterSpacing: -0.2 }}>
-                  Pool Statistics
-                </Text>
-              </View>
-              <View style={{
-                backgroundColor: 'rgba(201, 164, 75, 0.08)',
-                paddingHorizontal: 8,
-                paddingVertical: 2,
-                borderRadius: 6,
-                borderWidth: 1,
-                borderColor: 'rgba(201, 164, 75, 0.08)',
-              }}>
-                <Text style={{ color: '#C9A44B', fontSize: 8, fontWeight: '600' }}>Barakah</Text>
-              </View>
-            </View>
-
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-              {[
-                { label: 'Total Members', value: poolStats.members.toLocaleString() },
-                { label: 'Pool Balance', value: formatCurrency(poolStats.balance), color: '#C9A44B' },
-                { label: 'Claims Paid', value: `${poolStats.claimsPaid}%`, color: '#3FAF73' },
-                { label: 'Surplus', value: formatCurrency(poolStats.surplus), color: '#032A24' },
-              ].map((item, index) => (
-                <View key={index} style={{
-                  flex: 1,
-                  minWidth: 70,
-                  backgroundColor: '#FAFAF7',
-                  padding: 10,
-                  borderRadius: 8,
-                  alignItems: 'center',
-                  borderWidth: 1,
-                  borderColor: 'rgba(3, 42, 36, 0.04)',
-                }}>
-                  <Text style={{
-                    color: item.color || '#032A24',
-                    fontSize: isSmallDevice ? 14 : 16,
-                    fontWeight: '700',
-                    letterSpacing: -0.2,
-                  }}>
-                    {item.value}
-                  </Text>
-                  <Text style={{ color: '#6B7280', fontSize: 8, marginTop: 2 }}>{item.label}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-
-          {/* Recent Claims - Collapsible */}
+          {/* Claims Section */}
           <View style={{
             backgroundColor: '#FFFFFF',
             borderRadius: 14,
@@ -1109,7 +1021,7 @@ const Takaful = () => {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <ClaimIcon color="#032A24" size={18} />
                 <Text style={{ color: '#032A24', fontSize: isSmallDevice ? 15 : 16, fontWeight: '700', letterSpacing: -0.2 }}>
-                  Recent Claims
+                  My Claims
                 </Text>
                 {claims.length > 0 && (
                   <View style={{
@@ -1118,21 +1030,35 @@ const Takaful = () => {
                     paddingVertical: 2,
                     borderRadius: 10,
                   }}>
-                    <Text style={{ color: '#6B7280', fontSize: 9, fontWeight: '500' }}>
-                      {claims.length}
-                    </Text>
+                    <Text style={{ color: '#6B7280', fontSize: 9, fontWeight: '500' }}>{claims.length}</Text>
                   </View>
                 )}
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={{ color: '#8B8A86', fontSize: 9 }}>
-                  {claimsExpanded ? 'Hide' : 'Show'}
-                </Text>
-                {claimsExpanded ? (
-                  <ChevronUpIcon color="#6B7280" size={18} />
-                ) : (
-                  <ChevronDownIcon color="#6B7280" size={18} />
-                )}
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: hasAnyActivePolicy() ? '#C9A44B' : '#D1D5DB',
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    borderRadius: 6,
+                  }}
+                  onPress={() => setShowClaimForm(true)}
+                  disabled={!hasAnyActivePolicy()}
+                >
+                  <Text style={{ color: hasAnyActivePolicy() ? '#032A24' : '#FFFFFF', fontSize: 9, fontWeight: '600' }}>
+                    {hasAnyActivePolicy() ? 'File Claim' : 'No Policy'}
+                  </Text>
+                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={{ color: '#8B8A86', fontSize: 9, marginRight: 4 }}>
+                    {claimsExpanded ? 'Hide' : 'Show'}
+                  </Text>
+                  {claimsExpanded ? (
+                    <ChevronUpIcon color="#6B7280" size={18} />
+                  ) : (
+                    <ChevronDownIcon color="#6B7280" size={18} />
+                  )}
+                </View>
               </View>
             </TouchableOpacity>
 
@@ -1159,11 +1085,8 @@ const Takaful = () => {
                         }}
                       >
                         <View style={{ flex: 1 }}>
-                          <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '500' }}>{claim.type}</Text>
-                          <Text style={{ color: '#9CA3AF', fontSize: 9 }}>{formatDate(claim.date)}</Text>
-                          <Text style={{ color: '#6B7280', fontSize: 10, marginTop: 1 }} numberOfLines={1}>
-                            {claim.description || 'No description'}
-                          </Text>
+                          <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '500' }}>{claim.claim_type}</Text>
+                          <Text style={{ color: '#9CA3AF', fontSize: 9 }}>{formatDate(claim.submitted_at)}</Text>
                         </View>
                         <View style={{ alignItems: 'flex-end', marginLeft: 10 }}>
                           <Text style={{ color: '#032A24', fontSize: 14, fontWeight: '700' }}>
@@ -1203,9 +1126,8 @@ const Takaful = () => {
         </View>
       </ScrollView>
 
-      {/* Modals - Same as before */}
-      {/* Enrollment Confirmation Modal */}
-      <Modal visible={showConfirmModal} transparent animationType="fade">
+      {/* ===== QUOTE MODAL ===== */}
+      <Modal visible={showQuoteModal} transparent animationType="fade">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
             backgroundColor: '#FFFFFF',
@@ -1217,9 +1139,9 @@ const Takaful = () => {
           }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <Text style={{ color: '#032A24', fontSize: 18, fontWeight: '700', letterSpacing: -0.3 }}>
-                Confirm Enrollment
+                Quote Summary
               </Text>
-              <TouchableOpacity onPress={() => setShowConfirmModal(false)} activeOpacity={0.7} style={{ padding: 4 }}>
+              <TouchableOpacity onPress={() => setShowQuoteModal(false)} activeOpacity={0.7} style={{ padding: 4 }}>
                 <CloseIcon color="#6B7280" size={20} />
               </TouchableOpacity>
             </View>
@@ -1239,7 +1161,7 @@ const Takaful = () => {
                   <ShieldIcon color="#C9A44B" size={20} />
                 </View>
                 <Text style={{ color: '#032A24', fontSize: 16, fontWeight: '700', marginTop: 4 }}>{selectedPlan?.name}</Text>
-                <Text style={{ color: '#6B7280', fontSize: 12 }}>{selectedPlan ? getPlanTypeLabel(selectedPlan.type) : ''}</Text>
+                <Text style={{ color: '#6B7280', fontSize: 12 }}>{selectedCoverage}</Text>
               </View>
 
               <View style={{
@@ -1251,15 +1173,31 @@ const Takaful = () => {
                 marginBottom: 12,
               }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 11 }}>Monthly Contribution</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 11 }}>
+                    {billingCycle === 'yearly' ? 'Annual Premium' : 'Monthly Premium'}
+                  </Text>
                   <Text style={{ color: '#032A24', fontSize: 11, fontWeight: '600' }}>
-                    {formatCurrency(selectedPlan?.monthlyCost)}
+                    {formatCurrency(quoteData?.premium)}
+                  </Text>
+                </View>
+                {billingCycle === 'yearly' && (
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
+                    <Text style={{ color: '#6B7280', fontSize: 11 }}>Monthly Equivalent</Text>
+                    <Text style={{ color: '#032A24', fontSize: 11, fontWeight: '600' }}>
+                      {formatCurrency(quoteData?.monthly_equivalent)}
+                    </Text>
+                  </View>
+                )}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
+                  <Text style={{ color: '#6B7280', fontSize: 11 }}>Sum Assured</Text>
+                  <Text style={{ color: '#032A24', fontSize: 11, fontWeight: '600' }}>
+                    {formatCurrency(sumAssured)}
                   </Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 11 }}>Coverage Amount</Text>
-                  <Text style={{ color: '#C9A44B', fontSize: 11, fontWeight: '700' }}>
-                    {formatCurrency(selectedPlan?.maxCoverage)}
+                  <Text style={{ color: '#6B7280', fontSize: 11 }}>Billing</Text>
+                  <Text style={{ color: '#032A24', fontSize: 11, fontWeight: '600', textTransform: 'capitalize' }}>
+                    {billingCycle}
                   </Text>
                 </View>
               </View>
@@ -1273,8 +1211,7 @@ const Takaful = () => {
                 marginBottom: 16,
               }}>
                 <Text style={{ color: '#6B7280', fontSize: 11, textAlign: 'center', lineHeight: 16 }}>
-                  This is a <Text style={{ fontWeight: '600', color: '#032A24' }}>Tabarru</Text> based Takaful.
-                  You agree to mutual guarantee and cooperation.
+                  Tabarru based Takaful. By purchasing, you agree to mutual guarantee.
                 </Text>
               </View>
 
@@ -1289,7 +1226,7 @@ const Takaful = () => {
                     borderRadius: 10,
                     alignItems: 'center',
                   }}
-                  onPress={() => setShowConfirmModal(false)}
+                  onPress={() => setShowQuoteModal(false)}
                   activeOpacity={0.7}
                 >
                   <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '500' }}>Cancel</Text>
@@ -1303,7 +1240,7 @@ const Takaful = () => {
                     alignItems: 'center',
                     opacity: processing ? 0.5 : 1,
                   }}
-                  onPress={confirmEnrollment}
+                  onPress={handlePurchase}
                   disabled={processing}
                   activeOpacity={0.7}
                 >
@@ -1313,7 +1250,7 @@ const Takaful = () => {
                       <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Processing...</Text>
                     </View>
                   ) : (
-                    <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Confirm</Text>
+                    <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Purchase Policy</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -1322,7 +1259,7 @@ const Takaful = () => {
         </View>
       </Modal>
 
-      {/* Enrollment Success Modal */}
+      {/* ===== SUCCESS MODAL ===== */}
       <Modal visible={showSuccessModal} transparent animationType="fade">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
@@ -1345,7 +1282,7 @@ const Takaful = () => {
               alignItems: 'center',
             }}>
               <Text style={{ color: '#FFFFFF', fontSize: 17, fontWeight: '700', letterSpacing: -0.3 }}>
-                Enrollment Successful!
+                Policy Purchased!
               </Text>
               <TouchableOpacity onPress={() => setShowSuccessModal(false)} activeOpacity={0.7} style={{ padding: 4 }}>
                 <CloseIcon color="rgba(255,255,255,0.6)" size={20} />
@@ -1358,15 +1295,15 @@ const Takaful = () => {
                   width: 52,
                   height: 52,
                   borderRadius: 26,
-                  backgroundColor: 'rgba(63, 175, 115, 0.08)',
+                  backgroundColor: 'rgba(201, 164, 75, 0.08)',
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderWidth: 3,
-                  borderColor: 'rgba(63, 175, 115, 0.12)',
+                  borderColor: 'rgba(201, 164, 75, 0.12)',
                 }}>
-                  <CheckIcon color="#3FAF73" size={26} />
+                  <CheckIcon color="#C9A44B" size={26} />
                 </View>
-                <Text style={{ color: '#6B7280', fontSize: 11, marginTop: 6 }}>You're now covered under</Text>
+                <Text style={{ color: '#6B7280', fontSize: 11, marginTop: 6 }}>You are now covered under</Text>
                 <Text style={{ color: '#032A24', fontSize: 17, fontWeight: '700', letterSpacing: -0.3 }}>
                   {modalData?.planName}
                 </Text>
@@ -1381,21 +1318,31 @@ const Takaful = () => {
                 marginBottom: 12,
               }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 11 }}>Monthly Contribution</Text>
-                  <Text style={{ color: '#032A24', fontSize: 11, fontWeight: '600' }}>
-                    {formatCurrency(modalData?.monthlyCost)}
-                  </Text>
-                </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
                   <Text style={{ color: '#6B7280', fontSize: 11 }}>Coverage</Text>
+                  <Text style={{ color: '#032A24', fontSize: 11, fontWeight: '600' }}>{modalData?.coverage}</Text>
+                </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
+                  <Text style={{ color: '#6B7280', fontSize: 11 }}>Premium</Text>
                   <Text style={{ color: '#C9A44B', fontSize: 11, fontWeight: '700' }}>
-                    {formatCurrency(modalData?.coverage)}
+                    {formatCurrency(modalData?.premium)}
                   </Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 11 }}>Transaction ID</Text>
+                  <Text style={{ color: '#6B7280', fontSize: 11 }}>Policy #</Text>
                   <Text style={{ color: '#6B7280', fontSize: 10, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }}>
-                    {modalData?.transactionId}
+                    {modalData?.policyNumber}
+                  </Text>
+                </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
+                  <Text style={{ color: '#6B7280', fontSize: 11 }}>Expires</Text>
+                  <Text style={{ color: '#032A24', fontSize: 11, fontWeight: '600' }}>
+                    {formatDate(modalData?.expiryDate)}
+                  </Text>
+                </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
+                  <Text style={{ color: '#6B7280', fontSize: 11 }}>Billing</Text>
+                  <Text style={{ color: '#032A24', fontSize: 11, fontWeight: '600', textTransform: 'capitalize' }}>
+                    {modalData?.billingCycle}
                   </Text>
                 </View>
               </View>
@@ -1430,251 +1377,7 @@ const Takaful = () => {
         </View>
       </Modal>
 
-      {/* Payment Success Modal */}
-      <Modal visible={showPaymentSuccessModal} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-          <View style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: 18,
-            padding: 22,
-            width: '100%',
-            maxWidth: 400,
-            maxHeight: '90%',
-          }}>
-            <View style={{
-              backgroundColor: '#3FAF73',
-              padding: 16,
-              borderTopLeftRadius: 14,
-              borderTopRightRadius: 14,
-              margin: -22,
-              marginBottom: 16,
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}>
-              <Text style={{ color: '#FFFFFF', fontSize: 17, fontWeight: '700', letterSpacing: -0.3 }}>
-                Payment Successful!
-              </Text>
-              <TouchableOpacity onPress={() => setShowPaymentSuccessModal(false)} activeOpacity={0.7} style={{ padding: 4 }}>
-                <CloseIcon color="rgba(255,255,255,0.6)" size={20} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <View style={{ alignItems: 'center', marginBottom: 16 }}>
-                <View style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 26,
-                  backgroundColor: 'rgba(63, 175, 115, 0.08)',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderWidth: 3,
-                  borderColor: 'rgba(63, 175, 115, 0.12)',
-                }}>
-                  <CheckIcon color="#3FAF73" size={26} />
-                </View>
-                <Text style={{ color: '#6B7280', fontSize: 11, marginTop: 6 }}>Monthly contribution paid</Text>
-                <Text style={{ color: '#032A24', fontSize: 20, fontWeight: '700', letterSpacing: -0.5 }}>
-                  {formatCurrency(paymentData?.amount)}
-                </Text>
-                <Text style={{ color: '#6B7280', fontSize: 11 }}>{paymentData?.date}</Text>
-              </View>
-
-              <View style={{
-                backgroundColor: '#FAFAF7',
-                borderRadius: 10,
-                padding: 12,
-                borderWidth: 1,
-                borderColor: 'rgba(3, 42, 36, 0.04)',
-                marginBottom: 12,
-              }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 11 }}>Contribution ID</Text>
-                  <Text style={{ color: '#6B7280', fontSize: 10, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }}>
-                    {paymentData?.contributionId}
-                  </Text>
-                </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 11 }}>Amount</Text>
-                  <Text style={{ color: '#032A24', fontSize: 11, fontWeight: '600' }}>
-                    {formatCurrency(paymentData?.amount)}
-                  </Text>
-                </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 }}>
-                  <Text style={{ color: '#6B7280', fontSize: 11 }}>New Balance</Text>
-                  <Text style={{ color: '#C9A44B', fontSize: 11, fontWeight: '700' }}>
-                    {formatCurrency(paymentData?.newBalance)}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={{
-                backgroundColor: 'rgba(63, 175, 115, 0.04)',
-                padding: 10,
-                borderRadius: 8,
-                borderWidth: 1,
-                borderColor: 'rgba(63, 175, 115, 0.06)',
-                marginBottom: 16,
-              }}>
-                <Text style={{ color: '#6B7280', fontSize: 11, textAlign: 'center', fontStyle: 'italic', lineHeight: 16 }}>
-                  Your Takaful coverage remains active. Jazakallah Khair!
-                </Text>
-              </View>
-
-              <TouchableOpacity
-                style={{
-                  backgroundColor: '#032A24',
-                  paddingVertical: 10,
-                  borderRadius: 10,
-                  alignItems: 'center',
-                }}
-                onPress={() => setShowPaymentSuccessModal(false)}
-                activeOpacity={0.7}
-              >
-                <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Done</Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Add Family Member Modal */}
-      <Modal visible={showAddMember} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-          <View style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: 18,
-            padding: 22,
-            width: '100%',
-            maxWidth: 400,
-            maxHeight: '90%',
-          }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <UserIcon color="#032A24" size={18} />
-                <Text style={{ color: '#032A24', fontSize: 17, fontWeight: '700', letterSpacing: -0.3 }}>
-                  Add Family Member
-                </Text>
-              </View>
-              <TouchableOpacity onPress={() => setShowAddMember(false)} activeOpacity={0.7} style={{ padding: 4 }}>
-                <CloseIcon color="#6B7280" size={20} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <View style={{ marginBottom: 12 }}>
-                <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
-                  Full Name
-                </Text>
-                <TextInput
-                  style={{
-                    backgroundColor: '#FAFAF7',
-                    borderWidth: 1,
-                    borderColor: 'rgba(3, 42, 36, 0.08)',
-                    borderRadius: 8,
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
-                    color: '#1F2937',
-                    fontSize: 13,
-                  }}
-                  value={newMember.name}
-                  onChangeText={(text) => setNewMember({ ...newMember, name: text })}
-                  placeholder="Enter name"
-                  placeholderTextColor="#9CA3AF"
-                />
-              </View>
-
-              <View style={{ marginBottom: 12 }}>
-                <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
-                  Relation
-                </Text>
-                <View style={{
-                  backgroundColor: '#FAFAF7',
-                  borderWidth: 1,
-                  borderColor: 'rgba(3, 42, 36, 0.08)',
-                  borderRadius: 8,
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
-                }}>
-                  <TextInput
-                    style={{ color: '#1F2937', fontSize: 13, padding: 0 }}
-                    value={newMember.relation}
-                    onChangeText={(text) => setNewMember({ ...newMember, relation: text })}
-                    placeholder="Select relation"
-                    placeholderTextColor="#9CA3AF"
-                  />
-                </View>
-              </View>
-
-              <View style={{ marginBottom: 14 }}>
-                <Text style={{ color: '#6B7280', fontSize: 10, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
-                  Age
-                </Text>
-                <TextInput
-                  style={{
-                    backgroundColor: '#FAFAF7',
-                    borderWidth: 1,
-                    borderColor: 'rgba(3, 42, 36, 0.08)',
-                    borderRadius: 8,
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
-                    color: '#1F2937',
-                    fontSize: 13,
-                  }}
-                  value={newMember.age}
-                  onChangeText={(text) => setNewMember({ ...newMember, age: text })}
-                  placeholder="Enter age"
-                  placeholderTextColor="#9CA3AF"
-                  keyboardType="numeric"
-                />
-              </View>
-
-              {error ? <Text style={{ color: '#DC2626', fontSize: 11, marginBottom: 8 }}>{error}</Text> : null}
-
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <TouchableOpacity
-                  style={{
-                    flex: 1,
-                    backgroundColor: '#F3F4F6',
-                    paddingVertical: 10,
-                    borderRadius: 10,
-                    alignItems: 'center',
-                  }}
-                  onPress={() => setShowAddMember(false)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '500' }}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={{
-                    flex: 2,
-                    backgroundColor: '#032A24',
-                    paddingVertical: 10,
-                    borderRadius: 10,
-                    alignItems: 'center',
-                    opacity: processing ? 0.5 : 1,
-                  }}
-                  onPress={handleAddMember}
-                  disabled={processing}
-                  activeOpacity={0.7}
-                >
-                  {processing ? (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <ActivityIndicator size="small" color="#FFFFFF" />
-                      <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Adding...</Text>
-                    </View>
-                  ) : (
-                    <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Add Member</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Claim Form Modal */}
+      {/* ===== CLAIM FORM MODAL ===== */}
       <Modal visible={showClaimForm} transparent animationType="fade">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
@@ -1712,8 +1415,8 @@ const Takaful = () => {
                 }}>
                   <TextInput
                     style={{ color: '#1F2937', fontSize: 13, padding: 0 }}
-                    value={claimData.type}
-                    onChangeText={(text) => setClaimData({ ...claimData, type: text })}
+                    value={claimData.claim_type}
+                    onChangeText={(text) => setClaimData({ ...claimData, claim_type: text })}
                     placeholder="Select claim type"
                     placeholderTextColor="#9CA3AF"
                   />

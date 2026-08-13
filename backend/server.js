@@ -521,17 +521,19 @@ async function initDB() {
     await client.query(`
       CREATE TABLE IF NOT EXISTS takaful_plans (
         id TEXT PRIMARY KEY,
+        external_product_id TEXT,
         name TEXT NOT NULL,
         description TEXT,
-        type TEXT NOT NULL,
-        coverage TEXT,
-        monthly_cost INTEGER NOT NULL,
-        annual_cost INTEGER NOT NULL,
-        max_coverage INTEGER NOT NULL,
-        benefits TEXT[],
+        category TEXT NOT NULL,
+        coverage_options JSONB DEFAULT '[]',
+        monthly_premium INTEGER DEFAULT 0,
+        annual_premium INTEGER DEFAULT 0,
+        min_coverage INTEGER DEFAULT 0,
+        max_coverage INTEGER DEFAULT 0,
+        benefits JSONB DEFAULT '[]',
         is_active BOOLEAN DEFAULT TRUE,
-        createdat TIMESTAMP DEFAULT NOW(),
-        updatedat TIMESTAMP DEFAULT NOW()
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
       )
     `);
 
@@ -543,69 +545,110 @@ async function initDB() {
         id TEXT PRIMARY KEY,
         user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         plan_id TEXT NOT NULL REFERENCES takaful_plans(id) ON DELETE CASCADE,
+        coverage_option TEXT NOT NULL,
+        sum_assured INTEGER NOT NULL,
+        premium INTEGER NOT NULL,
+        external_policy_number TEXT,
         status TEXT DEFAULT 'active',
         start_date DATE NOT NULL,
         expiry_date DATE NOT NULL,
-        monthly_contribution INTEGER NOT NULL,
-        total_coverage INTEGER NOT NULL,
-        members INTEGER DEFAULT 1,
-        createdat TIMESTAMP DEFAULT NOW(),
-        updatedat TIMESTAMP DEFAULT NOW()
+        payment_reference TEXT,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
       )
     `);
 
     // ============================================================
-    // 23. TAKAFUL FAMILY MEMBERS TABLE
-    // ============================================================
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS takaful_family_members (
-        id TEXT PRIMARY KEY,
-        policy_id TEXT NOT NULL REFERENCES takaful_policies(id) ON DELETE CASCADE,
-        name TEXT NOT NULL,
-        relation TEXT NOT NULL,
-        age INTEGER NOT NULL,
-        createdat TIMESTAMP DEFAULT NOW(),
-        updatedat TIMESTAMP DEFAULT NOW()
-      )
-    `);
-
-    // ============================================================
-    // 24. TAKAFUL CLAIMS TABLE
+    // 23. TAKAFUL CLAIMS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS takaful_claims (
         id TEXT PRIMARY KEY,
         policy_id TEXT NOT NULL REFERENCES takaful_policies(id) ON DELETE CASCADE,
         user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        type TEXT NOT NULL,
+        claim_type TEXT NOT NULL,
         amount INTEGER NOT NULL,
         description TEXT,
+        external_claim_reference TEXT,
         status TEXT DEFAULT 'pending',
         admin_notes TEXT,
         submitted_at TIMESTAMP DEFAULT NOW(),
         reviewed_at TIMESTAMP,
-        updatedat TIMESTAMP DEFAULT NOW()
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
       )
     `);
 
     // ============================================================
-    // 25. TAKAFUL CONTRIBUTIONS TABLE
+    // 24. TAKAFUL ENQUIRIES TABLE
     // ============================================================
     await client.query(`
-      CREATE TABLE IF NOT EXISTS takaful_contributions (
+      CREATE TABLE IF NOT EXISTS takaful_enquiries (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        plan_id TEXT NOT NULL REFERENCES takaful_plans(id) ON DELETE CASCADE,
+        coverage_option TEXT NOT NULL,
+        sum_assured INTEGER NOT NULL,
+        premium_amount INTEGER,
+        external_reference TEXT,
+        status TEXT DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // ============================================================
+    // 25. TAKAFUL COMMISSIONS TABLE
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS takaful_commissions (
         id TEXT PRIMARY KEY,
         policy_id TEXT NOT NULL REFERENCES takaful_policies(id) ON DELETE CASCADE,
         amount INTEGER NOT NULL,
-        status TEXT DEFAULT 'paid',
+        rate_percent DECIMAL(5,2) NOT NULL,
+        status TEXT DEFAULT 'pending',
+        paid_at TIMESTAMP,
         payment_reference TEXT,
-        payment_method TEXT DEFAULT 'wallet',
-        contribution_date DATE DEFAULT NOW(),
-        createdat TIMESTAMP DEFAULT NOW()
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
       )
     `);
 
     // ============================================================
-    // 26. TAKAFUL POOL STATS TABLE
+    // 26. TAKAFUL EXTERNAL POLICIES TABLE
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS takaful_external_policies (
+        id TEXT PRIMARY KEY,
+        policy_id TEXT NOT NULL REFERENCES takaful_policies(id) ON DELETE CASCADE,
+        external_policy_number TEXT NOT NULL,
+        external_reference TEXT,
+        last_sync_at TIMESTAMP,
+        raw_response JSONB,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(policy_id, external_policy_number)
+      )
+    `);
+
+    // ============================================================
+    // 27. TAKAFUL WEBHOOK LOGS TABLE
+    // ============================================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS takaful_webhook_logs (
+        id TEXT PRIMARY KEY,
+        event TEXT NOT NULL,
+        payload JSONB NOT NULL,
+        signature TEXT,
+        processed BOOLEAN DEFAULT FALSE,
+        processed_at TIMESTAMP,
+        error_message TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // ============================================================
+    // 28. TAKAFUL POOL STATS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS takaful_pool_stats (
@@ -615,12 +658,12 @@ async function initDB() {
         claims_paid DECIMAL(5,2) DEFAULT 0,
         surplus INTEGER DEFAULT 0,
         total_claims INTEGER DEFAULT 0,
-        updatedat TIMESTAMP DEFAULT NOW()
+        updated_at TIMESTAMP DEFAULT NOW()
       )
     `);
 
     // ============================================================
-    // 27. WILLS TABLE
+    // 29. WILLS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS wills (
@@ -645,7 +688,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 28. KADHIS TABLE (Keep for backward compatibility)
+    // 30. KADHIS TABLE (Keep for backward compatibility)
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS kadhis (
@@ -672,7 +715,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 29. ZAKAT RECIPIENTS TABLE
+    // 31. ZAKAT RECIPIENTS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS zakat_recipients (
@@ -699,7 +742,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 30. ZAKAT PAYMENTS TABLE
+    // 32. ZAKAT PAYMENTS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS zakat_payments (
@@ -718,7 +761,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 31. SADAQA CAMPAIGNS TABLE
+    // 33. SADAQA CAMPAIGNS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS sadaqa_campaigns (
@@ -743,7 +786,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 32. SADAQA PAYMENTS TABLE
+    // 34. SADAQA PAYMENTS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS sadaqa_payments (
@@ -763,7 +806,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 33. COMMUNITY POOL TABLE
+    // 35. COMMUNITY POOL TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS community_pool (
@@ -778,7 +821,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 34. POOL DISBURSEMENTS TABLE
+    // 36. POOL DISBURSEMENTS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS pool_disbursements (
@@ -796,7 +839,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 35. HEARSE PROVIDERS TABLE
+    // 37. HEARSE PROVIDERS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS hearse_providers (
@@ -816,7 +859,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 36. HEARSE REQUESTS TABLE
+    // 38. HEARSE REQUESTS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS hearse_requests (
@@ -843,7 +886,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 37. HEARSE REQUEST ASSIGNMENTS TABLE
+    // 39. HEARSE REQUEST ASSIGNMENTS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS hearse_request_assignments (
@@ -862,7 +905,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 38. HEARSE PROVIDER SERVICES TABLE
+    // 40. HEARSE PROVIDER SERVICES TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS hearse_provider_services (
@@ -878,7 +921,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 39. HAJJ PACKAGES TABLE
+    // 41. HAJJ PACKAGES TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS hajj_packages (
@@ -904,7 +947,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 40. HAJJ BOOKINGS TABLE
+    // 42. HAJJ BOOKINGS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS hajj_bookings (
@@ -929,7 +972,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 41. VIRTUAL ACCOUNTS TABLE (BANK)
+    // 43. VIRTUAL ACCOUNTS TABLE (BANK)
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS virtual_accounts (
@@ -945,7 +988,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 42. BANK TRANSACTIONS TABLE (BANK)
+    // 44. BANK TRANSACTIONS TABLE (BANK)
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS bank_transactions (
@@ -966,7 +1009,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 43. BANK WEBHOOKS TABLE (BANK)
+    // 45. BANK WEBHOOKS TABLE (BANK)
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS bank_webhooks (
@@ -980,7 +1023,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 44. UTILITY PAYMENTS TABLE
+    // 46. UTILITY PAYMENTS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS utility_payments (
@@ -1000,7 +1043,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 45. SAVED SERVICES TABLE (Utilities)
+    // 47. SAVED SERVICES TABLE (Utilities)
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS saved_services (
@@ -1016,7 +1059,7 @@ async function initDB() {
     `);
 
     // ============================================================
-    // 46. TRANSACTIONS TABLE
+    // 48. TRANSACTIONS TABLE
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS transactions (
@@ -1091,7 +1134,14 @@ async function initDB() {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_takaful_policies_status ON takaful_policies(status)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_takaful_claims_policy_id ON takaful_claims(policy_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_takaful_claims_status ON takaful_claims(status)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_takaful_family_members_policy_id ON takaful_family_members(policy_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_takaful_enquiries_user_id ON takaful_enquiries(user_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_takaful_enquiries_status ON takaful_enquiries(status)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_takaful_commissions_policy_id ON takaful_commissions(policy_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_takaful_commissions_status ON takaful_commissions(status)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_takaful_external_policies_policy_id ON takaful_external_policies(policy_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_takaful_external_policies_external_policy_number ON takaful_external_policies(external_policy_number)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_takaful_webhook_logs_event ON takaful_webhook_logs(event)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_takaful_webhook_logs_processed ON takaful_webhook_logs(processed)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_mosques_leader_id ON mosques(leader_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_mosques_county ON mosques(county)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_wills_user_id ON wills(user_id)`);
@@ -1203,7 +1253,7 @@ async function initDB() {
     if (poolStatsExists.rows.length === 0) {
       await client.query(`
         INSERT INTO takaful_pool_stats (
-          id, total_members, pool_balance, claims_paid, surplus, total_claims, updatedat
+          id, total_members, pool_balance, claims_paid, surplus, total_claims, updated_at
         ) VALUES ('pool-stats-1', 0, 0, 0, 0, 0, NOW())
       `);
       console.log('Takaful pool stats initialized');

@@ -1,12 +1,15 @@
 {
   "expo": {
     "name": "Itqaan",
-    "slug": "itqaan-mobile",
+    "slug": "itqaan",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/itqaan_icon.png",
     "userInterfaceStyle": "light",
     "plugins": [
+      "expo-dev-client",
+      "@livekit/react-native-expo-plugin",
+      "@config-plugins/react-native-webrtc",
       [
         "expo-splash-screen",
         {
@@ -26,15 +29,26 @@
         "foregroundImage": "./assets/itqaan_icon.png",
         "backgroundColor": "#032A24"
       },
-      "minSdkVersion": 24
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "MODIFY_AUDIO_SETTINGS",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_CAMERA",
+        "FOREGROUND_SERVICE_MICROPHONE",
+        "FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
       "eas": {
-        "projectId": "5434efb5-603c-4865-b639-5b8256044385"
+        "projectId": "1f9c61c7-5736-4224-bc40-b848a8285ea0"
       }
-    }
+    },
+    "owner": "itqaans-team"
   }
 }

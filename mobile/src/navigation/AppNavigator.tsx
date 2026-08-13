@@ -46,7 +46,6 @@ import Restaurants from '../screens/marketplace/Restaurants';
 import About from '../screens/profile/About';
 import More from '../screens/profile/More';
 import ChatBot from '../screens/common/ChatBot';
-import VideoCall from '../screens/common/VideoCall';
 import LeaderPublicProfile from '../screens/common/LeaderPublicProfile';
 
 // Service List
@@ -54,6 +53,15 @@ import ServiceList from '../screens/services/ServiceList';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+
+// ============================================================
+// Lazy load VideoCall to avoid WebRTC native module at startup
+// ============================================================
+const VideoCallScreen = (props: any) => {
+  const VideoCall = require('../screens/common/VideoCall').default;
+  return <VideoCall {...props} />;
+};
+// ============================================================
 
 // Auth Stack
 const AuthStack = () => (
@@ -73,55 +81,40 @@ const AuthStack = () => (
 
 // SVG Icons for Bottom Tabs
 const HomeIcon = ({ focused }: { focused: boolean }) => (
-  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={focused ? '#E1C16B' : '#6B7280'} strokeWidth="1.5">
+  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={focused ? '#C9A44B' : '#6B7280'} strokeWidth="1.5">
     <Path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
   </Svg>
 );
 
 const ServicesIcon = ({ focused }: { focused: boolean }) => (
-  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={focused ? '#E1C16B' : '#6B7280'} strokeWidth="1.5">
+  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={focused ? '#C9A44B' : '#6B7280'} strokeWidth="1.5">
     <Path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
   </Svg>
 );
 
 const WalletIcon = ({ focused }: { focused: boolean }) => (
-  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={focused ? '#E1C16B' : '#6B7280'} strokeWidth="1.5">
+  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={focused ? '#C9A44B' : '#6B7280'} strokeWidth="1.5">
     <Path d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
   </Svg>
 );
 
 const MoreIcon = ({ focused }: { focused: boolean }) => (
-  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={focused ? '#E1C16B' : '#6B7280'} strokeWidth="1.5">
+  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={focused ? '#C9A44B' : '#6B7280'} strokeWidth="1.5">
     <Path d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+  </Svg>
+);
+
+const VendorIcon = ({ focused }: { focused: boolean }) => (
+  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={focused ? '#C9A44B' : '#6B7280'} strokeWidth="1.5">
+    <Path d="M21 13.5a1.5 1.5 0 01-1.5 1.5h-6a1.5 1.5 0 01-1.5-1.5m-6-1.5l-2-1.5m10 1.5l-4-3m4 3l-3 1.5m-5-2.5h3m-3 0l2 2m0 0h4m-4 0l-4 3m8-3v-2m-4 3v-1.5m-4 3l2-2M20 6v1.5m0 0L18 9m2-1.5L20 12" />
   </Svg>
 );
 
 // ==================== DASHBOARD STACK ====================
 const DashboardStack = () => {
-  const { user } = useAuth();
-
-  const getDashboardComponent = () => {
-    if (user?.role === 'vendor') {
-      const vendorType = user?.vendorType;
-      if (vendorType === 'hearse') {
-        return HearseProviderDashboard;
-      }
-      return VendorDashboard;
-    }
-    if (user?.role === 'leader' || user?.role === 'imam') {
-      return LeaderDashboard;
-    }
-    if (user?.role === 'kadhi') {
-      return KadhiDashboard;
-    }
-    return Dashboard;
-  };
-
-  const DashboardComponent = getDashboardComponent();
-
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="DashboardMain" component={DashboardComponent} />
+      <Stack.Screen name="DashboardMain" component={Dashboard} />
       <Stack.Screen name="Zakat" component={Zakat} />
       <Stack.Screen name="Sadaqa" component={Sadaqa} />
       <Stack.Screen name="Takaful" component={Takaful} />
@@ -138,8 +131,35 @@ const DashboardStack = () => {
       <Stack.Screen name="Ecommerce" component={Ecommerce} />
       <Stack.Screen name="Restaurants" component={Restaurants} />
       <Stack.Screen name="ChatBot" component={ChatBot} />
-      <Stack.Screen name="VideoCall" component={VideoCall} />
+      <Stack.Screen name="VideoCall" component={VideoCallScreen} />
       <Stack.Screen name="LeaderPublicProfile" component={LeaderPublicProfile} />
+    </Stack.Navigator>
+  );
+};
+
+// ==================== VENDOR DASHBOARD STACK ====================
+const VendorDashboardStack = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="VendorDashboardMain" component={VendorDashboard} />
+      <Stack.Screen name="Zakat" component={Zakat} />
+      <Stack.Screen name="Sadaqa" component={Sadaqa} />
+      <Stack.Screen name="Takaful" component={Takaful} />
+      <Stack.Screen name="Pension" component={Pension} />
+      <Stack.Screen name="Hajj" component={Hajj} />
+      <Stack.Screen name="Hearse" component={Hearse} />
+      <Stack.Screen name="Wills" component={Wills} />
+      <Stack.Screen name="Utilities" component={Utilities} />
+      <Stack.Screen name="HalalStay" component={HalalStay} />
+      <Stack.Screen name="MosqueFinder" component={MosqueFinder} />
+      <Stack.Screen name="Kadhis" component={Kadhis} />
+      <Stack.Screen name="Ecommerce" component={Ecommerce} />
+      <Stack.Screen name="Restaurants" component={Restaurants} />
+      <Stack.Screen name="ChatBot" component={ChatBot} />
+      <Stack.Screen name="VideoCall" component={VideoCallScreen} />
+      <Stack.Screen name="LeaderPublicProfile" component={LeaderPublicProfile} />
+      <Stack.Screen name="About" component={About} />
+      <Stack.Screen name="WalletMain" component={Wallet} />
     </Stack.Navigator>
   );
 };
@@ -168,7 +188,7 @@ const ServicesStack = () => {
       <Stack.Screen name="Ecommerce" component={Ecommerce} />
       <Stack.Screen name="Restaurants" component={Restaurants} />
       <Stack.Screen name="ChatBot" component={ChatBot} />
-      <Stack.Screen name="VideoCall" component={VideoCall} />
+      <Stack.Screen name="VideoCall" component={VideoCallScreen} />
       <Stack.Screen name="LeaderPublicProfile" component={LeaderPublicProfile} />
       <Stack.Screen name="About" component={About} />
     </Stack.Navigator>
@@ -194,7 +214,7 @@ const WalletStack = () => {
       <Stack.Screen name="Ecommerce" component={Ecommerce} />
       <Stack.Screen name="Restaurants" component={Restaurants} />
       <Stack.Screen name="ChatBot" component={ChatBot} />
-      <Stack.Screen name="VideoCall" component={VideoCall} />
+      <Stack.Screen name="VideoCall" component={VideoCallScreen} />
       <Stack.Screen name="LeaderPublicProfile" component={LeaderPublicProfile} />
       <Stack.Screen name="About" component={About} />
     </Stack.Navigator>
@@ -221,7 +241,7 @@ const MoreStack = () => {
       <Stack.Screen name="Ecommerce" component={Ecommerce} />
       <Stack.Screen name="Restaurants" component={Restaurants} />
       <Stack.Screen name="ChatBot" component={ChatBot} />
-      <Stack.Screen name="VideoCall" component={VideoCall} />
+      <Stack.Screen name="VideoCall" component={VideoCallScreen} />
       <Stack.Screen name="LeaderPublicProfile" component={LeaderPublicProfile} />
       <Stack.Screen name="KadhiDashboard" component={KadhiDashboard} />
       <Stack.Screen name="LeaderDashboard" component={LeaderDashboard} />
@@ -231,6 +251,9 @@ const MoreStack = () => {
 
 // ==================== MAIN TABS ====================
 const MainTabs = () => {
+  const { user } = useAuth();
+  const isVendor = user?.role === 'vendor';
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -243,7 +266,7 @@ const MainTabs = () => {
           paddingBottom: Platform.OS === 'ios' ? 24 : 8,
           paddingTop: 4,
         },
-        tabBarActiveTintColor: '#E1C16B',
+        tabBarActiveTintColor: '#C9A44B',
         tabBarInactiveTintColor: '#6B7280',
         tabBarLabelStyle: {
           fontSize: 10,
@@ -269,14 +292,25 @@ const MainTabs = () => {
           tabBarLabel: 'Services',
         }}
       />
-      <Tab.Screen
-        name="Wallet"
-        component={WalletStack}
-        options={{
-          tabBarIcon: ({ focused }) => <WalletIcon focused={focused} />,
-          tabBarLabel: 'Wallet',
-        }}
-      />
+      {isVendor ? (
+        <Tab.Screen
+          name="Vendor"
+          component={VendorDashboardStack}
+          options={{
+            tabBarIcon: ({ focused }) => <VendorIcon focused={focused} />,
+            tabBarLabel: 'Vendor',
+          }}
+        />
+      ) : (
+        <Tab.Screen
+          name="Wallet"
+          component={WalletStack}
+          options={{
+            tabBarIcon: ({ focused }) => <WalletIcon focused={focused} />,
+            tabBarLabel: 'Wallet',
+          }}
+        />
+      )}
       <Tab.Screen
         name="More"
         component={MoreStack}
@@ -296,8 +330,8 @@ const AppNavigator = () => {
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: '#032A24', alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator size="large" color="#E1C16B" />
-        <Text style={{ color: 'rgba(225, 193, 107, 0.7)', marginTop: 16, fontSize: 13, letterSpacing: 1, textTransform: 'uppercase' }}>
+        <ActivityIndicator size="large" color="#C9A44B" />
+        <Text style={{ color: 'rgba(201, 164, 75, 0.7)', marginTop: 16, fontSize: 13, letterSpacing: 1, textTransform: 'uppercase' }}>
           Loading Itqaan
         </Text>
       </View>
