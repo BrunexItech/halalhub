@@ -10,17 +10,179 @@ import {
   ScrollView,
   ActivityIndicator,
   Image,
+  Modal,
+  FlatList,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import { authService } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
+import countriesData from 'world-countries';
 
+// ============================================================
+// Process countries data
+// ============================================================
+const processCountriesData = () => {
+  try {
+    return countriesData.map((country) => {
+      let dialCode = '';
+      if (country.idd) {
+        const root = country.idd.root || '';
+        const suffixes = country.idd.suffixes || [];
+        dialCode = root + (suffixes.length > 0 ? suffixes[0] : '');
+      }
+      return {
+        name: country.name?.common || country.name || '',
+        alpha2: country.cca2 || '',
+        dialCode: dialCode,
+        flag: country.flag || '🏳️',
+      };
+    }).sort((a, b) => a.name.localeCompare(b.name));
+  } catch (error) {
+    console.error('Error processing countries data:', error);
+    return [];
+  }
+};
+
+// ============================================================
+// CountrySelect Component
+// ============================================================
+const CountrySelect = ({ value, onChange, disabled }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  const allCountries = React.useMemo(() => processCountriesData(), []);
+  const selectedCountry = allCountries.find(c => c.alpha2 === value) || allCountries[0];
+  
+  const filteredCountries = allCountries.filter(country =>
+    country.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    country.alpha2.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    country.dialCode.includes(searchTerm)
+  );
+
+  const handleSelect = (country) => {
+    onChange(country);
+    setIsOpen(false);
+    setSearchTerm('');
+  };
+
+  if (allCountries.length === 0) {
+    return (
+      <View style={{
+        backgroundColor: '#032A24',
+        borderWidth: 1,
+        borderColor: 'rgba(201, 164, 75, 0.3)',
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        height: 44,
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}>
+        <Text style={{ color: '#6B7280', fontSize: 12 }}>Loading...</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View>
+      <TouchableOpacity
+        style={{
+          backgroundColor: '#032A24',
+          borderWidth: 1,
+          borderColor: 'rgba(201, 164, 75, 0.3)',
+          borderRadius: 12,
+          paddingHorizontal: 10,
+          paddingVertical: 10,
+          height: 44,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+        onPress={() => setIsOpen(!isOpen)}
+        disabled={disabled}
+      >
+        <Text style={{ fontSize: 22 }}>{selectedCountry?.flag || '🏳️'}</Text>
+        <Text style={{ color: '#6B7280', fontSize: 10, marginLeft: 4 }}>
+          {isOpen ? '▲' : '▼'}
+        </Text>
+      </TouchableOpacity>
+
+      <Modal visible={isOpen} transparent animationType="fade">
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}
+          activeOpacity={1}
+          onPress={() => setIsOpen(false)}
+        >
+          <View style={{
+            backgroundColor: '#0B342B',
+            borderRadius: 16,
+            padding: 16,
+            width: '100%',
+            maxWidth: 400,
+            maxHeight: 400,
+            borderWidth: 1,
+            borderColor: 'rgba(201, 164, 75, 0.3)',
+          }}>
+            <TextInput
+              style={{
+                backgroundColor: '#032A24',
+                borderWidth: 1,
+                borderColor: 'rgba(201, 164, 75, 0.3)',
+                borderRadius: 8,
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                color: '#F7F6F1',
+                fontSize: 14,
+                marginBottom: 12,
+              }}
+              placeholder="Search country..."
+              placeholderTextColor="rgba(183, 192, 186, 0.5)"
+              value={searchTerm}
+              onChangeText={setSearchTerm}
+              autoFocus
+            />
+            <FlatList
+              data={filteredCountries}
+              keyExtractor={(item) => item.alpha2}
+              showsVerticalScrollIndicator={true}
+              style={{ maxHeight: 280 }}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={{
+                    paddingVertical: 10,
+                    paddingHorizontal: 8,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    borderBottomWidth: 1,
+                    borderBottomColor: 'rgba(201, 164, 75, 0.08)',
+                  }}
+                  onPress={() => handleSelect(item)}
+                >
+                  <Text style={{ fontSize: 20, marginRight: 10 }}>{item.flag}</Text>
+                  <Text style={{ color: '#F7F6F1', fontSize: 14, flex: 1 }}>{item.name}</Text>
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={() => (
+                <Text style={{ color: '#6B7280', textAlign: 'center', padding: 20 }}>No countries found</Text>
+              )}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </View>
+  );
+};
+
+// ============================================================
+// AuthScreen Component
+// ============================================================
 const AuthScreen = () => {
   const navigation = useNavigation();
   const { login } = useAuth();
   
   const [phone, setPhone] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState(null);
   const [pin, setPin] = useState('');
   const [showPin, setShowPin] = useState(false);
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -35,7 +197,50 @@ const AuthScreen = () => {
   const inputRefs = useRef<(TextInput | null)[]>([]);
   const otpTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // SVG Eye Icons
+  // Set default country to Kenya
+  useEffect(() => {
+    const allCountries = processCountriesData();
+    const kenya = allCountries.find(c => c.alpha2 === 'KE');
+    if (kenya) {
+      setSelectedCountry(kenya);
+    } else if (allCountries.length > 0) {
+      setSelectedCountry(allCountries[0]);
+    }
+  }, []);
+
+  // Auto-populate phone with dial code when country changes
+  useEffect(() => {
+    if (selectedCountry) {
+      const dialCode = selectedCountry.dialCode;
+      if (!phone.startsWith(dialCode)) {
+        setPhone(dialCode);
+      }
+    }
+  }, [selectedCountry]);
+
+  // Get full phone number for backend
+  const getFullPhoneNumber = () => {
+    if (!selectedCountry) return phone;
+    const cleanPhone = phone.replace(/\s/g, '');
+    if (cleanPhone.startsWith('+')) {
+      return cleanPhone;
+    }
+    return `${selectedCountry.dialCode}${cleanPhone}`;
+  };
+
+  // Validate phone has at least 6 digits after the country code
+  const isValidPhone = (phoneStr) => {
+    const clean = phoneStr.replace(/\s/g, '');
+    let local = clean;
+    if (selectedCountry && clean.startsWith(selectedCountry.dialCode)) {
+      local = clean.substring(selectedCountry.dialCode.length);
+    } else if (clean.startsWith('+')) {
+      local = clean.replace(/^\+?\d+/, '');
+    }
+    const digits = local.replace(/[^0-9]/g, '');
+    return digits.length >= 6;
+  };
+
   const EyeIcon = () => (
     <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(183, 192, 186, 0.6)" strokeWidth="1.5">
       <Path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -110,9 +315,30 @@ const AuthScreen = () => {
     setError('');
     setLoading(true);
 
+    if (!selectedCountry) {
+      setError('Please select your country.');
+      setLoading(false);
+      return;
+    }
+
+    const cleanPhone = phone.replace(/\s/g, '');
+    if (!cleanPhone || cleanPhone.length < 8) {
+      setError('Please enter a valid phone number.');
+      setLoading(false);
+      return;
+    }
+
+    if (!isValidPhone(cleanPhone)) {
+      setError('Please enter a valid phone number (minimum 6 digits).');
+      setLoading(false);
+      return;
+    }
+
+    const fullPhone = getFullPhoneNumber();
+
     try {
       if (!otpSent) {
-        const response = await authService.loginStep1(phone);
+        const response = await authService.loginStep1(fullPhone);
         setOtpSent(true);
         setResendTimer(60);
         setLoading(false);
@@ -130,7 +356,7 @@ const AuthScreen = () => {
         return;
       }
 
-      const response = await authService.loginStep2({ phone, pin, otp: otpString });
+      const response = await authService.loginStep2({ phone: fullPhone, pin, otp: otpString });
       const userData = response.data.user;
       
       if (userData.role === 'vendor' && userData.vendorStatus === 'pending') {
@@ -169,11 +395,14 @@ const AuthScreen = () => {
     setLoading(true);
     setError('');
     try {
-      const response = await authService.loginStep1(phone);
+      const fullPhone = getFullPhoneNumber();
+      const response = await authService.loginStep1(fullPhone);
       setResendTimer(60);
       const receivedOtp = response.data?.otp || response.data?.code || '123456';
       setOtpCode(receivedOtp);
       startOtpCountdown();
+      setSuccess('Code resent');
+      setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to resend');
     }
@@ -280,7 +509,7 @@ const AuthScreen = () => {
                 </View>
               ) : null}
 
-              {/* Phone Input */}
+              {/* Phone Input with Country Select */}
               <View style={{ marginBottom: 16 }}>
                 <Text style={{ 
                   color: '#FFFFFF', 
@@ -292,24 +521,36 @@ const AuthScreen = () => {
                 }}>
                   Phone Number
                 </Text>
-                <TextInput
-                  style={{
-                    backgroundColor: '#032A24',
-                    borderWidth: 1,
-                    borderColor: 'rgba(201, 164, 75, 0.3)',
-                    borderRadius: 12,
-                    paddingHorizontal: 16,
-                    paddingVertical: 10,
-                    color: '#F7F6F1',
-                    fontSize: 14,
-                  }}
-                  value={phone}
-                  onChangeText={setPhone}
-                  placeholder="+254 7XX XXX XXX"
-                  placeholderTextColor="rgba(183, 192, 186, 0.5)"
-                  keyboardType="phone-pad"
-                  editable={!loading}
-                />
+                <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                  <View style={{ width: 55 }}>
+                    <CountrySelect 
+                      value={selectedCountry?.alpha2 || 'KE'}
+                      onChange={setSelectedCountry}
+                      disabled={loading}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <TextInput
+                      style={{
+                        backgroundColor: '#032A24',
+                        borderWidth: 1,
+                        borderColor: 'rgba(201, 164, 75, 0.3)',
+                        borderRadius: 12,
+                        paddingHorizontal: 12,
+                        paddingVertical: 10,
+                        color: '#F7F6F1',
+                        fontSize: 14,
+                        height: 44,
+                      }}
+                      value={phone}
+                      onChangeText={setPhone}
+                      placeholder="712345678"
+                      placeholderTextColor="rgba(183, 192, 186, 0.5)"
+                      keyboardType="phone-pad"
+                      editable={!loading}
+                    />
+                  </View>
+                </View>
               </View>
 
               {/* PIN Input */}
@@ -335,6 +576,7 @@ const AuthScreen = () => {
                       paddingVertical: 10,
                       color: '#F7F6F1',
                       fontSize: 14,
+                      height: 44,
                       paddingRight: 48,
                     }}
                     value={pin}
@@ -473,11 +715,12 @@ const AuthScreen = () => {
               <TouchableOpacity
                 style={{
                   backgroundColor: '#C9A44B',
-                  paddingVertical: 10,
+                  paddingVertical: 12,
                   borderRadius: 12,
                   alignItems: 'center',
                   marginTop: 8,
                   opacity: loading ? 0.6 : 1,
+                  height: 48,
                 }}
                 onPress={handleLogin}
                 disabled={loading}

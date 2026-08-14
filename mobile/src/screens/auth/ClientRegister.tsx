@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { authService } from '../../api/client';
+import countriesData from 'world-countries';
 
 // Location API configuration
 const LOCATION_API_BASE = 'https://kenyaareadata.vercel.app/api/areas';
@@ -25,6 +26,161 @@ let cachedAreas: any = null;
 let countiesCache: any[] = [];
 let subCountiesCache: { [key: string]: any[] } = {};
 let wardsCache: { [key: string]: any[] } = {};
+
+// ============================================================
+// Process countries data
+// ============================================================
+const processCountriesData = () => {
+  try {
+    return countriesData.map((country) => {
+      let dialCode = '';
+      if (country.idd) {
+        const root = country.idd.root || '';
+        const suffixes = country.idd.suffixes || [];
+        dialCode = root + (suffixes.length > 0 ? suffixes[0] : '');
+      }
+      return {
+        name: country.name?.common || country.name || '',
+        alpha2: country.cca2 || '',
+        dialCode: dialCode,
+        flag: country.flag || '🏳️',
+      };
+    }).sort((a, b) => a.name.localeCompare(b.name));
+  } catch (error) {
+    console.error('Error processing countries data:', error);
+    return [];
+  }
+};
+
+// ============================================================
+// CountrySelect Component
+// ============================================================
+const CountrySelect = ({ value, onChange, disabled }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  const allCountries = React.useMemo(() => processCountriesData(), []);
+  const selectedCountry = allCountries.find(c => c.alpha2 === value) || allCountries[0];
+  
+  const filteredCountries = allCountries.filter(country =>
+    country.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    country.alpha2.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    country.dialCode.includes(searchTerm)
+  );
+
+  const handleSelect = (country) => {
+    onChange(country);
+    setIsOpen(false);
+    setSearchTerm('');
+  };
+
+  if (allCountries.length === 0) {
+    return (
+      <View style={{
+        backgroundColor: '#032A24',
+        borderWidth: 1,
+        borderColor: 'rgba(201, 164, 75, 0.3)',
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        height: 44,
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}>
+        <Text style={{ color: '#6B7280', fontSize: 12 }}>Loading...</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View>
+      <TouchableOpacity
+        style={{
+          backgroundColor: '#032A24',
+          borderWidth: 1,
+          borderColor: 'rgba(201, 164, 75, 0.3)',
+          borderRadius: 12,
+          paddingHorizontal: 10,
+          paddingVertical: 10,
+          height: 44,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+        onPress={() => setIsOpen(!isOpen)}
+        disabled={disabled}
+      >
+        <Text style={{ fontSize: 22 }}>{selectedCountry?.flag || '🏳️'}</Text>
+        <Text style={{ color: '#6B7280', fontSize: 10, marginLeft: 4 }}>
+          {isOpen ? '▲' : '▼'}
+        </Text>
+      </TouchableOpacity>
+
+      <Modal visible={isOpen} transparent animationType="fade">
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}
+          activeOpacity={1}
+          onPress={() => setIsOpen(false)}
+        >
+          <View style={{
+            backgroundColor: '#0B342B',
+            borderRadius: 16,
+            padding: 16,
+            width: '100%',
+            maxWidth: 400,
+            maxHeight: 400,
+            borderWidth: 1,
+            borderColor: 'rgba(201, 164, 75, 0.3)',
+          }}>
+            <TextInput
+              style={{
+                backgroundColor: '#032A24',
+                borderWidth: 1,
+                borderColor: 'rgba(201, 164, 75, 0.3)',
+                borderRadius: 8,
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                color: '#F7F6F1',
+                fontSize: 14,
+                marginBottom: 12,
+              }}
+              placeholder="Search country..."
+              placeholderTextColor="rgba(183, 192, 186, 0.5)"
+              value={searchTerm}
+              onChangeText={setSearchTerm}
+              autoFocus
+            />
+            <FlatList
+              data={filteredCountries}
+              keyExtractor={(item) => item.alpha2}
+              showsVerticalScrollIndicator={true}
+              style={{ maxHeight: 280 }}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={{
+                    paddingVertical: 10,
+                    paddingHorizontal: 8,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    borderBottomWidth: 1,
+                    borderBottomColor: 'rgba(201, 164, 75, 0.08)',
+                  }}
+                  onPress={() => handleSelect(item)}
+                >
+                  <Text style={{ fontSize: 20, marginRight: 10 }}>{item.flag}</Text>
+                  <Text style={{ color: '#F7F6F1', fontSize: 14, flex: 1 }}>{item.name}</Text>
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={() => (
+                <Text style={{ color: '#6B7280', textAlign: 'center', padding: 20 }}>No countries found</Text>
+              )}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </View>
+  );
+};
 
 const ClientRegister = () => {
   const navigation = useNavigation();
@@ -40,6 +196,9 @@ const ClientRegister = () => {
   const [resendTimer, setResendTimer] = useState(0);
   const inputRefs = useRef<(TextInput | null)[]>([]);
   const otpTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Country selection state
+  const [selectedCountry, setSelectedCountry] = useState(null);
 
   // Location states
   const [counties, setCounties] = useState<any[]>([]);
@@ -64,6 +223,57 @@ const ClientRegister = () => {
     ward: '',
     wardName: '',
   });
+
+  // Set default country to Kenya
+  useEffect(() => {
+    const allCountries = processCountriesData();
+    const kenya = allCountries.find(c => c.alpha2 === 'KE');
+    if (kenya) {
+      setSelectedCountry(kenya);
+      setFormData(prev => ({
+        ...prev,
+        phone: kenya.dialCode
+      }));
+    } else if (allCountries.length > 0) {
+      setSelectedCountry(allCountries[0]);
+      setFormData(prev => ({
+        ...prev,
+        phone: allCountries[0].dialCode
+      }));
+    }
+  }, []);
+
+  // Update phone when country changes
+  const handleCountryChange = (country) => {
+    setSelectedCountry(country);
+    setFormData(prev => ({
+      ...prev,
+      phone: country.dialCode
+    }));
+  };
+
+  // Get full phone number for backend
+  const getFullPhoneNumber = () => {
+    if (!selectedCountry) return formData.phone;
+    const cleanPhone = formData.phone.replace(/\s/g, '');
+    if (cleanPhone.startsWith('+')) {
+      return cleanPhone;
+    }
+    return `${selectedCountry.dialCode}${cleanPhone}`;
+  };
+
+  // Validate phone has at least 6 digits after the country code
+  const isValidPhone = (phoneStr) => {
+    const clean = phoneStr.replace(/\s/g, '');
+    let local = clean;
+    if (selectedCountry && clean.startsWith(selectedCountry.dialCode)) {
+      local = clean.substring(selectedCountry.dialCode.length);
+    } else if (clean.startsWith('+')) {
+      local = clean.replace(/^\+?\d+/, '');
+    }
+    const digits = local.replace(/[^0-9]/g, '');
+    return digits.length >= 6;
+  };
 
   useEffect(() => {
     fetchCounties();
@@ -227,6 +437,15 @@ const ClientRegister = () => {
     setFormData({ ...formData, [field]: value });
   };
 
+  const handlePhoneChange = (text: string) => {
+    // Ensure the dial code stays at the beginning
+    if (selectedCountry && !text.startsWith(selectedCountry.dialCode)) {
+      setFormData({ ...formData, phone: selectedCountry.dialCode });
+    } else {
+      setFormData({ ...formData, phone: text });
+    }
+  };
+
   const handleOtpChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
     const newOtp = [...otp];
@@ -244,8 +463,15 @@ const ClientRegister = () => {
   };
 
   const handleSendOtp = async () => {
-    if (!formData.phone) {
-      setError('Please enter your phone number first');
+    const fullPhone = getFullPhoneNumber();
+    
+    if (!fullPhone || fullPhone.length < 8) {
+      setError('Please enter a valid phone number');
+      return;
+    }
+
+    if (!isValidPhone(fullPhone)) {
+      setError('Please enter a valid phone number (minimum 6 digits).');
       return;
     }
 
@@ -253,7 +479,7 @@ const ClientRegister = () => {
     setError('');
     try {
       const response = await authService.sendRegistrationOtp({
-        phone: formData.phone,
+        phone: fullPhone,
         email: formData.email,
       });
 
@@ -285,11 +511,13 @@ const ClientRegister = () => {
   const handleResendOtp = async () => {
     if (resendTimer > 0) return;
 
+    const fullPhone = getFullPhoneNumber();
+
     setLoading(true);
     setError('');
     try {
       const response = await authService.sendRegistrationOtp({
-        phone: formData.phone,
+        phone: fullPhone,
         email: formData.email,
       });
 
@@ -319,9 +547,21 @@ const ClientRegister = () => {
       setError('Please fill in all required fields');
       return;
     }
-    if (step === 2 && (!formData.phone || !formData.email)) {
-      setError('Please fill in all required fields');
-      return;
+    // Step 2 validation now checks the full phone number
+    if (step === 2) {
+      const fullPhone = getFullPhoneNumber();
+      if (!fullPhone || fullPhone.length < 8) {
+        setError('Please enter a valid phone number.');
+        return;
+      }
+      if (!isValidPhone(fullPhone)) {
+        setError('Please enter a valid phone number (minimum 6 digits).');
+        return;
+      }
+      if (!formData.email) {
+        setError('Please enter your email address.');
+        return;
+      }
     }
     if (step === 3 && (!formData.nationalId || !formData.pin || formData.pin.length < 4)) {
       setError('Please enter a valid National ID and PIN (min 4 digits)');
@@ -343,11 +583,13 @@ const ClientRegister = () => {
       return;
     }
 
+    const fullPhone = getFullPhoneNumber();
+
     setLoading(true);
     setError('');
     try {
       const verifyResponse = await authService.verifyRegistrationOtp({
-        phone: formData.phone,
+        phone: fullPhone,
         otp: otpString,
       });
 
@@ -359,7 +601,7 @@ const ClientRegister = () => {
 
       await authService.registerClient({
         fullName: formData.fullName,
-        phone: formData.phone,
+        phone: fullPhone,
         email: formData.email,
         nationalId: formData.nationalId,
         pin: formData.pin,
@@ -633,24 +875,37 @@ const ClientRegister = () => {
               <Text style={{ color: '#6B7280', fontSize: 12 }}>How can we reach you?</Text>
             </View>
 
-            <TextInput
-              style={{
-                backgroundColor: '#032A24',
-                borderWidth: 1,
-                borderColor: 'rgba(201, 164, 75, 0.3)',
-                borderRadius: 12,
-                paddingHorizontal: 16,
-                paddingVertical: 10,
-                color: '#F7F6F1',
-                fontSize: 14,
-                marginBottom: 12,
-              }}
-              placeholder="Phone Number *"
-              placeholderTextColor="rgba(183, 192, 186, 0.5)"
-              keyboardType="phone-pad"
-              value={formData.phone}
-              onChangeText={(text) => handleChange('phone', text)}
-            />
+            {/* Phone Input with Country Select */}
+            <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+              <View style={{ width: 55 }}>
+                <CountrySelect 
+                  value={selectedCountry?.alpha2 || 'KE'}
+                  onChange={handleCountryChange}
+                  disabled={loading}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <TextInput
+                  style={{
+                    backgroundColor: '#032A24',
+                    borderWidth: 1,
+                    borderColor: 'rgba(201, 164, 75, 0.3)',
+                    borderRadius: 12,
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                    color: '#F7F6F1',
+                    fontSize: 14,
+                    height: 44,
+                  }}
+                  value={formData.phone}
+                  onChangeText={handlePhoneChange}
+                  placeholder="712345678"
+                  placeholderTextColor="rgba(183, 192, 186, 0.5)"
+                  keyboardType="phone-pad"
+                  editable={!loading}
+                />
+              </View>
+            </View>
 
             <TextInput
               style={{

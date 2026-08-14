@@ -1,10 +1,132 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/api';
+import countriesData from 'world-countries';
 
+// ============================================================
+// Process countries data
+// ============================================================
+const processCountriesData = () => {
+  try {
+    return countriesData.map((country) => {
+      let dialCode = '';
+      if (country.idd) {
+        const root = country.idd.root || '';
+        const suffixes = country.idd.suffixes || [];
+        dialCode = root + (suffixes.length > 0 ? suffixes[0] : '');
+      }
+      return {
+        name: country.name?.common || country.name || '',
+        alpha2: country.cca2 || '',
+        dialCode: dialCode,
+        flag: country.flag || '🏳️',
+      };
+    }).sort((a, b) => a.name.localeCompare(b.name));
+  } catch (error) {
+    console.error('Error processing countries data:', error);
+    return [];
+  }
+};
+
+// ============================================================
+// CountrySelect Component
+// ============================================================
+const CountrySelect = ({ value, onChange, disabled }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const dropdownRef = useRef(null);
+  
+  const allCountries = React.useMemo(() => processCountriesData(), []);
+  const selectedCountry = allCountries.find(c => c.alpha2 === value) || allCountries[0];
+  
+  const filteredCountries = allCountries.filter(country =>
+    country.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    country.alpha2.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    country.dialCode.includes(searchTerm)
+  );
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+        setSearchTerm('');
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelect = (country) => {
+    onChange(country);
+    setIsOpen(false);
+    setSearchTerm('');
+  };
+
+  if (allCountries.length === 0) {
+    return (
+      <div className="w-full px-3 py-2 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#B7C0BA] text-sm">
+        Loading...
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative w-full" ref={dropdownRef}>
+      <button
+        type="button"
+        className="w-full px-2 py-2 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-lg focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 flex items-center justify-between h-[42px]"
+        onClick={() => setIsOpen(!isOpen)}
+        disabled={disabled}
+      >
+        <span className="text-xl leading-none">{selectedCountry?.flag || '🏳️'}</span>
+        <span className={`ml-1 text-[10px] text-[#B7C0BA] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>▼</span>
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 w-[280px] mt-1 bg-[#0B342B] border border-[#C9A44B]/30 rounded-xl shadow-2xl max-h-52 overflow-y-auto">
+          <div className="sticky top-0 p-2 bg-[#0B342B] border-b border-[#C9A44B]/20 z-10">
+            <input
+              type="text"
+              className="w-full px-3 py-1.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-lg text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-1 focus:ring-[#C9A44B]"
+              placeholder="Search country..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              autoFocus
+            />
+          </div>
+          
+          {filteredCountries.length > 0 ? (
+            filteredCountries.map((country) => (
+              <button
+                key={country.alpha2}
+                type="button"
+                className={`w-full px-3 py-1.5 text-left hover:bg-[#032A24] transition-colors flex items-center gap-3 ${
+                  country.alpha2 === value ? 'bg-[#032A24]/50' : ''
+                }`}
+                onClick={() => handleSelect(country)}
+              >
+                <span className="text-lg">{country.flag}</span>
+                <span className="text-[#F7F6F1] text-sm flex-1">{country.name}</span>
+              </button>
+            ))
+          ) : (
+            <div className="px-4 py-3 text-[#B7C0BA] text-sm text-center">
+              No countries found
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ============================================================
+// AuthScreen Component
+// ============================================================
 const AuthScreen = ({ onLogin }) => {
   const navigate = useNavigate();
   const [phone, setPhone] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState(null);
   const [pin, setPin] = useState('');
   const [showPin, setShowPin] = useState(false);
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -13,13 +135,56 @@ const AuthScreen = ({ onLogin }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [resendTimer, setResendTimer] = useState(0);
-  
   const [otpCode, setOtpCode] = useState('');
   const [otpExpirySeconds, setOtpExpirySeconds] = useState(0);
   const otpTimerRef = useRef(null);
-  
   const inputRefs = useRef([]);
 
+  // Set default country to Kenya
+  useEffect(() => {
+    const allCountries = processCountriesData();
+    const kenya = allCountries.find(c => c.alpha2 === 'KE');
+    if (kenya) {
+      setSelectedCountry(kenya);
+    } else if (allCountries.length > 0) {
+      setSelectedCountry(allCountries[0]);
+    }
+  }, []);
+
+  // Auto-populate phone with dial code when country changes
+  useEffect(() => {
+    if (selectedCountry) {
+      const dialCode = selectedCountry.dialCode;
+      if (!phone.startsWith(dialCode)) {
+        setPhone(dialCode);
+      }
+    }
+  }, [selectedCountry]);
+
+  // Get full phone number for backend
+  const getFullPhoneNumber = () => {
+    if (!selectedCountry) return phone;
+    const cleanPhone = phone.replace(/\s/g, '');
+    if (cleanPhone.startsWith('+')) {
+      return cleanPhone;
+    }
+    return `${selectedCountry.dialCode}${cleanPhone}`;
+  };
+
+  // Validate phone has at least 6 digits after the country code
+  const isValidPhone = (phoneStr) => {
+    const clean = phoneStr.replace(/\s/g, '');
+    let local = clean;
+    if (selectedCountry && clean.startsWith(selectedCountry.dialCode)) {
+      local = clean.substring(selectedCountry.dialCode.length);
+    } else if (clean.startsWith('+')) {
+      local = clean.replace(/^\+?\d+/, '');
+    }
+    const digits = local.replace(/[^0-9]/g, '');
+    return digits.length >= 6;
+  };
+
+  // OTP handlers
   useEffect(() => {
     if (otpSent && inputRefs.current[0]) {
       inputRefs.current[0].focus();
@@ -59,11 +224,9 @@ const AuthScreen = ({ onLogin }) => {
 
   const startOtpCountdown = () => {
     setOtpExpirySeconds(30);
-    
     if (otpTimerRef.current) {
       clearInterval(otpTimerRef.current);
     }
-    
     otpTimerRef.current = setInterval(() => {
       setOtpExpirySeconds((prev) => {
         if (prev <= 1) {
@@ -80,17 +243,36 @@ const AuthScreen = ({ onLogin }) => {
     setError('');
     setLoading(true);
 
+    if (!selectedCountry) {
+      setError('Please select your country.');
+      setLoading(false);
+      return;
+    }
+
+    const cleanPhone = phone.replace(/\s/g, '');
+    if (!cleanPhone || cleanPhone.length < 8) {
+      setError('Please enter a valid phone number.');
+      setLoading(false);
+      return;
+    }
+
+    if (!isValidPhone(cleanPhone)) {
+      setError('Please enter a valid phone number (minimum 6 digits).');
+      setLoading(false);
+      return;
+    }
+
+    const fullPhone = getFullPhoneNumber();
+
     try {
       if (!otpSent) {
-        const response = await authService.loginStep1(phone);
+        const response = await authService.loginStep1(fullPhone);
         setOtpSent(true);
         setResendTimer(60);
         setLoading(false);
-        
         const receivedOtp = response.data?.otp || response.data?.code || '123456';
         setOtpCode(receivedOtp);
         startOtpCountdown();
-        
         return;
       }
 
@@ -101,9 +283,8 @@ const AuthScreen = ({ onLogin }) => {
         return;
       }
 
-      const response = await authService.loginStep2({ phone, pin, otp: otpString });
+      const response = await authService.loginStep2({ phone: fullPhone, pin, otp: otpString });
       const userData = response.data.user;
-      
       localStorage.setItem('halalhub_role', userData.role || 'client');
 
       if (userData.role === 'vendor' && userData.vendorStatus === 'pending') {
@@ -149,13 +330,12 @@ const AuthScreen = ({ onLogin }) => {
     if (resendTimer > 0) return;
     setLoading(true);
     try {
-      const response = await authService.loginStep1(phone);
+      const fullPhone = getFullPhoneNumber();
+      const response = await authService.loginStep1(fullPhone);
       setResendTimer(60);
-      
       const receivedOtp = response.data?.otp || response.data?.code || '123456';
       setOtpCode(receivedOtp);
       startOtpCountdown();
-      
       setSuccess('Code resent');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -164,13 +344,8 @@ const AuthScreen = ({ onLogin }) => {
     setLoading(false);
   };
 
-  const togglePinVisibility = () => {
-    setShowPin(!showPin);
-  };
-
-  const formatTime = (seconds) => {
-    return `${seconds}s`;
-  };
+  const togglePinVisibility = () => setShowPin(!showPin);
+  const formatTime = (seconds) => `${seconds}s`;
 
   const LockIcon = () => (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -199,24 +374,20 @@ const AuthScreen = ({ onLogin }) => {
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#032A24] px-4 py-8">
+    <div className="min-h-screen flex items-center justify-center bg-[#032A24] px-3 sm:px-4 py-8">
       <div className="w-full max-w-[400px] mx-auto">
-        <div className="bg-[#0B342B] rounded-3xl shadow-2xl shadow-black/30 p-6 md:p-8 w-full border border-[#C9A44B]/30 relative overflow-hidden">
-          
-          {/* Subtle decorative elements */}
+        <div className="bg-[#0B342B] rounded-3xl shadow-2xl shadow-black/30 p-5 sm:p-6 md:p-8 w-full border border-[#C9A44B]/30 relative overflow-hidden">
           <div className="absolute -top-16 -right-16 w-48 h-48 bg-[#C9A44B]/5 rounded-full blur-3xl" />
           <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-[#C9A44B]/5 rounded-full blur-3xl" />
           
           <div className="relative z-10">
             {/* Logo */}
             <div className="text-center mb-6">
-              <div className="flex items-center justify-center mb-2">
-                <img 
-                  src="/itqaan_logo.png" 
-                  alt="Itqaan" 
-                  className="h-16 w-auto object-contain"
-                />
-              </div>
+              <img 
+                src="/itqaan_logo.png" 
+                alt="Itqaan" 
+                className="h-14 sm:h-16 w-auto object-contain mx-auto"
+              />
             </div>
 
             {/* Tabs */}
@@ -247,21 +418,34 @@ const AuthScreen = ({ onLogin }) => {
             )}
 
             <form onSubmit={handleLogin} className="space-y-4">
+              {/* Phone Number */}
               <div>
                 <label className="block text-[10px] font-semibold text-[#FFFFFF] uppercase tracking-wider mb-1.5">
                   Phone Number
                 </label>
-                <input
-                  type="tel"
-                  className="w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+254 7XX XXX XXX"
-                  disabled={loading}
-                  required
-                />
+                <div className="flex gap-2">
+                  <div className="w-[58px] sm:w-[65px] flex-shrink-0">
+                    <CountrySelect 
+                      value={selectedCountry?.alpha2 || 'KE'}
+                      onChange={setSelectedCountry}
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <input
+                      type="tel"
+                      className="w-full px-3 sm:px-4 py-2 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 h-[42px]"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="712345678"
+                      disabled={loading}
+                      required
+                    />
+                  </div>
+                </div>
               </div>
 
+              {/* PIN */}
               <div>
                 <label className="block text-[10px] font-semibold text-[#FFFFFF] uppercase tracking-wider mb-1.5">
                   PIN
@@ -269,7 +453,7 @@ const AuthScreen = ({ onLogin }) => {
                 <div className="relative">
                   <input
                     type={showPin ? 'text' : 'password'}
-                    className="w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 pr-12"
+                    className="w-full px-3 sm:px-4 py-2 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 h-[42px] pr-12"
                     value={pin}
                     onChange={(e) => setPin(e.target.value)}
                     placeholder="••••••"
@@ -286,6 +470,7 @@ const AuthScreen = ({ onLogin }) => {
                 </div>
               </div>
 
+              {/* OTP Section */}
               {otpSent && (
                 <div className="space-y-3 pt-1">
                   <div className="bg-[#032A24] rounded-xl p-3 border border-[#C9A44B]/30">

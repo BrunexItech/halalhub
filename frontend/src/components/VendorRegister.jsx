@@ -2,6 +2,126 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/api';
 import { getCounties, getSubCounties, getWards } from '../services/locationApi';
+import countriesData from 'world-countries';
+
+// ============================================================
+// Process countries data
+// ============================================================
+const processCountriesData = () => {
+  try {
+    return countriesData.map((country) => {
+      let dialCode = '';
+      if (country.idd) {
+        const root = country.idd.root || '';
+        const suffixes = country.idd.suffixes || [];
+        dialCode = root + (suffixes.length > 0 ? suffixes[0] : '');
+      }
+      return {
+        name: country.name?.common || country.name || '',
+        alpha2: country.cca2 || '',
+        dialCode: dialCode,
+        flag: country.flag || '🏳️',
+      };
+    }).sort((a, b) => a.name.localeCompare(b.name));
+  } catch (error) {
+    console.error('Error processing countries data:', error);
+    return [];
+  }
+};
+
+// ============================================================
+// CountrySelect Component
+// ============================================================
+const CountrySelect = ({ value, onChange, disabled }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const dropdownRef = useRef(null);
+  
+  const allCountries = React.useMemo(() => processCountriesData(), []);
+  const selectedCountry = allCountries.find(c => c.alpha2 === value) || allCountries[0];
+  
+  const filteredCountries = allCountries.filter(country =>
+    country.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    country.alpha2.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    country.dialCode.includes(searchTerm)
+  );
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+        setSearchTerm('');
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelect = (country) => {
+    onChange(country);
+    setIsOpen(false);
+    setSearchTerm('');
+  };
+
+  if (allCountries.length === 0) {
+    return (
+      <div className="w-full px-3 py-2 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#B7C0BA] text-sm h-[42px] flex items-center">
+        Loading...
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative w-full" ref={dropdownRef}>
+      <button
+        type="button"
+        className="w-full px-2 py-2 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-lg focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 flex items-center justify-between h-[42px]"
+        onClick={() => setIsOpen(!isOpen)}
+        disabled={disabled}
+      >
+        <span className="text-xl leading-none">{selectedCountry?.flag || '🏳️'}</span>
+        <span className={`ml-1 text-[10px] text-[#B7C0BA] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>▼</span>
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 w-[280px] mt-1 bg-[#0B342B] border border-[#C9A44B]/30 rounded-xl shadow-2xl max-h-52 overflow-y-auto">
+          <div className="sticky top-0 p-2 bg-[#0B342B] border-b border-[#C9A44B]/20 z-10">
+            <input
+              type="text"
+              className="w-full px-3 py-1.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-lg text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-1 focus:ring-[#C9A44B]"
+              placeholder="Search country..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              autoFocus
+            />
+          </div>
+          
+          <div className="pb-1">
+            {filteredCountries.length > 0 ? (
+              filteredCountries.map((country) => (
+                <button
+                  key={country.alpha2}
+                  type="button"
+                  className={`w-full px-3 py-1.5 text-left hover:bg-[#032A24] transition-colors flex items-center gap-3 ${
+                    country.alpha2 === value ? 'bg-[#032A24]/50' : ''
+                  }`}
+                  onClick={() => handleSelect(country)}
+                >
+                  <span className="text-lg">{country.flag}</span>
+                  <span className="text-[#F7F6F1] text-sm flex-1">{country.name}</span>
+                </button>
+              ))
+            ) : (
+              <div className="px-4 py-3 text-[#B7C0BA] text-sm text-center">
+                No countries found
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const VendorRegister = () => {
   const navigate = useNavigate();
@@ -24,6 +144,9 @@ const VendorRegister = () => {
   const [wards, setWards] = useState([]);
   const [loadingLocations, setLoadingLocations] = useState(true);
   const [locationError, setLocationError] = useState('');
+
+  // Country selection state
+  const [selectedCountry, setSelectedCountry] = useState(null);
 
   const businessTypes = [
     { id: 'halalmarket', name: 'Halal Market', description: 'Sell halal products' },
@@ -53,6 +176,44 @@ const VendorRegister = () => {
     halalDeclared: false,
     termsAccepted: false
   });
+
+  // Set default country to Kenya
+  useEffect(() => {
+    const allCountries = processCountriesData();
+    const kenya = allCountries.find(c => c.alpha2 === 'KE');
+    if (kenya) {
+      setSelectedCountry(kenya);
+      setFormData(prev => ({
+        ...prev,
+        phone: kenya.dialCode
+      }));
+    } else if (allCountries.length > 0) {
+      setSelectedCountry(allCountries[0]);
+      setFormData(prev => ({
+        ...prev,
+        phone: allCountries[0].dialCode
+      }));
+    }
+  }, []);
+
+  // Update phone when country changes
+  const handleCountryChange = (country) => {
+    setSelectedCountry(country);
+    setFormData(prev => ({
+      ...prev,
+      phone: country.dialCode
+    }));
+  };
+
+  // Get full phone number for backend
+  const getFullPhoneNumber = () => {
+    if (!selectedCountry) return formData.phone;
+    const cleanPhone = formData.phone.replace(/\s/g, '');
+    if (cleanPhone.startsWith('+')) {
+      return cleanPhone;
+    }
+    return `${selectedCountry.dialCode}${cleanPhone}`;
+  };
 
   useEffect(() => {
     const fetchCounties = async () => {
@@ -145,6 +306,15 @@ const VendorRegister = () => {
     }
   };
 
+  const handlePhoneChange = (e) => {
+    const value = e.target.value;
+    if (selectedCountry && !value.startsWith(selectedCountry.dialCode)) {
+      setFormData({ ...formData, phone: selectedCountry.dialCode });
+    } else {
+      setFormData({ ...formData, phone: value });
+    }
+  };
+
   const handleCountyChange = (e) => {
     const value = e.target.value;
     const [id, name] = value.split('|');
@@ -216,8 +386,10 @@ const VendorRegister = () => {
   };
 
   const handleSendOtp = async () => {
-    if (!formData.phone) {
-      setError('Please enter your phone number first');
+    const fullPhone = getFullPhoneNumber();
+    
+    if (!fullPhone || fullPhone.length < 8) {
+      setError('Please enter a valid phone number');
       return;
     }
 
@@ -225,7 +397,7 @@ const VendorRegister = () => {
     setError('');
     try {
       const response = await authService.sendRegistrationOtp({ 
-        phone: formData.phone,
+        phone: fullPhone,
         email: formData.email 
       });
       
@@ -256,11 +428,13 @@ const VendorRegister = () => {
   const handleResendOtp = async () => {
     if (resendTimer > 0) return;
     
+    const fullPhone = getFullPhoneNumber();
+    
     setLoading(true);
     setError('');
     try {
       const response = await authService.sendRegistrationOtp({ 
-        phone: formData.phone,
+        phone: fullPhone,
         email: formData.email 
       });
       
@@ -320,11 +494,13 @@ const VendorRegister = () => {
       return;
     }
     
+    const fullPhone = getFullPhoneNumber();
+    
     setLoading(true);
     setError('');
     try {
       const verifyResponse = await authService.verifyRegistrationOtp({
-        phone: formData.phone,
+        phone: fullPhone,
         otp: otpString
       });
       
@@ -338,7 +514,7 @@ const VendorRegister = () => {
         businessName: formData.businessName,
         businessType: formData.businessType,
         vendorType: formData.businessType,
-        phone: formData.phone,
+        phone: fullPhone,
         email: formData.email,
         nationalId: formData.nationalId,
         kraPin: formData.kraPin,
@@ -399,7 +575,7 @@ const VendorRegister = () => {
             <div className="relative group">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
               <input
-                className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300"
+                className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 h-[42px]"
                 name="businessName"
                 value={formData.businessName}
                 onChange={handleChange}
@@ -410,7 +586,7 @@ const VendorRegister = () => {
             <div className="relative group">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
               <select
-                className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 appearance-none"
+                className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 appearance-none h-[42px]"
                 name="businessType"
                 value={formData.businessType}
                 onChange={handleChange}
@@ -427,12 +603,12 @@ const VendorRegister = () => {
             <div className="relative group">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
               {loadingLocations ? (
-                <div className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#B7C0BA] text-sm">Loading counties...</div>
+                <div className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#B7C0BA] text-sm h-[42px] flex items-center">Loading counties...</div>
               ) : locationError ? (
-                <div className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#DC2626]/30 rounded-xl text-[#DC2626] text-sm">{locationError}</div>
+                <div className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#DC2626]/30 rounded-xl text-[#DC2626] text-sm h-[42px] flex items-center">{locationError}</div>
               ) : (
                 <select
-                  className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 appearance-none"
+                  className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 appearance-none h-[42px]"
                   value={formData.county ? `${formData.county}|${formData.countyName}` : ''}
                   onChange={handleCountyChange}
                 >
@@ -450,7 +626,7 @@ const VendorRegister = () => {
               <div className="relative group">
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
                 <select
-                  className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 appearance-none"
+                  className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 appearance-none h-[42px]"
                   value={formData.subCounty ? `${formData.subCounty}|${formData.subCountyName}` : ''}
                   onChange={handleSubCountyChange}
                 >
@@ -468,7 +644,7 @@ const VendorRegister = () => {
               <div className="relative group">
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
                 <select
-                  className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 appearance-none"
+                  className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 appearance-none h-[42px]"
                   value={formData.ward ? `${formData.ward}|${formData.wardName}` : ''}
                   onChange={handleWardChange}
                 >
@@ -494,19 +670,30 @@ const VendorRegister = () => {
             
             <div className="relative group">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
-              <input
-                className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="Phone Number *"
-              />
+              <div className="relative flex gap-2">
+                <div className="w-[58px] sm:w-[65px] flex-shrink-0">
+                  <CountrySelect 
+                    value={selectedCountry?.alpha2 || 'KE'}
+                    onChange={handleCountryChange}
+                    disabled={loading}
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <input
+                    className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 h-[42px]"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handlePhoneChange}
+                    placeholder="712345678"
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="relative group">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
               <input
-                className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300"
+                className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 h-[42px]"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
@@ -527,7 +714,7 @@ const VendorRegister = () => {
             <div className="relative group">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
               <input
-                className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300"
+                className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 h-[42px]"
                 name="nationalId"
                 value={formData.nationalId}
                 onChange={handleChange}
@@ -538,7 +725,7 @@ const VendorRegister = () => {
             <div className="relative group">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
               <input
-                className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300"
+                className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 h-[42px]"
                 name="kraPin"
                 value={formData.kraPin}
                 onChange={handleChange}
@@ -549,7 +736,7 @@ const VendorRegister = () => {
             <div className="relative group">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
               <input
-                className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300"
+                className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 h-[42px]"
                 name="businessRegNo"
                 value={formData.businessRegNo}
                 onChange={handleChange}
@@ -570,7 +757,7 @@ const VendorRegister = () => {
             <div className="relative group">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
               <input
-                className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300"
+                className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 h-[42px]"
                 type="password"
                 name="pin"
                 value={formData.pin}
@@ -859,14 +1046,14 @@ const VendorRegister = () => {
               <div className="flex gap-2.5 mt-5">
                 {step > 1 && (
                   <button
-                    className="flex-1 px-4 py-2.5 rounded-xl bg-[#032A24] text-[#B7C0BA] font-semibold text-xs hover:bg-[#12342D] transition-all duration-300"
+                    className="flex-1 px-4 py-2.5 rounded-xl bg-[#032A24] text-[#B7C0BA] font-semibold text-xs hover:bg-[#12342D] transition-all duration-300 h-[42px]"
                     onClick={handleBack}
                   >
                     Back
                   </button>
                 )}
                 <button
-                  className={`${step > 1 ? 'flex-[2]' : 'flex-1'} px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#C9A44B] to-[#E1C16B] text-[#032A24] font-semibold text-xs shadow-md shadow-[#C9A44B]/20 hover:shadow-lg hover:shadow-[#C9A44B]/30 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]`}
+                  className={`${step > 1 ? 'flex-[2]' : 'flex-1'} px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#C9A44B] to-[#E1C16B] text-[#032A24] font-semibold text-xs shadow-md shadow-[#C9A44B]/20 hover:shadow-lg hover:shadow-[#C9A44B]/30 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] h-[42px]`}
                   onClick={handleNext}
                 >
                   {step === 5 ? 'Submit Application' : 'Continue'}
@@ -877,13 +1064,13 @@ const VendorRegister = () => {
             {step === 6 && (
               <div className="flex gap-2.5 mt-5">
                 <button
-                  className="flex-1 px-4 py-2.5 rounded-xl bg-[#032A24] text-[#B7C0BA] font-semibold text-xs hover:bg-[#12342D] transition-all duration-300"
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-[#032A24] text-[#B7C0BA] font-semibold text-xs hover:bg-[#12342D] transition-all duration-300 h-[42px]"
                   onClick={handleBack}
                 >
                   Back
                 </button>
                 <button
-                  className="flex-[2] px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#C9A44B] to-[#E1C16B] text-[#032A24] font-semibold text-xs shadow-md shadow-[#C9A44B]/20 hover:shadow-lg hover:shadow-[#C9A44B]/30 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
+                  className="flex-[2] px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#C9A44B] to-[#E1C16B] text-[#032A24] font-semibold text-xs shadow-md shadow-[#C9A44B]/20 hover:shadow-lg hover:shadow-[#C9A44B]/30 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] h-[42px]"
                   onClick={handleVerifyOtp}
                   disabled={loading}
                 >
