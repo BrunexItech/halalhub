@@ -29,11 +29,15 @@ import Wills from './components/Wills';
 import Kadhis from './components/Kadhis';
 import About from './components/About';
 import KYCStatus from './components/KYCStatus';
-import AdminPanel from './components/AdminPanel';
+import AdminPanel from './components/admin/AdminPanel';
 import BankAdmin from './components/BankAdmin';
 import ChatBot from './components/ChatBot';
 import PaymentModal from './components/PaymentModal';
 import VideoCall from './components/VideoCall';
+
+// Legal Pages
+import TermsOfService from './components/TermsOfService';
+import PrivacyPolicy from './components/PrivacyPolicy';
 
 // Registration Components
 import RegisterRole from './components/RegisterRole';
@@ -150,6 +154,8 @@ function App() {
           <Route path="/register/client" element={<ClientRegister />} />
           <Route path="/register/vendor" element={<VendorRegister />} />
           <Route path="/register/leader" element={<LeaderRegister />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Router>
@@ -207,6 +213,9 @@ function App() {
                   
                   <Route path="/video-call/:bookingId" element={<VideoCall />} />
                   
+                  <Route path="/terms" element={<TermsOfService />} />
+                  <Route path="/privacy" element={<PrivacyPolicy />} />
+                  
                   <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
               </div>
@@ -215,6 +224,8 @@ function App() {
                 <Routes>
                   <Route path="/admin" element={<AdminPanel />} />
                   <Route path="/admin/bank" element={<BankAdmin />} />
+                  <Route path="/terms" element={<TermsOfService />} />
+                  <Route path="/privacy" element={<PrivacyPolicy />} />
                   <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
               </div>

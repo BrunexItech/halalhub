@@ -14,10 +14,12 @@ import {
   Dimensions,
   LayoutAnimation,
   UIManager,
+  Linking,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { willService, pdfService } from '../../api/client';
+import * as FileSystem from 'expo-file-system';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 
 // Enable LayoutAnimation for Android
@@ -112,6 +114,14 @@ const MinusIcon = ({ color = '#DC2626', size = 16 }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.5"/>
     <Path d="M8 12H16" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </Svg>
+);
+
+const DownloadIcon = ({ color = '#FFFFFF', size = 16 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <Path d="M7 10L12 15L17 10" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <Path d="M12 15V3" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
   </Svg>
 );
 
@@ -374,6 +384,7 @@ const Wills = () => {
 
   const generatePDF = async () => {
     setProcessing(true);
+    setError('');
     try {
       const response = await pdfService.generateWill({
         fullName: willData.fullName,
@@ -387,10 +398,23 @@ const Wills = () => {
         witnesses: willData.witnesses,
         specialInstructions: willData.specialInstructions,
       });
-      setSuccess('PDF generated successfully');
+
+      const pdfData = response.data;
+      const fileUri = FileSystem.documentDirectory + 'will_' + Date.now() + '.pdf';
+      
+      await FileSystem.writeAsStringAsync(fileUri, pdfData, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // Open the PDF directly
+      await Linking.openURL(fileUri);
+      
+      setSuccess('PDF downloaded and opened successfully');
       setTimeout(() => setSuccess(''), 5000);
-    } catch (err) {
-      setError('Failed to generate PDF. Please try again.');
+    } catch (err: any) {
+      console.error('PDF Error:', err);
+      setError(err.response?.data?.error || 'Failed to generate PDF. Please try again.');
+      setTimeout(() => setError(''), 5000);
     } finally {
       setProcessing(false);
     }
@@ -1169,9 +1193,16 @@ const Wills = () => {
                   disabled={processing}
                   activeOpacity={0.7}
                 >
-                  <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '500' }}>
-                    {processing ? 'Generating...' : 'Download PDF'}
-                  </Text>
+                  {processing ? (
+                    <ActivityIndicator size="small" color="#6B7280" />
+                  ) : (
+                    <>
+                      <DownloadIcon color="#6B7280" size={16} />
+                      <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '500', marginTop: 2 }}>
+                        Download PDF
+                      </Text>
+                    </>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
@@ -1769,7 +1800,14 @@ const Wills = () => {
                 onPress={generatePDF}
                 activeOpacity={0.7}
               >
-                <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Download PDF</Text>
+                {processing ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                    <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Generating...</Text>
+                  </View>
+                ) : (
+                  <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Download PDF</Text>
+                )}
               </TouchableOpacity>
 
               <TouchableOpacity

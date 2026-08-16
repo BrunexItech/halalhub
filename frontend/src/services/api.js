@@ -22,11 +22,23 @@ api.interceptors.request.use((config) => {
 // ========================================
 export const authService = {
   // Client Registration
-  registerClient: (data) => api.post('/auth/register-client', data),
+  registerClient: (data) => api.post('/auth/register-client', {
+    ...data,
+    termsAccepted: data.termsAccepted || true,
+    privacyAccepted: data.privacyAccepted || true
+  }),
   // Vendor Registration
-  registerVendor: (data) => api.post('/auth/register-vendor', data),
+  registerVendor: (data) => api.post('/auth/register-vendor', {
+    ...data,
+    termsAccepted: data.termsAccepted || true,
+    privacyAccepted: data.privacyAccepted || true
+  }),
   // Leader Registration
-  registerLeader: (data) => api.post('/auth/register-leader', data),
+  registerLeader: (data) => api.post('/auth/register-leader', {
+    ...data,
+    termsAccepted: data.termsAccepted || true,
+    privacyAccepted: data.privacyAccepted || true
+  }),
   // Login
   loginStep1: (phone) => api.post('/auth/login-step1', { phone }),
   loginStep2: (data) => api.post('/auth/login-step2', data),

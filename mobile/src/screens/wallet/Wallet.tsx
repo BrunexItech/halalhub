@@ -133,7 +133,19 @@ const Wallet = () => {
 
       setBalance(balanceRes.data.balance || 0);
 
-      const txData = txRes.data.transactions || [];
+      let txData = txRes.data.transactions || [];
+      
+      // Filter out fee transactions
+      txData = txData.filter((tx: any) => {
+        const type = tx.type || '';
+        const description = tx.description || '';
+        const title = tx.title || '';
+        // Skip if type is 'fee' or if description/title contains 'fee'
+        return type.toLowerCase() !== 'fee' && 
+               !description.toLowerCase().includes('fee') && 
+               !title.toLowerCase().includes('fee');
+      });
+      
       const formattedTx = txData.map((tx: any) => {
         let title = tx.type || 'Transaction';
         let iconType = tx.type || 'default';

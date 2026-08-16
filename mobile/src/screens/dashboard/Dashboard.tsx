@@ -176,7 +176,19 @@ const Dashboard = () => {
       setTotalSadaqa(sadaqaRes.data.summary?.totalAmount || 0);
 
       const txRes = await walletService.getTransactions({ limit: 20 }).catch(() => ({ data: { transactions: [] } }));
-      const txData = txRes.data.transactions || [];
+      let txData = txRes.data.transactions || [];
+      
+      // Filter out fee transactions
+      txData = txData.filter((tx: any) => {
+        const type = tx.type || '';
+        const description = tx.description || '';
+        const title = tx.title || '';
+        // Skip if type is 'fee' or if description/title contains 'fee'
+        return type.toLowerCase() !== 'fee' && 
+               !description.toLowerCase().includes('fee') && 
+               !title.toLowerCase().includes('fee');
+      });
+      
       setTransactions(txData);
 
       const spent = txData.filter((t: any) => t.amount < 0).reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0);

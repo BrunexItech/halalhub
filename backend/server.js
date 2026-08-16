@@ -82,7 +82,7 @@ async function initDB() {
     await client.connect();
     
     // ============================================================
-    // 1. USERS TABLE (Updated with leader_status)
+    // 1. USERS TABLE (Updated with leader_status and legal columns)
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -104,6 +104,9 @@ async function initDB() {
         business_reg_no TEXT,
         halal_declared BOOLEAN DEFAULT FALSE,
         terms_accepted BOOLEAN DEFAULT FALSE,
+        terms_accepted_at TIMESTAMP,
+        privacy_accepted BOOLEAN DEFAULT FALSE,
+        privacy_accepted_at TIMESTAMP,
         vendor_status TEXT DEFAULT 'pending',
         vendor_approved_at TIMESTAMP,
         leader_status TEXT DEFAULT 'pending',
@@ -1193,6 +1196,32 @@ async function initDB() {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_saved_services_user_id ON saved_services(user_id)`);
 
     // ============================================================
+    // CHECK AND ADD LEGAL COLUMNS IF MISSING (for existing databases)
+    // ============================================================
+    const legalColumns = [
+      { name: 'terms_accepted', type: 'BOOLEAN DEFAULT FALSE' },
+      { name: 'terms_accepted_at', type: 'TIMESTAMP' },
+      { name: 'privacy_accepted', type: 'BOOLEAN DEFAULT FALSE' },
+      { name: 'privacy_accepted_at', type: 'TIMESTAMP' }
+    ];
+
+    for (const col of legalColumns) {
+      const colCheck = await client.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'users' AND column_name = $1
+      `, [col.name]);
+
+      if (colCheck.rows.length === 0) {
+        await client.query(`
+          ALTER TABLE users 
+          ADD COLUMN ${col.name} ${col.type}
+        `);
+        console.log(`Added column: ${col.name}`);
+      }
+    }
+
+    // ============================================================
     // CREATE SYSTEM USER (for master accounts)
     // ============================================================
     const systemUserExists = await client.query(
@@ -1203,9 +1232,9 @@ async function initDB() {
     if (systemUserExists.rows.length === 0) {
       await client.query(
         `INSERT INTO users (
-          id, fullname, phone, email, nationalid, pinhash, role, isadmin, kycstatus, createdat, updatedat
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())`,
-        ['system', 'System Account', '0000000000', 'system@halalhub.com', 'SYSTEM000', 'system', 'system', false, 'verified']
+          id, fullname, phone, email, nationalid, pinhash, role, isadmin, kycstatus, terms_accepted, privacy_accepted, createdat, updatedat
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())`,
+        ['system', 'System Account', '0000000000', 'system@halalhub.com', 'SYSTEM000', 'system', 'system', false, 'verified', true, true]
       );
       console.log('System user created for master accounts');
     } else {
@@ -1277,9 +1306,9 @@ async function initDB() {
       
       await client.query(
         `INSERT INTO users (
-          id, fullname, phone, email, nationalid, pinhash, role, isadmin, kycstatus, createdat, updatedat
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())`,
-        [adminId, 'System Administrator', '+254700000000', adminEmail, 'ADMIN001', adminHash, 'admin', true, 'verified']
+          id, fullname, phone, email, nationalid, pinhash, role, isadmin, kycstatus, terms_accepted, privacy_accepted, createdat, updatedat
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())`,
+        [adminId, 'System Administrator', '+254700000000', adminEmail, 'ADMIN001', adminHash, 'admin', true, 'verified', true, true]
       );
       console.log(`Admin user created: ${adminEmail} (Password: ${adminPassword})`);
     } else {
@@ -1287,6 +1316,7 @@ async function initDB() {
     }
 
     console.log('All database tables ready');
+    console.log('Legal columns verified/created');
     console.log('All master accounts verified/created:');
     console.log(`   - ${PENSION_MASTER_ACCOUNT} (Pension)`);
     console.log(`   - ${TAKAFUL_POOL_ACCOUNT} (Takaful)`);

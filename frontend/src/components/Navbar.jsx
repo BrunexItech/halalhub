@@ -449,6 +449,28 @@ const Navbar = ({ user, onLogout }) => {
                 </button>
 
                 <button
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    handleNavigation('/terms');
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-[#B7C0BA] hover:text-[#F7F6F1] hover:bg-[#12342D] transition-all duration-150"
+                  role="menuitem"
+                >
+                  Terms of Service
+                </button>
+
+                <button
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    handleNavigation('/privacy');
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-[#B7C0BA] hover:text-[#F7F6F1] hover:bg-[#12342D] transition-all duration-150"
+                  role="menuitem"
+                >
+                  Privacy Policy
+                </button>
+
+                <button
                   onClick={handleLogout}
                   className="w-full text-left px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-[#12342D] transition-all duration-150 border-t border-[rgba(201,164,75,0.18)] mt-1 pt-2"
                   role="menuitem"
@@ -580,6 +602,30 @@ const Navbar = ({ user, onLogout }) => {
                     role="menuitem"
                   >
                     Profile Settings
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsMobileUserMenuOpen(false);
+                      setIsMobileMenuOpen(false);
+                      handleNavigation('/terms');
+                    }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-[#B7C0BA] hover:text-[#F7F6F1] hover:bg-[#12342D] transition-all duration-150"
+                    role="menuitem"
+                  >
+                    Terms of Service
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsMobileUserMenuOpen(false);
+                      setIsMobileMenuOpen(false);
+                      handleNavigation('/privacy');
+                    }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-[#B7C0BA] hover:text-[#F7F6F1] hover:bg-[#12342D] transition-all duration-150"
+                    role="menuitem"
+                  >
+                    Privacy Policy
                   </button>
 
                   <button

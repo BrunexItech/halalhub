@@ -21,7 +21,11 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.itqaan.app"
+      "bundleIdentifier": "com.itqaan.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Itqaan needs your location to find mosques near you.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Itqaan needs your location to find mosques near you."
+      }
     },
     "android": {
       "package": "com.itqaan.app",
@@ -35,6 +39,8 @@
         "INTERNET",
         "ACCESS_NETWORK_STATE",
         "MODIFY_AUDIO_SETTINGS",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
         "FOREGROUND_SERVICE",
         "FOREGROUND_SERVICE_CAMERA",
         "FOREGROUND_SERVICE_MICROPHONE",

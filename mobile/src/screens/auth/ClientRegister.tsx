@@ -16,6 +16,9 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { authService } from '../../api/client';
 import countriesData from 'world-countries';
+import LegalModal from '../../components/common/LegalModal';
+import TermsContent from '../../components/common/TermsContent';
+import PrivacyContent from '../../components/common/PrivacyContent';
 
 // Location API configuration
 const LOCATION_API_BASE = 'https://kenyaareadata.vercel.app/api/areas';
@@ -197,6 +200,10 @@ const ClientRegister = () => {
   const inputRefs = useRef<(TextInput | null)[]>([]);
   const otpTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Terms and Conditions state
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [legalModal, setLegalModal] = useState({ visible: false, type: '' });
+
   // Country selection state
   const [selectedCountry, setSelectedCountry] = useState(null);
 
@@ -223,6 +230,15 @@ const ClientRegister = () => {
     ward: '',
     wardName: '',
   });
+
+  // Legal Modal Handlers
+  const openLegalModal = (type: string) => {
+    setLegalModal({ visible: true, type });
+  };
+
+  const closeLegalModal = () => {
+    setLegalModal({ visible: false, type: '' });
+  };
 
   // Set default country to Kenya
   useEffect(() => {
@@ -608,6 +624,8 @@ const ClientRegister = () => {
         region: formData.regionName,
         subCounty: formData.subCountyName,
         ward: formData.wardName,
+        termsAccepted: termsAccepted,
+        privacyAccepted: termsAccepted,
       });
 
       setStep(5);
@@ -1092,6 +1110,57 @@ const ClientRegister = () => {
                 </Text>
               </TouchableOpacity>
             </View>
+
+            {/* Terms and Conditions Checkbox */}
+            <View style={{ marginTop: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(201, 164, 75, 0.15)' }}>
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: 'rgba(3, 42, 36, 0.3)',
+                  padding: 14,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: termsAccepted ? 'rgba(201, 164, 75, 0.6)' : 'rgba(201, 164, 75, 0.2)',
+                }}
+                onPress={() => setTermsAccepted(!termsAccepted)}
+                activeOpacity={0.7}
+              >
+                <View style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 6,
+                  borderWidth: 2,
+                  borderColor: termsAccepted ? '#C9A44B' : 'rgba(201, 164, 75, 0.4)',
+                  backgroundColor: termsAccepted ? '#C9A44B' : 'transparent',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: 12,
+                }}>
+                  {termsAccepted && (
+                    <Text style={{ color: '#032A24', fontSize: 14, fontWeight: '700' }}>✓</Text>
+                  )}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: '#B7C0BA', fontSize: 12, lineHeight: 18 }}>
+                    I have read and agree to the{' '}
+                    <Text
+                      style={{ color: '#C9A44B', fontWeight: '600' }}
+                      onPress={() => openLegalModal('terms')}
+                    >
+                      Terms of Service
+                    </Text>
+                    {' '}and{' '}
+                    <Text
+                      style={{ color: '#C9A44B', fontWeight: '600' }}
+                      onPress={() => openLegalModal('privacy')}
+                    >
+                      Privacy Policy
+                    </Text>
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </View>
           </View>
         );
 
@@ -1145,14 +1214,14 @@ const ClientRegister = () => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1, padding: 24 }}
+          contentContainerStyle={{ flexGrow: 1, paddingTop: 40, paddingHorizontal: 24, paddingBottom: 40 }}
           keyboardShouldPersistTaps="handled"
         >
           <View style={{ maxWidth: 400, width: '100%', alignSelf: 'center' }}>
-            <View style={{ alignItems: 'center', marginBottom: 16 }}>
+            <View style={{ alignItems: 'center', marginBottom: 24 }}>
               <Image
                 source={require('../../../assets/itqaan_logo.png')}
-                style={{ height: 48, width: 160 }}
+                style={{ height: 52, width: 180 }}
                 resizeMode="contain"
               />
             </View>
@@ -1261,10 +1330,10 @@ const ClientRegister = () => {
                       paddingVertical: 10,
                       borderRadius: 12,
                       alignItems: 'center',
-                      opacity: loading ? 0.6 : 1,
+                      opacity: loading || !termsAccepted ? 0.6 : 1,
                     }}
                     onPress={handleVerifyOtp}
-                    disabled={loading}
+                    disabled={loading || !termsAccepted}
                   >
                     {loading ? (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -1347,6 +1416,15 @@ const ClientRegister = () => {
         },
         formData.wardName
       )}
+
+      {/* Legal Modal */}
+      <LegalModal
+        visible={legalModal.visible}
+        onClose={closeLegalModal}
+        title={legalModal.type === 'terms' ? 'Terms of Service' : 'Privacy Policy'}
+      >
+        {legalModal.type === 'terms' ? <TermsContent /> : <PrivacyContent />}
+      </LegalModal>
     </SafeAreaView>
   );
 };

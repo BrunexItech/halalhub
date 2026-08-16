@@ -47,6 +47,11 @@ import About from '../screens/profile/About';
 import More from '../screens/profile/More';
 import ChatBot from '../screens/common/ChatBot';
 import LeaderPublicProfile from '../screens/common/LeaderPublicProfile';
+import TermsScreen from '../screens/common/TermsScreen';
+import PrivacyScreen from '../screens/common/PrivacyScreen';
+
+// Support
+import SupportScreen from '../screens/support/SupportScreen';
 
 // Service List
 import ServiceList from '../screens/services/ServiceList';
@@ -133,6 +138,9 @@ const DashboardStack = () => {
       <Stack.Screen name="ChatBot" component={ChatBot} />
       <Stack.Screen name="VideoCall" component={VideoCallScreen} />
       <Stack.Screen name="LeaderPublicProfile" component={LeaderPublicProfile} />
+      <Stack.Screen name="Support" component={SupportScreen} />
+      <Stack.Screen name="Terms" component={TermsScreen} />
+      <Stack.Screen name="Privacy" component={PrivacyScreen} />
     </Stack.Navigator>
   );
 };
@@ -160,6 +168,9 @@ const VendorDashboardStack = () => {
       <Stack.Screen name="LeaderPublicProfile" component={LeaderPublicProfile} />
       <Stack.Screen name="About" component={About} />
       <Stack.Screen name="WalletMain" component={Wallet} />
+      <Stack.Screen name="Support" component={SupportScreen} />
+      <Stack.Screen name="Terms" component={TermsScreen} />
+      <Stack.Screen name="Privacy" component={PrivacyScreen} />
     </Stack.Navigator>
   );
 };
@@ -191,6 +202,9 @@ const ServicesStack = () => {
       <Stack.Screen name="VideoCall" component={VideoCallScreen} />
       <Stack.Screen name="LeaderPublicProfile" component={LeaderPublicProfile} />
       <Stack.Screen name="About" component={About} />
+      <Stack.Screen name="Support" component={SupportScreen} />
+      <Stack.Screen name="Terms" component={TermsScreen} />
+      <Stack.Screen name="Privacy" component={PrivacyScreen} />
     </Stack.Navigator>
   );
 };
@@ -217,6 +231,9 @@ const WalletStack = () => {
       <Stack.Screen name="VideoCall" component={VideoCallScreen} />
       <Stack.Screen name="LeaderPublicProfile" component={LeaderPublicProfile} />
       <Stack.Screen name="About" component={About} />
+      <Stack.Screen name="Support" component={SupportScreen} />
+      <Stack.Screen name="Terms" component={TermsScreen} />
+      <Stack.Screen name="Privacy" component={PrivacyScreen} />
     </Stack.Navigator>
   );
 };
@@ -227,6 +244,9 @@ const MoreStack = () => {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MoreMain" component={More} />
       <Stack.Screen name="About" component={About} />
+      <Stack.Screen name="Support" component={SupportScreen} />
+      <Stack.Screen name="Terms" component={TermsScreen} />
+      <Stack.Screen name="Privacy" component={PrivacyScreen} />
       <Stack.Screen name="Zakat" component={Zakat} />
       <Stack.Screen name="Sadaqa" component={Sadaqa} />
       <Stack.Screen name="Takaful" component={Takaful} />

@@ -43,7 +43,7 @@ const LocationIcon = ({ color = '#6B7280', size = 18 }) => (
   </Svg>
 );
 
-const SearchIcon = ({ color = '#6B7280', size = 18 }) => (
+const SearchIcon = ({ color = '#FFFFFF', size = 18 }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Circle cx="11" cy="11" r="7" stroke={color} strokeWidth="1.5"/>
     <Path d="M16.5 16.5L21 21" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
@@ -77,6 +77,14 @@ const NavIcon = ({ color = '#6B7280', size = 14 }) => (
   </Svg>
 );
 
+const CurrentLocationIcon = ({ color = '#C9A44B', size = 18 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="12" r="3" fill={color} stroke={color} strokeWidth="1.5"/>
+    <Circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.5" strokeDasharray="2 2"/>
+    <Path d="M12 2V4M12 20V22M2 12H4M20 12H22" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </Svg>
+);
+
 const MosqueFinder = () => {
   const navigation = useNavigation();
   const [location, setLocation] = useState('');
@@ -95,6 +103,9 @@ const MosqueFinder = () => {
       { location: 'Nairobi CBD', mosque: 'Jamia Mosque' },
       { location: 'Mombasa', mosque: 'All Mosques' },
     ]);
+
+    // Auto-detect location on mount
+    handleUseCurrentLocation();
   }, []);
 
   const saveRecentSearch = (locationVal: string, mosqueVal: string) => {
@@ -336,24 +347,27 @@ const MosqueFinder = () => {
                 </Text>
               </View>
 
-              <View style={{
-                width: 32,
-                height: 32,
-                borderRadius: 16,
-                backgroundColor: 'rgba(201, 164, 75, 0.08)',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: 1,
-                borderColor: 'rgba(201, 164, 75, 0.1)',
-              }}>
-                <View style={{
-                  width: 4,
-                  height: 4,
-                  borderRadius: 2,
-                  backgroundColor: '#C9A44B',
-                  opacity: 0.5,
-                }} />
-              </View>
+              <TouchableOpacity
+                onPress={handleUseCurrentLocation}
+                disabled={isLocating}
+                activeOpacity={0.7}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: 'rgba(201, 164, 75, 0.12)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 1,
+                  borderColor: 'rgba(201, 164, 75, 0.15)',
+                }}
+              >
+                {isLocating ? (
+                  <ActivityIndicator size="small" color="#C9A44B" />
+                ) : (
+                  <CurrentLocationIcon color="#C9A44B" size={20} />
+                )}
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -553,65 +567,107 @@ const MosqueFinder = () => {
               </Text>
             </View>
 
-            {/* Action Buttons */}
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-              <TouchableOpacity
+            {/* Search Button */}
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#032A24',
+                paddingVertical: 14,
+                borderRadius: 12,
+                alignItems: 'center',
+                flexDirection: 'row',
+                justifyContent: 'center',
+                gap: 10,
+                opacity: isLoading || !location.trim() ? 0.5 : 1,
+              }}
+              onPress={handleSearch}
+              disabled={isLoading || !location.trim()}
+              activeOpacity={0.7}
+            >
+              {isLoading ? (
+                <>
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Searching...</Text>
+                </>
+              ) : (
+                <>
+                  <SearchIcon color="#FFFFFF" size={18} />
+                  <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Find Mosques</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* ===== FEATURE CARDS ===== */}
+          <View style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: 12,
+            marginTop: 20,
+          }}>
+            {[
+              {
+                icon: <MosqueIcon color="#C9A44B" size={24} />,
+                title: 'Nearby Mosques',
+                description: 'Find mosques closest to your current location with accurate directions.',
+                bgColor: '#FDFAF0',
+                borderColor: 'rgba(201, 164, 75, 0.15)',
+              },
+              {
+                icon: <CurrentLocationIcon color="#032A24" size={24} />,
+                title: 'Get Directions',
+                description: 'Get real-time navigation to any mosque using Google Maps integration.',
+                bgColor: '#F5F8F5',
+                borderColor: 'rgba(3, 42, 36, 0.08)',
+              },
+            ].map((card, index) => (
+              <View
+                key={index}
                 style={{
                   flex: 1,
-                  minWidth: 120,
-                  backgroundColor: '#032A24',
-                  paddingVertical: 14,
-                  borderRadius: 12,
-                  alignItems: 'center',
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                  gap: 10,
-                  opacity: isLoading || !location.trim() ? 0.5 : 1,
+                  minWidth: 140,
+                  backgroundColor: card.bgColor,
+                  borderRadius: 16,
+                  padding: 16,
+                  borderWidth: 1,
+                  borderColor: card.borderColor,
+                  shadowColor: '#032A24',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.02,
+                  shadowRadius: 8,
+                  elevation: 1,
                 }}
-                onPress={handleSearch}
-                disabled={isLoading || !location.trim()}
-                activeOpacity={0.7}
               >
-                {isLoading ? (
-                  <>
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                    <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Searching...</Text>
-                  </>
-                ) : (
-                  <>
-                    <SearchIcon color="#FFFFFF" size={18} />
-                    <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Find Mosques</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={{
-                  paddingHorizontal: 18,
-                  paddingVertical: 14,
+                <View style={{
+                  width: 44,
+                  height: 44,
                   borderRadius: 12,
-                  borderWidth: 1.5,
-                  borderColor: '#032A24',
                   backgroundColor: '#FFFFFF',
                   alignItems: 'center',
-                  flexDirection: 'row',
-                  gap: 10,
-                  opacity: isLocating ? 0.5 : 1,
-                }}
-                onPress={handleUseCurrentLocation}
-                disabled={isLocating}
-                activeOpacity={0.7}
-              >
-                {isLocating ? (
-                  <ActivityIndicator size="small" color="#032A24" />
-                ) : (
-                  <LocationIcon color="#032A24" size={18} />
-                )}
-                <Text style={{ color: '#032A24', fontSize: 14, fontWeight: '600' }}>
-                  {isLocating ? 'Locating...' : 'Use My Location'}
+                  justifyContent: 'center',
+                  marginBottom: 10,
+                  borderWidth: 1,
+                  borderColor: 'rgba(3, 42, 36, 0.04)',
+                }}>
+                  {card.icon}
+                </View>
+                <Text style={{
+                  color: '#032A24',
+                  fontSize: 15,
+                  fontWeight: '700',
+                  letterSpacing: -0.2,
+                  marginBottom: 4,
+                }}>
+                  {card.title}
                 </Text>
-              </TouchableOpacity>
-            </View>
+                <Text style={{
+                  color: '#6B7280',
+                  fontSize: 12,
+                  lineHeight: 18,
+                }}>
+                  {card.description}
+                </Text>
+              </View>
+            ))}
           </View>
 
           {/* ===== INFO BANNER ===== */}

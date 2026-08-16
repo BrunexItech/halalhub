@@ -260,6 +260,50 @@ const ServiceList = () => {
       ),
     },
     {
+      id: 'butchery',
+      label: 'Halal Butchery',
+      color: '#0B342B',
+      bgColor: 'rgba(11, 52, 43, 0.08)',
+      route: 'Ecommerce',
+      params: { category: 'butchery' },
+      icon: (
+        <Svg width={25} height={25} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M12 3.5L8.5 8.5H15.5L12 3.5Z"
+            stroke="#0B342B"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+          <Path
+            d="M8.5 8.5L6.5 20.5H17.5L15.5 8.5"
+            stroke="#0B342B"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+          <Path
+            d="M10.5 11.5V17.5"
+            stroke="#0B342B"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+          />
+          <Path
+            d="M13.5 11.5V17.5"
+            stroke="#0B342B"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+          />
+          <Path
+            d="M8 13H16"
+            stroke="#0B342B"
+            strokeWidth="1.2"
+            strokeLinecap="round"
+          />
+          <Circle cx="7.5" cy="9.5" r="1" fill="#C9A44B" opacity="0.4" />
+          <Circle cx="16.5" cy="9.5" r="1" fill="#C9A44B" opacity="0.4" />
+        </Svg>
+      ),
+    },
+    {
       id: 'restaurants',
       label: 'Restaurants',
       color: '#0B342B',
@@ -359,6 +403,15 @@ const ServiceList = () => {
       ),
     },
   ];
+
+  // Handle navigation with optional params
+  const handleServicePress = (service: any) => {
+    if (service.params) {
+      navigation.navigate(service.route as never, service.params as never);
+    } else {
+      navigation.navigate(service.route as never);
+    }
+  };
 
   return (
     <SafeAreaView
@@ -479,9 +532,7 @@ const ServiceList = () => {
                 <TouchableOpacity
                   key={service.id}
                   activeOpacity={0.78}
-                  onPress={() =>
-                    navigation.navigate(service.route as never)
-                  }
+                  onPress={() => handleServicePress(service)}
                   style={{
                     width: '31.5%',
                     minHeight: 108,

@@ -96,9 +96,21 @@ export const getImageUrl = (path: string) => {
 };
 
 export const authService = {
-  registerClient: (data) => api.post('/auth/register-client', data),
-  registerVendor: (data) => api.post('/auth/register-vendor', data),
-  registerLeader: (data) => api.post('/auth/register-leader', data),
+  registerClient: (data) => api.post('/auth/register-client', {
+    ...data,
+    termsAccepted: data.termsAccepted || true,
+    privacyAccepted: data.privacyAccepted || true,
+  }),
+  registerVendor: (data) => api.post('/auth/register-vendor', {
+    ...data,
+    termsAccepted: data.termsAccepted || true,
+    privacyAccepted: data.privacyAccepted || true,
+  }),
+  registerLeader: (data) => api.post('/auth/register-leader', {
+    ...data,
+    termsAccepted: data.termsAccepted || true,
+    privacyAccepted: data.privacyAccepted || true,
+  }),
   loginStep1: (phone) => api.post('/auth/login-step1', { phone }),
   loginStep2: (data) => api.post('/auth/login-step2', data),
   sendRegistrationOtp: (data) => api.post('/auth/send-registration-otp', data),

@@ -138,7 +138,7 @@ const createVirtualAccount = async (userId) => {
 // ============================================================
 router.post('/register-client', async (req, res) => {
   try {
-    const { fullName, phone, email, nationalId, pin, region, subCounty, ward } = req.body;
+    const { fullName, phone, email, nationalId, pin, region, subCounty, ward, termsAccepted, privacyAccepted } = req.body;
     
     if (!fullName || !phone || !email || !nationalId || !pin) {
       return res.status(400).json({ error: 'All fields are required' });
@@ -157,9 +157,11 @@ router.post('/register-client', async (req, res) => {
     
     try {
       await db.query(
-        `INSERT INTO users (id, fullname, phone, email, nationalid, pinhash, role, region, sub_county, ward, kycstatus)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending')`,
-        [userId, fullName, phone, email, nationalId, pinHash, 'client', region || '', subCounty || '', ward || '']
+        `INSERT INTO users (
+          id, fullname, phone, email, nationalid, pinhash, role, region, sub_county, ward, 
+          kycstatus, terms_accepted, terms_accepted_at, privacy_accepted, privacy_accepted_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending', $11, NOW(), $12, NOW())`,
+        [userId, fullName, phone, email, nationalId, pinHash, 'client', region || '', subCounty || '', ward || '', termsAccepted || true, privacyAccepted || true]
       );
       
       await db.query('COMMIT');
@@ -227,7 +229,8 @@ router.post('/register-vendor', async (req, res) => {
       subCounty, 
       ward, 
       halalDeclared, 
-      termsAccepted 
+      termsAccepted,
+      privacyAccepted
     } = req.body;
     
     if (!businessName || !businessType || !phone || !email || !nationalId || !kraPin || !businessRegNo || !pin) {
@@ -256,8 +259,9 @@ router.post('/register-vendor', async (req, res) => {
       await db.query(
         `INSERT INTO users (
           id, fullname, phone, email, nationalid, pinhash, role, region, sub_county, ward,
-          business_name, kra_pin, business_reg_no, halal_declared, terms_accepted, vendor_status, kycstatus
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'pending', 'pending')`,
+          business_name, kra_pin, business_reg_no, halal_declared, terms_accepted, terms_accepted_at,
+          privacy_accepted, privacy_accepted_at, vendor_status, kycstatus
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), $16, NOW(), 'pending', 'pending')`,
         [
           vendorId, 
           businessName, 
@@ -273,7 +277,8 @@ router.post('/register-vendor', async (req, res) => {
           kraPin,
           businessRegNo,
           halalDeclared,
-          termsAccepted
+          termsAccepted || true,
+          privacyAccepted || true
         ]
       );
       
@@ -352,7 +357,8 @@ router.post('/register-leader', async (req, res) => {
       consultationFee,
       consultationTypes,
       availableForConsultation,
-      termsAccepted 
+      termsAccepted,
+      privacyAccepted
     } = req.body;
     
     if (!fullName || !phone || !email || !nationalId || !pin) {
@@ -405,9 +411,9 @@ router.post('/register-leader', async (req, res) => {
       await db.query(
         `INSERT INTO users (
           id, fullname, phone, email, nationalid, pinhash, role, region, sub_county, ward, 
-          leader_status, kycstatus
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending', 'pending')`,
-        [leaderId, fullName, phone, email, nationalId, pinHash, 'leader', region, subCounty, ward]
+          leader_status, kycstatus, terms_accepted, terms_accepted_at, privacy_accepted, privacy_accepted_at
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending', 'pending', $11, NOW(), $12, NOW())`,
+        [leaderId, fullName, phone, email, nationalId, pinHash, 'leader', region, subCounty, ward, termsAccepted || true, privacyAccepted || true]
       );
       
       await db.query(`

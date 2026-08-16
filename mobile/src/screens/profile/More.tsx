@@ -55,45 +55,10 @@ const More = () => {
       ),
     },
     {
-      id: 'kyc',
-      label: 'KYC Status',
-      description: 'Review your verification status',
-      route: 'KYCStatus',
-      icon: (
-        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <Path
-            d="M15 20H6C4.89543 20 4 19.1046 4 18V6C4 4.89543 4.89543 4 6 4H18C19.1046 4 20 4.89543 20 6V11"
-            stroke="#C9A44B"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-          />
-          <Path
-            d="M8 8H16"
-            stroke="#FFFFFF"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-          />
-          <Path
-            d="M8 12H13"
-            stroke="#FFFFFF"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-          />
-          <Path
-            d="M16 17L18 19L22 15"
-            stroke="#C9A44B"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </Svg>
-      ),
-    },
-    {
       id: 'support',
       label: 'Support',
       description: 'Get assistance when you need it',
-      route: 'ChatBot',
+      route: 'Support',
       icon: (
         <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
           <Path
@@ -115,6 +80,81 @@ const More = () => {
           <Path
             d="M12 20H15"
             stroke="#C9A44B"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+        </Svg>
+      ),
+    },
+    {
+      id: 'terms',
+      label: 'Terms of Service',
+      description: 'Read our terms and conditions',
+      route: 'Terms',
+      icon: (
+        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M4 4H20V20H4V4Z"
+            stroke="#C9A44B"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+          <Path
+            d="M8 8H16"
+            stroke="#FFFFFF"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+          <Path
+            d="M8 12H14"
+            stroke="#FFFFFF"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+          <Path
+            d="M8 16H12"
+            stroke="#FFFFFF"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+          <Path
+            d="M16 12L18 14L22 10"
+            stroke="#C9A44B"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </Svg>
+      ),
+    },
+    {
+      id: 'privacy',
+      label: 'Privacy Policy',
+      description: 'Review our privacy practices',
+      route: 'Privacy',
+      icon: (
+        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M12 2L3 7L12 12L21 7L12 2Z"
+            stroke="#C9A44B"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+          <Path
+            d="M3 12L12 17L21 12"
+            stroke="#FFFFFF"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+          <Path
+            d="M3 17L12 22L21 17"
+            stroke="#C9A44B"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+          <Path
+            d="M12 12V17"
+            stroke="#FFFFFF"
             strokeWidth="1.6"
             strokeLinecap="round"
           />
@@ -424,11 +464,7 @@ const More = () => {
                   borderBottomColor: 'rgba(255,255,255,0.08)',
                 }}
                 onPress={() => {
-                  if (item.route === 'KYCStatus') {
-                    // KYC Status placeholder
-                  } else {
-                    navigation.navigate(item.route as never);
-                  }
+                  navigation.navigate(item.route as never);
                 }}
               >
                 {/* Icon */}

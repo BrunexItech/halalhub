@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { authService } from '../services/api';
 import { getCounties, getSubCounties, getWards } from '../services/locationApi';
 import countriesData from 'world-countries';
+import LegalModal from './LegalModal';
+import TermsOfService from './TermsOfService';
+import PrivacyPolicy from './PrivacyPolicy';
 
 // ============================================================
 // Process countries data
@@ -139,6 +142,10 @@ const ClientRegister = () => {
   const inputRefs = useRef([]);
   const otpTimerRef = useRef(null);
 
+  // Terms and Conditions state
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [legalModal, setLegalModal] = useState({ isOpen: false, type: '' });
+
   // Country selection state
   const [selectedCountry, setSelectedCountry] = useState(null);
   
@@ -161,6 +168,15 @@ const ClientRegister = () => {
     ward: '',
     wardName: ''
   });
+
+  // Legal Modal Handlers
+  const openLegalModal = (type) => {
+    setLegalModal({ isOpen: true, type });
+  };
+
+  const closeLegalModal = () => {
+    setLegalModal({ isOpen: false, type: '' });
+  };
 
   // Set default country to Kenya
   useEffect(() => {
@@ -812,6 +828,48 @@ const ClientRegister = () => {
                   : 'Send Code'}
               </button>
             </div>
+
+            {/* Terms and Conditions Checkbox - Improved Styling */}
+            <div className="mt-4 pt-3 border-t border-[#C9A44B]/20">
+              <div className="bg-[#032A24]/30 rounded-xl p-3 border border-[#C9A44B]/20 hover:border-[#C9A44B]/60 transition-all duration-300">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <div className="relative flex-shrink-0 mt-0.5">
+                    <input
+                        type="checkbox"
+                        checked={termsAccepted}
+                        onChange={(e) => setTermsAccepted(e.target.checked)}
+                        className="w-5 h-5 rounded-md border-2 border-[#C9A44B]/50 bg-[#032A24] text-[#C9A44B] focus:ring-2 focus:ring-[#C9A44B]/40 focus:ring-offset-2 focus:ring-offset-[#032A24] cursor-pointer transition-all duration-200 checked:bg-[#C9A44B] checked:border-[#C9A44B]"
+                      />
+
+                    {termsAccepted && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <svg className="w-3.5 h-3.5 text-[#032A24]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-xs text-[#B7C0BA] leading-relaxed group-hover:text-[#F7F6F1] transition-colors duration-200">
+                    I have read and agree to the{' '}
+                    <button 
+                      type="button"
+                      onClick={() => openLegalModal('terms')}
+                      className="text-[#C9A44B] hover:text-[#E1C16B] hover:underline font-medium transition-colors duration-200"
+                    >
+                      Terms of Service
+                    </button>
+                    {' '}and{' '}
+                    <button 
+                      type="button"
+                      onClick={() => openLegalModal('privacy')}
+                      className="text-[#C9A44B] hover:text-[#E1C16B] hover:underline font-medium transition-colors duration-200"
+                    >
+                      Privacy Policy
+                    </button>
+                  </span>
+                </label>
+              </div>
+            </div>
           </div>
         );
 
@@ -946,7 +1004,7 @@ const ClientRegister = () => {
                 <button
                   className="flex-[2] px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#C9A44B] to-[#E1C16B] text-[#032A24] font-semibold text-xs shadow-md shadow-[#C9A44B]/20 hover:shadow-lg hover:shadow-[#C9A44B]/30 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] h-[42px]"
                   onClick={handleVerifyOtp}
-                  disabled={loading}
+                  disabled={loading || !termsAccepted}
                 >
                   {loading ? (
                     <span className="flex items-center justify-center gap-2">
@@ -975,6 +1033,16 @@ const ClientRegister = () => {
         </div>
 
       </div>
+
+      {/* Legal Modal */}
+      <LegalModal 
+        isOpen={legalModal.isOpen} 
+        onClose={closeLegalModal}
+        title={legalModal.type === 'terms' ? 'Terms of Service' : 'Privacy Policy'}
+      >
+        {legalModal.type === 'terms' ? <TermsOfService /> : <PrivacyPolicy />}
+      </LegalModal>
+
     </div>
   );
 };

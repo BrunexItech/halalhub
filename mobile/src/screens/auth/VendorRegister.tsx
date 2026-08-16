@@ -16,6 +16,9 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { authService } from '../../api/client';
 import countriesData from 'world-countries';
+import LegalModal from '../../components/common/LegalModal';
+import TermsContent from '../../components/common/TermsContent';
+import PrivacyContent from '../../components/common/PrivacyContent';
 
 // Location API configuration
 const LOCATION_API_BASE = 'https://kenyaareadata.vercel.app/api/areas';
@@ -200,6 +203,10 @@ const VendorRegister = () => {
   // Country selection state
   const [selectedCountry, setSelectedCountry] = useState(null);
 
+  // Terms and Conditions state
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [legalModal, setLegalModal] = useState({ visible: false, type: '' });
+
   // Location states
   const [counties, setCounties] = useState<any[]>([]);
   const [subCounties, setSubCounties] = useState<any[]>([]);
@@ -238,6 +245,15 @@ const VendorRegister = () => {
     halalDeclared: false,
     termsAccepted: false,
   });
+
+  // Legal Modal Handlers
+  const openLegalModal = (type: string) => {
+    setLegalModal({ visible: true, type });
+  };
+
+  const closeLegalModal = () => {
+    setLegalModal({ visible: false, type: '' });
+  };
 
   // Set default country to Kenya
   useEffect(() => {
@@ -637,6 +653,7 @@ const VendorRegister = () => {
         ward: formData.wardName,
         halalDeclared: formData.halalDeclared,
         termsAccepted: formData.termsAccepted,
+        privacyAccepted: formData.termsAccepted,
       });
 
       setStep(7);
@@ -1127,7 +1144,7 @@ const VendorRegister = () => {
                 padding: 12,
                 borderRadius: 12,
                 borderWidth: 1,
-                borderColor: 'rgba(201, 164, 75, 0.3)',
+                borderColor: formData.termsAccepted ? 'rgba(201, 164, 75, 0.6)' : 'rgba(201, 164, 75, 0.3)',
               }}
               onPress={() => handleChange('termsAccepted', !formData.termsAccepted)}
             >
@@ -1147,7 +1164,20 @@ const VendorRegister = () => {
                 )}
               </View>
               <Text style={{ color: '#F7F6F1', fontSize: 13, flex: 1 }}>
-                I accept Itqaan's Terms & Conditions
+                I have read and agree to the{' '}
+                <Text
+                  style={{ color: '#C9A44B', fontWeight: '600' }}
+                  onPress={() => openLegalModal('terms')}
+                >
+                  Terms of Service
+                </Text>
+                {' '}and{' '}
+                <Text
+                  style={{ color: '#C9A44B', fontWeight: '600' }}
+                  onPress={() => openLegalModal('privacy')}
+                >
+                  Privacy Policy
+                </Text>
               </Text>
             </TouchableOpacity>
           </View>
@@ -1340,14 +1370,14 @@ const VendorRegister = () => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1, padding: 24 }}
+          contentContainerStyle={{ flexGrow: 1, paddingTop: 40, paddingHorizontal: 24, paddingBottom: 40 }}
           keyboardShouldPersistTaps="handled"
         >
           <View style={{ maxWidth: 400, width: '100%', alignSelf: 'center' }}>
-            <View style={{ alignItems: 'center', marginBottom: 16 }}>
+            <View style={{ alignItems: 'center', marginBottom: 24 }}>
               <Image
                 source={require('../../../assets/itqaan_logo.png')}
-                style={{ height: 48, width: 160 }}
+                style={{ height: 52, width: 180 }}
                 resizeMode="contain"
               />
             </View>
@@ -1559,6 +1589,15 @@ const VendorRegister = () => {
         },
         formData.wardName
       )}
+
+      {/* Legal Modal */}
+      <LegalModal
+        visible={legalModal.visible}
+        onClose={closeLegalModal}
+        title={legalModal.type === 'terms' ? 'Terms of Service' : 'Privacy Policy'}
+      >
+        {legalModal.type === 'terms' ? <TermsContent /> : <PrivacyContent />}
+      </LegalModal>
     </SafeAreaView>
   );
 };
