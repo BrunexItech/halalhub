@@ -1,8 +1,13 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE, IMAGE_BASE } from '@env';
 
-const API_BASE = 'https://itqaan.co.ke/api';
-const IMAGE_BASE = 'https://itqaan.co.ke';
+// ============================================================
+// API Configuration from .env
+// ============================================================
+// API_BASE and IMAGE_BASE are imported from @env
+// Location API key is NOT exposed here - it should only be used in location API calls
+// ============================================================
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -45,11 +50,11 @@ api.interceptors.response.use(
           if (typeof value === 'string' && 
               (key.includes('image') || key.includes('photo') || key.includes('avatar') || key.includes('logo') || key.includes('url')) &&
               value.includes('38.242.200.152')) {
-            result[key] = value.replace('https://38.242.200.152', 'https://itqaan.co.ke');
+            result[key] = value.replace('https://38.242.200.152', IMAGE_BASE);
           } else if (Array.isArray(value) && (key === 'images' || key === 'photos' || key === 'gallery')) {
             result[key] = value.map((img: string) => 
               typeof img === 'string' && img.includes('38.242.200.152') 
-                ? img.replace('https://38.242.200.152', 'https://itqaan.co.ke') 
+                ? img.replace('https://38.242.200.152', IMAGE_BASE) 
                 : img
             );
           } else if (typeof value === 'object') {
@@ -95,7 +100,11 @@ export const getImageUrl = (path: string) => {
   return `${IMAGE_BASE}/uploads/${cleanPath}`;
 };
 
+// ============================================================
+// AUTH SERVICE - UPDATED: Password + PIN login flow
+// ============================================================
 export const authService = {
+  // Registration (kept as is - already working)
   registerClient: (data) => api.post('/auth/register-client', {
     ...data,
     termsAccepted: data.termsAccepted || true,
@@ -111,13 +120,43 @@ export const authService = {
     termsAccepted: data.termsAccepted || true,
     privacyAccepted: data.privacyAccepted || true,
   }),
-  loginStep1: (phone) => api.post('/auth/login-step1', { phone }),
-  loginStep2: (data) => api.post('/auth/login-step2', data),
+  
+  // ==========================================
+  // NEW: 2-Step Login with Password + PIN
+  // ==========================================
+  
+  // Step 1: Validate password only
+  validatePassword: (data) => api.post('/auth/validate-password', {
+    phone: data.phone,
+    password: data.password
+  }),
+  
+  // Step 2: Verify PIN and complete login
+  verifyPin: (data) => api.post('/auth/verify-pin', {
+    phone: data.phone,
+    pin: data.pin
+  }),
+  
+  // Full login (combines both steps - used as fallback)
+  login: (data) => api.post('/auth/login', {
+    phone: data.phone,
+    password: data.password,
+    pin: data.pin
+  }),
+  
+  // REMOVED: loginStep1 and loginStep2 (replaced by validatePassword + verifyPin)
+  
+  // Registration OTP (kept - used during registration only)
   sendRegistrationOtp: (data) => api.post('/auth/send-registration-otp', data),
   verifyRegistrationOtp: (data) => api.post('/auth/verify-registration-otp', data),
+  
+  // Get current user
   getMe: () => api.get('/auth/me'),
 };
 
+// ============================================================
+// LEADER SERVICE
+// ============================================================
 export const leaderService = {
   getStats: () => api.get('/leader/dashboard-stats'),
   getProfile: () => api.get('/leader/profile'),
@@ -133,6 +172,9 @@ export const leaderService = {
   selfContribute: (data) => api.post('/leader/pension/self-contribute', data),
 };
 
+// ============================================================
+// ADMIN SERVICE
+// ============================================================
 export const adminService = {
   login: (data) => api.post('/admin/login', data),
   getStats: () => api.get('/admin/stats'),
@@ -199,6 +241,9 @@ export const adminService = {
   getTakafulClaimStats: () => api.get('/takaful/admin/claims/stats'),
 };
 
+// ============================================================
+// VENDOR SERVICE
+// ============================================================
 export const vendorService = {
   getStats: () => api.get('/vendor/dashboard-stats'),
   getProfile: () => api.get('/vendor/profile'),
@@ -238,6 +283,9 @@ export const vendorService = {
   getHajjStats: () => api.get('/vendor/hajj/stats'),
 };
 
+// ============================================================
+// CLIENT SERVICE
+// ============================================================
 export const clientService = {
   getVendors: (params) => api.get('/client/vendors', { params }),
   getVendorById: (id) => api.get(`/client/vendors/${id}`),
@@ -266,6 +314,9 @@ export const clientService = {
   cancelHajjBooking: (id, data) => api.put(`/client/hajj/bookings/${id}/cancel`, data),
 };
 
+// ============================================================
+// WALLET SERVICE
+// ============================================================
 export const walletService = {
   getBalance: () => api.get('/wallet/balance'),
   getTransactions: (params) => api.get('/wallet/transactions', { params }),
@@ -278,12 +329,18 @@ export const walletService = {
   getTransactionByRef: (ref) => api.get(`/wallet/transaction/${ref}`),
 };
 
+// ============================================================
+// M-PESA SERVICE
+// ============================================================
 export const mpesaService = {
   stkPush: (data) => api.post('/mpesa/stk-push', data),
   checkStatus: (checkoutId) => api.get(`/mpesa/status/${checkoutId}`),
   getHistory: (params) => api.get('/mpesa/history', { params }),
 };
 
+// ============================================================
+// ZAKAT SERVICE
+// ============================================================
 export const zakatService = {
   calculate: (data) => api.post('/zakat/calculate', data),
   payZakat: (data) => api.post('/zakat/pay', data),
@@ -299,6 +356,9 @@ export const zakatService = {
   adminDisburse: (data) => api.post('/zakat/admin/disburse', data),
 };
 
+// ============================================================
+// SADAQA SERVICE
+// ============================================================
 export const sadaqaService = {
   getCampaigns: (params) => api.get('/sadaqa/campaigns', { params }),
   getCampaignById: (id) => api.get(`/sadaqa/campaigns/${id}`),
@@ -314,6 +374,9 @@ export const sadaqaService = {
   adminGetPool: () => api.get('/sadaqa/admin/pool'),
 };
 
+// ============================================================
+// P2P SERVICE
+// ============================================================
 export const p2pService = {
   searchUsers: (query) => api.get(`/p2p/users?q=${encodeURIComponent(query)}`),
   getUserById: (id) => api.get(`/p2p/users/${id}`),
@@ -331,35 +394,23 @@ export const p2pService = {
   repayLoan: (data) => api.post('/p2p/repay', data),
 };
 
+// ============================================================
+// TAKAFUL SERVICE
+// ============================================================
 export const takafulService = {
-  // Plans
   getPlans: () => api.get('/takaful/plans'),
   getPlanById: (id: string) => api.get(`/takaful/plans/${id}`),
   getCoverageOptions: (id: string) => api.get(`/takaful/plans/${id}/coverage`),
-  
-  // Quotes
   enquirePolicy: (data: any) => api.post('/takaful/enquire', data),
-  
-  // Policies
   getMyPolicies: () => api.get('/takaful/policies'),
   getPolicyById: (id: string) => api.get(`/takaful/policies/${id}`),
   purchasePolicy: (data: any) => api.post('/takaful/purchase', data),
-  
-  // Claims
   getUserClaims: () => api.get('/takaful/claims'),
   getClaimById: (id: string) => api.get(`/takaful/claims/${id}`),
   submitClaim: (data: any) => api.post('/takaful/claims', data),
-  
-  // Pool Stats
   getPoolStats: () => api.get('/takaful/pool-stats'),
-  
-  // Summary
   getSummary: () => api.get('/takaful/summary'),
-  
-  // Admin
   syncProducts: () => api.post('/takaful/admin/sync-products'),
-  
-  // Legacy (kept for backward compatibility)
   getPolicy: () => api.get('/takaful/policy'),
   enroll: (data: any) => api.post('/takaful/enroll', data),
   getFamilyMembers: () => api.get('/takaful/family'),
@@ -370,6 +421,9 @@ export const takafulService = {
   payMonthlyContribution: (data: any) => api.post('/takaful/pay-monthly', data),
 };
 
+// ============================================================
+// PENSION SERVICE
+// ============================================================
 export const pensionService = {
   getStats: () => api.get('/pension/stats'),
   getLeaders: (params) => api.get('/pension/leaders', { params }),
@@ -378,6 +432,9 @@ export const pensionService = {
   getContributions: (params) => api.get('/pension/contributions', { params }),
 };
 
+// ============================================================
+// MOSQUE SERVICE
+// ============================================================
 export const mosqueService = {
   getAll: (params) => api.get('/mosque', { params }),
   getById: (id) => api.get(`/mosque/${id}`),
@@ -388,6 +445,9 @@ export const mosqueService = {
   getCounties: () => api.get('/mosque/counties/list'),
 };
 
+// ============================================================
+// MOSQUE FINDER SERVICE
+// ============================================================
 export const mosqueFinderService = {
   getNearbyMosques: (params) => api.get('/mosque-finder/nearby', { params }),
   getMosqueById: (id) => api.get(`/mosque-finder/${id}`),
@@ -395,6 +455,9 @@ export const mosqueFinderService = {
   searchMosques: (query, params) => api.get(`/mosque-finder/search/${query}`, { params }),
 };
 
+// ============================================================
+// TRANSACTION SERVICE
+// ============================================================
 export const transactionService = {
   getRecent: (limit = 5) => api.get(`/transactions/recent?limit=${limit}`),
   getAll: () => api.get('/transactions'),
@@ -402,6 +465,9 @@ export const transactionService = {
   getWalletTransactions: () => api.get('/transactions/wallet'),
 };
 
+// ============================================================
+// UTILITY SERVICE
+// ============================================================
 export const utilityService = {
   getUtilities: () => api.get('/utilities'),
   getPaymentHistory: () => api.get('/utilities/history'),
@@ -411,6 +477,9 @@ export const utilityService = {
   removeFavorite: (id) => api.delete(`/utilities/saved/${id}`),
 };
 
+// ============================================================
+// HAJJ SERVICE
+// ============================================================
 export const hajjService = {
   getPackages: (params) => api.get('/hajj/packages', { params }),
   getPackageById: (id) => api.get(`/hajj/packages/${id}`),
@@ -420,6 +489,9 @@ export const hajjService = {
   cancelBooking: (id, data) => api.put(`/hajj/bookings/${id}/cancel`, data),
 };
 
+// ============================================================
+// HEARSE SERVICE
+// ============================================================
 export const hearseService = {
   createRequest: (data) => api.post('/hearse/requests', data),
   getRequests: (params) => api.get('/hearse/requests', { params }),
@@ -434,6 +506,9 @@ export const hearseService = {
   adminVerifyProvider: (id, data) => api.put(`/hearse/admin/providers/${id}/verify`, data),
 };
 
+// ============================================================
+// WILL SERVICE
+// ============================================================
 export const willService = {
   createWill: (data) => api.post('/wills', data),
   getWills: () => api.get('/wills'),
@@ -442,6 +517,9 @@ export const willService = {
   calculateInheritance: (data) => api.post('/wills/calculate-inheritance', data),
 };
 
+// ============================================================
+// BOOKING SERVICE
+// ============================================================
 export const bookingService = {
   getBookings: (params) => api.get('/bookings', { params }),
   getBookingById: (id) => api.get(`/bookings/${id}`),
@@ -453,6 +531,9 @@ export const bookingService = {
   getLeaderTypes: () => api.get('/leader-consultation/types/list'),
 };
 
+// ============================================================
+// CART SERVICE
+// ============================================================
 export const cartService = {
   getCart: () => api.get('/cart'),
   addToCart: (productId, quantity) => api.post('/cart', { product_id: productId, quantity }),
@@ -461,6 +542,9 @@ export const cartService = {
   clearCart: () => api.delete('/cart'),
 };
 
+// ============================================================
+// PAYMENT SERVICE
+// ============================================================
 export const paymentService = {
   processPayment: (data) => api.post('/payments', data),
   checkStatus: (checkoutId) => api.get(`/payments/status/${checkoutId}`),
@@ -468,6 +552,9 @@ export const paymentService = {
   paySadaqa: (data) => api.post('/payments/sadaqa', data),
 };
 
+// ============================================================
+// PDF SERVICE
+// ============================================================
 export const pdfService = {
   generateWill: (data) => api.post('/pdf/will', data),
   generateReceipt: (data) => api.post('/pdf/receipt', data),
@@ -475,6 +562,9 @@ export const pdfService = {
   download: (filename) => api.get(`/pdf/download/${filename}`, { responseType: 'blob' }),
 };
 
+// ============================================================
+// KYC SERVICE
+// ============================================================
 export const kycService = {
   getApplications: () => api.get('/kyc/applications'),
   createApplication: (data) => api.post('/kyc/applications', data),
@@ -484,14 +574,17 @@ export const kycService = {
   getStatus: () => api.get('/kyc/status'),
 };
 
+// ============================================================
+// PRAYER SERVICE
+// ============================================================
 export const prayerService = {
   getPrayerTimes: (lat, lng) => api.get(`/prayer/times?lat=${lat}&lng=${lng}`),
   getCityPrayerTimes: (city) => api.get(`/prayer/times/${city}`),
 };
 
-// ========================================
+// ============================================================
 // LIVEKIT SERVICE (Video/Audio Streaming)
-// ========================================
+// ============================================================
 export const livekitService = {
   getToken: (data) => api.post('/livekit/token', data),
 };

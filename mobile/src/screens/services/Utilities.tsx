@@ -6,19 +6,78 @@ import {
   SafeAreaView,
   ScrollView,
   TextInput,
-  ActivityIndicator,
   RefreshControl,
   Modal,
   Platform,
   StatusBar,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { utilityService, walletService } from '../../api/client';
+import PinModal from '../../components/common/PinModal';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 const { width: screenWidth } = Dimensions.get('window');
+
+// ===== SVG ICONS =====
+const BackIcon = () => (
+  <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M19 12H5M12 19l-7-7 7-7" />
+  </Svg>
+);
+
+const WalletIcon = () => (
+  <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9A44B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <Rect x="2" y="4" width="20" height="16" rx="2" />
+    <Path d="M2 10h20" />
+  </Svg>
+);
+
+const CheckIcon = () => (
+  <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3FAF73" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+    <Path d="M22 4L12 14.01l-3-3" />
+  </Svg>
+);
+
+const CloseIcon = () => (
+  <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M18 6L6 18M6 6l12 12" />
+  </Svg>
+);
+
+const SendIcon = () => (
+  <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+  </Svg>
+);
+
+const LightningIcon = () => (
+  <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9A44B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+  </Svg>
+);
+
+const PlusIcon = () => (
+  <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#032A24" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M12 4v16M4 12h16" />
+  </Svg>
+);
+
+const XIcon = () => (
+  <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M18 6L6 18M6 6l12 12" />
+  </Svg>
+);
+
+const CloseModalIcon = () => (
+  <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M18 6L6 18M6 6l12 12" />
+  </Svg>
+);
 
 const Utilities = () => {
   const navigation = useNavigation();
@@ -46,64 +105,12 @@ const Utilities = () => {
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<any>(null);
 
+  // ===== PIN MODAL STATE =====
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState('');
+
   const quickAmounts = [100, 200, 500, 1000, 2000, 5000];
-
-  // Premium SVG Icons - Using proper SVG elements
-  const BackIcon = () => (
-    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M19 12H5M12 19l-7-7 7-7" />
-    </Svg>
-  );
-
-  const WalletIcon = () => (
-    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9A44B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <Rect x="2" y="4" width="20" height="16" rx="2" />
-      <Path d="M2 10h20" />
-    </Svg>
-  );
-
-  const CheckIcon = () => (
-    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3FAF73" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
-      <Path d="M22 4L12 14.01l-3-3" />
-    </Svg>
-  );
-
-  const CloseIcon = () => (
-    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M18 6L6 18M6 6l12 12" />
-    </Svg>
-  );
-
-  const SendIcon = () => (
-    <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
-    </Svg>
-  );
-
-  const LightningIcon = () => (
-    <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9A44B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-    </Svg>
-  );
-
-  const PlusIcon = () => (
-    <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#032A24" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M12 4v16M4 12h16" />
-    </Svg>
-  );
-
-  const XIcon = () => (
-    <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M18 6L6 18M6 6l12 12" />
-    </Svg>
-  );
-
-  const CloseModalIcon = () => (
-    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M18 6L6 18M6 6l12 12" />
-    </Svg>
-  );
 
   useEffect(() => {
     fetchAllData();
@@ -177,6 +184,7 @@ const Utilities = () => {
     }
   };
 
+  // ===== HANDLE PAYMENT WITH PIN =====
   const handlePayment = () => {
     setValidationError('');
 
@@ -200,15 +208,23 @@ const Utilities = () => {
     setShowConfirmModal(true);
   };
 
-  const confirmPayment = async () => {
-    setProcessing(true);
-    setError('');
+  const confirmPayment = () => {
+    setShowConfirmModal(false);
+    setShowPinModal(true);
+    setPinError('');
+  };
+
+  const handlePinVerify = async (pin: string) => {
+    setPinLoading(true);
+    setPinError('');
+
     try {
       const response = await utilityService.payBill({
         providerId: selectedUtility.id,
         accountNumber: accountNumberInput,
         amount: parseFloat(amount),
         paymentMethod: 'wallet',
+        pin: pin,
       });
 
       if (response.data.success) {
@@ -227,7 +243,7 @@ const Utilities = () => {
         });
 
         setBalance(data.balance || 0);
-        setShowConfirmModal(false);
+        setShowPinModal(false);
         setShowReceiptModal(true);
         await fetchPaymentHistory();
         await fetchSavedServices();
@@ -236,12 +252,15 @@ const Utilities = () => {
         setTimeout(() => setSuccess(''), 5000);
       }
     } catch (err: any) {
-      console.log('Payment error:', err);
-      setError(err.response?.data?.error || 'Payment failed. Please try again.');
-      setShowConfirmModal(false);
+      setPinError(err.response?.data?.error || 'Invalid PIN. Please try again.');
     } finally {
-      setProcessing(false);
+      setPinLoading(false);
     }
+  };
+
+  const handlePinModalClose = () => {
+    setShowPinModal(false);
+    setPinError('');
   };
 
   const closeReceipt = () => {
@@ -341,22 +360,14 @@ const Utilities = () => {
   };
 
   if (loading) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
-        <StatusBar barStyle="light-content" backgroundColor="#032A24" translucent={false} />
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <ActivityIndicator size="large" color="#C9A44B" />
-          <Text style={{ color: '#6B7280', marginTop: 16, fontSize: 14 }}>Loading utility providers...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <LoadingSpinner message="Loading utility providers..." />;
   }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
       <StatusBar barStyle="light-content" backgroundColor="#032A24" translucent={false} />
       
-      {/* ===== EMERALD HEADER ===== */}
+      {/* ===== HEADER ===== */}
       <View style={{
         backgroundColor: '#032A24',
         paddingTop: 12,
@@ -1297,6 +1308,20 @@ const Utilities = () => {
           </View>
         </View>
       </Modal>
+
+      {/* ===== PIN MODAL ===== */}
+      <PinModal
+        visible={showPinModal}
+        onClose={handlePinModalClose}
+        onVerify={handlePinVerify}
+        loading={pinLoading}
+        error={pinError}
+        title="Confirm Payment"
+        subtitle="Enter your 4-digit PIN to confirm this utility payment"
+        amount={parseFloat(amount) || 0}
+        recipient={selectedUtility?.name}
+        transactionType="utility"
+      />
     </SafeAreaView>
   );
 };

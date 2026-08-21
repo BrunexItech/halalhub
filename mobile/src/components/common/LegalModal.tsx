@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   Platform,
 } from 'react-native';
+import { Chase } from 'react-native-animated-spinkit';
 
 interface LegalModalProps {
   visible: boolean;
@@ -22,6 +23,18 @@ const LegalModal: React.FC<LegalModalProps> = ({
   title,
   children,
 }) => {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (visible) {
+      setLoading(true);
+      const timer = setTimeout(() => {
+        setLoading(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [visible]);
+
   return (
     <Modal
       visible={visible}
@@ -36,7 +49,6 @@ const LegalModal: React.FC<LegalModalProps> = ({
               flex: 1,
               backgroundColor: '#FAFAF7',
               marginTop: Platform.OS === 'ios' ? 40 : 20,
-              marginBottom: 0,
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
               overflow: 'hidden',
@@ -55,17 +67,9 @@ const LegalModal: React.FC<LegalModalProps> = ({
                 borderBottomColor: 'rgba(201, 164, 75, 0.2)',
               }}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text
-                  style={{
-                    color: '#C9A44B',
-                    fontSize: 16,
-                    fontWeight: '700',
-                  }}
-                >
-                  {title}
-                </Text>
-              </View>
+              <Text style={{ color: '#C9A44B', fontSize: 16, fontWeight: '700' }}>
+                {title}
+              </Text>
 
               <TouchableOpacity
                 onPress={onClose}
@@ -86,17 +90,26 @@ const LegalModal: React.FC<LegalModalProps> = ({
               </TouchableOpacity>
             </View>
 
-            {/* Content */}
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{
-                paddingHorizontal: 20,
-                paddingVertical: 24,
-                paddingBottom: 40,
-              }}
-            >
-              {children}
-            </ScrollView>
+            {/* Content with Loading State */}
+            {loading ? (
+              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                <Chase size={36} color="#C9A44B" />
+                <Text style={{ color: '#6B7280', marginTop: 12, fontSize: 14 }}>
+                  Loading...
+                </Text>
+              </View>
+            ) : (
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{
+                  paddingHorizontal: 20,
+                  paddingVertical: 24,
+                  paddingBottom: 40,
+                }}
+              >
+                {children}
+              </ScrollView>
+            )}
 
             {/* Footer */}
             <View
@@ -117,13 +130,7 @@ const LegalModal: React.FC<LegalModalProps> = ({
                   alignItems: 'center',
                 }}
               >
-                <Text
-                  style={{
-                    color: '#032A24',
-                    fontSize: 14,
-                    fontWeight: '700',
-                  }}
-                >
+                <Text style={{ color: '#032A24', fontSize: 14, fontWeight: '700' }}>
                   Close
                 </Text>
               </TouchableOpacity>

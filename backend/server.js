@@ -82,7 +82,7 @@ async function initDB() {
     await client.connect();
     
     // ============================================================
-    // 1. USERS TABLE (Updated with leader_status and legal columns)
+    // 1. USERS TABLE - CHANGE 1: Added password_hash column
     // ============================================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -91,6 +91,7 @@ async function initDB() {
         phone TEXT UNIQUE NOT NULL,
         email TEXT UNIQUE NOT NULL,
         nationalid TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
         pinhash TEXT NOT NULL,
         role TEXT DEFAULT 'client',
         isadmin BOOLEAN DEFAULT FALSE,
@@ -117,6 +118,23 @@ async function initDB() {
         updatedat TIMESTAMP DEFAULT NOW()
       )
     `);
+
+    // ============================================================
+    // CHANGE 2: ADD password_hash column if missing (for existing DBs)
+    // ============================================================
+    const passwordHashCheck = await client.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'users' AND column_name = 'password_hash'
+    `);
+
+    if (passwordHashCheck.rows.length === 0) {
+      await client.query(`
+        ALTER TABLE users 
+        ADD COLUMN password_hash TEXT NOT NULL DEFAULT 'legacy'
+      `);
+      console.log('Added column: password_hash');
+    }
 
     // ============================================================
     // 2. VENDOR PROFILES TABLE
@@ -1232,9 +1250,9 @@ async function initDB() {
     if (systemUserExists.rows.length === 0) {
       await client.query(
         `INSERT INTO users (
-          id, fullname, phone, email, nationalid, pinhash, role, isadmin, kycstatus, terms_accepted, privacy_accepted, createdat, updatedat
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())`,
-        ['system', 'System Account', '0000000000', 'system@halalhub.com', 'SYSTEM000', 'system', 'system', false, 'verified', true, true]
+          id, fullname, phone, email, nationalid, password_hash, pinhash, role, isadmin, kycstatus, terms_accepted, privacy_accepted, createdat, updatedat
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())`,
+        ['system', 'System Account', '0000000000', 'system@halalhub.com', 'SYSTEM000', 'system', 'system', 'system', false, 'verified', true, true]
       );
       console.log('System user created for master accounts');
     } else {
@@ -1306,9 +1324,9 @@ async function initDB() {
       
       await client.query(
         `INSERT INTO users (
-          id, fullname, phone, email, nationalid, pinhash, role, isadmin, kycstatus, terms_accepted, privacy_accepted, createdat, updatedat
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())`,
-        [adminId, 'System Administrator', '+254700000000', adminEmail, 'ADMIN001', adminHash, 'admin', true, 'verified', true, true]
+          id, fullname, phone, email, nationalid, password_hash, pinhash, role, isadmin, kycstatus, terms_accepted, privacy_accepted, createdat, updatedat
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())`,
+        [adminId, 'System Administrator', '+254700000000', adminEmail, 'ADMIN001', adminHash, adminHash, 'admin', true, 'verified', true, true]
       );
       console.log(`Admin user created: ${adminEmail} (Password: ${adminPassword})`);
     } else {

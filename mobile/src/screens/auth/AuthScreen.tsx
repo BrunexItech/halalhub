@@ -12,12 +12,15 @@ import {
   Image,
   Modal,
   FlatList,
+  Dimensions,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import { authService } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import countriesData from 'world-countries';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const { width, height } = Dimensions.get('window');
 
 // ============================================================
 // Process countries data
@@ -175,7 +178,193 @@ const CountrySelect = ({ value, onChange, disabled }) => {
 };
 
 // ============================================================
-// AuthScreen Component
+// PIN Popup Component with Logo
+// ============================================================
+const PinPopup = ({ visible, onClose, onVerify, loading, error }) => {
+  const [pin, setPin] = useState(['', '', '', '']);
+  const inputRefs = useRef([]);
+
+  useEffect(() => {
+    if (visible && inputRefs.current[0]) {
+      setTimeout(() => inputRefs.current[0]?.focus(), 200);
+    }
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible) {
+      setPin(['', '', '', '']);
+    }
+  }, [visible]);
+
+  const handleChange = (index, value) => {
+    if (!/^\d*$/.test(value)) return;
+    const newPin = [...pin];
+    newPin[index] = value.slice(0, 1);
+    setPin(newPin);
+    if (value && index < 3) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyDown = (index, e) => {
+    if (e.nativeEvent.key === 'Backspace' && !pin[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+    if (e.nativeEvent.key === 'Enter') {
+      const pinString = pin.join('');
+      if (pinString.length === 4) {
+        onVerify(pinString);
+      }
+    }
+  };
+
+  const handleSubmit = () => {
+    const pinString = pin.join('');
+    if (pinString.length === 4) {
+      onVerify(pinString);
+    }
+  };
+
+  if (!visible) return null;
+
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <TouchableOpacity
+        style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 20 }}
+        activeOpacity={1}
+        onPress={onClose}
+      >
+        <View style={{
+          backgroundColor: '#0B342B',
+          borderRadius: 28,
+          padding: 24,
+          width: '100%',
+          maxWidth: 360,
+          borderWidth: 1,
+          borderColor: 'rgba(201, 164, 75, 0.3)',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.5,
+          shadowRadius: 16,
+          elevation: 12,
+        }}>
+          {/* Logo */}
+          <View style={{ alignItems: 'center', marginBottom: 16 }}>
+            <Image
+              source={require('../../../assets/itqaan_logo.png')}
+              style={{ height: 48, width: 160 }}
+              resizeMode="contain"
+            />
+          </View>
+
+          <View style={{ alignItems: 'center', marginBottom: 20 }}>
+            <View style={{
+              width: 56,
+              height: 56,
+              borderRadius: 16,
+              backgroundColor: '#032A24',
+              borderWidth: 1,
+              borderColor: 'rgba(201, 164, 75, 0.3)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 12,
+            }}>
+              <Text style={{ fontSize: 28 }}>🔒</Text>
+            </View>
+            <Text style={{ color: '#F7F6F1', fontSize: 20, fontWeight: '700' }}>
+              Enter Your PIN
+            </Text>
+            <Text style={{ color: '#B7C0BA', fontSize: 14, marginTop: 4, textAlign: 'center' }}>
+              Enter your 4-digit transaction PIN to continue
+            </Text>
+          </View>
+
+          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12, marginBottom: 16 }}>
+            {pin.map((digit, index) => (
+              <TextInput
+                key={index}
+                ref={(el) => inputRefs.current[index] = el}
+                value={digit}
+                onChangeText={(text) => handleChange(index, text)}
+                onKeyPress={(e) => handleKeyDown(index, e)}
+                style={{
+                  width: 52,
+                  height: 56,
+                  backgroundColor: '#032A24',
+                  borderWidth: 1,
+                  borderColor: digit ? '#C9A44B' : 'rgba(201, 164, 75, 0.3)',
+                  borderRadius: 14,
+                  textAlign: 'center',
+                  color: '#F7F6F1',
+                  fontSize: 22,
+                  fontWeight: '700',
+                }}
+                keyboardType="numeric"
+                maxLength={1}
+                secureTextEntry
+              />
+            ))}
+          </View>
+
+          {error ? (
+            <View style={{
+              backgroundColor: '#032A24',
+              borderWidth: 1,
+              borderColor: 'rgba(220, 38, 38, 0.3)',
+              borderRadius: 10,
+              padding: 10,
+              marginBottom: 12,
+            }}>
+              <Text style={{ color: '#DC2626', fontSize: 12, textAlign: 'center' }}>{error}</Text>
+            </View>
+          ) : null}
+
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <TouchableOpacity
+              style={{
+                flex: 1,
+                backgroundColor: '#032A24',
+                paddingVertical: 12,
+                borderRadius: 12,
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: 'rgba(201, 164, 75, 0.2)',
+              }}
+              onPress={onClose}
+              disabled={loading}
+            >
+              <Text style={{ color: '#B7C0BA', fontWeight: '600', fontSize: 14 }}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                flex: 2,
+                backgroundColor: '#C9A44B',
+                paddingVertical: 12,
+                borderRadius: 12,
+                alignItems: 'center',
+                opacity: (loading || pin.join('').length < 4) ? 0.6 : 1,
+              }}
+              onPress={handleSubmit}
+              disabled={loading || pin.join('').length < 4}
+            >
+              {loading ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <ActivityIndicator size="small" color="#032A24" />
+                  <Text style={{ color: '#032A24', fontWeight: '700', fontSize: 14 }}>Verifying...</Text>
+                </View>
+              ) : (
+                <Text style={{ color: '#032A24', fontWeight: '700', fontSize: 14 }}>Verify PIN</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+};
+
+// ============================================================
+// AuthScreen Component - 2-Step Login
 // ============================================================
 const AuthScreen = () => {
   const navigation = useNavigation();
@@ -183,19 +372,17 @@ const AuthScreen = () => {
   
   const [phone, setPhone] = useState('');
   const [selectedCountry, setSelectedCountry] = useState(null);
-  const [pin, setPin] = useState('');
-  const [showPin, setShowPin] = useState(false);
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [otpSent, setOtpSent] = useState(false);
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [resendTimer, setResendTimer] = useState(0);
-  const [otpCode, setOtpCode] = useState('');
-  const [otpExpirySeconds, setOtpExpirySeconds] = useState(0);
-  
-  const inputRefs = useRef<(TextInput | null)[]>([]);
-  const otpTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // PIN Popup state
+  const [showPinPopup, setShowPinPopup] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState('');
+  const [tempUserData, setTempUserData] = useState(null);
 
   // Set default country to Kenya
   useEffect(() => {
@@ -218,7 +405,6 @@ const AuthScreen = () => {
     }
   }, [selectedCountry]);
 
-  // Get full phone number for backend
   const getFullPhoneNumber = () => {
     if (!selectedCountry) return phone;
     const cleanPhone = phone.replace(/\s/g, '');
@@ -228,7 +414,6 @@ const AuthScreen = () => {
     return `${selectedCountry.dialCode}${cleanPhone}`;
   };
 
-  // Validate phone has at least 6 digits after the country code
   const isValidPhone = (phoneStr) => {
     const clean = phoneStr.replace(/\s/g, '');
     let local = clean;
@@ -241,77 +426,8 @@ const AuthScreen = () => {
     return digits.length >= 6;
   };
 
-  const EyeIcon = () => (
-    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(183, 192, 186, 0.6)" strokeWidth="1.5">
-      <Path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-      <Path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-    </Svg>
-  );
-
-  const EyeOffIcon = () => (
-    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(183, 192, 186, 0.6)" strokeWidth="1.5">
-      <Path d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-    </Svg>
-  );
-
-  useEffect(() => {
-    if (otpSent && inputRefs.current[0]) {
-      inputRefs.current[0]?.focus();
-    }
-  }, [otpSent]);
-
-  useEffect(() => {
-    if (resendTimer > 0) {
-      const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [resendTimer]);
-
-  useEffect(() => {
-    return () => {
-      if (otpTimerRef.current) {
-        clearInterval(otpTimerRef.current);
-      }
-    };
-  }, []);
-
-  const startOtpCountdown = () => {
-    setOtpExpirySeconds(30);
-    
-    if (otpTimerRef.current) {
-      clearInterval(otpTimerRef.current);
-    }
-    
-    otpTimerRef.current = setInterval(() => {
-      setOtpExpirySeconds((prev) => {
-        if (prev <= 1) {
-          if (otpTimerRef.current) {
-            clearInterval(otpTimerRef.current);
-          }
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
-  const handleOtpChange = (index: number, value: string) => {
-    if (!/^\d*$/.test(value)) return;
-    const newOtp = [...otp];
-    newOtp[index] = value.slice(0, 1);
-    setOtp(newOtp);
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleOtpKeyDown = (index: number, e: any) => {
-    if (e.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handleLogin = async () => {
+  // Step 1: Validate Phone + Password, then show PIN popup
+  const handlePasswordSubmit = async () => {
     setError('');
     setLoading(true);
 
@@ -334,88 +450,94 @@ const AuthScreen = () => {
       return;
     }
 
+    if (!password || password.length < 8) {
+      setError('Password must be at least 8 characters.');
+      setLoading(false);
+      return;
+    }
+
     const fullPhone = getFullPhoneNumber();
 
     try {
-      if (!otpSent) {
-        const response = await authService.loginStep1(fullPhone);
-        setOtpSent(true);
-        setResendTimer(60);
-        setLoading(false);
-        
-        const receivedOtp = response.data?.otp || response.data?.code || '123456';
-        setOtpCode(receivedOtp);
-        startOtpCountdown();
-        return;
-      }
+      const response = await authService.validatePassword({
+        phone: fullPhone,
+        password: password,
+      });
 
-      const otpString = otp.join('');
-      if (otpString.length < 6) {
-        setError('Please enter all 6 digits');
-        setLoading(false);
-        return;
-      }
-
-      const response = await authService.loginStep2({ phone: fullPhone, pin, otp: otpString });
-      const userData = response.data.user;
-      
-      if (userData.role === 'vendor' && userData.vendorStatus === 'pending') {
-        setError('Your vendor application is pending admin approval.');
-        setLoading(false);
-        return;
-      }
-
-      if (userData.role === 'vendor' && userData.vendorStatus === 'rejected') {
-        setError('Your vendor application has been rejected.');
-        setLoading(false);
-        return;
-      }
-
-      if (userData.role === 'leader' && userData.leaderStatus === 'pending') {
-        setError('Your religious leader application is pending admin approval.');
-        setLoading(false);
-        return;
-      }
-
-      if (userData.role === 'leader' && userData.leaderStatus === 'rejected') {
-        setError('Your religious leader application has been rejected.');
-        setLoading(false);
-        return;
-      }
-      
-      await login(userData, response.data.token);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Login failed');
+      setTempUserData({
+        phone: fullPhone,
+        userData: response.data.user,
+      });
+      setShowPinPopup(true);
+      setPinError('');
+      setLoading(false);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Invalid password. Please try again.');
       setLoading(false);
     }
   };
 
-  const handleResendOtp = async () => {
-    if (resendTimer > 0) return;
-    setLoading(true);
-    setError('');
+  // Step 2: Verify PIN and complete login
+  const handlePinVerify = async (pin) => {
+    setPinLoading(true);
+    setPinError('');
+
     try {
-      const fullPhone = getFullPhoneNumber();
-      const response = await authService.loginStep1(fullPhone);
-      setResendTimer(60);
-      const receivedOtp = response.data?.otp || response.data?.code || '123456';
-      setOtpCode(receivedOtp);
-      startOtpCountdown();
-      setSuccess('Code resent');
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to resend');
+      const response = await authService.verifyPin({
+        phone: tempUserData.phone,
+        pin: pin,
+      });
+
+      const userData = response.data.user;
+
+      if (userData.role === 'vendor' && userData.vendorStatus === 'pending') {
+        setPinError('Your vendor application is pending admin approval.');
+        setPinLoading(false);
+        return;
+      }
+
+      if (userData.role === 'vendor' && userData.vendorStatus === 'rejected') {
+        setPinError('Your vendor application has been rejected.');
+        setPinLoading(false);
+        return;
+      }
+
+      if (userData.role === 'leader' && userData.leaderStatus === 'pending') {
+        setPinError('Your religious leader application is pending admin approval.');
+        setPinLoading(false);
+        return;
+      }
+
+      if (userData.role === 'leader' && userData.leaderStatus === 'rejected') {
+        setPinError('Your religious leader application has been rejected.');
+        setPinLoading(false);
+        return;
+      }
+
+      setShowPinPopup(false);
+      setPinLoading(false);
+      await login(userData, response.data.token);
+    } catch (err) {
+      setPinError(err.response?.data?.error || 'Invalid PIN. Please try again.');
+      setPinLoading(false);
     }
-    setLoading(false);
   };
 
-  const togglePinVisibility = () => {
-    setShowPin(!showPin);
+  const handlePinPopupClose = () => {
+    setShowPinPopup(false);
+    setPinError('');
+    setTempUserData(null);
   };
 
-  const formatTime = (seconds: number) => {
-    return `${seconds}s`;
-  };
+  const togglePasswordVisibility = () => setShowPassword(!showPassword);
+
+  const EyeIcon = () => (
+    <Text style={{ fontSize: 18, color: 'rgba(183, 192, 186, 0.6)' }}>👁️</Text>
+  );
+
+  const EyeOffIcon = () => (
+    <Text style={{ fontSize: 18, color: 'rgba(183, 192, 186, 0.6)' }}>👁️‍🗨️</Text>
+  );
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#032A24' }}>
@@ -553,7 +675,7 @@ const AuthScreen = () => {
                 </View>
               </View>
 
-              {/* PIN Input */}
+              {/* Password Input */}
               <View style={{ marginBottom: 16 }}>
                 <Text style={{ 
                   color: '#FFFFFF', 
@@ -563,7 +685,7 @@ const AuthScreen = () => {
                   letterSpacing: 1,
                   marginBottom: 6,
                 }}>
-                  PIN
+                  Password
                 </Text>
                 <View style={{ position: 'relative' }}>
                   <TextInput
@@ -579,137 +701,21 @@ const AuthScreen = () => {
                       height: 44,
                       paddingRight: 48,
                     }}
-                    value={pin}
-                    onChangeText={setPin}
-                    placeholder="••••••"
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="Enter your password"
                     placeholderTextColor="rgba(183, 192, 186, 0.5)"
-                    secureTextEntry={!showPin}
+                    secureTextEntry={!showPassword}
                     editable={!loading}
                   />
                   <TouchableOpacity
                     style={{ position: 'absolute', right: 12, top: 10 }}
-                    onPress={togglePinVisibility}
+                    onPress={togglePasswordVisibility}
                   >
-                    {showPin ? <EyeIcon /> : <EyeOffIcon />}
+                    {showPassword ? <EyeIcon /> : <EyeOffIcon />}
                   </TouchableOpacity>
                 </View>
               </View>
-
-              {/* OTP Section */}
-              {otpSent ? (
-                <View style={{ marginTop: 8, marginBottom: 16 }}>
-                  <View style={{
-                    backgroundColor: '#032A24',
-                    borderRadius: 12,
-                    padding: 12,
-                    borderWidth: 1,
-                    borderColor: 'rgba(201, 164, 75, 0.3)',
-                    marginBottom: 12,
-                  }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <Text style={{ color: '#C9A44B', fontSize: 16 }}>🔒</Text>
-                        <View>
-                          <Text style={{ color: '#C9A44B', fontSize: 10, fontWeight: '500' }}>Your OTP Code</Text>
-                          <Text style={{ 
-                            color: '#E1C16B', 
-                            fontSize: 18, 
-                            fontWeight: '700', 
-                            fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-                            letterSpacing: 2,
-                            marginTop: 2,
-                          }}>
-                            {otpCode || '••••••'}
-                          </Text>
-                        </View>
-                      </View>
-                      <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={{ 
-                          fontSize: 12, 
-                          fontWeight: '700',
-                          color: otpExpirySeconds <= 10 ? '#DC2626' : '#C9A44B',
-                        }}>
-                          {otpExpirySeconds > 0 ? formatTime(otpExpirySeconds) : 'Expired'}
-                        </Text>
-                        <View style={{
-                          width: 64,
-                          height: 4,
-                          backgroundColor: '#032A24',
-                          borderRadius: 999,
-                          marginTop: 4,
-                          overflow: 'hidden',
-                          borderWidth: 1,
-                          borderColor: 'rgba(201, 164, 75, 0.3)',
-                        }}>
-                          <View style={{
-                            height: '100%',
-                            width: `${(otpExpirySeconds / 30) * 100}%`,
-                            backgroundColor: otpExpirySeconds <= 10 ? '#DC2626' : '#E1C16B',
-                            borderRadius: 999,
-                          }} />
-                        </View>
-                      </View>
-                    </View>
-                    {otpExpirySeconds === 0 ? (
-                      <Text style={{ color: '#DC2626', fontSize: 10, marginTop: 6 }}>OTP expired. Click "Resend Code" below.</Text>
-                    ) : null}
-                  </View>
-
-                  <View>
-                    <Text style={{ 
-                      color: '#FFFFFF', 
-                      fontSize: 10, 
-                      fontWeight: '700', 
-                      textTransform: 'uppercase',
-                      letterSpacing: 1,
-                      marginBottom: 8,
-                    }}>
-                      Enter Verification Code
-                    </Text>
-                    <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 8 }}>
-                      {otp.map((digit, index) => (
-                        <TextInput
-                          key={index}
-                          ref={(el) => inputRefs.current[index] = el}
-                          value={digit}
-                          onChangeText={(text) => handleOtpChange(index, text)}
-                          onKeyPress={(e) => handleOtpKeyDown(index, e)}
-                          style={{
-                            width: 40,
-                            height: 48,
-                            backgroundColor: '#032A24',
-                            borderWidth: 1,
-                            borderColor: 'rgba(201, 164, 75, 0.3)',
-                            borderRadius: 12,
-                            textAlign: 'center',
-                            color: '#F7F6F1',
-                            fontSize: 16,
-                            fontWeight: '700',
-                          }}
-                          keyboardType="numeric"
-                          maxLength={1}
-                        />
-                      ))}
-                    </View>
-                  </View>
-
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
-                    <Text style={{ color: 'rgba(183, 192, 186, 0.6)', fontSize: 10 }}>Enter the 6-digit code above</Text>
-                    <TouchableOpacity
-                      onPress={handleResendOtp}
-                      disabled={resendTimer > 0 || loading}
-                    >
-                      <Text style={{ 
-                        color: resendTimer > 0 || loading ? 'rgba(201, 164, 75, 0.5)' : '#C9A44B', 
-                        fontSize: 10, 
-                        fontWeight: '700',
-                      }}>
-                        {resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend Code'}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ) : null}
 
               {/* Login Button */}
               <TouchableOpacity
@@ -722,19 +728,27 @@ const AuthScreen = () => {
                   opacity: loading ? 0.6 : 1,
                   height: 48,
                 }}
-                onPress={handleLogin}
+                onPress={handlePasswordSubmit}
                 disabled={loading}
               >
                 {loading ? (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <ActivityIndicator size="small" color="#032A24" />
-                    <Text style={{ color: '#032A24', fontWeight: '700', fontSize: 14 }}>Processing...</Text>
+                    <Text style={{ color: '#032A24', fontWeight: '700', fontSize: 14 }}>Verifying...</Text>
                   </View>
                 ) : (
-                  <Text style={{ color: '#032A24', fontWeight: '700', fontSize: 14 }}>
-                    {otpSent ? 'Verify & Sign In' : 'Send Verification Code'}
-                  </Text>
+                  <Text style={{ color: '#032A24', fontWeight: '700', fontSize: 14 }}>Continue</Text>
                 )}
+              </TouchableOpacity>
+
+              {/* Forgot Password */}
+              <TouchableOpacity
+                style={{ marginTop: 12, alignItems: 'center' }}
+                onPress={() => navigation.navigate('ForgotPassword' as never)}
+              >
+                <Text style={{ color: 'rgba(201, 164, 75, 0.6)', fontSize: 11 }}>
+                  Forgot Password?
+                </Text>
               </TouchableOpacity>
 
               {/* Footer */}
@@ -747,6 +761,15 @@ const AuthScreen = () => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* PIN Popup */}
+      <PinPopup
+        visible={showPinPopup}
+        onClose={handlePinPopupClose}
+        onVerify={handlePinVerify}
+        loading={pinLoading}
+        error={pinError}
+      />
     </SafeAreaView>
   );
 };

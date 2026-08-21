@@ -1,7 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useRef, ReactNode } from 'react';
-import { View } from 'react-native';
+import { AppState, AppStateStatus, InteractionManager } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { authService } from '../api/client';
 
 interface User {
   id: string;
@@ -29,6 +28,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => Promise<void>;
   getToken: () => Promise<string | null>;
+  resetInactivityTimer: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,27 +37,57 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Inactivity timer
-  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Last interaction timestamp (ref — no re-renders)
+  const lastInteractionRef = useRef(Date.now());
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const INACTIVITY_TIMEOUT_MS = 60 * 1000; // 60 seconds
 
-  // Clear inactivity timer
-  const clearInactivityTimer = () => {
-    if (inactivityTimerRef.current) {
-      clearTimeout(inactivityTimerRef.current);
-      inactivityTimerRef.current = null;
+  // AppState for background/foreground detection
+  const appState = useRef(AppState.currentState);
+  const backgroundTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Reset inactivity timer (called on user interaction)
+  const resetInactivityTimer = () => {
+    lastInteractionRef.current = Date.now();
+  };
+
+  // Clear background timer
+  const clearBackgroundTimer = () => {
+    if (backgroundTimerRef.current) {
+      clearTimeout(backgroundTimerRef.current);
+      backgroundTimerRef.current = null;
     }
   };
 
-  // Reset inactivity timer
-  const resetInactivityTimer = () => {
-    if (!user) return; // Only start timer if user is logged in
-    
-    clearInactivityTimer();
-    inactivityTimerRef.current = setTimeout(() => {
-      console.log('Inactivity timeout: logging out user');
+  // Start timer when app goes to background
+  const startBackgroundTimer = () => {
+    if (!user) return;
+    clearBackgroundTimer();
+    backgroundTimerRef.current = setTimeout(() => {
+      console.log('Background timeout: logging out user');
       logout();
     }, INACTIVITY_TIMEOUT_MS);
+  };
+
+  // Handle app state changes
+  const handleAppStateChange = (nextAppState: AppStateStatus) => {
+    if (appState.current === 'active' && nextAppState.match(/inactive|background/)) {
+      startBackgroundTimer();
+    } else if (appState.current?.match(/inactive|background/) && nextAppState === 'active') {
+      clearBackgroundTimer();
+    }
+    appState.current = nextAppState;
+  };
+
+  // Check inactivity timer every second
+  const checkInactivity = () => {
+    if (!user) return;
+    const now = Date.now();
+    const timeSinceLastInteraction = now - lastInteractionRef.current;
+    if (timeSinceLastInteraction >= INACTIVITY_TIMEOUT_MS) {
+      console.log('Inactivity timeout: logging out user');
+      logout();
+    }
   };
 
   // Load stored auth on app start
@@ -65,10 +95,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     loadStoredAuth();
   }, []);
 
-  // Cleanup timer on unmount
+  // AppState listener
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => {
+      subscription.remove();
+      clearBackgroundTimer();
+    };
+  }, [user]);
+
+  // Inactivity checker interval
+  useEffect(() => {
+    if (user) {
+      lastInteractionRef.current = Date.now();
+      
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+      
+      timerIntervalRef.current = setInterval(checkInactivity, 1000);
+    } else {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+    }
+    
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+    };
+  }, [user]);
+
+  // Cleanup timers on unmount
   useEffect(() => {
     return () => {
-      clearInactivityTimer();
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+      clearBackgroundTimer();
     };
   }, []);
 
@@ -79,8 +148,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (token && userData) {
         setUser(JSON.parse(userData));
-        // Start inactivity timer after login
-        setTimeout(resetInactivityTimer, 1000);
+        lastInteractionRef.current = Date.now();
       }
     } catch (error) {
       console.log('Error loading auth:', error);
@@ -108,8 +176,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       
       setUser(userData);
-      // Start inactivity timer on login
-      resetInactivityTimer();
+      lastInteractionRef.current = Date.now();
     } catch (error) {
       console.log('Login error:', error);
       throw error;
@@ -117,7 +184,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = async () => {
-    clearInactivityTimer();
+    clearBackgroundTimer();
     try {
       await AsyncStorage.multiRemove([
         'itqaan_token',
@@ -155,16 +222,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         logout,
         updateUser,
         getToken,
+        resetInactivityTimer,
       }}
     >
-      {/* Wrap children with touch detection to reset inactivity timer */}
-      <View 
-        style={{ flex: 1 }} 
-        onTouchStart={resetInactivityTimer}
-        onStartShouldSetResponder={() => true}
-      >
-        {children}
-      </View>
+      {children}
     </AuthContext.Provider>
   );
 };

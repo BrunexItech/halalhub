@@ -14,6 +14,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { hearseService } from '../../api/client';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 const HearseProviderDashboard = () => {
   const navigation = useNavigation();
@@ -189,16 +190,9 @@ const HearseProviderDashboard = () => {
     });
   };
 
-  if (loading && requests.length === 0) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <ActivityIndicator size="large" color="#C9A44B" />
-          <Text style={{ color: '#6B7280', marginTop: 12, fontSize: 14 }}>Loading dashboard...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+ if (loading && requests.length === 0) {
+  return <LoadingSpinner message="Loading dashboard..." />;
+}
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>

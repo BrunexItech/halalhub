@@ -1,24 +1,21 @@
 const router = require('express').Router();
 const { v4: uuidv4 } = require('uuid');
-const { Client } = require('pg');
+const bcrypt = require('bcryptjs');
+const { Pool } = require('pg');
 const { authenticate } = require('../middleware/auth');
 const virtualAccountService = require('../services/virtual-account.service');
 
-let client;
-
-async function getClient() {
-  if (!client) {
-    client = new Client({
-      user: process.env.DB_USER || 'halalhub_user',
-      password: process.env.DB_PASSWORD || '@halalhub@#',
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT) || 5432,
-      database: process.env.DB_NAME || 'halalhub'
-    });
-    await client.connect();
-  }
-  return client;
-}
+// ============================================================
+// Database Connection Pool (removed hardcoded credentials)
+// ============================================================
+const dbPool = new Pool({
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT) || 5432,
+  database: process.env.DB_NAME,
+  max: 20,
+});
 
 // All client routes require authentication
 router.use(authenticate);
@@ -28,7 +25,6 @@ router.use(authenticate);
 // ============================================================
 router.get('/vendors', async (req, res) => {
   try {
-    const db = await getClient();
     const { business_type, limit = 50 } = req.query;
 
     let query = `
@@ -51,7 +47,7 @@ router.get('/vendors', async (req, res) => {
 
     query += ` ORDER BY vp.rating DESC LIMIT ${parseInt(limit)}`;
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
     res.json({ success: true, vendors: result.rows });
 
@@ -66,10 +62,9 @@ router.get('/vendors', async (req, res) => {
 // ============================================================
 router.get('/vendors/:vendorId', async (req, res) => {
   try {
-    const db = await getClient();
     const vendorId = req.params.vendorId;
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT 
         u.id, u.fullname, u.business_name, u.profile_image, u.bio,
         vp.id as profile_id, vp.business_type, vp.description, vp.location, vp.county,
@@ -97,7 +92,6 @@ router.get('/vendors/:vendorId', async (req, res) => {
 // ============================================================
 router.get('/products', async (req, res) => {
   try {
-    const db = await getClient();
     const { category, vendor_id, min_price, max_price, limit = 50 } = req.query;
 
     let query = `
@@ -142,7 +136,7 @@ router.get('/products', async (req, res) => {
 
     query += ` ORDER BY p.createdat DESC LIMIT ${parseInt(limit)}`;
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
     res.json({ success: true, products: result.rows });
 
@@ -157,10 +151,9 @@ router.get('/products', async (req, res) => {
 // ============================================================
 router.get('/products/:productId', async (req, res) => {
   try {
-    const db = await getClient();
     const productId = req.params.productId;
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT 
         p.*,
         u.fullname as vendor_name,
@@ -192,7 +185,6 @@ router.get('/products/:productId', async (req, res) => {
 // ============================================================
 router.get('/listings', async (req, res) => {
   try {
-    const db = await getClient();
     const { type, county, min_price, max_price, limit = 50 } = req.query;
 
     let query = `
@@ -236,7 +228,7 @@ router.get('/listings', async (req, res) => {
 
     query += ` ORDER BY l.createdat DESC LIMIT ${parseInt(limit)}`;
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
     res.json({ success: true, listings: result.rows });
 
@@ -251,10 +243,9 @@ router.get('/listings', async (req, res) => {
 // ============================================================
 router.get('/listings/:listingId', async (req, res) => {
   try {
-    const db = await getClient();
     const listingId = req.params.listingId;
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT 
         l.*,
         u.fullname as vendor_name,
@@ -285,7 +276,6 @@ router.get('/listings/:listingId', async (req, res) => {
 // ============================================================
 router.get('/listings/:listingId/availability', async (req, res) => {
   try {
-    const db = await getClient();
     const listingId = req.params.listingId;
     const { start_date, end_date } = req.query;
 
@@ -293,7 +283,7 @@ router.get('/listings/:listingId/availability', async (req, res) => {
       return res.status(400).json({ error: 'Start date and end date are required' });
     }
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT date, is_available 
       FROM listing_availability 
       WHERE listing_id = $1 AND date BETWEEN $2 AND $3
@@ -309,11 +299,9 @@ router.get('/listings/:listingId/availability', async (req, res) => {
 });
 
 // ============================================================
-// 8. CREATE BOOKING (Client) - HalalStay WITH PAYMENT
+// 8. CREATE BOOKING (Client) - HalalStay WITH PAYMENT & PIN
 // ============================================================
 router.post('/bookings', async (req, res) => {
-  const db = await getClient();
-
   try {
     const userId = req.user.id;
     const {
@@ -322,14 +310,35 @@ router.post('/bookings', async (req, res) => {
       check_out,
       guests,
       rooms,
-      special_requests
+      special_requests,
+      pin
     } = req.body;
+
+    // Validate PIN is provided
+    if (!pin) {
+      return res.status(400).json({ error: 'PIN is required for booking payment' });
+    }
+
+    // Verify PIN
+    const userResult = await dbPool.query(
+      'SELECT pinhash FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const validPin = await bcrypt.compare(pin, userResult.rows[0].pinhash);
+    if (!validPin) {
+      return res.status(401).json({ error: 'Invalid PIN' });
+    }
 
     if (!listing_id || !check_in || !check_out) {
       return res.status(400).json({ error: 'Listing ID, check-in, and check-out are required' });
     }
 
-    const listing = await db.query(
+    const listing = await dbPool.query(
       'SELECT vendor_id, price_per_night, total_rooms, available_rooms, min_stay, max_advance_days, max_guests_per_room FROM listings WHERE id = $1 AND is_active = true',
       [listing_id]
     );
@@ -407,7 +416,7 @@ router.post('/bookings', async (req, res) => {
       });
     }
 
-    const blockedDatesCheck = await db.query(`
+    const blockedDatesCheck = await dbPool.query(`
       SELECT date FROM listing_availability 
       WHERE listing_id = $1 AND date BETWEEN $2 AND $3 AND is_available = false
     `, [listing_id, check_in, check_out]);
@@ -416,14 +425,14 @@ router.post('/bookings', async (req, res) => {
       return res.status(400).json({ error: 'Selected dates are not available' });
     }
 
-    const availabilityExists = await db.query(`
+    const availabilityExists = await dbPool.query(`
       SELECT COUNT(*) FROM listing_availability WHERE listing_id = $1
     `, [listing_id]);
 
     const hasAvailabilityRecords = parseInt(availabilityExists.rows[0].count) > 0;
 
     if (hasAvailabilityRecords) {
-      const availabilityCheck = await db.query(`
+      const availabilityCheck = await dbPool.query(`
         SELECT date FROM listing_availability 
         WHERE listing_id = $1 AND date BETWEEN $2 AND $3 AND is_available = false
       `, [listing_id, check_in, check_out]);
@@ -436,7 +445,7 @@ router.post('/bookings', async (req, res) => {
     const bookingId = 'book-' + Date.now();
     const transactionRef = 'PAY-' + Date.now().toString(36).toUpperCase() + uuidv4().slice(0, 6).toUpperCase();
 
-    await db.query('BEGIN');
+    await dbPool.query('BEGIN');
 
     try {
       await virtualAccountService.processTransfer(
@@ -447,7 +456,7 @@ router.post('/bookings', async (req, res) => {
         `HalalStay booking - ${bookingId}`
       );
 
-      await db.query(`
+      await dbPool.query(`
         INSERT INTO bookings (
           id, listing_id, user_id, vendor_id, check_in, check_out,
           guests, total_price, status, special_requests, booking_date,
@@ -455,7 +464,7 @@ router.post('/bookings', async (req, res) => {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'confirmed', $9, NOW(), 'completed', $10)
       `, [bookingId, listing_id, userId, listingData.vendor_id, check_in, check_out, guests, totalPrice, special_requests || null, transactionRef]);
 
-      await db.query(`
+      await dbPool.query(`
         UPDATE listings 
         SET available_rooms = available_rooms - $1,
             total_bookings = total_bookings + 1,
@@ -463,7 +472,7 @@ router.post('/bookings', async (req, res) => {
         WHERE id = $2
       `, [roomsToBook, listing_id]);
 
-      await db.query(`
+      await dbPool.query(`
         UPDATE vendor_profiles
         SET total_orders = total_orders + 1,
             total_revenue = total_revenue + $1,
@@ -472,7 +481,7 @@ router.post('/bookings', async (req, res) => {
       `, [totalPrice, listingData.vendor_id]);
 
       const vendorNotifId = 'notif-' + Date.now().toString(36) + uuidv4().slice(0, 8);
-      await db.query(`
+      await dbPool.query(`
         INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
         VALUES ($1, $2, $3, $4, $5, $6, NOW())
       `, [
@@ -485,7 +494,7 @@ router.post('/bookings', async (req, res) => {
       ]);
 
       const clientNotifId = 'notif-' + Date.now().toString(36) + uuidv4().slice(0, 8);
-      await db.query(`
+      await dbPool.query(`
         INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
         VALUES ($1, $2, $3, $4, $5, $6, NOW())
       `, [
@@ -497,7 +506,7 @@ router.post('/bookings', async (req, res) => {
         `/bookings/${bookingId}`
       ]);
 
-      await db.query('COMMIT');
+      await dbPool.query('COMMIT');
 
       const updatedClientAccount = await virtualAccountService.getUserAccount(userId);
 
@@ -517,12 +526,12 @@ router.post('/bookings', async (req, res) => {
       });
 
     } catch (err) {
-      await db.query('ROLLBACK');
+      await dbPool.query('ROLLBACK');
       throw err;
     }
 
   } catch (err) {
-    await db.query('ROLLBACK');
+    await dbPool.query('ROLLBACK');
     console.error('Error creating booking:', err.message);
     res.status(500).json({ error: err.message || 'Failed to create booking' });
   }
@@ -533,10 +542,9 @@ router.post('/bookings', async (req, res) => {
 // ============================================================
 router.get('/bookings', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT 
         b.*,
         l.title as listing_title,
@@ -563,7 +571,6 @@ router.get('/bookings', async (req, res) => {
 // ============================================================
 router.get('/leaders', async (req, res) => {
   try {
-    const db = await getClient();
     const { leader_type, limit = 50 } = req.query;
 
     let query = `
@@ -601,7 +608,7 @@ router.get('/leaders', async (req, res) => {
 
     query += ` ORDER BY lp.total_supporters DESC NULLS LAST, u.fullname ASC LIMIT ${parseInt(limit)}`;
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
     res.json({ success: true, leaders: result.rows });
 
@@ -616,10 +623,9 @@ router.get('/leaders', async (req, res) => {
 // ============================================================
 router.get('/leaders/:id', async (req, res) => {
   try {
-    const db = await getClient();
     const leaderId = req.params.id;
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT 
         l.id,
         l.user_id,
@@ -660,14 +666,17 @@ router.get('/leaders/:id', async (req, res) => {
 });
 
 // ============================================================
-// 12. SUPPORT LEADER (Contribute to their pension)
+// 12. SUPPORT LEADER (Contribute to their pension) - PIN REQUIRED
 // ============================================================
 router.post('/support-leader', async (req, res) => {
-  const db = await getClient();
-
   try {
     const userId = req.user.id;
-    const { leader_id, amount, frequency = 'once' } = req.body;
+    const { leader_id, amount, frequency = 'once', pin } = req.body;
+
+    // Validate PIN is provided
+    if (!pin) {
+      return res.status(400).json({ error: 'PIN is required for contribution' });
+    }
 
     if (!leader_id) {
       return res.status(400).json({ error: 'Leader ID is required' });
@@ -677,9 +686,24 @@ router.post('/support-leader', async (req, res) => {
       return res.status(400).json({ error: 'Minimum contribution is KES 10' });
     }
 
+    // Verify PIN
+    const userResult = await dbPool.query(
+      'SELECT pinhash FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const validPin = await bcrypt.compare(pin, userResult.rows[0].pinhash);
+    if (!validPin) {
+      return res.status(401).json({ error: 'Invalid PIN' });
+    }
+
     const contributionAmount = parseInt(amount);
 
-    const leaderCheck = await db.query(`
+    const leaderCheck = await dbPool.query(`
       SELECT l.id, l.user_id, u.fullname 
       FROM leaders l
       JOIN users u ON l.user_id = u.id
@@ -719,7 +743,7 @@ router.post('/support-leader', async (req, res) => {
       });
     }
 
-    await db.query('BEGIN');
+    await dbPool.query('BEGIN');
 
     try {
       await virtualAccountService.processTransfer(
@@ -731,37 +755,37 @@ router.post('/support-leader', async (req, res) => {
       );
 
       const contributionId = 'pcont-' + Date.now().toString(36) + require('crypto').randomBytes(4).toString('hex');
-      await db.query(`
+      await dbPool.query(`
         INSERT INTO leader_pension_contributions (
           id, leader_id, user_id, amount, payment_method, status, contribution_date, is_self_contribution
         ) VALUES ($1, $2, $3, $4, 'wallet', 'pending', NOW(), false)
       `, [contributionId, leader_id, userId, contributionAmount]);
 
-      await db.query(`
+      await dbPool.query(`
         UPDATE leader_pension_balances 
         SET total_contributions = total_contributions + $1,
             updatedat = NOW()
         WHERE leader_id = $2
       `, [contributionAmount, leader_id]);
 
-      const existingSupporter = await db.query(
+      const existingSupporter = await dbPool.query(
         'SELECT id FROM leader_supporters WHERE leader_id = $1 AND user_id = $2',
         [leader_id, userId]
       );
 
       if (existingSupporter.rows.length > 0) {
-        await db.query(
+        await dbPool.query(
           'UPDATE leader_supporters SET amount = amount + $1, frequency = $2, updatedat = NOW() WHERE id = $3',
           [contributionAmount, frequency || 'once', existingSupporter.rows[0].id]
         );
       } else {
         const supporterId = 'supp-' + Date.now().toString(36) + require('crypto').randomBytes(4).toString('hex');
-        await db.query(`
+        await dbPool.query(`
           INSERT INTO leader_supporters (id, leader_id, user_id, amount, frequency, status, createdat, updatedat)
           VALUES ($1, $2, $3, $4, $5, 'active', NOW(), NOW())
         `, [supporterId, leader_id, userId, contributionAmount, frequency || 'once']);
 
-        await db.query(`
+        await dbPool.query(`
           UPDATE leader_pension_balances 
           SET total_supporters = total_supporters + 1,
               updatedat = NOW()
@@ -770,7 +794,7 @@ router.post('/support-leader', async (req, res) => {
       }
 
       const notificationId = 'notif-' + Date.now().toString(36) + require('crypto').randomBytes(4).toString('hex');
-      await db.query(`
+      await dbPool.query(`
         INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
         VALUES ($1, $2, $3, $4, $5, $6, NOW())
       `, [
@@ -782,7 +806,7 @@ router.post('/support-leader', async (req, res) => {
         `/leader-dashboard`
       ]);
 
-      await db.query('COMMIT');
+      await dbPool.query('COMMIT');
 
       const updatedAccount = await virtualAccountService.getUserAccount(userId);
 
@@ -797,7 +821,7 @@ router.post('/support-leader', async (req, res) => {
       });
 
     } catch (err) {
-      await db.query('ROLLBACK');
+      await dbPool.query('ROLLBACK');
       throw err;
     }
 
@@ -812,10 +836,9 @@ router.post('/support-leader', async (req, res) => {
 // ============================================================
 router.get('/supported-leaders', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT 
         s.*,
         u.fullname as leader_name,
@@ -843,7 +866,6 @@ router.get('/supported-leaders', async (req, res) => {
 // ============================================================
 router.get('/consultation-leaders', async (req, res) => {
   try {
-    const db = await getClient();
     const { leader_type, county, limit = 50 } = req.query;
 
     let query = `
@@ -889,7 +911,7 @@ router.get('/consultation-leaders', async (req, res) => {
 
     query += ` ORDER BY l.is_verified DESC, l.rating DESC NULLS LAST, u.fullname ASC LIMIT ${parseInt(limit)}`;
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
     res.json({ success: true, leaders: result.rows });
 
@@ -904,7 +926,6 @@ router.get('/consultation-leaders', async (req, res) => {
 // ============================================================
 router.get('/mosques', async (req, res) => {
   try {
-    const db = await getClient();
     const { county, limit = 50 } = req.query;
 
     let query = `
@@ -925,7 +946,7 @@ router.get('/mosques', async (req, res) => {
 
     query += ` ORDER BY m.name LIMIT ${parseInt(limit)}`;
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
     res.json({ success: true, mosques: result.rows });
 
@@ -940,7 +961,6 @@ router.get('/mosques', async (req, res) => {
 // ============================================================
 router.get('/menu-items', async (req, res) => {
   try {
-    const db = await getClient();
     const { vendor_id, category, limit = 50 } = req.query;
 
     let query = `
@@ -966,7 +986,7 @@ router.get('/menu-items', async (req, res) => {
 
     query += ` ORDER BY m.createdat DESC LIMIT ${parseInt(limit)}`;
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
     res.json({ success: true, menuItems: result.rows });
 
@@ -981,7 +1001,6 @@ router.get('/menu-items', async (req, res) => {
 // ============================================================
 router.get('/hajj/packages', async (req, res) => {
   try {
-    const db = await getClient();
     const { type, vendor_id, min_price, max_price, limit = 50, featured } = req.query;
 
     let query = `
@@ -1032,7 +1051,7 @@ router.get('/hajj/packages', async (req, res) => {
 
     query += ` ORDER BY p.is_featured DESC, p.createdat DESC LIMIT ${parseInt(limit)}`;
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
     res.json({
       success: true,
@@ -1051,10 +1070,9 @@ router.get('/hajj/packages', async (req, res) => {
 // ============================================================
 router.get('/hajj/packages/:packageId', async (req, res) => {
   try {
-    const db = await getClient();
     const packageId = req.params.packageId;
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT 
         p.*,
         u.fullname as vendor_name,
@@ -1086,11 +1104,9 @@ router.get('/hajj/packages/:packageId', async (req, res) => {
 });
 
 // ============================================================
-// 19. CREATE HAJJ BOOKING (Client only) WITH PAYMENT
+// 19. CREATE HAJJ BOOKING (Client only) WITH PAYMENT & PIN
 // ============================================================
 router.post('/hajj/book', async (req, res) => {
-  const db = await getClient();
-
   try {
     const userId = req.user.id;
     const {
@@ -1100,8 +1116,31 @@ router.post('/hajj/book', async (req, res) => {
       passport_numbers,
       contact_phone,
       contact_email,
-      special_requests
+      special_requests,
+      pin
     } = req.body;
+
+    // Validate PIN is provided
+    if (!pin) {
+      return res.status(400).json({
+        error: 'PIN is required for Hajj booking payment'
+      });
+    }
+
+    // Verify PIN
+    const userResult = await dbPool.query(
+      'SELECT pinhash FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const validPin = await bcrypt.compare(pin, userResult.rows[0].pinhash);
+    if (!validPin) {
+      return res.status(401).json({ error: 'Invalid PIN' });
+    }
 
     if (!package_id || !pilgrims || !contact_phone || !contact_email) {
       return res.status(400).json({
@@ -1113,7 +1152,7 @@ router.post('/hajj/book', async (req, res) => {
       return res.status(400).json({ error: 'At least 1 pilgrim is required' });
     }
 
-    const packageResult = await db.query(`
+    const packageResult = await dbPool.query(`
       SELECT vendor_id, name, price, available_slots, type
       FROM hajj_packages
       WHERE id = $1 AND is_active = true
@@ -1156,7 +1195,7 @@ router.post('/hajj/book', async (req, res) => {
     const bookingId = 'hajj-book-' + Date.now().toString(36) + uuidv4().slice(0, 6);
     const transactionRef = 'HAJJ-' + Date.now().toString(36).toUpperCase() + uuidv4().slice(0, 6).toUpperCase();
 
-    await db.query('BEGIN');
+    await dbPool.query('BEGIN');
 
     try {
       await virtualAccountService.processTransfer(
@@ -1167,7 +1206,7 @@ router.post('/hajj/book', async (req, res) => {
         `Hajj booking - ${bookingId}`
       );
 
-      await db.query(`
+      await dbPool.query(`
         INSERT INTO hajj_bookings (
           id, user_id, package_id, pilgrims, pilgrim_names,
           passport_numbers, contact_phone, contact_email,
@@ -1188,32 +1227,32 @@ router.post('/hajj/book', async (req, res) => {
         transactionRef
       ]);
 
-      await db.query(`
+      await dbPool.query(`
         UPDATE hajj_packages
         SET available_slots = available_slots - $1, updatedat = NOW()
         WHERE id = $2
       `, [pilgrims, package_id]);
 
-      const userResult = await db.query(
+      const userResult2 = await dbPool.query(
         'SELECT fullname, phone FROM users WHERE id = $1',
         [userId]
       );
 
       const vendorNotifId = 'notif-' + Date.now().toString(36) + uuidv4().slice(0, 8);
-      await db.query(`
+      await dbPool.query(`
         INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
         VALUES ($1, $2, $3, $4, $5, $6, NOW())
       `, [
         vendorNotifId,
         pkg.vendor_id,
         'New Hajj/Umrah Booking',
-        `${userResult.rows[0]?.fullname || 'A client'} has booked ${pkg.name} for ${pilgrims} pilgrim(s). KES ${totalPrice.toLocaleString()} deposited to your account.`,
+        `${userResult2.rows[0]?.fullname || 'A client'} has booked ${pkg.name} for ${pilgrims} pilgrim(s). KES ${totalPrice.toLocaleString()} deposited to your account.`,
         'hajj',
         `/vendor/hajj-bookings`
       ]);
 
       const clientNotifId = 'notif-' + Date.now().toString(36) + uuidv4().slice(0, 8);
-      await db.query(`
+      await dbPool.query(`
         INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
         VALUES ($1, $2, $3, $4, $5, $6, NOW())
       `, [
@@ -1225,7 +1264,7 @@ router.post('/hajj/book', async (req, res) => {
         `/hajj/bookings/${bookingId}`
       ]);
 
-      await db.query('COMMIT');
+      await dbPool.query('COMMIT');
 
       const updatedClientAccount = await virtualAccountService.getUserAccount(userId);
 
@@ -1241,12 +1280,12 @@ router.post('/hajj/book', async (req, res) => {
       });
 
     } catch (err) {
-      await db.query('ROLLBACK');
+      await dbPool.query('ROLLBACK');
       throw err;
     }
 
   } catch (err) {
-    await db.query('ROLLBACK');
+    await dbPool.query('ROLLBACK');
     console.error('Error creating Hajj booking:', err.message);
     res.status(500).json({ error: err.message || 'Failed to create booking' });
   }
@@ -1257,7 +1296,6 @@ router.post('/hajj/book', async (req, res) => {
 // ============================================================
 router.get('/hajj/bookings', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const { status, limit = 50 } = req.query;
 
@@ -1287,7 +1325,7 @@ router.get('/hajj/bookings', async (req, res) => {
     query += ` ORDER BY b.booking_date DESC LIMIT $${paramIndex}`;
     params.push(parseInt(limit));
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
     res.json({
       success: true,
@@ -1306,11 +1344,10 @@ router.get('/hajj/bookings', async (req, res) => {
 // ============================================================
 router.get('/hajj/bookings/:bookingId', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const bookingId = req.params.bookingId;
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT 
         b.*,
         p.name as package_name,
@@ -1350,14 +1387,12 @@ router.get('/hajj/bookings/:bookingId', async (req, res) => {
 // 22. CANCEL HAJJ BOOKING (Client only - within 24 hours)
 // ============================================================
 router.put('/hajj/bookings/:bookingId/cancel', async (req, res) => {
-  const db = await getClient();
-
   try {
     const userId = req.user.id;
     const bookingId = req.params.bookingId;
     const { reason } = req.body;
 
-    const check = await db.query(`
+    const check = await dbPool.query(`
       SELECT b.*, p.available_slots, p.vendor_id, p.price
       FROM hajj_bookings b
       JOIN hajj_packages p ON b.package_id = p.id
@@ -1405,7 +1440,7 @@ router.put('/hajj/bookings/:bookingId/cancel', async (req, res) => {
     const refundAmount = booking.total_price;
     const transactionRef = 'REF-' + Date.now().toString(36).toUpperCase() + uuidv4().slice(0, 6).toUpperCase();
 
-    await db.query('BEGIN');
+    await dbPool.query('BEGIN');
 
     try {
       await virtualAccountService.processTransfer(
@@ -1416,7 +1451,7 @@ router.put('/hajj/bookings/:bookingId/cancel', async (req, res) => {
         `Hajj booking refund - ${bookingId}`
       );
 
-      await db.query(`
+      await dbPool.query(`
         UPDATE hajj_bookings
         SET status = 'cancelled',
             special_requests = COALESCE(special_requests, '') || ' | Cancelled. Reason: ' || $1,
@@ -1425,13 +1460,13 @@ router.put('/hajj/bookings/:bookingId/cancel', async (req, res) => {
         WHERE id = $3
       `, [reason || 'No reason provided', transactionRef, bookingId]);
 
-      await db.query(`
+      await dbPool.query(`
         UPDATE hajj_packages
         SET available_slots = available_slots + $1, updatedat = NOW()
         WHERE id = $2
       `, [booking.pilgrims, booking.package_id]);
 
-      await db.query('COMMIT');
+      await dbPool.query('COMMIT');
 
       const updatedClientAccount = await virtualAccountService.getUserAccount(userId);
 
@@ -1444,23 +1479,21 @@ router.put('/hajj/bookings/:bookingId/cancel', async (req, res) => {
       });
 
     } catch (err) {
-      await db.query('ROLLBACK');
+      await dbPool.query('ROLLBACK');
       throw err;
     }
 
   } catch (err) {
-    await db.query('ROLLBACK');
+    await dbPool.query('ROLLBACK');
     console.error('Error cancelling Hajj booking:', err.message);
     res.status(500).json({ error: err.message || 'Failed to cancel booking' });
   }
 });
 
 // ============================================================
-// 23. CREATE ORDER (Client - Ecommerce)
+// 23. CREATE ORDER (Client - Ecommerce) - PIN REQUIRED
 // ============================================================
 router.post('/orders', async (req, res) => {
-  const db = await getClient();
-
   try {
     const userId = req.user.id;
     const {
@@ -1471,8 +1504,29 @@ router.post('/orders', async (req, res) => {
       total_amount,
       delivery_address,
       delivery_type = 'delivery',
-      special_instructions
+      special_instructions,
+      pin
     } = req.body;
+
+    // Validate PIN is provided
+    if (!pin) {
+      return res.status(400).json({ error: 'PIN is required for order payment' });
+    }
+
+    // Verify PIN
+    const userResult = await dbPool.query(
+      'SELECT pinhash FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const validPin = await bcrypt.compare(pin, userResult.rows[0].pinhash);
+    if (!validPin) {
+      return res.status(401).json({ error: 'Invalid PIN' });
+    }
 
     if (!vendor_id || !items || items.length === 0) {
       return res.status(400).json({ error: 'Vendor ID and items are required' });
@@ -1482,7 +1536,6 @@ router.post('/orders', async (req, res) => {
       return res.status(400).json({ error: 'Invalid total amount' });
     }
 
-    // Check if user has sufficient balance
     const clientAccount = await virtualAccountService.getUserAccount(userId);
 
     if (!clientAccount) {
@@ -1495,8 +1548,7 @@ router.post('/orders', async (req, res) => {
       });
     }
 
-    // Check vendor exists
-    const vendorCheck = await db.query(
+    const vendorCheck = await dbPool.query(
       'SELECT id FROM users WHERE id = $1 AND role = $2 AND vendor_status = $3',
       [vendor_id, 'vendor', 'approved']
     );
@@ -1505,7 +1557,6 @@ router.post('/orders', async (req, res) => {
       return res.status(404).json({ error: 'Vendor not found' });
     }
 
-    // Get vendor's virtual account
     const vendorAccount = await virtualAccountService.getUserAccount(vendor_id);
 
     if (!vendorAccount) {
@@ -1515,10 +1566,9 @@ router.post('/orders', async (req, res) => {
     const orderId = 'ord-' + Date.now().toString(36) + require('crypto').randomBytes(4).toString('hex');
     const transactionRef = 'PAY-' + Date.now().toString(36).toUpperCase() + require('crypto').randomBytes(4).toString('hex').toUpperCase();
 
-    await db.query('BEGIN');
+    await dbPool.query('BEGIN');
 
     try {
-      // Transfer payment from client to vendor
       await virtualAccountService.processTransfer(
         userId,
         clientAccount.account_number,
@@ -1527,8 +1577,7 @@ router.post('/orders', async (req, res) => {
         `Order payment - ${orderId}`
       );
 
-      // Create order
-      await db.query(`
+      await dbPool.query(`
         INSERT INTO orders (
           id, user_id, vendor_id, items, subtotal, delivery_fee,
           total_amount, status, payment_status, payment_reference,
@@ -1548,8 +1597,7 @@ router.post('/orders', async (req, res) => {
         special_instructions || null
       ]);
 
-      // Update vendor profile stats
-      await db.query(`
+      await dbPool.query(`
         UPDATE vendor_profiles
         SET total_orders = total_orders + 1,
             total_revenue = total_revenue + $1,
@@ -1557,24 +1605,21 @@ router.post('/orders', async (req, res) => {
         WHERE user_id = $2
       `, [total_amount, vendor_id]);
 
-      // Update product stock
       for (const item of items) {
-        await db.query(
+        await dbPool.query(
           'UPDATE products SET stock = stock - $1, total_sold = total_sold + $1, updatedat = NOW() WHERE id = $2 AND vendor_id = $3',
           [item.quantity, item.product_id, vendor_id]
         );
       }
 
-      // Clear user's cart
       const productIds = items.map(i => i.product_id);
-      await db.query(
+      await dbPool.query(
         'DELETE FROM cart WHERE user_id = $1 AND product_id = ANY($2)',
         [userId, productIds]
       );
 
-      // Send notification to vendor
       const vendorNotifId = 'notif-' + Date.now().toString(36) + require('crypto').randomBytes(4).toString('hex');
-      await db.query(`
+      await dbPool.query(`
         INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
         VALUES ($1, $2, $3, $4, $5, $6, NOW())
       `, [
@@ -1586,9 +1631,8 @@ router.post('/orders', async (req, res) => {
         `/vendor/orders/${orderId}`
       ]);
 
-      // Send notification to client
       const clientNotifId = 'notif-' + Date.now().toString(36) + require('crypto').randomBytes(4).toString('hex');
-      await db.query(`
+      await dbPool.query(`
         INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
         VALUES ($1, $2, $3, $4, $5, $6, NOW())
       `, [
@@ -1600,7 +1644,7 @@ router.post('/orders', async (req, res) => {
         `/orders/${orderId}`
       ]);
 
-      await db.query('COMMIT');
+      await dbPool.query('COMMIT');
 
       const updatedClientAccount = await virtualAccountService.getUserAccount(userId);
 
@@ -1615,12 +1659,12 @@ router.post('/orders', async (req, res) => {
       });
 
     } catch (err) {
-      await db.query('ROLLBACK');
+      await dbPool.query('ROLLBACK');
       throw err;
     }
 
   } catch (err) {
-    await db.query('ROLLBACK');
+    await dbPool.query('ROLLBACK');
     console.error('Error creating order:', err.message);
     res.status(500).json({ error: err.message || 'Failed to create order' });
   }
@@ -1631,7 +1675,6 @@ router.post('/orders', async (req, res) => {
 // ============================================================
 router.get('/orders', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const { status, limit = 50 } = req.query;
 
@@ -1657,7 +1700,7 @@ router.get('/orders', async (req, res) => {
     query += ` ORDER BY o.order_date DESC LIMIT $${paramIndex}`;
     params.push(parseInt(limit));
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
     res.json({
       success: true,
@@ -1676,11 +1719,10 @@ router.get('/orders', async (req, res) => {
 // ============================================================
 router.get('/orders/:orderId', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const orderId = req.params.orderId;
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT 
         o.*,
         u.fullname as vendor_name,

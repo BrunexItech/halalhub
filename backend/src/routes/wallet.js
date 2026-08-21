@@ -1,11 +1,25 @@
 const router = require('express').Router();
+const bcrypt = require('bcryptjs');
 const { authenticate } = require('../middleware/auth');
+const { Pool } = require('pg');
 const virtualAccountService = require('../services/virtual-account.service');
 const bankClient = require('../services/bank-client');
 const feeService = require('../services/fee.service');
 
 // ============================================================
-// 1. GET WALLET BALANCE (Authenticated)
+// Database Connection Pool
+// ============================================================
+const dbPool = new Pool({
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT) || 5432,
+  database: process.env.DB_NAME,
+  max: 20,
+});
+
+// ============================================================
+// 1. GET WALLET BALANCE (Authenticated - No PIN required)
 // ============================================================
 router.get('/balance', authenticate, async (req, res) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
@@ -13,7 +27,6 @@ router.get('/balance', authenticate, async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Get user's virtual account from our database
     const account = await virtualAccountService.getUserAccount(userId);
 
     if (!account) {
@@ -23,7 +36,6 @@ router.get('/balance', authenticate, async (req, res) => {
       });
     }
 
-    // Get balance from our cached database (fast)
     const balance = account.balance || 0;
 
     res.json({
@@ -43,7 +55,7 @@ router.get('/balance', authenticate, async (req, res) => {
 });
 
 // ============================================================
-// 2. GET WALLET TRANSACTIONS (Authenticated)
+// 2. GET WALLET TRANSACTIONS (Authenticated - No PIN required)
 // ============================================================
 router.get('/transactions', authenticate, async (req, res) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
@@ -77,7 +89,7 @@ router.get('/transactions', authenticate, async (req, res) => {
 });
 
 // ============================================================
-// 3. GET ACCOUNT DETAILS (Authenticated)
+// 3. GET ACCOUNT DETAILS (Authenticated - No PIN required)
 // ============================================================
 router.get('/account', authenticate, async (req, res) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
@@ -115,7 +127,7 @@ router.get('/account', authenticate, async (req, res) => {
 });
 
 // ============================================================
-// 4. DEPOSIT TO WALLET (Authenticated - via M-Pesa/Bank)
+// 4. DEPOSIT TO WALLET (Authenticated - No PIN required for deposits)
 // ============================================================
 router.post('/deposit', authenticate, async (req, res) => {
   try {
@@ -136,7 +148,6 @@ router.post('/deposit', authenticate, async (req, res) => {
       });
     }
 
-    // Get user's account
     const account = await virtualAccountService.getUserAccount(userId);
 
     if (!account) {
@@ -146,14 +157,12 @@ router.post('/deposit', authenticate, async (req, res) => {
       });
     }
 
-    // Process deposit via bank
     const result = await virtualAccountService.processDeposit(
       account.account_number,
       amount,
       reference || `DEP-${Date.now()}`
     );
 
-    // Get updated balance
     const updatedAccount = await virtualAccountService.getUserAccount(userId);
 
     res.json({
@@ -177,12 +186,20 @@ router.post('/deposit', authenticate, async (req, res) => {
 });
 
 // ============================================================
-// 5. WITHDRAW FROM WALLET (Authenticated)
+// 5. WITHDRAW FROM WALLET (Authenticated - PIN REQUIRED)
 // ============================================================
 router.post('/withdraw', authenticate, async (req, res) => {
   try {
     const userId = req.user.id;
-    const { amount, destination, destinationType = 'mpesa' } = req.body;
+    const { amount, destination, destinationType = 'mpesa', pin } = req.body;
+
+    // Validate PIN is provided
+    if (!pin) {
+      return res.status(400).json({
+        success: false,
+        error: 'PIN is required for withdrawal'
+      });
+    }
 
     if (!amount || amount <= 0) {
       return res.status(400).json({
@@ -205,7 +222,28 @@ router.post('/withdraw', authenticate, async (req, res) => {
       });
     }
 
-    // Get user's account
+    // Get user's account and verify PIN
+    const userResult = await dbPool.query(
+      'SELECT pinhash FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    // Verify PIN
+    const validPin = await bcrypt.compare(pin, userResult.rows[0].pinhash);
+    if (!validPin) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid PIN'
+      });
+    }
+
     const account = await virtualAccountService.getUserAccount(userId);
 
     if (!account) {
@@ -215,7 +253,6 @@ router.post('/withdraw', authenticate, async (req, res) => {
       });
     }
 
-    // Check if user has enough balance
     if (account.balance < amount) {
       return res.status(400).json({
         success: false,
@@ -225,7 +262,6 @@ router.post('/withdraw', authenticate, async (req, res) => {
       });
     }
 
-    // Process withdrawal via bank
     const result = await virtualAccountService.processWithdrawal(
       userId,
       account.account_number,
@@ -234,7 +270,6 @@ router.post('/withdraw', authenticate, async (req, res) => {
       destinationType
     );
 
-    // Get updated balance
     const updatedAccount = await virtualAccountService.getUserAccount(userId);
 
     res.json({
@@ -259,12 +294,20 @@ router.post('/withdraw', authenticate, async (req, res) => {
 });
 
 // ============================================================
-// 6. TRANSFER TO ANOTHER USER (Authenticated)
+// 6. TRANSFER TO ANOTHER USER (Authenticated - PIN REQUIRED)
 // ============================================================
 router.post('/transfer', authenticate, async (req, res) => {
   try {
     const userId = req.user.id;
-    const { toAccount, amount, description = '' } = req.body;
+    const { toAccount, amount, description = '', pin } = req.body;
+
+    // Validate PIN is provided
+    if (!pin) {
+      return res.status(400).json({
+        success: false,
+        error: 'PIN is required for transfer'
+      });
+    }
 
     if (!toAccount) {
       return res.status(400).json({
@@ -287,7 +330,28 @@ router.post('/transfer', authenticate, async (req, res) => {
       });
     }
 
-    // Get user's account
+    // Get user's account and verify PIN
+    const userResult = await dbPool.query(
+      'SELECT pinhash FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    // Verify PIN
+    const validPin = await bcrypt.compare(pin, userResult.rows[0].pinhash);
+    if (!validPin) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid PIN'
+      });
+    }
+
     const fromAccount = await virtualAccountService.getUserAccount(userId);
 
     if (!fromAccount) {
@@ -297,7 +361,6 @@ router.post('/transfer', authenticate, async (req, res) => {
       });
     }
 
-    // Check if user has enough balance
     if (fromAccount.balance < amount) {
       return res.status(400).json({
         success: false,
@@ -307,7 +370,6 @@ router.post('/transfer', authenticate, async (req, res) => {
       });
     }
 
-    // Process transfer via bank
     const result = await virtualAccountService.processTransfer(
       userId,
       fromAccount.account_number,
@@ -316,7 +378,6 @@ router.post('/transfer', authenticate, async (req, res) => {
       description
     );
 
-    // Get updated balance
     const updatedAccount = await virtualAccountService.getUserAccount(userId);
 
     res.json({
@@ -342,7 +403,7 @@ router.post('/transfer', authenticate, async (req, res) => {
 });
 
 // ============================================================
-// 7. GET BALANCE BY ACCOUNT NUMBER (Public - for webhooks)
+// 7. GET BALANCE BY ACCOUNT NUMBER (Public - for webhooks - No PIN)
 // ============================================================
 router.get('/balance/:accountNumber', async (req, res) => {
   try {
@@ -374,7 +435,7 @@ router.get('/balance/:accountNumber', async (req, res) => {
 });
 
 // ============================================================
-// 8. SYNC WITH BANK (Authenticated - Reconciliation)
+// 8. SYNC WITH BANK (Authenticated - No PIN required)
 // ============================================================
 router.post('/sync', authenticate, async (req, res) => {
   try {
@@ -410,7 +471,7 @@ router.post('/sync', authenticate, async (req, res) => {
 });
 
 // ============================================================
-// 9. GET TRANSACTION BY REFERENCE (Authenticated)
+// 9. GET TRANSACTION BY REFERENCE (Authenticated - No PIN)
 // ============================================================
 router.get('/transaction/:reference', authenticate, async (req, res) => {
   try {
@@ -426,7 +487,6 @@ router.get('/transaction/:reference', authenticate, async (req, res) => {
       });
     }
 
-    // Check if transaction belongs to the user
     const account = await virtualAccountService.getUserAccount(userId);
     if (transaction.from_account !== account?.account_number && 
         transaction.to_account !== account?.account_number) {
@@ -451,7 +511,7 @@ router.get('/transaction/:reference', authenticate, async (req, res) => {
 });
 
 // ============================================================
-// 10. GET WALLET STATS (Authenticated)
+// 10. GET WALLET STATS (Authenticated - No PIN)
 // ============================================================
 router.get('/stats', authenticate, async (req, res) => {
   try {
@@ -466,7 +526,6 @@ router.get('/stats', authenticate, async (req, res) => {
       });
     }
 
-    // Get transaction counts
     const result = await virtualAccountService.getUserTransactions(userId, 1000);
     const transactions = result.transactions || [];
 

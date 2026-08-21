@@ -160,6 +160,7 @@ const ClientRegister = () => {
     phone: '',
     email: '',
     nationalId: '',
+    password: '',
     pin: '',
     county: '',
     countyName: '',
@@ -184,7 +185,6 @@ const ClientRegister = () => {
     const kenya = allCountries.find(c => c.alpha2 === 'KE');
     if (kenya) {
       setSelectedCountry(kenya);
-      // Auto-populate phone with dial code
       setFormData(prev => ({
         ...prev,
         phone: kenya.dialCode
@@ -297,7 +297,6 @@ const ClientRegister = () => {
 
   const handlePhoneChange = (e) => {
     const value = e.target.value;
-    // Ensure the dial code stays at the beginning
     if (selectedCountry && !value.startsWith(selectedCountry.dialCode)) {
       setFormData({ ...formData, phone: selectedCountry.dialCode });
     } else {
@@ -376,7 +375,6 @@ const ClientRegister = () => {
   };
 
   const handleSendOtp = async () => {
-    // Use full phone number for backend
     const fullPhone = getFullPhoneNumber();
     
     if (!fullPhone || fullPhone.length < 8) {
@@ -465,9 +463,19 @@ const ClientRegister = () => {
       setError('Please fill in all required fields');
       return;
     }
-    if (step === 3 && (!formData.nationalId || !formData.pin || formData.pin.length < 4)) {
-      setError('Please enter a valid National ID and PIN (min 4 digits)');
-      return;
+    if (step === 3) {
+      if (!formData.nationalId) {
+        setError('Please enter your National ID');
+        return;
+      }
+      if (!formData.password || formData.password.length < 8) {
+        setError('Password must be at least 8 characters');
+        return;
+      }
+      if (!formData.pin || formData.pin.length !== 4) {
+        setError('PIN must be exactly 4 digits');
+        return;
+      }
     }
     setStep(step + 1);
     setError('');
@@ -506,6 +514,7 @@ const ClientRegister = () => {
         phone: fullPhone,
         email: formData.email,
         nationalId: formData.nationalId,
+        password: formData.password,
         pin: formData.pin,
         region: formData.countyName,
         subCounty: formData.subCountyName,
@@ -697,13 +706,28 @@ const ClientRegister = () => {
               <input
                 className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 h-[42px]"
                 type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Create Password (min 8 characters) *"
+                minLength="8"
+              />
+              <p className="text-[10px] text-[#B7C0BA]/60 mt-1.5">Password must be at least 8 characters</p>
+            </div>
+
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
+              <input
+                className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 h-[42px]"
+                type="password"
                 name="pin"
                 value={formData.pin}
                 onChange={handleChange}
-                placeholder="Create PIN *"
-                maxLength="6"
+                placeholder="Create 4-digit PIN *"
+                maxLength="4"
+                inputMode="numeric"
               />
-              <p className="text-[10px] text-[#B7C0BA]/60 mt-1.5">PIN must be at least 4 digits</p>
+              <p className="text-[10px] text-[#B7C0BA]/60 mt-1.5">PIN must be exactly 4 digits</p>
             </div>
           </div>
         );
@@ -829,18 +853,17 @@ const ClientRegister = () => {
               </button>
             </div>
 
-            {/* Terms and Conditions Checkbox - Improved Styling */}
+            {/* Terms and Conditions Checkbox */}
             <div className="mt-4 pt-3 border-t border-[#C9A44B]/20">
               <div className="bg-[#032A24]/30 rounded-xl p-3 border border-[#C9A44B]/20 hover:border-[#C9A44B]/60 transition-all duration-300">
                 <label className="flex items-start gap-3 cursor-pointer group">
                   <div className="relative flex-shrink-0 mt-0.5">
                     <input
-                        type="checkbox"
-                        checked={termsAccepted}
-                        onChange={(e) => setTermsAccepted(e.target.checked)}
-                        className="w-5 h-5 rounded-md border-2 border-[#C9A44B]/50 bg-[#032A24] text-[#C9A44B] focus:ring-2 focus:ring-[#C9A44B]/40 focus:ring-offset-2 focus:ring-offset-[#032A24] cursor-pointer transition-all duration-200 checked:bg-[#C9A44B] checked:border-[#C9A44B]"
-                      />
-
+                      type="checkbox"
+                      checked={termsAccepted}
+                      onChange={(e) => setTermsAccepted(e.target.checked)}
+                      className="w-5 h-5 rounded-md border-2 border-[#C9A44B]/50 bg-[#032A24] text-[#C9A44B] focus:ring-2 focus:ring-[#C9A44B]/40 focus:ring-offset-2 focus:ring-offset-[#032A24] cursor-pointer transition-all duration-200 checked:bg-[#C9A44B] checked:border-[#C9A44B]"
+                    />
                     {termsAccepted && (
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <svg className="w-3.5 h-3.5 text-[#032A24]" fill="none" stroke="currentColor" viewBox="0 0 24 24">

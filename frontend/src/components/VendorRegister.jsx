@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/api';
 import { getCounties, getSubCounties, getWards } from '../services/locationApi';
 import countriesData from 'world-countries';
@@ -148,7 +148,6 @@ const VendorRegister = () => {
   const [loadingLocations, setLoadingLocations] = useState(true);
   const [locationError, setLocationError] = useState('');
 
-  // Country selection state
   const [selectedCountry, setSelectedCountry] = useState(null);
   const [legalModal, setLegalModal] = useState({ isOpen: false, type: '' });
 
@@ -170,6 +169,7 @@ const VendorRegister = () => {
     nationalId: '',
     kraPin: '',
     businessRegNo: '',
+    password: '',
     pin: '',
     county: '',
     countyName: '',
@@ -181,7 +181,6 @@ const VendorRegister = () => {
     termsAccepted: false
   });
 
-  // Legal Modal Handlers
   const openLegalModal = (type) => {
     setLegalModal({ isOpen: true, type });
   };
@@ -190,7 +189,6 @@ const VendorRegister = () => {
     setLegalModal({ isOpen: false, type: '' });
   };
 
-  // Set default country to Kenya
   useEffect(() => {
     const allCountries = processCountriesData();
     const kenya = allCountries.find(c => c.alpha2 === 'KE');
@@ -209,7 +207,6 @@ const VendorRegister = () => {
     }
   }, []);
 
-  // Update phone when country changes
   const handleCountryChange = (country) => {
     setSelectedCountry(country);
     setFormData(prev => ({
@@ -218,7 +215,6 @@ const VendorRegister = () => {
     }));
   };
 
-  // Get full phone number for backend
   const getFullPhoneNumber = () => {
     if (!selectedCountry) return formData.phone;
     const cleanPhone = formData.phone.replace(/\s/g, '');
@@ -483,9 +479,15 @@ const VendorRegister = () => {
       setError('Please fill in all required fields');
       return;
     }
-    if (step === 4 && (!formData.pin || formData.pin.length < 4)) {
-      setError('Please enter a valid PIN (min 4 digits)');
-      return;
+    if (step === 4) {
+      if (!formData.password || formData.password.length < 8) {
+        setError('Password must be at least 8 characters');
+        return;
+      }
+      if (!formData.pin || formData.pin.length !== 4) {
+        setError('PIN must be exactly 4 digits');
+        return;
+      }
     }
     if (step === 5 && (!formData.halalDeclared || !formData.termsAccepted)) {
       setError('Please accept all declarations to continue');
@@ -532,6 +534,7 @@ const VendorRegister = () => {
         nationalId: formData.nationalId,
         kraPin: formData.kraPin,
         businessRegNo: formData.businessRegNo,
+        password: formData.password,
         pin: formData.pin,
         region: formData.countyName,
         subCounty: formData.subCountyName,
@@ -764,9 +767,23 @@ const VendorRegister = () => {
           <div className="space-y-3 animate-fadeIn">
             <div className="mb-1.5">
               <h3 className="text-base font-bold text-[#F7F6F1]">Security</h3>
-              <p className="text-xs text-[#B7C0BA]">Create your account PIN</p>
+              <p className="text-xs text-[#B7C0BA]">Create your password and PIN</p>
             </div>
             
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
+              <input
+                className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 h-[42px]"
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Create Password (min 8 characters) *"
+                minLength="8"
+              />
+              <p className="text-[10px] text-[#B7C0BA]/60 mt-1.5">Password must be at least 8 characters</p>
+            </div>
+
             <div className="relative group">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
               <input
@@ -775,10 +792,11 @@ const VendorRegister = () => {
                 name="pin"
                 value={formData.pin}
                 onChange={handleChange}
-                placeholder="Create PIN *"
-                maxLength="6"
+                placeholder="Create 4-digit PIN *"
+                maxLength="4"
+                inputMode="numeric"
               />
-              <p className="text-[10px] text-[#B7C0BA]/60 mt-1.5">PIN must be at least 4 digits</p>
+              <p className="text-[10px] text-[#B7C0BA]/60 mt-1.5">PIN must be exactly 4 digits</p>
             </div>
           </div>
         );
@@ -1016,7 +1034,6 @@ const VendorRegister = () => {
         <div className="absolute -top-16 -right-16 w-48 h-48 bg-[#C9A44B]/5 rounded-full blur-3xl" />
         <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-[#C9A44B]/5 rounded-full blur-3xl" />
 
-        {/* LEFT: Branding Section */}
         <div className="w-full lg:w-2/5 bg-gradient-to-br from-[#032A24] to-[#0B342B] p-6 lg:p-8 flex items-center justify-center relative overflow-hidden">
           <div className="relative z-10 text-center">
             <div className="mb-6">
@@ -1052,7 +1069,6 @@ const VendorRegister = () => {
           </div>
         </div>
 
-        {/* RIGHT: Registration Form */}
         <div className="w-full lg:w-3/5 p-6 lg:p-8 bg-[#0B342B] flex items-center">
           <div className="w-full max-w-sm mx-auto relative z-10">
             <div className="mb-4">
@@ -1143,7 +1159,6 @@ const VendorRegister = () => {
 
       </div>
 
-      {/* Legal Modal */}
       <LegalModal 
         isOpen={legalModal.isOpen} 
         onClose={closeLegalModal}

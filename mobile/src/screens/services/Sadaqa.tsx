@@ -6,10 +6,9 @@ import {
   SafeAreaView,
   ScrollView,
   TextInput,
-  ActivityIndicator,
   RefreshControl,
-  Platform,
   Modal,
+  Platform,
   Dimensions,
   LayoutAnimation,
   UIManager,
@@ -17,6 +16,8 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { sadaqaService, walletService } from '../../api/client';
+import PinModal from '../../components/common/PinModal';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 
 // Enable LayoutAnimation for Android
@@ -95,14 +96,12 @@ const SuccessIcon = ({ color = '#3FAF73', size = 32 }) => (
   </Svg>
 );
 
-// Back Arrow Icon
 const BackIcon = ({ color = '#032A24', size = 24 }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path d="M15 18L9 12L15 6" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
   </Svg>
 );
 
-// Unique decorative icon for Sadaqa
 const SadaqaIcon = ({ color = '#C9A44B', size = 24 }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path 
@@ -149,6 +148,11 @@ const Sadaqa = () => {
   });
 
   const [recentDonationsExpanded, setRecentDonationsExpanded] = useState(false);
+
+  // ===== PIN MODAL STATE =====
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState('');
 
   const categories = [
     { id: 'all', label: 'All Causes' },
@@ -267,6 +271,7 @@ const Sadaqa = () => {
     fetchImpactStats();
   };
 
+  // ===== HANDLE DONATION WITH PIN =====
   const handleDonate = () => {
     if (!selectedCampaign) {
       setError('Please select a cause');
@@ -283,9 +288,16 @@ const Sadaqa = () => {
     setShowConfirmModal(true);
   };
 
-  const confirmDonation = async () => {
-    setProcessing(true);
-    setError('');
+  const confirmDonation = () => {
+    setShowConfirmModal(false);
+    setShowPinModal(true);
+    setPinError('');
+  };
+
+  const handlePinVerify = async (pin: string) => {
+    setPinLoading(true);
+    setPinError('');
+
     try {
       const response = await sadaqaService.donate({
         campaignId: selectedCampaign.id,
@@ -293,6 +305,7 @@ const Sadaqa = () => {
         dedication: dedication,
         isAnonymous: isAnonymous,
         donorName: isAnonymous ? 'Anonymous' : '',
+        pin: pin,
       });
 
       if (response.data.success) {
@@ -306,7 +319,7 @@ const Sadaqa = () => {
           status: 'completed',
         });
 
-        setShowConfirmModal(false);
+        setShowPinModal(false);
         setShowReceiptModal(true);
         setAmount('');
         setDedication('');
@@ -322,10 +335,15 @@ const Sadaqa = () => {
         setTimeout(() => setSuccess(''), 5000);
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Donation failed. Please try again.');
+      setPinError(err.response?.data?.error || 'Invalid PIN. Please try again.');
     } finally {
-      setProcessing(false);
+      setPinLoading(false);
     }
+  };
+
+  const handlePinModalClose = () => {
+    setShowPinModal(false);
+    setPinError('');
   };
 
   const handleQuickAmount = (val: number) => {
@@ -377,16 +395,7 @@ const Sadaqa = () => {
   });
 
   if (loading && !refreshing) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <ActivityIndicator size="large" color="#032A24" />
-          <Text style={{ color: '#6B7280', marginTop: 16, fontSize: 14 }}>
-            Loading causes...
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <LoadingSpinner message="Loading causes..." />;
   }
 
   return (
@@ -401,7 +410,7 @@ const Sadaqa = () => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#032A24" />}
       >
         <View style={{ maxWidth: 800, width: '100%', alignSelf: 'center' }}>
-          {/* ===== UNIQUE PREMIUM HEADER WITH BACK ===== */}
+          {/* ===== PREMIUM HEADER ===== */}
           <View style={{
             backgroundColor: '#032A24',
             borderRadius: 18,
@@ -416,7 +425,6 @@ const Sadaqa = () => {
             shadowRadius: 20,
             elevation: 6,
           }}>
-            {/* Decorative gold accent line */}
             <View style={{
               position: 'absolute',
               top: 0,
@@ -473,7 +481,6 @@ const Sadaqa = () => {
                 </Text>
               </View>
 
-              {/* Gold decorative circle */}
               <View style={{
                 width: 32,
                 height: 32,
@@ -495,7 +502,7 @@ const Sadaqa = () => {
             </View>
           </View>
 
-          {/* Balance Card - Premium Gold Accent */}
+          {/* Balance Card */}
           <View style={{
             backgroundColor: '#032A24',
             borderRadius: 16,
@@ -1785,6 +1792,20 @@ const Sadaqa = () => {
           </View>
         </View>
       </Modal>
+
+      {/* PIN Modal */}
+      <PinModal
+        visible={showPinModal}
+        onClose={handlePinModalClose}
+        onVerify={handlePinVerify}
+        loading={pinLoading}
+        error={pinError}
+        title="Confirm Donation"
+        subtitle="Enter your 4-digit PIN to confirm this Sadaqah donation"
+        amount={parseFloat(amount) || 0}
+        recipient={selectedCampaign?.name}
+        transactionType="sadaqah"
+      />
 
       {/* Success Toast */}
       {success ? (

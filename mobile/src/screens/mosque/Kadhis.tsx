@@ -19,6 +19,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { bookingService, walletService, clientService, getImageUrl } from '../../api/client';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 
 // Enable LayoutAnimation for Android
@@ -464,16 +465,9 @@ const Kadhis = () => {
 
   const latestBookings = bookings.slice(0, 5);
 
-  if (loading) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <ActivityIndicator size="large" color="#032A24" />
-          <Text style={{ color: '#6B7280', marginTop: 16, fontSize: 14 }}>Loading...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+ if (loading) {
+  return <LoadingSpinner message="Loading professionals..." />;
+}
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>

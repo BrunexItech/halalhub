@@ -1,25 +1,21 @@
 const router = require('express').Router();
 const { authenticate } = require('../middleware/auth');
-const { Client } = require('pg');
+const bcrypt = require('bcryptjs');
+const { Pool } = require('pg');
 const crypto = require('crypto');
 const virtualAccountService = require('../services/virtual-account.service');
 
-// Database connection
-let client;
-
-async function getClient() {
-  if (!client) {
-    client = new Client({
-      user: process.env.DB_USER || 'halalhub_user',
-      password: process.env.DB_PASSWORD || '@halalhub@#',
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT) || 5432,
-      database: process.env.DB_NAME || 'halalhub'
-    });
-    await client.connect();
-  }
-  return client;
-}
+// ============================================================
+// Database Connection Pool (removed hardcoded credentials)
+// ============================================================
+const dbPool = new Pool({
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT) || 5432,
+  database: process.env.DB_NAME,
+  max: 20,
+});
 
 // ============================================================
 // 1. GET ALL BOOKINGS (Authenticated)
@@ -28,14 +24,12 @@ async function getClient() {
 // ============================================================
 router.get('/', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const limit = parseInt(req.query.limit) || 50;
     const offset = parseInt(req.query.offset) || 0;
     const status = req.query.status;
 
-    // First, check if the user is a leader
-    const leaderCheck = await db.query(
+    const leaderCheck = await dbPool.query(
       'SELECT id FROM leaders WHERE user_id = $1',
       [userId]
     );
@@ -82,14 +76,12 @@ router.get('/', authenticate, async (req, res) => {
     const params = [];
     let paramIndex = 1;
 
-    // If user is a leader, show bookings assigned to them
     if (leaderCheck.rows.length > 0) {
       const leaderId = leaderCheck.rows[0].id;
       query += ` AND cb.leader_id = $${paramIndex}`;
       params.push(leaderId);
       paramIndex++;
     } else {
-      // Otherwise, show bookings made by the user
       query += ` AND cb.user_id = $${paramIndex}`;
       params.push(userId);
       paramIndex++;
@@ -104,9 +96,8 @@ router.get('/', authenticate, async (req, res) => {
     query += ` ORDER BY cb.booking_date DESC, cb.booking_time DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
     params.push(limit, offset);
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
-    // Get total count
     let countQuery = `
       SELECT COUNT(*) as total FROM consultation_bookings cb
       WHERE 1=1
@@ -131,7 +122,7 @@ router.get('/', authenticate, async (req, res) => {
       countIndex++;
     }
 
-    const countResult = await db.query(countQuery, countParams);
+    const countResult = await dbPool.query(countQuery, countParams);
 
     res.json({
       success: true,
@@ -155,11 +146,10 @@ router.get('/', authenticate, async (req, res) => {
 // ============================================================
 router.get('/:id', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const { id } = req.params;
 
-    const result = await db.query(
+    const result = await dbPool.query(
       `
       SELECT 
         cb.id,
@@ -210,8 +200,6 @@ router.get('/:id', authenticate, async (req, res) => {
     }
 
     const booking = result.rows[0];
-
-    // Verify user has access (either they booked it or they are the leader)
     const isClient = booking.user_id === userId;
     const isLeader = booking.leader_user_id === userId;
 
@@ -237,11 +225,10 @@ router.get('/:id', authenticate, async (req, res) => {
 });
 
 // ============================================================
-// 3. CREATE BOOKING (Authenticated - Client only)
+// 3. CREATE BOOKING (Authenticated - Client only) - PIN REQUIRED
 // ============================================================
 router.post('/', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const {
       leaderId,
@@ -251,7 +238,8 @@ router.post('/', authenticate, async (req, res) => {
       topic,
       notes,
       userName,
-      userEmail
+      userEmail,
+      pin
     } = req.body;
 
     if (!leaderId || !bookingDate || !bookingTime || !topic) {
@@ -261,8 +249,37 @@ router.post('/', authenticate, async (req, res) => {
       });
     }
 
+    // Validate PIN is provided
+    if (!pin) {
+      return res.status(400).json({
+        success: false,
+        error: 'PIN is required to book a consultation'
+      });
+    }
+
+    // Verify PIN
+    const userResult = await dbPool.query(
+      'SELECT pinhash FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    const validPin = await bcrypt.compare(pin, userResult.rows[0].pinhash);
+    if (!validPin) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid PIN'
+      });
+    }
+
     // Check if leader exists and is available for consultation
-    const leaderCheck = await db.query(
+    const leaderCheck = await dbPool.query(
       `SELECT l.id, l.user_id, l.leader_type, l.consultation_fee, l.available_for_consultation, 
               u.fullname as leader_name
        FROM leaders l
@@ -286,7 +303,7 @@ router.post('/', authenticate, async (req, res) => {
     }
 
     // Check if this leader already has a booking at this date and time
-    const duplicateCheck = await db.query(
+    const duplicateCheck = await dbPool.query(
       `SELECT id, status FROM consultation_bookings 
        WHERE leader_id = $1 
        AND booking_date = $2 
@@ -303,13 +320,10 @@ router.post('/', authenticate, async (req, res) => {
       });
     }
 
-    // Generate unique room name for video calls
     const roomName = `halalhub-consultation-${leaderId}-${Date.now().toString(36)}`;
     const consultationFee = parseInt(leaderCheck.rows[0].consultation_fee) || 0;
 
-    // ============================================================
-    // CHECK USER BALANCE BEFORE CREATING BOOKING
-    // ============================================================
+    // Check user balance
     const clientAccount = await virtualAccountService.getUserAccount(userId);
     
     if (!clientAccount) {
@@ -319,8 +333,6 @@ router.post('/', authenticate, async (req, res) => {
       });
     }
 
-    console.log(`[Booking] Client balance: ${clientAccount.balance}, Fee: ${consultationFee}`);
-
     if (clientAccount.balance < consultationFee) {
       return res.status(400).json({
         success: false,
@@ -329,11 +341,10 @@ router.post('/', authenticate, async (req, res) => {
         required: consultationFee
       });
     }
-    // ============================================================
 
     const bookingId = 'bkg-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
 
-    await db.query(
+    await dbPool.query(
       `INSERT INTO consultation_bookings (
         id, user_id, leader_id, booking_date, booking_time, type, 
         topic, notes, status, room_name, user_name, user_email, amount,
@@ -362,7 +373,7 @@ router.post('/', authenticate, async (req, res) => {
 
     if (leaderUserId) {
       const notificationId = 'notif-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
-      await db.query(
+      await dbPool.query(
         `INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
          VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
         [
@@ -378,7 +389,7 @@ router.post('/', authenticate, async (req, res) => {
 
     // Create notification for client
     const clientNotifId = 'notif-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
-    await db.query(
+    await dbPool.query(
       `INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
        VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
       [
@@ -422,7 +433,6 @@ router.post('/', authenticate, async (req, res) => {
 // ============================================================
 router.put('/:id', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const { id } = req.params;
     const {
@@ -434,8 +444,7 @@ router.put('/:id', authenticate, async (req, res) => {
       status
     } = req.body;
 
-    // Check if booking exists and get current status
-    const checkResult = await db.query(
+    const checkResult = await dbPool.query(
       `SELECT cb.*, l.user_id as leader_user_id 
        FROM consultation_bookings cb 
        JOIN leaders l ON cb.leader_id = l.id 
@@ -461,9 +470,7 @@ router.put('/:id', authenticate, async (req, res) => {
       });
     }
 
-    // If leader is updating status
     if (isLeader && status) {
-      // Only allow specific status changes
       const validStatuses = ['confirmed', 'cancelled', 'completed'];
       if (!validStatuses.includes(status)) {
         return res.status(400).json({
@@ -472,15 +479,9 @@ router.put('/:id', authenticate, async (req, res) => {
         });
       }
 
-      // If confirming, process payment
       if (status === 'confirmed') {
-        // Check if payment is required and not yet paid
         if (booking.amount > 0 && booking.payment_status !== 'paid') {
-          // Process payment from client's wallet
           try {
-            // ============================================================
-            // CHECK CLIENT BALANCE BEFORE DEDUCTING
-            // ============================================================
             const clientAccount = await virtualAccountService.getUserAccount(booking.user_id);
             
             if (!clientAccount) {
@@ -490,17 +491,13 @@ router.put('/:id', authenticate, async (req, res) => {
               });
             }
 
-            console.log(`[Booking Confirm] Client balance: ${clientAccount.balance}, Required: ${booking.amount}`);
-
             if (clientAccount.balance < booking.amount) {
               return res.status(400).json({
                 success: false,
-                error: `Client has insufficient balance. Available: KES ${clientAccount.balance.toLocaleString()}, Required: KES ${booking.amount.toLocaleString()}. Please ask the client to top up their wallet.`
+                error: `Client has insufficient balance. Available: KES ${clientAccount.balance.toLocaleString()}, Required: KES ${booking.amount.toLocaleString()}.`
               });
             }
-            // ============================================================
 
-            // Get leader's virtual account
             const leaderAccount = await virtualAccountService.getUserAccount(booking.leader_user_id);
             
             if (!leaderAccount) {
@@ -510,8 +507,7 @@ router.put('/:id', authenticate, async (req, res) => {
               });
             }
 
-            // Transfer payment from client to leader
-            const transferResult = await virtualAccountService.processTransfer(
+            await virtualAccountService.processTransfer(
               booking.user_id,
               clientAccount.account_number,
               leaderAccount.account_number,
@@ -519,11 +515,8 @@ router.put('/:id', authenticate, async (req, res) => {
               `Consultation booking payment - ${id}`
             );
 
-            console.log(`[Booking Confirm] Transfer completed: ${transferResult.data?.reference}`);
-
-            // Update payment status
             const paymentRef = 'PAY-' + Date.now().toString(36).toUpperCase() + crypto.randomBytes(4).toString('hex').toUpperCase();
-            await db.query(
+            await dbPool.query(
               `UPDATE consultation_bookings 
                SET payment_status = 'paid', 
                    payment_reference = $1,
@@ -541,24 +534,22 @@ router.put('/:id', authenticate, async (req, res) => {
           }
         }
 
-        // Update booking status
-        await db.query(
+        await dbPool.query(
           `UPDATE consultation_bookings 
            SET status = $1, accepted_at = NOW(), updatedat = NOW() 
            WHERE id = $2`,
           [status, id]
         );
 
-        // Create notification for client
         const notificationId = 'notif-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
-        await db.query(
+        await dbPool.query(
           `INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
            VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
           [
             notificationId,
             booking.user_id,
             'Consultation Confirmed',
-            `Your consultation has been confirmed. Payment of KES ${booking.amount.toLocaleString()} has been processed. You can now join the call.`,
+            `Your consultation has been confirmed. Payment of KES ${booking.amount.toLocaleString()} has been processed.`,
             'booking',
             `/consultations/${id}`
           ]
@@ -575,25 +566,23 @@ router.put('/:id', authenticate, async (req, res) => {
         return;
       }
 
-      // For completed status
       if (status === 'completed') {
-        await db.query(
+        await dbPool.query(
           `UPDATE consultation_bookings 
            SET status = $1, updatedat = NOW() 
            WHERE id = $2`,
           [status, id]
         );
 
-        // Create notification for client
         const notificationId = 'notif-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
-        await db.query(
+        await dbPool.query(
           `INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
            VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
           [
             notificationId,
             booking.user_id,
             'Consultation Completed',
-            `Your consultation has been marked as completed. Thank you for using HalalHub.`,
+            'Your consultation has been marked as completed. Thank you for using HalalHub.',
             'booking',
             `/consultations/${id}`
           ]
@@ -606,16 +595,13 @@ router.put('/:id', authenticate, async (req, res) => {
         return;
       }
 
-      // For cancelled status
       if (status === 'cancelled') {
-        // If cancelled, refund the client if they paid
         if (booking.payment_status === 'paid') {
           try {
             const clientAccount = await virtualAccountService.getUserAccount(booking.user_id);
             const leaderAccount = await virtualAccountService.getUserAccount(booking.leader_user_id);
 
             if (clientAccount && leaderAccount) {
-              // Refund from leader back to client
               await virtualAccountService.processTransfer(
                 booking.leader_user_id,
                 leaderAccount.account_number,
@@ -624,7 +610,7 @@ router.put('/:id', authenticate, async (req, res) => {
                 `Refund for cancelled consultation - ${id}`
               );
 
-              await db.query(
+              await dbPool.query(
                 `UPDATE consultation_bookings 
                  SET payment_status = 'refunded', updatedat = NOW()
                  WHERE id = $1`,
@@ -633,20 +619,18 @@ router.put('/:id', authenticate, async (req, res) => {
             }
           } catch (refundError) {
             console.error('Refund error:', refundError);
-            // Continue even if refund fails, admin can handle manually
           }
         }
 
-        await db.query(
+        await dbPool.query(
           `UPDATE consultation_bookings 
            SET status = $1, updatedat = NOW() 
            WHERE id = $2`,
           [status, id]
         );
 
-        // Create notification for client
         const notificationId = 'notif-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
-        await db.query(
+        await dbPool.query(
           `INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
            VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
           [
@@ -667,7 +651,6 @@ router.put('/:id', authenticate, async (req, res) => {
       }
     }
 
-    // Client can only update notes and topic (not status)
     if (isClient) {
       const updates = [];
       const params = [];
@@ -705,7 +688,7 @@ router.put('/:id', authenticate, async (req, res) => {
       params.push(id);
       params.push(userId);
 
-      await db.query(
+      await dbPool.query(
         `UPDATE consultation_bookings SET ${updates.join(', ')} WHERE id = $${paramIndex} AND user_id = $${paramIndex + 1}`,
         params
       );
@@ -736,12 +719,10 @@ router.put('/:id', authenticate, async (req, res) => {
 // ============================================================
 router.put('/:id/cancel', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const { id } = req.params;
 
-    // Check if booking exists and belongs to user
-    const checkResult = await db.query(
+    const checkResult = await dbPool.query(
       `SELECT cb.*, l.user_id as leader_user_id 
        FROM consultation_bookings cb 
        JOIN leaders l ON cb.leader_id = l.id 
@@ -766,7 +747,6 @@ router.put('/:id/cancel', authenticate, async (req, res) => {
       });
     }
 
-    // If booking was paid, process refund
     if (booking.payment_status === 'paid') {
       try {
         const clientAccount = await virtualAccountService.getUserAccount(booking.user_id);
@@ -781,7 +761,7 @@ router.put('/:id/cancel', authenticate, async (req, res) => {
             `Refund for cancelled consultation - ${id}`
           );
 
-          await db.query(
+          await dbPool.query(
             `UPDATE consultation_bookings 
              SET payment_status = 'refunded', updatedat = NOW()
              WHERE id = $1`,
@@ -790,27 +770,25 @@ router.put('/:id/cancel', authenticate, async (req, res) => {
         }
       } catch (refundError) {
         console.error('Refund error:', refundError);
-        // Continue even if refund fails, admin can handle manually
       }
     }
 
-    await db.query(
+    await dbPool.query(
       `UPDATE consultation_bookings 
        SET status = 'cancelled', updatedat = NOW() 
        WHERE id = $1`,
       [id]
     );
 
-    // Create notification for leader
     const notificationId = 'notif-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
-    await db.query(
+    await dbPool.query(
       `INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
        VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
       [
         notificationId,
         booking.leader_user_id,
         'Consultation Cancelled by Client',
-        `A consultation has been cancelled by the client.`,
+        'A consultation has been cancelled by the client.',
         'booking',
         `/leader-dashboard`
       ]
@@ -835,11 +813,10 @@ router.put('/:id/cancel', authenticate, async (req, res) => {
 // ============================================================
 router.get('/room/:roomName', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const { roomName } = req.params;
 
-    const result = await db.query(
+    const result = await dbPool.query(
       `
       SELECT 
         cb.id,
@@ -906,11 +883,9 @@ router.get('/room/:roomName', authenticate, async (req, res) => {
 // ============================================================
 router.get('/stats/summary', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
 
-    // Check if user is a leader
-    const leaderCheck = await db.query(
+    const leaderCheck = await dbPool.query(
       'SELECT id, leader_type FROM leaders WHERE user_id = $1',
       [userId]
     );
@@ -918,7 +893,7 @@ router.get('/stats/summary', authenticate, async (req, res) => {
     let result;
     if (leaderCheck.rows.length > 0) {
       const leaderId = leaderCheck.rows[0].id;
-      result = await db.query(
+      result = await dbPool.query(
         `
         SELECT 
           COUNT(*) as total_bookings,
@@ -935,8 +910,7 @@ router.get('/stats/summary', authenticate, async (req, res) => {
         [leaderId]
       );
     } else {
-      // For clients, show their booking stats
-      result = await db.query(
+      result = await dbPool.query(
         `
         SELECT 
           COUNT(*) as total_bookings,

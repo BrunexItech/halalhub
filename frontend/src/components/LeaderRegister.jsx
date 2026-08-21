@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/api';
 import { getCounties, getSubCounties, getWards } from '../services/locationApi';
 import countriesData from 'world-countries';
@@ -159,7 +159,6 @@ const LeaderRegister = () => {
   const [loadingLocations, setLoadingLocations] = useState(true);
   const [locationError, setLocationError] = useState('');
 
-  // Country selection state
   const [selectedCountry, setSelectedCountry] = useState(null);
   const [legalModal, setLegalModal] = useState({ isOpen: false, type: '' });
 
@@ -168,6 +167,7 @@ const LeaderRegister = () => {
     phone: '',
     email: '',
     nationalId: '',
+    password: '',
     pin: '',
     leaderType: '',
     location: '',
@@ -188,7 +188,6 @@ const LeaderRegister = () => {
     termsAccepted: false
   });
 
-  // Legal Modal Handlers
   const openLegalModal = (type) => {
     setLegalModal({ isOpen: true, type });
   };
@@ -197,7 +196,6 @@ const LeaderRegister = () => {
     setLegalModal({ isOpen: false, type: '' });
   };
 
-  // Set default country to Kenya
   useEffect(() => {
     const allCountries = processCountriesData();
     const kenya = allCountries.find(c => c.alpha2 === 'KE');
@@ -216,7 +214,6 @@ const LeaderRegister = () => {
     }
   }, []);
 
-  // Update phone when country changes
   const handleCountryChange = (country) => {
     setSelectedCountry(country);
     setFormData(prev => ({
@@ -225,7 +222,6 @@ const LeaderRegister = () => {
     }));
   };
 
-  // Get full phone number for backend
   const getFullPhoneNumber = () => {
     if (!selectedCountry) return formData.phone;
     const cleanPhone = formData.phone.replace(/\s/g, '');
@@ -485,9 +481,19 @@ const LeaderRegister = () => {
       setError('Please fill in all required fields');
       return;
     }
-    if (step === 3 && (!formData.nationalId || !formData.pin || formData.pin.length < 4)) {
-      setError('Please enter a valid National ID and PIN (min 4 digits)');
-      return;
+    if (step === 3) {
+      if (!formData.nationalId) {
+        setError('Please enter your National ID');
+        return;
+      }
+      if (!formData.password || formData.password.length < 8) {
+        setError('Password must be at least 8 characters');
+        return;
+      }
+      if (!formData.pin || formData.pin.length !== 4) {
+        setError('PIN must be exactly 4 digits');
+        return;
+      }
     }
     if (step === 4 && (!formData.qualifications)) {
       setError('Please enter your qualifications');
@@ -534,6 +540,7 @@ const LeaderRegister = () => {
         phone: fullPhone,
         email: formData.email,
         nationalId: formData.nationalId,
+        password: formData.password,
         pin: formData.pin,
         leaderType: formData.leaderType,
         location: formData.location,
@@ -788,13 +795,28 @@ const LeaderRegister = () => {
               <input
                 className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 h-[42px]"
                 type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Create Password (min 8 characters) *"
+                minLength="8"
+              />
+              <p className="text-[10px] text-[#B7C0BA]/60 mt-1.5">Password must be at least 8 characters</p>
+            </div>
+
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#C9A44B]/20 to-[#E1C16B]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
+              <input
+                className="relative w-full px-4 py-2.5 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 h-[42px]"
+                type="password"
                 name="pin"
                 value={formData.pin}
                 onChange={handleChange}
-                placeholder="Create PIN *"
-                maxLength="6"
+                placeholder="Create 4-digit PIN *"
+                maxLength="4"
+                inputMode="numeric"
               />
-              <p className="text-[10px] text-[#B7C0BA]/60 mt-1.5">PIN must be at least 4 digits</p>
+              <p className="text-[10px] text-[#B7C0BA]/60 mt-1.5">PIN must be exactly 4 digits</p>
             </div>
           </div>
         );
@@ -1259,7 +1281,6 @@ const LeaderRegister = () => {
 
       </div>
 
-      {/* Legal Modal */}
       <LegalModal 
         isOpen={legalModal.isOpen} 
         onClose={closeLegalModal}

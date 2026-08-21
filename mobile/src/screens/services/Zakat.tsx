@@ -6,23 +6,79 @@ import {
   SafeAreaView,
   ScrollView,
   TextInput,
-  ActivityIndicator,
   RefreshControl,
   Modal,
   StatusBar,
   Dimensions,
+  ActivityIndicator,
   Platform,
 } from 'react-native';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import { zakatService, walletService } from '../../api/client';
+import PinModal from '../../components/common/PinModal';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 const { width: screenWidth } = Dimensions.get('window');
 
+// ===== SVG ICONS =====
+const BackIcon = () => (
+  <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M19 12H5M12 19l-7-7 7-7" />
+  </Svg>
+);
+
+const ShieldIcon = () => (
+  <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9A44B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    <Path d="M9 12l2 2 4-4" />
+  </Svg>
+);
+
+const CheckIcon = () => (
+  <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3FAF73" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+    <Path d="M22 4L12 14.01l-3-3" />
+  </Svg>
+);
+
+const CloseIcon = () => (
+  <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M18 6L6 18M6 6l12 12" />
+  </Svg>
+);
+
+const SendIcon = () => (
+  <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+  </Svg>
+);
+
+const CloseModalIcon = () => (
+  <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M18 6L6 18M6 6l12 12" />
+  </Svg>
+);
+
+const ChevronDownIcon = () => (
+  <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M6 9l6 6 6-6" />
+  </Svg>
+);
+
+const ChevronUpIcon = () => (
+  <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M18 15l-6-6-6 6" />
+  </Svg>
+);
+
 const Zakat = () => {
   const navigation = useNavigation();
-  const [processing, setProcessing] = useState(false);
+
+  // ===== LOADING STATE =====
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -61,6 +117,11 @@ const Zakat = () => {
 
   const [showRecentPayments, setShowRecentPayments] = useState(false);
 
+  // ===== PIN MODAL STATE =====
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState('');
+
   const categories = [
     { id: 'all', label: 'All Categories' },
     { id: 'mosque', label: 'Mosques & Institutions' },
@@ -79,57 +140,6 @@ const Zakat = () => {
     { label: 'Retiree', values: { cash: 800000, gold: 100000, silver: 20000, business: 0, investments: 100000, receivables: 0, liabilities: 50000 } },
   ];
 
-  // Premium SVG Icons
-  const BackIcon = () => (
-    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M19 12H5M12 19l-7-7 7-7" />
-    </Svg>
-  );
-
-  const ShieldIcon = () => (
-    <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9A44B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      <Path d="M9 12l2 2 4-4" />
-    </Svg>
-  );
-
-  const CheckIcon = () => (
-    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3FAF73" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
-      <Path d="M22 4L12 14.01l-3-3" />
-    </Svg>
-  );
-
-  const CloseIcon = () => (
-    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M18 6L6 18M6 6l12 12" />
-    </Svg>
-  );
-
-  const SendIcon = () => (
-    <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
-    </Svg>
-  );
-
-  const CloseModalIcon = () => (
-    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M18 6L6 18M6 6l12 12" />
-    </Svg>
-  );
-
-  const ChevronDownIcon = () => (
-    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M6 9l6 6 6-6" />
-    </Svg>
-  );
-
-  const ChevronUpIcon = () => (
-    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M18 15l-6-6-6 6" />
-    </Svg>
-  );
-
   useEffect(() => {
     fetchAllData();
   }, []);
@@ -139,6 +149,7 @@ const Zakat = () => {
   }, [cash, gold, silver, business, investments, receivables, liabilities, nisabType]);
 
   const fetchAllData = async () => {
+    setLoading(true);
     try {
       await Promise.all([
         fetchRecipients(),
@@ -148,6 +159,8 @@ const Zakat = () => {
     } catch (error) {
       console.log('Error fetching data:', error);
       setError('Failed to load data. Please refresh.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -231,6 +244,7 @@ const Zakat = () => {
     setLiabilities(String(preset.values.liabilities));
   };
 
+  // ===== HANDLE PAY ZAKAT WITH PIN =====
   const handlePayZakat = () => {
     if (calculation.zakatDue <= 0) {
       setError('No Zakat due. Please check your calculations.');
@@ -242,33 +256,45 @@ const Zakat = () => {
     setShowConfirmModal(true);
   };
 
-  const confirmPayment = async () => {
+  const confirmPayment = () => {
     if (!selectedRecipient) {
       setError('Please select a recipient for your Zakat.');
       return;
     }
+    setShowConfirmModal(false);
+    setShowPinModal(true);
+    setPinError('');
+  };
 
-    setProcessing(true);
-    setError('');
+  const handlePinVerify = async (pin: string) => {
+    setPinLoading(true);
+    setPinError('');
+
     try {
       const response = await zakatService.payZakat({
         amount: calculation.zakatDue,
         recipientId: selectedRecipient,
         category: selectedCategory !== 'all' ? selectedCategory : 'general',
         notes: notes,
+        pin: pin,
       });
 
       if (response.data.success) {
         setSuccess(`Zakat of KES ${calculation.zakatDue.toLocaleString()} paid successfully!`);
-        setShowConfirmModal(false);
+        setShowPinModal(false);
         await fetchAllData();
         setTimeout(() => setSuccess(''), 5000);
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Payment failed. Please try again.');
+      setPinError(err.response?.data?.error || 'Invalid PIN. Please try again.');
     } finally {
-      setProcessing(false);
+      setPinLoading(false);
     }
+  };
+
+  const handlePinModalClose = () => {
+    setShowPinModal(false);
+    setPinError('');
   };
 
   const formatCurrency = (amount: number) => {
@@ -310,11 +336,16 @@ const Zakat = () => {
     ? recipients
     : recipients.filter((r) => r.category === selectedCategory);
 
+  // ===== LOADING STATE =====
+  if (loading) {
+    return <LoadingSpinner message="Loading Zakat data..." />;
+  }
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
       <StatusBar barStyle="light-content" backgroundColor="#032A24" translucent={false} />
       
-      {/* ===== EMERALD HEADER ===== */}
+      {/* ===== HEADER ===== */}
       <View style={{
         backgroundColor: '#032A24',
         paddingTop: 12,
@@ -370,7 +401,7 @@ const Zakat = () => {
       >
         <View style={{ maxWidth: 600, width: '100%', alignSelf: 'center', paddingHorizontal: 16 }}>
           
-          {/* ===== HERO CARD - Always visible, no loading, no balance ===== */}
+          {/* ===== HERO CARD ===== */}
           <View style={{
             backgroundColor: '#0B342B',
             borderRadius: 16,
@@ -978,6 +1009,20 @@ const Zakat = () => {
           </View>
         </View>
       </Modal>
+
+      {/* ===== PIN MODAL ===== */}
+      <PinModal
+        visible={showPinModal}
+        onClose={handlePinModalClose}
+        onVerify={handlePinVerify}
+        loading={pinLoading}
+        error={pinError}
+        title="Confirm Zakat Payment"
+        subtitle="Enter your 4-digit PIN to confirm this Zakat payment"
+        amount={calculation.zakatDue || 0}
+        recipient={selectedRecipient ? recipients.find(r => r.id === selectedRecipient)?.name : ''}
+        transactionType="zakat"
+      />
     </SafeAreaView>
   );
 };

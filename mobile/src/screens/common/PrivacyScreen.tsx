@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,9 +8,18 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import PrivacyContent from '../../components/common/PrivacyContent';
+import { Chase } from 'react-native-animated-spinkit';
 
 const PrivacyScreen = () => {
   const navigation = useNavigation();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
@@ -50,17 +59,26 @@ const PrivacyScreen = () => {
         </Text>
       </View>
 
-      {/* Content */}
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingHorizontal: 20,
-          paddingVertical: 24,
-          paddingBottom: 40,
-        }}
-      >
-        <PrivacyContent />
-      </ScrollView>
+      {/* Content with Loading State */}
+      {loading ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <Chase size={36} color="#C9A44B" />
+          <Text style={{ color: '#6B7280', marginTop: 12, fontSize: 14 }}>
+            Loading...
+          </Text>
+        </View>
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingHorizontal: 20,
+            paddingVertical: 24,
+            paddingBottom: 40,
+          }}
+        >
+          <PrivacyContent />
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 };

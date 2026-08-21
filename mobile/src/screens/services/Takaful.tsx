@@ -7,16 +7,18 @@ import {
   Platform,
   ScrollView,
   TextInput,
-  ActivityIndicator,
   RefreshControl,
   Modal,
   Alert,
   Dimensions,
   LayoutAnimation,
   UIManager,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { takafulService } from '../../api/client';
+import PinModal from '../../components/common/PinModal';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 
 // Enable LayoutAnimation for Android
@@ -134,14 +136,6 @@ const GearsIcon = ({ color = '#C9A44B', size = 22 }) => (
   </Svg>
 );
 
-const WalletIcon = ({ color = '#032A24', size = 20 }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Rect x="2" y="5" width="20" height="14" rx="2" stroke={color} strokeWidth="1.5"/>
-    <Path d="M16 13C16 12.4477 16.4477 12 17 12H20C20.5523 12 21 12.4477 21 13V15C21 15.5523 20.5523 16 20 16H17C16.4477 16 16 15.5523 16 15V13Z" fill={color} opacity="0.1" stroke={color} strokeWidth="1.5"/>
-    <Circle cx="18" cy="14" r="0.5" fill={color}/>
-  </Svg>
-);
-
 const UserIcon = ({ color = '#032A24', size = 20 }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Circle cx="12" cy="8" r="4" stroke={color} strokeWidth="1.5"/>
@@ -244,15 +238,6 @@ const getStatusLabel = (status: string) => {
   return labels[status] || status;
 };
 
-const getPlanTypeLabel = (type: string) => {
-  const labels: Record<string, string> = {
-    individual: 'Individual',
-    family: 'Family',
-    business: 'Business',
-  };
-  return labels[type] || type;
-};
-
 // ========================================
 // MAIN COMPONENT
 // ========================================
@@ -285,6 +270,11 @@ const Takaful = () => {
   const [modalData, setModalData] = useState<any>(null);
 
   const [claimsExpanded, setClaimsExpanded] = useState(false);
+
+  // ===== PIN MODAL STATE =====
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState('');
 
   const relations = ['Spouse', 'Child', 'Parent', 'Sibling', 'Other'];
   const claimTypes = ['Medical', 'Accidental Death', 'Total Disability', 'Partial Disability', 'Other'];
@@ -506,16 +496,18 @@ const Takaful = () => {
     }
   };
 
-  // ============================================================
-  // TODO: Replace with real API when Takaful Kenya API is available
-  // Current: Mock purchase with simulated delay
-  // Future: const response = await takafulService.purchasePolicy({...})
-  // ============================================================
-  const handlePurchase = async () => {
+  // ===== HANDLE PURCHASE WITH PIN =====
+  const handlePurchase = () => {
+    setShowQuoteModal(false);
+    setShowPinModal(true);
+    setPinError('');
+  };
+
+  const handlePinVerify = async (pin: string) => {
     if (!selectedPlan || !selectedCoverage || !quoteData) return;
 
-    setProcessing(true);
-    setError('');
+    setPinLoading(true);
+    setPinError('');
     
     try {
       // MOCK PURCHASE - Replace with real API call when available
@@ -531,7 +523,7 @@ const Takaful = () => {
         expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
       });
 
-      setShowQuoteModal(false);
+      setShowPinModal(false);
       setShowSuccessModal(true);
 
       await fetchMyPolicies();
@@ -539,10 +531,16 @@ const Takaful = () => {
       setSuccess('Policy purchased successfully!');
       setTimeout(() => setSuccess(''), 5000);
     } catch (err) {
-      setError('Purchase failed. Please try again.');
+      setPinError('Purchase failed. Please try again.');
     } finally {
-      setProcessing(false);
+      setPinLoading(false);
     }
+  };
+
+  const handlePinModalClose = () => {
+    setShowPinModal(false);
+    setPinError('');
+    setShowQuoteModal(true);
   };
 
   const handleSubmitClaim = async () => {
@@ -579,14 +577,7 @@ const Takaful = () => {
   };
 
   if (loading) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <ActivityIndicator size="large" color="#032A24" />
-          <Text style={{ color: '#6B7280', marginTop: 16, fontSize: 14 }}>Loading Takaful plans...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <LoadingSpinner message="Loading Takaful plans..." />;
   }
 
   return (
@@ -1514,6 +1505,20 @@ const Takaful = () => {
           </View>
         </View>
       </Modal>
+
+      {/* ===== PIN MODAL ===== */}
+      <PinModal
+        visible={showPinModal}
+        onClose={handlePinModalClose}
+        onVerify={handlePinVerify}
+        loading={pinLoading}
+        error={pinError}
+        title="Confirm Purchase"
+        subtitle="Enter your 4-digit PIN to confirm this Takaful policy purchase"
+        amount={quoteData?.premium || 0}
+        recipient={selectedPlan?.name}
+        transactionType="takaful"
+      />
 
       {/* Success Toast */}
       {success ? (

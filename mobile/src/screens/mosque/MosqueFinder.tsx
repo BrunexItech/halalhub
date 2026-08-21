@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,16 +7,14 @@ import {
   ScrollView,
   TextInput,
   ActivityIndicator,
-  Modal,
   Platform,
   Linking,
   Dimensions,
   PermissionsAndroid,
-  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { mosqueFinderService } from '../../api/client';
-import Svg, { Path, Circle, Rect } from 'react-native-svg';
+import { Chase } from 'react-native-animated-spinkit';
+import Svg, { Path, Circle } from 'react-native-svg';
 
 const { width } = Dimensions.get('window');
 
@@ -36,7 +34,7 @@ const MosqueIcon = ({ color = '#C9A44B', size = 20 }) => (
   </Svg>
 );
 
-const LocationIcon = ({ color = '#6B7280', size = 18 }) => (
+const LocationIcon = ({ color = '#C9A44B', size = 18 }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" stroke={color} strokeWidth="1.5"/>
     <Circle cx="12" cy="10" r="3" stroke={color} strokeWidth="1.5"/>
@@ -50,34 +48,13 @@ const SearchIcon = ({ color = '#FFFFFF', size = 18 }) => (
   </Svg>
 );
 
-const ClockIcon = ({ color = '#6B7280', size = 14 }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.5"/>
-    <Path d="M12 6V12L15 15" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
-  </Svg>
-);
-
-const CloseIcon = ({ color = '#6B7280', size = 20 }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path d="M18 6L6 18M6 6L18 18" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </Svg>
-);
-
 const CheckIcon = ({ color = '#3FAF73', size = 14 }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path d="M5 12L10 17L20 7" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
   </Svg>
 );
 
-const NavIcon = ({ color = '#6B7280', size = 14 }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.5"/>
-    <Path d="M12 8V12L14 14" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
-    <Path d="M16 16L21 21" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
-  </Svg>
-);
-
-const CurrentLocationIcon = ({ color = '#C9A44B', size = 18 }) => (
+const CurrentLocationIcon = ({ color = '#C9A44B', size = 20 }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Circle cx="12" cy="12" r="3" fill={color} stroke={color} strokeWidth="1.5"/>
     <Circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.5" strokeDasharray="2 2"/>
@@ -88,87 +65,20 @@ const CurrentLocationIcon = ({ color = '#C9A44B', size = 18 }) => (
 const MosqueFinder = () => {
   const navigation = useNavigation();
   const [location, setLocation] = useState('');
-  const [mosqueOrCity, setMosqueOrCity] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
+  const [error, setError] = useState('');
+  const [pageLoading, setPageLoading] = useState(true);
   const [recentSearches, setRecentSearches] = useState<any[]>([]);
   const [showRecent, setShowRecent] = useState(false);
-  const [error, setError] = useState('');
-  const [isLocating, setIsLocating] = useState(false);
-  const locationInputRef = useRef<TextInput>(null);
 
   useEffect(() => {
-    // Load recent searches from AsyncStorage would go here
-    // For now, using mock data
-    setRecentSearches([
-      { location: 'Nairobi CBD', mosque: 'Jamia Mosque' },
-      { location: 'Mombasa', mosque: 'All Mosques' },
-    ]);
-
-    // Auto-detect location on mount
-    handleUseCurrentLocation();
+    // Simulate page loading
+    const timer = setTimeout(() => {
+      setPageLoading(false);
+    }, 300);
+    return () => clearTimeout(timer);
   }, []);
-
-  const saveRecentSearch = (locationVal: string, mosqueVal: string) => {
-    const search = {
-      location: locationVal,
-      mosque: mosqueVal || 'All Mosques',
-      timestamp: Date.now(),
-    };
-    const updated = [
-      search,
-      ...recentSearches.filter(
-        (s) => s.location !== locationVal || s.mosque !== mosqueVal
-      ),
-    ].slice(0, 5);
-    setRecentSearches(updated);
-  };
-
-  const buildGoogleMapsUrl = (locationVal: string, mosqueVal: string) => {
-    const trimmedLocation = locationVal.trim();
-    const trimmedMosque = mosqueVal.trim();
-
-    if (!trimmedLocation) {
-      setError('Please enter your location or starting point');
-      return null;
-    }
-
-    setError('');
-
-    if (trimmedLocation && trimmedMosque) {
-      return `https://www.google.com/maps/search/${encodeURIComponent(trimmedMosque)}+near+${encodeURIComponent(trimmedLocation)}`;
-    }
-
-    if (trimmedLocation && !trimmedMosque) {
-      return `https://www.google.com/maps/search/mosque+near+${encodeURIComponent(trimmedLocation)}`;
-    }
-
-    return 'https://www.google.com/maps/search/mosque';
-  };
-
-  const handleSearch = () => {
-    const trimmedLocation = location.trim();
-
-    if (!trimmedLocation) {
-      setError('Please enter your location or starting point');
-      locationInputRef.current?.focus();
-      return;
-    }
-
-    setIsLoading(true);
-    setError('');
-
-    const url = buildGoogleMapsUrl(location, mosqueOrCity);
-
-    if (url) {
-      saveRecentSearch(trimmedLocation, mosqueOrCity.trim());
-      setTimeout(() => {
-        Linking.openURL(url);
-        setIsLoading(false);
-      }, 300);
-    } else {
-      setIsLoading(false);
-    }
-  };
 
   const requestLocationPermission = async () => {
     if (Platform.OS === 'android') {
@@ -192,6 +102,38 @@ const MosqueFinder = () => {
     return true;
   };
 
+  const buildGoogleMapsUrl = (locationValue: string) => {
+    const trimmedLocation = locationValue.trim();
+    if (!trimmedLocation) {
+      setError('Please enter your location or starting point');
+      return null;
+    }
+    setError('');
+    return `https://www.google.com/maps/search/mosque+near+${encodeURIComponent(trimmedLocation)}`;
+  };
+
+  const handleSearch = () => {
+    const trimmedLocation = location.trim();
+
+    if (!trimmedLocation) {
+      setError('Please enter your location or starting point');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    const url = buildGoogleMapsUrl(location);
+    if (url) {
+      setTimeout(() => {
+        Linking.openURL(url);
+        setIsLoading(false);
+      }, 300);
+    } else {
+      setIsLoading(false);
+    }
+  };
+
   const handleUseCurrentLocation = async () => {
     setIsLocating(true);
     setError('');
@@ -206,60 +148,25 @@ const MosqueFinder = () => {
     navigator.geolocation?.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        // Get address from coordinates using reverse geocoding
-        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`)
-          .then(response => response.json())
-          .then(data => {
-            const address = data.display_name || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-            setLocation(address);
-            setIsLocating(false);
-            // Auto search after getting location
-            setTimeout(() => {
-              const url = `https://www.google.com/maps/search/mosque/@${latitude},${longitude},14z`;
-              Linking.openURL(url);
-            }, 300);
-          })
-          .catch(() => {
-            // Fallback: use coordinates directly
-            const coords = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-            setLocation(coords);
-            setIsLocating(false);
-            setTimeout(() => {
-              const url = `https://www.google.com/maps/search/mosque/@${latitude},${longitude},14z`;
-              Linking.openURL(url);
-            }, 300);
-          });
+        setIsLocating(false);
+        const url = `https://www.google.com/maps/search/mosque/@${latitude},${longitude},14z`;
+        Linking.openURL(url);
       },
       (error) => {
         console.log('Geolocation error:', error);
         setError('Unable to get your location. Please enter your location manually.');
         setIsLocating(false);
       },
-      { enableHighAccuracy: true, timeout: 15000 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
   };
 
-  const handleKeyPress = () => {
-    handleSearch();
-  };
-
-  const loadRecentSearch = (search: any) => {
-    setLocation(search.location);
-    if (search.mosque !== 'All Mosques') {
-      setMosqueOrCity(search.mosque);
-    } else {
-      setMosqueOrCity('');
-    }
-    setShowRecent(false);
-    setTimeout(handleSearch, 100);
-  };
-
-  if (isLoading) {
+  if (pageLoading) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <ActivityIndicator size="large" color="#032A24" />
-          <Text style={{ color: '#6B7280', marginTop: 16, fontSize: 14 }}>Searching for mosques...</Text>
+          <Chase size={36} color="#C9A44B" />
+          <Text style={{ color: '#6B7280', marginTop: 12, fontSize: 14 }}>Loading...</Text>
         </View>
       </SafeAreaView>
     );
@@ -347,27 +254,7 @@ const MosqueFinder = () => {
                 </Text>
               </View>
 
-              <TouchableOpacity
-                onPress={handleUseCurrentLocation}
-                disabled={isLocating}
-                activeOpacity={0.7}
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  backgroundColor: 'rgba(201, 164, 75, 0.12)',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderWidth: 1,
-                  borderColor: 'rgba(201, 164, 75, 0.15)',
-                }}
-              >
-                {isLocating ? (
-                  <ActivityIndicator size="small" color="#C9A44B" />
-                ) : (
-                  <CurrentLocationIcon color="#C9A44B" size={20} />
-                )}
-              </TouchableOpacity>
+              <View style={{ width: 40 }} />
             </View>
           </View>
 
@@ -410,7 +297,7 @@ const MosqueFinder = () => {
             {/* Location Input */}
             <View style={{ marginBottom: 16 }}>
               <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '600', letterSpacing: 0.5, marginBottom: 6 }}>
-                Current Location / Starting Point <Text style={{ color: '#DC2626' }}>*</Text>
+                Enter Location or Starting Point <Text style={{ color: '#DC2626' }}>*</Text>
               </Text>
               <View style={{ position: 'relative' }}>
                 <View style={{
@@ -422,7 +309,6 @@ const MosqueFinder = () => {
                   <LocationIcon color="#9CA3AF" size={18} />
                 </View>
                 <TextInput
-                  ref={locationInputRef}
                   style={{
                     backgroundColor: '#FAFAF7',
                     borderWidth: 1,
@@ -450,151 +336,75 @@ const MosqueFinder = () => {
                     onPress={() => setLocation('')}
                     activeOpacity={0.7}
                   >
-                    <CloseIcon color="#9CA3AF" size={18} />
+                    <Svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <Path d="M18 6L6 18M6 6L18 18" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </Svg>
                   </TouchableOpacity>
                 ) : null}
               </View>
               <Text style={{ color: '#9CA3AF', fontSize: 10, marginTop: 4 }}>
-                <Text style={{ color: '#DC2626' }}>*</Text> Required — Enter your starting point
+                <Text style={{ color: '#DC2626' }}>*</Text> Required — Enter your starting point to find nearby mosques
               </Text>
+            </View>
 
-              {/* Recent Searches Dropdown */}
-              {showRecent && recentSearches.length > 0 && (
-                <View style={{
-                  position: 'absolute',
-                  top: 76,
-                  left: 0,
-                  right: 0,
-                  zIndex: 10,
-                  backgroundColor: '#FFFFFF',
-                  borderWidth: 1,
-                  borderColor: 'rgba(3, 42, 36, 0.06)',
+            {/* Buttons Row */}
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              {/* Find Mosques Button */}
+              <TouchableOpacity
+                style={{
+                  flex: 2,
+                  backgroundColor: '#032A24',
+                  paddingVertical: 14,
                   borderRadius: 12,
-                  shadowColor: '#032A24',
-                  shadowOffset: { width: 0, height: 8 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 16,
-                  elevation: 6,
-                  maxHeight: 180,
-                }}>
-                  <View style={{
-                    paddingHorizontal: 14,
-                    paddingVertical: 10,
-                    borderBottomWidth: 1,
-                    borderBottomColor: 'rgba(3, 42, 36, 0.04)',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 10,
-                  }}>
-                    <ClockIcon color="#6B7280" size={14} />
-                    <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '500' }}>Recent Searches</Text>
-                  </View>
-                  {recentSearches.map((search, index) => (
-                    <TouchableOpacity
-                      key={index}
-                      style={{
-                        paddingHorizontal: 14,
-                        paddingVertical: 10,
-                        borderBottomWidth: index < recentSearches.length - 1 ? 1 : 0,
-                        borderBottomColor: 'rgba(3, 42, 36, 0.03)',
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 10,
-                      }}
-                      onPress={() => loadRecentSearch(search)}
-                      activeOpacity={0.7}
-                    >
-                      <LocationIcon color="#6B7280" size={14} />
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '500' }} numberOfLines={1}>
-                          {search.location}
-                        </Text>
-                        <Text style={{ color: '#9CA3AF', fontSize: 11 }}>{search.mosque}</Text>
-                      </View>
-                      <NavIcon color="#6B7280" size={14} />
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-            </View>
-
-            {/* Mosque/City Input */}
-            <View style={{ marginBottom: 18 }}>
-              <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '600', letterSpacing: 0.5, marginBottom: 6 }}>
-                Mosque or City <Text style={{ color: '#9CA3AF', fontWeight: '400' }}>(Optional)</Text>
-              </Text>
-              <View style={{ position: 'relative' }}>
-                <View style={{
-                  position: 'absolute',
-                  left: 14,
-                  top: 12,
-                  zIndex: 1,
-                }}>
-                  <MosqueIcon color="#9CA3AF" size={18} />
-                </View>
-                <TextInput
-                  style={{
-                    backgroundColor: '#FAFAF7',
-                    borderWidth: 1,
-                    borderColor: 'rgba(3, 42, 36, 0.08)',
-                    borderRadius: 12,
-                    paddingHorizontal: 14,
-                    paddingVertical: 12,
-                    paddingLeft: 46,
-                    color: '#1F2937',
-                    fontSize: 14,
-                  }}
-                  value={mosqueOrCity}
-                  onChangeText={(text) => {
-                    setMosqueOrCity(text);
-                    if (error) setError('');
-                  }}
-                  placeholder="e.g., Jamia Mosque, or leave blank"
-                  placeholderTextColor="#9CA3AF"
-                />
-                {mosqueOrCity ? (
-                  <TouchableOpacity
-                    style={{ position: 'absolute', right: 12, top: 12 }}
-                    onPress={() => setMosqueOrCity('')}
-                    activeOpacity={0.7}
-                  >
-                    <CloseIcon color="#9CA3AF" size={18} />
-                  </TouchableOpacity>
-                ) : null}
-              </View>
-              <Text style={{ color: '#9CA3AF', fontSize: 10, marginTop: 4 }}>
-                Leave blank to see <Text style={{ color: '#032A24', fontWeight: '500' }}>all mosques</Text> near your location
-              </Text>
-            </View>
-
-            {/* Search Button */}
-            <TouchableOpacity
-              style={{
-                backgroundColor: '#032A24',
-                paddingVertical: 14,
-                borderRadius: 12,
-                alignItems: 'center',
-                flexDirection: 'row',
-                justifyContent: 'center',
-                gap: 10,
-                opacity: isLoading || !location.trim() ? 0.5 : 1,
-              }}
-              onPress={handleSearch}
-              disabled={isLoading || !location.trim()}
-              activeOpacity={0.7}
-            >
-              {isLoading ? (
-                <>
+                  alignItems: 'center',
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  gap: 10,
+                  opacity: isLoading || !location.trim() ? 0.5 : 1,
+                }}
+                onPress={handleSearch}
+                disabled={isLoading || !location.trim()}
+                activeOpacity={0.7}
+              >
+                {isLoading ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
-                  <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Searching...</Text>
-                </>
-              ) : (
-                <>
+                ) : (
                   <SearchIcon color="#FFFFFF" size={18} />
-                  <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Find Mosques</Text>
-                </>
-              )}
-            </TouchableOpacity>
+                )}
+                <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>
+                  {isLoading ? 'Searching...' : 'Find Mosques'}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Current Location Button */}
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  paddingVertical: 14,
+                  borderRadius: 12,
+                  borderWidth: 1.5,
+                  borderColor: '#032A24',
+                  backgroundColor: '#FFFFFF',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexDirection: 'row',
+                  gap: 8,
+                  opacity: isLocating ? 0.5 : 1,
+                }}
+                onPress={handleUseCurrentLocation}
+                disabled={isLocating}
+                activeOpacity={0.7}
+              >
+                {isLocating ? (
+                  <ActivityIndicator size="small" color="#032A24" />
+                ) : (
+                  <CurrentLocationIcon color="#032A24" size={20} />
+                )}
+                <Text style={{ color: '#032A24', fontSize: 13, fontWeight: '600' }}>
+                  {isLocating ? 'Locating...' : 'Current Location'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* ===== FEATURE CARDS ===== */}
@@ -684,7 +494,11 @@ const MosqueFinder = () => {
             gap: 16,
           }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <NavIcon color="#6B7280" size={14} />
+              <Svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <Circle cx="12" cy="12" r="10" stroke="#6B7280" strokeWidth="1.5"/>
+                <Path d="M12 8V12L14 14" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round"/>
+                <Path d="M16 16L21 21" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round"/>
+              </Svg>
               <Text style={{ color: '#6B7280', fontSize: 12 }}>Google Maps</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>

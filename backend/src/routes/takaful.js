@@ -1,26 +1,23 @@
 // backend/src/routes/takaful.js
 const router = require('express').Router();
 const { v4: uuidv4 } = require('uuid');
-const { Client } = require('pg');
+const bcrypt = require('bcryptjs');
+const { Pool } = require('pg');
 const { authenticate } = require('../middleware/auth');
 const virtualAccountService = require('../services/virtual-account.service');
 const takafulApiService = require('../services/takaful-api.service');
 
-let client;
-
-async function getClient() {
-  if (!client) {
-    client = new Client({
-      user: process.env.DB_USER || 'halalhub_user',
-      password: process.env.DB_PASSWORD || '@halalhub@#',
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT) || 5432,
-      database: process.env.DB_NAME || 'halalhub'
-    });
-    await client.connect();
-  }
-  return client;
-}
+// ============================================================
+// Database Connection Pool (removed hardcoded credentials)
+// ============================================================
+const dbPool = new Pool({
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT) || 5432,
+  database: process.env.DB_NAME,
+  max: 20,
+});
 
 // Master account for Takaful funds
 const TAKAFUL_POOL_ACCOUNT = process.env.TAKAFUL_POOL_ACCOUNT || 'TAKAFUL-POOL-001';
@@ -41,8 +38,7 @@ const calculateAdminFee = (amount) => {
 // ============================================================
 router.get('/plans', async (req, res) => {
   try {
-    const db = await getClient();
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT 
         id,
         name,
@@ -77,10 +73,9 @@ router.get('/plans', async (req, res) => {
 // ============================================================
 router.get('/plans/:id', async (req, res) => {
   try {
-    const db = await getClient();
     const planId = req.params.id;
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT 
         id,
         name,
@@ -118,10 +113,9 @@ router.get('/plans/:id', async (req, res) => {
 // ============================================================
 router.get('/plans/:id/coverage', async (req, res) => {
   try {
-    const db = await getClient();
     const planId = req.params.id;
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT coverage_options
       FROM takaful_plans
       WHERE id = $1 AND is_active = true
@@ -159,9 +153,7 @@ router.post('/enquire', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'Plan ID, coverage option, and sum assured are required' });
     }
 
-    // Get plan from our DB
-    const db = await getClient();
-    const planResult = await db.query(
+    const planResult = await dbPool.query(
       'SELECT id, name, external_product_id FROM takaful_plans WHERE id = $1 AND is_active = true',
       [plan_id]
     );
@@ -172,8 +164,7 @@ router.post('/enquire', authenticate, async (req, res) => {
 
     const plan = planResult.rows[0];
 
-    // Get user details
-    const userResult = await db.query(
+    const userResult = await dbPool.query(
       'SELECT fullname, email, phone FROM users WHERE id = $1',
       [userId]
     );
@@ -184,7 +175,6 @@ router.post('/enquire', authenticate, async (req, res) => {
 
     const user = userResult.rows[0];
 
-    // Prepare quote request
     const quoteData = {
       product_id: plan.external_product_id || plan.id,
       coverage_option: coverage_option,
@@ -197,7 +187,6 @@ router.post('/enquire', authenticate, async (req, res) => {
       }
     };
 
-    // Call Takaful Kenya API
     const response = await takafulApiService.getQuote(quoteData);
 
     if (!response.success) {
@@ -206,9 +195,8 @@ router.post('/enquire', authenticate, async (req, res) => {
       });
     }
 
-    // Store enquiry in DB
     const enquiryId = 'tenq-' + Date.now().toString(36) + uuidv4().slice(0, 6);
-    await db.query(`
+    await dbPool.query(`
       INSERT INTO takaful_enquiries (
         id, user_id, plan_id, coverage_option, sum_assured, 
         premium_amount, external_reference, status, created_at
@@ -242,11 +230,9 @@ router.post('/enquire', authenticate, async (req, res) => {
 });
 
 // ============================================================
-// 5. PURCHASE POLICY - Calls Takaful Kenya API
+// 5. PURCHASE POLICY - Calls Takaful Kenya API - PIN REQUIRED
 // ============================================================
 router.post('/purchase', authenticate, async (req, res) => {
-  const db = await getClient();
-
   try {
     const userId = req.user.id;
     const {
@@ -255,27 +241,55 @@ router.post('/purchase', authenticate, async (req, res) => {
       sum_assured,
       premium,
       payment_method = 'wallet',
-      client_details
+      client_details,
+      pin
     } = req.body;
+
+    // Validate PIN is provided
+    if (!pin) {
+      return res.status(400).json({
+        success: false,
+        error: 'PIN is required to purchase a policy'
+      });
+    }
+
+    // Verify PIN
+    const userResult = await dbPool.query(
+      'SELECT pinhash FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    const validPin = await bcrypt.compare(pin, userResult.rows[0].pinhash);
+    if (!validPin) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid PIN'
+      });
+    }
 
     if (!plan_id || !coverage_option || !premium || !sum_assured) {
       return res.status(400).json({ error: 'Plan ID, coverage, premium, and sum assured are required' });
     }
 
-    // Get user details
-    const userResult = await db.query(
+    const userResult2 = await dbPool.query(
       'SELECT fullname, email, phone FROM users WHERE id = $1',
       [userId]
     );
 
-    if (userResult.rows.length === 0) {
+    if (userResult2.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const user = userResult.rows[0];
+    const user = userResult2.rows[0];
 
-    // Get plan
-    const planResult = await db.query(
+    const planResult = await dbPool.query(
       'SELECT id, name, external_product_id FROM takaful_plans WHERE id = $1 AND is_active = true',
       [plan_id]
     );
@@ -286,7 +300,6 @@ router.post('/purchase', authenticate, async (req, res) => {
 
     const plan = planResult.rows[0];
 
-    // Check user wallet balance
     const userAccount = await virtualAccountService.getUserAccount(userId);
 
     if (!userAccount) {
@@ -305,14 +318,12 @@ router.post('/purchase', authenticate, async (req, res) => {
       });
     }
 
-    // Get Takaful pool account
     const poolAccount = await virtualAccountService.getAccountByNumber(TAKAFUL_POOL_ACCOUNT);
 
     if (!poolAccount) {
       return res.status(500).json({ error: 'Takaful pool account not configured' });
     }
 
-    // Prepare purchase request for Takaful Kenya API
     const purchaseData = {
       product_id: plan.external_product_id || plan.id,
       coverage_option: coverage_option,
@@ -327,7 +338,6 @@ router.post('/purchase', authenticate, async (req, res) => {
       payment_method: payment_method
     };
 
-    // Call Takaful Kenya API
     const response = await takafulApiService.purchasePolicy(purchaseData);
 
     if (!response.success) {
@@ -336,11 +346,9 @@ router.post('/purchase', authenticate, async (req, res) => {
       });
     }
 
-    // Begin DB transaction
-    await db.query('BEGIN');
+    await dbPool.query('BEGIN');
 
     try {
-      // Transfer premium from user to Takaful pool
       await virtualAccountService.processTransfer(
         userId,
         userAccount.account_number,
@@ -349,7 +357,6 @@ router.post('/purchase', authenticate, async (req, res) => {
         `Takaful premium payment - ${plan.name}`
       );
 
-      // Transfer admin fee from user to master account
       if (adminFee > 0) {
         await virtualAccountService.processTransfer(
           userId,
@@ -360,13 +367,12 @@ router.post('/purchase', authenticate, async (req, res) => {
         );
       }
 
-      // Store policy in our database
       const policyId = 'tpol-' + Date.now().toString(36) + uuidv4().slice(0, 6);
       const startDate = new Date();
       const expiryDate = new Date(startDate);
       expiryDate.setFullYear(expiryDate.getFullYear() + 1);
 
-      await db.query(`
+      await dbPool.query(`
         INSERT INTO takaful_policies (
           id, user_id, plan_id, coverage_option, sum_assured,
           premium, external_policy_number, status, start_date, expiry_date,
@@ -385,21 +391,19 @@ router.post('/purchase', authenticate, async (req, res) => {
         response.data.payment_reference || null
       ]);
 
-      // Record commission (revenue share)
       const commissionRate = parseFloat(process.env.TAKAFUL_COMMISSION_PERCENT) || 5;
       const commissionAmount = Math.round((premiumAmount * commissionRate) / 100);
 
       if (commissionAmount > 0) {
         const commissionId = 'tcom-' + Date.now().toString(36) + uuidv4().slice(0, 6);
-        await db.query(`
+        await dbPool.query(`
           INSERT INTO takaful_commissions (
             id, policy_id, amount, rate_percent, status, created_at
           ) VALUES ($1, $2, $3, $4, 'pending', NOW())
         `, [commissionId, policyId, commissionAmount, commissionRate]);
       }
 
-      // Update pool stats
-      await db.query(`
+      await dbPool.query(`
         UPDATE takaful_pool_stats 
         SET total_members = total_members + 1,
             pool_balance = pool_balance + $1,
@@ -407,9 +411,8 @@ router.post('/purchase', authenticate, async (req, res) => {
         WHERE id = (SELECT id FROM takaful_pool_stats LIMIT 1)
       `, [premiumAmount]);
 
-      // Create notification for user
       const notifId = 'notif-' + Date.now().toString(36) + uuidv4().slice(0, 6);
-      await db.query(`
+      await dbPool.query(`
         INSERT INTO notifications (
           id, user_id, title, message, type, link, created_at
         ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
@@ -422,9 +425,8 @@ router.post('/purchase', authenticate, async (req, res) => {
         `/takaful/policies/${policyId}`
       ]);
 
-      await db.query('COMMIT');
+      await dbPool.query('COMMIT');
 
-      // Get updated balance
       const updatedAccount = await virtualAccountService.getUserAccount(userId);
 
       res.status(201).json({
@@ -451,12 +453,12 @@ router.post('/purchase', authenticate, async (req, res) => {
       });
 
     } catch (err) {
-      await db.query('ROLLBACK');
+      await dbPool.query('ROLLBACK');
       throw err;
     }
 
   } catch (err) {
-    await db.query('ROLLBACK');
+    await dbPool.query('ROLLBACK');
     console.error('Error purchasing policy:', err.message);
     res.status(500).json({ error: err.message || 'Failed to purchase policy' });
   }
@@ -467,7 +469,6 @@ router.post('/purchase', authenticate, async (req, res) => {
 // ============================================================
 router.get('/policies', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const { status, limit = 50 } = req.query;
 
@@ -506,7 +507,7 @@ router.get('/policies', authenticate, async (req, res) => {
     query += ` ORDER BY p.created_at DESC LIMIT $${paramIndex}`;
     params.push(parseInt(limit));
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
     res.json({
       success: true,
@@ -525,11 +526,10 @@ router.get('/policies', authenticate, async (req, res) => {
 // ============================================================
 router.get('/policies/:id', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const policyId = req.params.id;
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT 
         p.*,
         pl.name as plan_name,
@@ -552,14 +552,12 @@ router.get('/policies/:id', authenticate, async (req, res) => {
       return res.status(404).json({ error: 'Policy not found' });
     }
 
-    // Try to get latest status from external API
     const policy = result.rows[0];
     if (policy.external_policy_number) {
       try {
         const externalStatus = await takafulApiService.getPolicyStatus(policy.external_policy_number);
         if (externalStatus.success && externalStatus.data.status !== policy.status) {
-          // Update our DB with external status
-          await db.query(
+          await dbPool.query(
             'UPDATE takaful_policies SET status = $1, updated_at = NOW() WHERE id = $2',
             [externalStatus.data.status, policyId]
           );
@@ -567,7 +565,6 @@ router.get('/policies/:id', authenticate, async (req, res) => {
         }
       } catch (err) {
         console.log('Could not sync policy status:', err.message);
-        // Don't fail the request, just use our stored status
       }
     }
 
@@ -587,7 +584,6 @@ router.get('/policies/:id', authenticate, async (req, res) => {
 // ============================================================
 router.post('/claims', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const {
       policy_id,
@@ -601,8 +597,7 @@ router.post('/claims', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'Policy ID, claim type, and amount are required' });
     }
 
-    // Get policy
-    const policyResult = await db.query(
+    const policyResult = await dbPool.query(
       'SELECT external_policy_number, plan_id FROM takaful_policies WHERE id = $1 AND user_id = $2',
       [policy_id, userId]
     );
@@ -613,7 +608,6 @@ router.post('/claims', authenticate, async (req, res) => {
 
     const policy = policyResult.rows[0];
 
-    // Prepare claim data for external API
     const claimData = {
       policy_number: policy.external_policy_number || policy_id,
       claim_type: claim_type,
@@ -623,7 +617,6 @@ router.post('/claims', authenticate, async (req, res) => {
       client_reference: userId
     };
 
-    // Call Takaful Kenya API
     const response = await takafulApiService.submitClaim(claimData);
 
     if (!response.success) {
@@ -632,9 +625,8 @@ router.post('/claims', authenticate, async (req, res) => {
       });
     }
 
-    // Store claim in DB
     const claimId = 'tclm-' + Date.now().toString(36) + uuidv4().slice(0, 6);
-    await db.query(`
+    await dbPool.query(`
       INSERT INTO takaful_claims (
         id, policy_id, user_id, claim_type, amount, description,
         external_claim_reference, status, submitted_at, created_at, updated_at
@@ -649,9 +641,8 @@ router.post('/claims', authenticate, async (req, res) => {
       response.data.claim_reference || response.data.reference || null
     ]);
 
-    // Notification
     const notifId = 'notif-' + Date.now().toString(36) + uuidv4().slice(0, 6);
-    await db.query(`
+    await dbPool.query(`
       INSERT INTO notifications (
         id, user_id, title, message, type, link, created_at
       ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
@@ -688,7 +679,6 @@ router.post('/claims', authenticate, async (req, res) => {
 // ============================================================
 router.get('/claims', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const { status, limit = 50 } = req.query;
 
@@ -724,7 +714,7 @@ router.get('/claims', authenticate, async (req, res) => {
     query += ` ORDER BY c.created_at DESC LIMIT $${paramIndex}`;
     params.push(parseInt(limit));
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
     res.json({
       success: true,
@@ -743,11 +733,10 @@ router.get('/claims', authenticate, async (req, res) => {
 // ============================================================
 router.get('/claims/:id', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const claimId = req.params.id;
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT 
         c.*,
         p.plan_id,
@@ -790,7 +779,6 @@ router.post('/webhook', async (req, res) => {
       return res.status(400).json({ error: 'Missing webhook headers' });
     }
 
-    // Verify webhook signature
     const isValid = takafulApiService.verifyWebhookSignature(
       req.body,
       signature,
@@ -802,10 +790,8 @@ router.post('/webhook', async (req, res) => {
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
-    // Process webhook
     const result = await takafulApiService.handleWebhook(event, req.body);
 
-    // Acknowledge receipt
     res.status(200).json({
       success: true,
       message: 'Webhook received',
@@ -814,7 +800,6 @@ router.post('/webhook', async (req, res) => {
 
   } catch (err) {
     console.error('[Webhook] Error:', err.message);
-    // Always respond 200 to avoid retries
     res.status(200).json({
       success: false,
       error: err.message
@@ -827,10 +812,7 @@ router.post('/webhook', async (req, res) => {
 // ============================================================
 router.post('/admin/sync-products', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
-
-    // Check if user is admin
-    const userCheck = await db.query(
+    const userCheck = await dbPool.query(
       'SELECT isadmin FROM users WHERE id = $1',
       [req.user.id]
     );
@@ -839,7 +821,6 @@ router.post('/admin/sync-products', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
-    // Fetch products from external API
     const response = await takafulApiService.getProducts();
 
     if (!response.success) {
@@ -848,7 +829,6 @@ router.post('/admin/sync-products', authenticate, async (req, res) => {
       });
     }
 
-    // Process and store products
     const products = response.data.products || [];
     let synced = 0;
     let updated = 0;
@@ -856,7 +836,7 @@ router.post('/admin/sync-products', authenticate, async (req, res) => {
 
     for (const product of products) {
       try {
-        const existing = await db.query(
+        const existing = await dbPool.query(
           'SELECT id FROM takaful_plans WHERE external_product_id = $1',
           [product.id]
         );
@@ -876,8 +856,7 @@ router.post('/admin/sync-products', authenticate, async (req, res) => {
         };
 
         if (existing.rows.length > 0) {
-          // Update existing
-          await db.query(`
+          await dbPool.query(`
             UPDATE takaful_plans SET
               name = $1,
               description = $2,
@@ -906,9 +885,8 @@ router.post('/admin/sync-products', authenticate, async (req, res) => {
           ]);
           updated++;
         } else {
-          // Insert new
           const id = 'tpln-' + Date.now().toString(36) + uuidv4().slice(0, 6);
-          await db.query(`
+          await dbPool.query(`
             INSERT INTO takaful_plans (
               id, external_product_id, name, description, category,
               coverage_options, monthly_premium, annual_premium,
@@ -959,9 +937,7 @@ router.post('/admin/sync-products', authenticate, async (req, res) => {
 // ============================================================
 router.get('/pool-stats', async (req, res) => {
   try {
-    const db = await getClient();
-
-    let stats = await db.query(`
+    let stats = await dbPool.query(`
       SELECT 
         total_members,
         pool_balance,
@@ -974,13 +950,13 @@ router.get('/pool-stats', async (req, res) => {
     `);
 
     if (stats.rows.length === 0) {
-      await db.query(`
+      await dbPool.query(`
         INSERT INTO takaful_pool_stats (
           id, total_members, pool_balance, claims_paid, surplus, total_claims, updated_at
         ) VALUES ('pool-stats-1', 0, 0, 0, 0, 0, NOW())
       `);
 
-      stats = await db.query(`
+      stats = await dbPool.query(`
         SELECT 
           total_members,
           pool_balance,
@@ -1018,10 +994,9 @@ router.get('/pool-stats', async (req, res) => {
 // ============================================================
 router.get('/summary', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT 
         COUNT(*) as total_policies,
         COUNT(CASE WHEN status = 'active' THEN 1 END) as active_policies,
@@ -1059,9 +1034,7 @@ router.get('/summary', authenticate, async (req, res) => {
 // ============================================================
 router.get('/admin/commissions', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
-
-    const userCheck = await db.query(
+    const userCheck = await dbPool.query(
       'SELECT isadmin FROM users WHERE id = $1',
       [req.user.id]
     );
@@ -1098,10 +1071,9 @@ router.get('/admin/commissions', authenticate, async (req, res) => {
     query += ` ORDER BY c.created_at DESC LIMIT $${paramIndex}`;
     params.push(parseInt(limit));
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
-    // Get summary
-    const summary = await db.query(`
+    const summary = await dbPool.query(`
       SELECT 
         COUNT(*) as total_commissions,
         COALESCE(SUM(amount), 0) as total_amount,

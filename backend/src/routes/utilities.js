@@ -1,26 +1,22 @@
 const router = require('express').Router();
 const { authenticate } = require('../middleware/auth');
-const { Client } = require('pg');
+const bcrypt = require('bcryptjs');
+const { Pool } = require('pg');
 const crypto = require('crypto');
 const virtualAccountService = require('../services/virtual-account.service');
 const bankClient = require('../services/bank-client');
 
-// Database connection
-let client;
-
-async function getClient() {
-  if (!client) {
-    client = new Client({
-      user: process.env.DB_USER || 'halalhub_user',
-      password: process.env.DB_PASSWORD || '@halalhub@#',
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT) || 5432,
-      database: process.env.DB_NAME || 'halalhub'
-    });
-    await client.connect();
-  }
-  return client;
-}
+// ============================================================
+// Database Connection Pool (removed hardcoded credentials)
+// ============================================================
+const dbPool = new Pool({
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT) || 5432,
+  database: process.env.DB_NAME,
+  max: 20,
+});
 
 // ========================================
 // GET ALL UTILITY PROVIDERS (Hardcoded)
@@ -47,10 +43,9 @@ router.get('/', async (req, res) => {
 // ========================================
 router.get('/history', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     
-    const result = await db.query(
+    const result = await dbPool.query(
       `SELECT 
         id,
         provider_id,
@@ -87,10 +82,9 @@ router.get('/history', authenticate, async (req, res) => {
 // ========================================
 router.get('/saved', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     
-    const result = await db.query(
+    const result = await dbPool.query(
       `SELECT 
         id,
         provider_id,
@@ -121,7 +115,6 @@ router.get('/saved', authenticate, async (req, res) => {
 // ========================================
 router.post('/saved', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const { providerId, nickname, accountNumber } = req.body;
     
@@ -132,8 +125,7 @@ router.post('/saved', authenticate, async (req, res) => {
       });
     }
     
-    // Check if already saved
-    const existing = await db.query(
+    const existing = await dbPool.query(
       'SELECT id FROM saved_services WHERE user_id = $1 AND provider_id = $2 AND account_number = $3',
       [userId, providerId, accountNumber]
     );
@@ -147,7 +139,7 @@ router.post('/saved', authenticate, async (req, res) => {
     
     const id = 'svc-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
     
-    await db.query(
+    await dbPool.query(
       `INSERT INTO saved_services (id, user_id, provider_id, nickname, account_number)
        VALUES ($1, $2, $3, $4, $5)`,
       [id, userId, providerId, nickname, accountNumber]
@@ -172,11 +164,10 @@ router.post('/saved', authenticate, async (req, res) => {
 // ========================================
 router.delete('/saved/:id', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const { id } = req.params;
     
-    const result = await db.query(
+    const result = await dbPool.query(
       'DELETE FROM saved_services WHERE id = $1 AND user_id = $2',
       [id, userId]
     );
@@ -202,16 +193,42 @@ router.delete('/saved/:id', authenticate, async (req, res) => {
 });
 
 // ========================================
-// PAY UTILITY BILL (Authenticated)
+// PAY UTILITY BILL (Authenticated) - PIN REQUIRED
 // ========================================
 router.post('/pay', authenticate, async (req, res) => {
-  const db = await getClient();
-  
   try {
     const userId = req.user.id;
-    const { providerId, accountNumber, amount, paymentMethod = 'wallet' } = req.body;
+    const { providerId, accountNumber, amount, paymentMethod = 'wallet', pin } = req.body;
     
-    // Validate inputs
+    // Validate PIN is provided
+    if (!pin) {
+      return res.status(400).json({
+        success: false,
+        error: 'PIN is required to pay utility bill'
+      });
+    }
+
+    // Verify PIN
+    const userResult = await dbPool.query(
+      'SELECT pinhash FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    const validPin = await bcrypt.compare(pin, userResult.rows[0].pinhash);
+    if (!validPin) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid PIN'
+      });
+    }
+    
     if (!providerId || !accountNumber || !amount || amount < 10) {
       return res.status(400).json({
         success: false,
@@ -221,11 +238,6 @@ router.post('/pay', authenticate, async (req, res) => {
     
     const amountNum = parseFloat(amount);
     
-    // ============================================================
-    // VIRTUAL ACCOUNT FLOW - REPLACES OLD WALLET SYSTEM
-    // ============================================================
-    
-    // 1. Get user's virtual account
     const userAccount = await virtualAccountService.getUserAccount(userId);
     
     if (!userAccount) {
@@ -235,7 +247,6 @@ router.post('/pay', authenticate, async (req, res) => {
       });
     }
     
-    // 2. Check if user has enough balance
     if (userAccount.balance < amountNum) {
       return res.status(400).json({
         success: false,
@@ -243,29 +254,24 @@ router.post('/pay', authenticate, async (req, res) => {
       });
     }
     
-    // Begin transaction
-    await db.query('BEGIN');
+    await dbPool.query('BEGIN');
     
     try {
-      // 3. Generate transaction reference
       const ref = 'UTIL-' + Date.now().toString(36).toUpperCase() + 
                   crypto.randomBytes(4).toString('hex').toUpperCase();
       
       const paymentId = 'pay-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
       const receiptNumber = 'RCP-' + ref.slice(0, 10);
       
-      // 4. DEDUCT FROM VIRTUAL ACCOUNT using virtualAccountService
-      // This uses bank-client which handles the actual transfer
       await virtualAccountService.processTransfer(
-        userId,                                    // User ID
-        userAccount.account_number,               // From account (user's virtual account)
-        process.env.BANK_MASTER_ACCOUNT || 'HALALHUB-MASTER-001',  // To account (master account)
-        amountNum,                                // Amount
-        `Utility payment - ${providerId}`         // Description
+        userId,
+        userAccount.account_number,
+        process.env.BANK_MASTER_ACCOUNT || 'HALALHUB-MASTER-001',
+        amountNum,
+        `Utility payment - ${providerId}`
       );
       
-      // 5. Insert payment record
-      await db.query(
+      await dbPool.query(
         `INSERT INTO utility_payments 
          (id, user_id, provider_id, account_number, amount, transaction_ref, 
           status, payment_method, receipt_number, paid_at)
@@ -273,23 +279,20 @@ router.post('/pay', authenticate, async (req, res) => {
         [paymentId, userId, providerId, accountNumber, amountNum, ref, 'completed', paymentMethod, receiptNumber]
       );
       
-      // 6. Record in transactions table for audit
       const txId = 'txn-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
-      await db.query(
+      await dbPool.query(
         `INSERT INTO transactions (id, user_id, type, amount, status, reference, description)
          VALUES ($1, $2, $3, $4, $5, $6, $7)`,
         [txId, userId, 'utility', -amountNum, 'success', ref, `Utility payment - ${providerId}`]
       );
       
-      // 7. Get updated balance
       const updatedAccount = await virtualAccountService.getUserAccount(userId);
       const newBalance = updatedAccount?.balance || 0;
       
-      await db.query('COMMIT');
+      await dbPool.query('COMMIT');
       
       console.log(`[Utility Payment] ${ref} - KES ${amountNum} by user ${userId} using virtual account ${userAccount.account_number}`);
       
-      // 8. Return response
       res.json({
         success: true,
         message: 'Utility payment successful',
@@ -305,12 +308,12 @@ router.post('/pay', authenticate, async (req, res) => {
       });
       
     } catch (err) {
-      await db.query('ROLLBACK');
+      await dbPool.query('ROLLBACK');
       throw err;
     }
     
   } catch (error) {
-    await db.query('ROLLBACK');
+    await dbPool.query('ROLLBACK');
     console.error('Utility payment error:', error);
     res.status(500).json({
       success: false,
@@ -324,11 +327,10 @@ router.post('/pay', authenticate, async (req, res) => {
 // ========================================
 router.get('/status/:ref', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const { ref } = req.params;
     
-    const result = await db.query(
+    const result = await dbPool.query(
       `SELECT 
         id,
         provider_id,

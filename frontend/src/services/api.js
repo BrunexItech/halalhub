@@ -18,7 +18,7 @@ api.interceptors.request.use((config) => {
 });
 
 // ========================================
-// AUTH SERVICE
+// AUTH SERVICE - UPDATED: Password + PIN login flow
 // ========================================
 export const authService = {
   // Client Registration
@@ -39,12 +39,37 @@ export const authService = {
     termsAccepted: data.termsAccepted || true,
     privacyAccepted: data.privacyAccepted || true
   }),
-  // Login
-  loginStep1: (phone) => api.post('/auth/login-step1', { phone }),
-  loginStep2: (data) => api.post('/auth/login-step2', data),
-  // Registration OTP
+  
+  // ==========================================
+  // UPDATED: New Login Flow (Password + PIN)
+  // ==========================================
+  
+  // Step 1: Validate password only
+  validatePassword: (data) => api.post('/auth/validate-password', {
+    phone: data.phone,
+    password: data.password
+  }),
+  
+  // Step 2: Verify PIN and complete login
+  verifyPin: (data) => api.post('/auth/verify-pin', {
+    phone: data.phone,
+    pin: data.pin
+  }),
+  
+  // Full login (combines both steps - used as fallback)
+  login: (data) => api.post('/auth/login', {
+    phone: data.phone,
+    password: data.password,
+    pin: data.pin
+  }),
+  
+  // REMOVED: loginStep1 and loginStep2 (replaced by validatePassword + verifyPin)
+  // REMOVED: sendRegistrationOtp and verifyRegistrationOtp (kept for registration)
+  
+  // Registration OTP (kept - used during registration only)
   sendRegistrationOtp: (data) => api.post('/auth/send-registration-otp', data),
   verifyRegistrationOtp: (data) => api.post('/auth/verify-registration-otp', data),
+  
   // Get current user
   getMe: () => api.get('/auth/me'),
 };

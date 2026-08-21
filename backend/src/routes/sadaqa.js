@@ -1,25 +1,21 @@
 const router = require('express').Router();
 const { authenticate, authorize } = require('../middleware/auth');
-const { Client } = require('pg');
+const bcrypt = require('bcryptjs');
+const { Pool } = require('pg');
 const crypto = require('crypto');
 const virtualAccountService = require('../services/virtual-account.service');
 
-// Database connection
-let client;
-
-async function getClient() {
-  if (!client) {
-    client = new Client({
-      user: process.env.DB_USER || 'halalhub_user',
-      password: process.env.DB_PASSWORD || '@halalhub@#',
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT) || 5432,
-      database: process.env.DB_NAME || 'halalhub'
-    });
-    await client.connect();
-  }
-  return client;
-}
+// ============================================================
+// Database Connection Pool (removed hardcoded credentials)
+// ============================================================
+const dbPool = new Pool({
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT) || 5432,
+  database: process.env.DB_NAME,
+  max: 20,
+});
 
 // Sadaqa Pool Account
 const SADAQA_POOL_ACCOUNT = process.env.SADAQA_POOL_ACCOUNT || 'SADAQA-POOL-001';
@@ -29,7 +25,6 @@ const SADAQA_POOL_ACCOUNT = process.env.SADAQA_POOL_ACCOUNT || 'SADAQA-POOL-001'
 // ============================================================
 router.get('/campaigns', async (req, res) => {
   try {
-    const db = await getClient();
     const { category, status = 'active', limit = 50 } = req.query;
 
     let query = `
@@ -69,7 +64,7 @@ router.get('/campaigns', async (req, res) => {
     query += ` ORDER BY featured DESC, createdat DESC LIMIT $${paramIndex}`;
     params.push(parseInt(limit));
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
     res.json({
       success: true,
@@ -89,10 +84,9 @@ router.get('/campaigns', async (req, res) => {
 // ============================================================
 router.get('/campaigns/:id', async (req, res) => {
   try {
-    const db = await getClient();
     const { id } = req.params;
 
-    const result = await db.query(
+    const result = await dbPool.query(
       `SELECT 
         id,
         name,
@@ -121,8 +115,7 @@ router.get('/campaigns/:id', async (req, res) => {
       });
     }
 
-    // Get recent donations for this campaign
-    const donationsResult = await db.query(
+    const donationsResult = await dbPool.query(
       `SELECT 
         amount,
         donor_name,
@@ -155,9 +148,7 @@ router.get('/campaigns/:id', async (req, res) => {
 // ============================================================
 router.get('/categories', async (req, res) => {
   try {
-    const db = await getClient();
-
-    const result = await db.query(
+    const result = await dbPool.query(
       `SELECT DISTINCT category 
        FROM sadaqa_campaigns 
        WHERE status = 'active'
@@ -175,7 +166,6 @@ router.get('/categories', async (req, res) => {
       { id: 'community', label: 'Community Development' }
     ];
 
-    // Filter categories that have campaigns
     const activeCategories = result.rows.map(r => r.category);
     const filtered = categories.filter(c => activeCategories.includes(c.id));
 
@@ -193,11 +183,9 @@ router.get('/categories', async (req, res) => {
 });
 
 // ============================================================
-// 4. DONATE TO SADAQA CAMPAIGN (Authenticated)
+// 4. DONATE TO SADAQA CAMPAIGN (Authenticated) - PIN REQUIRED
 // ============================================================
 router.post('/donate', authenticate, async (req, res) => {
-  const db = await getClient();
-
   try {
     const userId = req.user.id;
     const {
@@ -206,10 +194,39 @@ router.post('/donate', authenticate, async (req, res) => {
       isRecurring = false,
       dedication = '',
       isAnonymous = false,
-      donorName
+      donorName,
+      pin
     } = req.body;
 
-    // Validate input
+    // Validate PIN is provided
+    if (!pin) {
+      return res.status(400).json({
+        success: false,
+        error: 'PIN is required to donate'
+      });
+    }
+
+    // Verify PIN
+    const userResult = await dbPool.query(
+      'SELECT pinhash FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    const validPin = await bcrypt.compare(pin, userResult.rows[0].pinhash);
+    if (!validPin) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid PIN'
+      });
+    }
+
     if (!campaignId) {
       return res.status(400).json({
         success: false,
@@ -224,8 +241,7 @@ router.post('/donate', authenticate, async (req, res) => {
       });
     }
 
-    // Check campaign exists and is active
-    const campaignCheck = await db.query(
+    const campaignCheck = await dbPool.query(
       `SELECT id, name, organization, target, raised, status 
        FROM sadaqa_campaigns 
        WHERE id = $1 AND status = 'active'`,
@@ -241,11 +257,6 @@ router.post('/donate', authenticate, async (req, res) => {
 
     const campaign = campaignCheck.rows[0];
 
-    // ============================================================
-    // VIRTUAL ACCOUNT FLOW - REPLACES OLD WALLET SYSTEM
-    // ============================================================
-
-    // 1. Get user's virtual account
     const userAccount = await virtualAccountService.getUserAccount(userId);
 
     if (!userAccount) {
@@ -255,7 +266,6 @@ router.post('/donate', authenticate, async (req, res) => {
       });
     }
 
-    // 2. Check if user has enough balance
     if (userAccount.balance < amount) {
       return res.status(400).json({
         success: false,
@@ -263,27 +273,23 @@ router.post('/donate', authenticate, async (req, res) => {
       });
     }
 
-    // Begin transaction
-    await db.query('BEGIN');
+    await dbPool.query('BEGIN');
 
     try {
-      // 3. Generate reference
       const ref = 'SDQ-' + Date.now().toString(36).toUpperCase() +
                   crypto.randomBytes(4).toString('hex').toUpperCase();
 
       const paymentId = 'sdq-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
 
-      // 4. DEDUCT FROM VIRTUAL ACCOUNT using virtualAccountService
       await virtualAccountService.processTransfer(
-        userId,                                    // User ID
-        userAccount.account_number,               // From account (user's virtual account)
-        SADAQA_POOL_ACCOUNT,                      // To account (Sadaqa pool account)
-        amount,                                   // Amount
-        `Sadaqa donation - ${campaign.name}`      // Description
+        userId,
+        userAccount.account_number,
+        SADAQA_POOL_ACCOUNT,
+        amount,
+        `Sadaqa donation - ${campaign.name}`
       );
 
-      // 5. Record Sadaqa donation
-      await db.query(
+      await dbPool.query(
         `INSERT INTO sadaqa_payments (
           id, user_id, campaign_id, amount, reference, dedication, is_anonymous,
           donor_name, status, paid_at, createdat, updatedat
@@ -300,8 +306,7 @@ router.post('/donate', authenticate, async (req, res) => {
         ]
       );
 
-      // 6. Update campaign stats
-      await db.query(
+      await dbPool.query(
         `UPDATE sadaqa_campaigns 
          SET raised = raised + $1, 
              donor_count = donor_count + 1,
@@ -310,8 +315,7 @@ router.post('/donate', authenticate, async (req, res) => {
         [amount, campaignId]
       );
 
-      // 7. Credit community pool (Sadaqa fund)
-      await db.query(
+      await dbPool.query(
         `INSERT INTO community_pool (id, type, amount, source, reference, source_id, createdat)
          VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
         [
@@ -324,27 +328,17 @@ router.post('/donate', authenticate, async (req, res) => {
         ]
       );
 
-      // 8. Record in transactions table for history
       const txId = 'txn-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
-      await db.query(
+      await dbPool.query(
         `INSERT INTO transactions (id, user_id, type, amount, status, reference, description)
          VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [
-          txId,
-          userId,
-          'sadaqa',
-          -amount,
-          'success',
-          ref,
-          `Sadaqa donation to ${campaign.name}`
-        ]
+        [txId, userId, 'sadaqa', -amount, 'success', ref, `Sadaqa donation to ${campaign.name}`]
       );
 
-      // 9. Get new balance
       const updatedAccount = await virtualAccountService.getUserAccount(userId);
       const newBalance = updatedAccount?.balance || 0;
 
-      await db.query('COMMIT');
+      await dbPool.query('COMMIT');
 
       console.log(`[Sadaqa] ${ref} - KES ${amount} by user ${userId} to ${campaign.name} using virtual account ${userAccount.account_number}`);
 
@@ -366,12 +360,12 @@ router.post('/donate', authenticate, async (req, res) => {
       });
 
     } catch (err) {
-      await db.query('ROLLBACK');
+      await dbPool.query('ROLLBACK');
       throw err;
     }
 
   } catch (error) {
-    await db.query('ROLLBACK');
+    await dbPool.query('ROLLBACK');
     console.error('Sadaqa donation error:', error);
     res.status(500).json({
       success: false,
@@ -385,11 +379,10 @@ router.post('/donate', authenticate, async (req, res) => {
 // ============================================================
 router.get('/history', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const limit = parseInt(req.query.limit) || 20;
 
-    const result = await db.query(
+    const result = await dbPool.query(
       `SELECT 
         sp.id,
         sp.amount,
@@ -428,10 +421,9 @@ router.get('/history', authenticate, async (req, res) => {
 // ============================================================
 router.get('/summary', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
 
-    const result = await db.query(
+    const result = await dbPool.query(
       `SELECT 
         COUNT(*) as total_donations,
         SUM(amount) as total_amount,
@@ -443,8 +435,7 @@ router.get('/summary', authenticate, async (req, res) => {
       [userId]
     );
 
-    // Get impact stats
-    const impactResult = await db.query(
+    const impactResult = await dbPool.query(
       `SELECT 
         COUNT(DISTINCT sc.category) as categories_supported
       FROM sadaqa_payments sp
@@ -478,9 +469,7 @@ router.get('/summary', authenticate, async (req, res) => {
 // ============================================================
 router.get('/impact', async (req, res) => {
   try {
-    const db = await getClient();
-
-    const result = await db.query(
+    const result = await dbPool.query(
       `SELECT 
         COALESCE(SUM(amount), 0) as total_raised,
         COUNT(*) as total_donations,
@@ -513,7 +502,6 @@ router.get('/impact', async (req, res) => {
 // ============================================================
 router.get('/admin/donations', authenticate, authorize('admin'), async (req, res) => {
   try {
-    const db = await getClient();
     const { status, date_from, date_to, limit = 100 } = req.query;
 
     let query = `
@@ -554,10 +542,9 @@ router.get('/admin/donations', authenticate, authorize('admin'), async (req, res
     query += ` ORDER BY sp.paid_at DESC LIMIT $${paramIndex}`;
     params.push(parseInt(limit));
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
-    // Get total stats
-    const statsResult = await db.query(
+    const statsResult = await dbPool.query(
       `SELECT 
         COUNT(*) as total,
         SUM(amount) as total_amount
@@ -587,7 +574,6 @@ router.get('/admin/donations', authenticate, authorize('admin'), async (req, res
 // ============================================================
 router.post('/admin/campaigns', authenticate, authorize('admin'), async (req, res) => {
   try {
-    const db = await getClient();
     const {
       name,
       description,
@@ -609,7 +595,7 @@ router.post('/admin/campaigns', authenticate, authorize('admin'), async (req, re
 
     const id = 'cmp-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
 
-    await db.query(
+    await dbPool.query(
       `INSERT INTO sadaqa_campaigns (
         id, name, description, organization, target, raised, category, location,
         image_url, donor_count, status, featured, end_date, verified, createdat, updatedat
@@ -651,7 +637,6 @@ router.post('/admin/campaigns', authenticate, authorize('admin'), async (req, re
 // ============================================================
 router.put('/admin/campaigns/:id', authenticate, authorize('admin'), async (req, res) => {
   try {
-    const db = await getClient();
     const campaignId = req.params.id;
     const {
       name,
@@ -666,7 +651,7 @@ router.put('/admin/campaigns/:id', authenticate, authorize('admin'), async (req,
       end_date
     } = req.body;
 
-    const check = await db.query(
+    const check = await dbPool.query(
       'SELECT id FROM sadaqa_campaigns WHERE id = $1',
       [campaignId]
     );
@@ -678,7 +663,7 @@ router.put('/admin/campaigns/:id', authenticate, authorize('admin'), async (req,
       });
     }
 
-    await db.query(
+    await dbPool.query(
       `UPDATE sadaqa_campaigns SET
         name = COALESCE($1, name),
         description = COALESCE($2, description),
@@ -716,10 +701,9 @@ router.put('/admin/campaigns/:id', authenticate, authorize('admin'), async (req,
 // ============================================================
 router.delete('/admin/campaigns/:id', authenticate, authorize('admin'), async (req, res) => {
   try {
-    const db = await getClient();
     const campaignId = req.params.id;
 
-    const result = await db.query(
+    const result = await dbPool.query(
       'DELETE FROM sadaqa_campaigns WHERE id = $1 RETURNING id',
       [campaignId]
     );
@@ -749,13 +733,10 @@ router.delete('/admin/campaigns/:id', authenticate, authorize('admin'), async (r
 // ============================================================
 router.get('/admin/pool', authenticate, authorize('admin'), async (req, res) => {
   try {
-    const db = await getClient();
-
-    // Get Sadaqa pool balance from virtual accounts
     const sadaqaPool = await virtualAccountService.getAccountByNumber(SADAQA_POOL_ACCOUNT);
     const sadaqaBalance = sadaqaPool?.balance || 0;
 
-    const disbursedResult = await db.query(
+    const disbursedResult = await dbPool.query(
       `SELECT 
         COALESCE(SUM(amount), 0) as total_disbursed
       FROM pool_disbursements

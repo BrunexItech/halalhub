@@ -1,31 +1,27 @@
 const router = require('express').Router();
 const { v4: uuidv4 } = require('uuid');
-const { Client } = require('pg');
+const bcrypt = require('bcryptjs');
+const { Pool } = require('pg');
 const { authenticate, authorize } = require('../middleware/auth');
 const virtualAccountService = require('../services/virtual-account.service');
 
-let client;
-
-async function getClient() {
-  if (!client) {
-    client = new Client({
-      user: process.env.DB_USER || 'halalhub_user',
-      password: process.env.DB_PASSWORD || '@halalhub@#',
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT) || 5432,
-      database: process.env.DB_NAME || 'halalhub'
-    });
-    await client.connect();
-  }
-  return client;
-}
+// ============================================================
+// Database Connection Pool (removed hardcoded credentials)
+// ============================================================
+const dbPool = new Pool({
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT) || 5432,
+  database: process.env.DB_NAME,
+  max: 20,
+});
 
 // ============================================================
 // 1. GET ALL PACKAGES (Public)
 // ============================================================
 router.get('/packages', async (req, res) => {
   try {
-    const db = await getClient();
     const { type, vendor_id, min_price, max_price, limit = 50, featured } = req.query;
 
     let query = `
@@ -76,7 +72,7 @@ router.get('/packages', async (req, res) => {
 
     query += ` ORDER BY p.is_featured DESC, p.createdat DESC LIMIT ${parseInt(limit)}`;
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
     res.json({
       success: true,
@@ -95,10 +91,9 @@ router.get('/packages', async (req, res) => {
 // ============================================================
 router.get('/packages/:packageId', async (req, res) => {
   try {
-    const db = await getClient();
     const packageId = req.params.packageId;
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT 
         p.*,
         u.fullname as vendor_name,
@@ -134,7 +129,6 @@ router.get('/packages/:packageId', async (req, res) => {
 // ============================================================
 router.post('/packages', authenticate, authorize('vendor'), async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const {
       name,
@@ -160,8 +154,7 @@ router.post('/packages', authenticate, authorize('vendor'), async (req, res) => 
       return res.status(400).json({ error: 'Type must be "hajj" or "umrah"' });
     }
 
-    // Check if vendor is approved
-    const vendorCheck = await db.query(
+    const vendorCheck = await dbPool.query(
       'SELECT vendor_status FROM users WHERE id = $1',
       [userId]
     );
@@ -172,7 +165,7 @@ router.post('/packages', authenticate, authorize('vendor'), async (req, res) => 
 
     const packageId = 'hajj-' + Date.now().toString(36) + uuidv4().slice(0, 8);
 
-    await db.query(`
+    await dbPool.query(`
       INSERT INTO hajj_packages (
         id, vendor_id, name, type, description, duration_days,
         price, includes, excludes, images, available_slots,
@@ -211,7 +204,6 @@ router.post('/packages', authenticate, authorize('vendor'), async (req, res) => 
 // ============================================================
 router.put('/packages/:packageId', authenticate, authorize('vendor'), async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const packageId = req.params.packageId;
     const {
@@ -228,7 +220,7 @@ router.put('/packages/:packageId', authenticate, authorize('vendor'), async (req
       is_featured
     } = req.body;
 
-    const check = await db.query(
+    const check = await dbPool.query(
       'SELECT id FROM hajj_packages WHERE id = $1 AND vendor_id = $2',
       [packageId, userId]
     );
@@ -241,7 +233,7 @@ router.put('/packages/:packageId', authenticate, authorize('vendor'), async (req
       return res.status(400).json({ error: 'Type must be "hajj" or "umrah"' });
     }
 
-    await db.query(`
+    await dbPool.query(`
       UPDATE hajj_packages SET
         name = COALESCE($1, name),
         type = COALESCE($2, type),
@@ -288,11 +280,10 @@ router.put('/packages/:packageId', authenticate, authorize('vendor'), async (req
 // ============================================================
 router.delete('/packages/:packageId', authenticate, authorize('vendor'), async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const packageId = req.params.packageId;
 
-    const result = await db.query(
+    const result = await dbPool.query(
       'DELETE FROM hajj_packages WHERE id = $1 AND vendor_id = $2 RETURNING id',
       [packageId, userId]
     );
@@ -313,11 +304,9 @@ router.delete('/packages/:packageId', authenticate, authorize('vendor'), async (
 });
 
 // ============================================================
-// 6. CREATE BOOKING (Client only) WITH PAYMENT
+// 6. CREATE BOOKING (Client only) WITH PAYMENT - PIN REQUIRED
 // ============================================================
 router.post('/book', authenticate, async (req, res) => {
-  const db = await getClient();
-
   try {
     const userId = req.user.id;
     const {
@@ -327,8 +316,38 @@ router.post('/book', authenticate, async (req, res) => {
       passport_numbers,
       contact_phone,
       contact_email,
-      special_requests
+      special_requests,
+      pin
     } = req.body;
+
+    // Validate PIN is provided
+    if (!pin) {
+      return res.status(400).json({
+        success: false,
+        error: 'PIN is required to book a Hajj/Umrah package'
+      });
+    }
+
+    // Verify PIN
+    const userResult = await dbPool.query(
+      'SELECT pinhash FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    const validPin = await bcrypt.compare(pin, userResult.rows[0].pinhash);
+    if (!validPin) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid PIN'
+      });
+    }
 
     if (!package_id || !pilgrims || !contact_phone || !contact_email) {
       return res.status(400).json({
@@ -340,8 +359,7 @@ router.post('/book', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'At least 1 pilgrim is required' });
     }
 
-    // Get package details
-    const packageResult = await db.query(`
+    const packageResult = await dbPool.query(`
       SELECT vendor_id, name, price, available_slots, type
       FROM hajj_packages
       WHERE id = $1 AND is_active = true
@@ -359,11 +377,6 @@ router.post('/book', authenticate, async (req, res) => {
 
     const totalPrice = pkg.price * pilgrims;
 
-    // ============================================================
-    // VIRTUAL ACCOUNT PAYMENT FLOW
-    // ============================================================
-
-    // 1. Get client's virtual account
     const clientAccount = await virtualAccountService.getUserAccount(userId);
 
     if (!clientAccount) {
@@ -372,14 +385,12 @@ router.post('/book', authenticate, async (req, res) => {
       });
     }
 
-    // 2. Check if client has enough balance
     if (clientAccount.balance < totalPrice) {
       return res.status(400).json({
         error: `Insufficient balance. Available: KES ${clientAccount.balance.toLocaleString()}, Required: KES ${totalPrice.toLocaleString()}`
       });
     }
 
-    // 3. Get vendor's virtual account
     const vendorAccount = await virtualAccountService.getUserAccount(pkg.vendor_id);
 
     if (!vendorAccount) {
@@ -391,10 +402,9 @@ router.post('/book', authenticate, async (req, res) => {
     const bookingId = 'hajj-book-' + Date.now().toString(36) + uuidv4().slice(0, 6);
     const transactionRef = 'HAJJ-' + Date.now().toString(36).toUpperCase() + uuidv4().slice(0, 6).toUpperCase();
 
-    await db.query('BEGIN');
+    await dbPool.query('BEGIN');
 
     try {
-      // 4. Transfer payment from client to vendor
       await virtualAccountService.processTransfer(
         userId,
         clientAccount.account_number,
@@ -403,8 +413,7 @@ router.post('/book', authenticate, async (req, res) => {
         `Hajj/Umrah booking - ${bookingId}`
       );
 
-      // 5. Create booking
-      await db.query(`
+      await dbPool.query(`
         INSERT INTO hajj_bookings (
           id, user_id, package_id, pilgrims, pilgrim_names,
           passport_numbers, contact_phone, contact_email,
@@ -425,36 +434,32 @@ router.post('/book', authenticate, async (req, res) => {
         transactionRef
       ]);
 
-      // 6. Update available slots
-      await db.query(`
+      await dbPool.query(`
         UPDATE hajj_packages
         SET available_slots = available_slots - $1, updatedat = NOW()
         WHERE id = $2
       `, [pilgrims, package_id]);
 
-      // 7. Get user details for notification
-      const userResult = await db.query(
+      const userResult2 = await dbPool.query(
         'SELECT fullname, phone FROM users WHERE id = $1',
         [userId]
       );
 
-      // 8. Notification for vendor
       const vendorNotifId = 'notif-' + Date.now().toString(36) + uuidv4().slice(0, 8);
-      await db.query(`
+      await dbPool.query(`
         INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
         VALUES ($1, $2, $3, $4, $5, $6, NOW())
       `, [
         vendorNotifId,
         pkg.vendor_id,
         'New Hajj/Umrah Booking',
-        `${userResult.rows[0]?.fullname || 'A client'} has booked ${pkg.name} for ${pilgrims} pilgrim(s). KES ${totalPrice.toLocaleString()} deposited to your virtual account.`,
+        `${userResult2.rows[0]?.fullname || 'A client'} has booked ${pkg.name} for ${pilgrims} pilgrim(s). KES ${totalPrice.toLocaleString()} deposited to your virtual account.`,
         'hajj',
         `/vendor/hajj-bookings`
       ]);
 
-      // 9. Notification for client
       const clientNotifId = 'notif-' + Date.now().toString(36) + uuidv4().slice(0, 8);
-      await db.query(`
+      await dbPool.query(`
         INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
         VALUES ($1, $2, $3, $4, $5, $6, NOW())
       `, [
@@ -466,9 +471,8 @@ router.post('/book', authenticate, async (req, res) => {
         `/hajj/bookings/${bookingId}`
       ]);
 
-      await db.query('COMMIT');
+      await dbPool.query('COMMIT');
 
-      // Get updated client balance
       const updatedClientAccount = await virtualAccountService.getUserAccount(userId);
 
       res.status(201).json({
@@ -483,12 +487,12 @@ router.post('/book', authenticate, async (req, res) => {
       });
 
     } catch (err) {
-      await db.query('ROLLBACK');
+      await dbPool.query('ROLLBACK');
       throw err;
     }
 
   } catch (err) {
-    await db.query('ROLLBACK');
+    await dbPool.query('ROLLBACK');
     console.error('Error creating booking:', err.message);
     res.status(500).json({ error: err.message || 'Failed to create booking' });
   }
@@ -499,7 +503,6 @@ router.post('/book', authenticate, async (req, res) => {
 // ============================================================
 router.get('/bookings', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const { status, limit = 50 } = req.query;
 
@@ -529,7 +532,7 @@ router.get('/bookings', authenticate, async (req, res) => {
     query += ` ORDER BY b.booking_date DESC LIMIT $${paramIndex}`;
     params.push(parseInt(limit));
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
     res.json({
       success: true,
@@ -548,11 +551,10 @@ router.get('/bookings', authenticate, async (req, res) => {
 // ============================================================
 router.get('/bookings/:bookingId', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const bookingId = req.params.bookingId;
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT 
         b.*,
         p.name as package_name,
@@ -579,7 +581,6 @@ router.get('/bookings/:bookingId', authenticate, async (req, res) => {
 
     const booking = result.rows[0];
 
-    // Check if user is the client or the vendor
     if (booking.user_id !== userId && booking.vendor_id !== userId) {
       return res.status(403).json({ error: 'Access denied' });
     }
@@ -599,14 +600,12 @@ router.get('/bookings/:bookingId', authenticate, async (req, res) => {
 // 9. CANCEL BOOKING (Client only - within 24 hours) WITH REFUND
 // ============================================================
 router.put('/bookings/:bookingId/cancel', authenticate, async (req, res) => {
-  const db = await getClient();
-
   try {
     const userId = req.user.id;
     const bookingId = req.params.bookingId;
     const { reason } = req.body;
 
-    const check = await db.query(`
+    const check = await dbPool.query(`
       SELECT b.*, p.available_slots, p.vendor_id, p.price
       FROM hajj_bookings b
       JOIN hajj_packages p ON b.package_id = p.id
@@ -627,7 +626,6 @@ router.put('/bookings/:bookingId/cancel', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'Cannot cancel a completed booking' });
     }
 
-    // Check if within 24 hours of booking creation
     const bookingDate = new Date(booking.booking_date);
     const now = new Date();
     const hoursDiff = (now - bookingDate) / (1000 * 60 * 60);
@@ -636,11 +634,6 @@ router.put('/bookings/:bookingId/cancel', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'Cancellations only allowed within 24 hours of booking' });
     }
 
-    // ============================================================
-    // REFUND LOGIC - Reverse the payment
-    // ============================================================
-
-    // 1. Get client's virtual account for refund
     const clientAccount = await virtualAccountService.getUserAccount(userId);
 
     if (!clientAccount) {
@@ -649,7 +642,6 @@ router.put('/bookings/:bookingId/cancel', authenticate, async (req, res) => {
       });
     }
 
-    // 2. Get vendor's virtual account
     const vendorAccount = await virtualAccountService.getUserAccount(booking.vendor_id);
 
     if (!vendorAccount) {
@@ -661,10 +653,9 @@ router.put('/bookings/:bookingId/cancel', authenticate, async (req, res) => {
     const refundAmount = booking.total_price;
     const refundRef = 'REF-' + Date.now().toString(36).toUpperCase() + uuidv4().slice(0, 6).toUpperCase();
 
-    await db.query('BEGIN');
+    await dbPool.query('BEGIN');
 
     try {
-      // 3. Refund from vendor back to client (reverse transfer)
       await virtualAccountService.processTransfer(
         booking.vendor_id,
         vendorAccount.account_number,
@@ -673,8 +664,7 @@ router.put('/bookings/:bookingId/cancel', authenticate, async (req, res) => {
         `Hajj booking refund - ${bookingId}`
       );
 
-      // 4. Update booking status
-      await db.query(`
+      await dbPool.query(`
         UPDATE hajj_bookings
         SET status = 'cancelled',
             special_requests = COALESCE(special_requests, '') || ' | Cancelled. Reason: ' || $1,
@@ -684,16 +674,14 @@ router.put('/bookings/:bookingId/cancel', authenticate, async (req, res) => {
         WHERE id = $3
       `, [reason || 'No reason provided', refundRef, bookingId]);
 
-      // 5. Restore available slots
-      await db.query(`
+      await dbPool.query(`
         UPDATE hajj_packages
         SET available_slots = available_slots + $1, updatedat = NOW()
         WHERE id = $2
       `, [booking.pilgrims, booking.package_id]);
 
-      // 6. Notification for client (refund)
       const clientNotifId = 'notif-' + Date.now().toString(36) + uuidv4().slice(0, 8);
-      await db.query(`
+      await dbPool.query(`
         INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
         VALUES ($1, $2, $3, $4, $5, $6, NOW())
       `, [
@@ -705,9 +693,8 @@ router.put('/bookings/:bookingId/cancel', authenticate, async (req, res) => {
         `/hajj/bookings/${bookingId}`
       ]);
 
-      // 7. Notification for vendor
       const vendorNotifId = 'notif-' + Date.now().toString(36) + uuidv4().slice(0, 8);
-      await db.query(`
+      await dbPool.query(`
         INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
         VALUES ($1, $2, $3, $4, $5, $6, NOW())
       `, [
@@ -719,7 +706,7 @@ router.put('/bookings/:bookingId/cancel', authenticate, async (req, res) => {
         `/vendor/hajj-bookings`
       ]);
 
-      await db.query('COMMIT');
+      await dbPool.query('COMMIT');
 
       const updatedClientAccount = await virtualAccountService.getUserAccount(userId);
 
@@ -732,12 +719,12 @@ router.put('/bookings/:bookingId/cancel', authenticate, async (req, res) => {
       });
 
     } catch (err) {
-      await db.query('ROLLBACK');
+      await dbPool.query('ROLLBACK');
       throw err;
     }
 
   } catch (err) {
-    await db.query('ROLLBACK');
+    await dbPool.query('ROLLBACK');
     console.error('Error cancelling booking:', err.message);
     res.status(500).json({ error: err.message || 'Failed to cancel booking' });
   }
@@ -748,11 +735,10 @@ router.put('/bookings/:bookingId/cancel', authenticate, async (req, res) => {
 // ============================================================
 router.get('/vendor/packages', authenticate, authorize('vendor'), async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const { limit = 100 } = req.query;
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT 
         p.*,
         (SELECT COUNT(*) FROM hajj_bookings WHERE package_id = p.id) as total_bookings,
@@ -780,7 +766,6 @@ router.get('/vendor/packages', authenticate, authorize('vendor'), async (req, re
 // ============================================================
 router.get('/vendor/bookings', authenticate, authorize('vendor'), async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const { status, limit = 100 } = req.query;
 
@@ -809,7 +794,7 @@ router.get('/vendor/bookings', authenticate, authorize('vendor'), async (req, re
     query += ` ORDER BY b.booking_date DESC LIMIT $${paramIndex}`;
     params.push(parseInt(limit));
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
     res.json({
       success: true,
@@ -824,11 +809,10 @@ router.get('/vendor/bookings', authenticate, authorize('vendor'), async (req, re
 });
 
 // ============================================================
-// 12. UPDATE BOOKING STATUS (Vendor only) WITH PAYMENT STATUS
+// 12. UPDATE BOOKING STATUS (Vendor only)
 // ============================================================
 router.put('/vendor/bookings/:bookingId/status', authenticate, authorize('vendor'), async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const bookingId = req.params.bookingId;
     const { status } = req.body;
@@ -839,7 +823,7 @@ router.put('/vendor/bookings/:bookingId/status', authenticate, authorize('vendor
       });
     }
 
-    const check = await db.query(`
+    const check = await dbPool.query(`
       SELECT b.*, p.vendor_id, p.id as package_id, p.available_slots
       FROM hajj_bookings b
       JOIN hajj_packages p ON b.package_id = p.id
@@ -856,29 +840,27 @@ router.put('/vendor/bookings/:bookingId/status', authenticate, authorize('vendor
       return res.status(400).json({ error: 'Cannot update a cancelled booking' });
     }
 
-    await db.query('BEGIN');
+    await dbPool.query('BEGIN');
 
     try {
       const oldStatus = booking.status;
 
-      await db.query(`
+      await dbPool.query(`
         UPDATE hajj_bookings
         SET status = $1, updatedat = NOW()
         WHERE id = $2
       `, [status, bookingId]);
 
-      // If cancelling, restore slots and handle refund
       if (status === 'cancelled' && oldStatus !== 'cancelled') {
-        await db.query(`
+        await dbPool.query(`
           UPDATE hajj_packages
           SET available_slots = available_slots + $1, updatedat = NOW()
           WHERE id = $2
         `, [booking.pilgrims, booking.package_id]);
       }
 
-      // Notification for client
       const notificationId = 'notif-' + Date.now().toString(36) + uuidv4().slice(0, 8);
-      await db.query(`
+      await dbPool.query(`
         INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
         VALUES ($1, $2, $3, $4, $5, $6, NOW())
       `, [
@@ -890,7 +872,7 @@ router.put('/vendor/bookings/:bookingId/status', authenticate, authorize('vendor
         `/hajj/bookings/${bookingId}`
       ]);
 
-      await db.query('COMMIT');
+      await dbPool.query('COMMIT');
 
       res.json({
         success: true,
@@ -898,7 +880,7 @@ router.put('/vendor/bookings/:bookingId/status', authenticate, authorize('vendor
       });
 
     } catch (err) {
-      await db.query('ROLLBACK');
+      await dbPool.query('ROLLBACK');
       throw err;
     }
 
@@ -913,10 +895,9 @@ router.put('/vendor/bookings/:bookingId/status', authenticate, authorize('vendor
 // ============================================================
 router.get('/vendor/stats', authenticate, authorize('vendor'), async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT 
         (SELECT COUNT(*) FROM hajj_packages WHERE vendor_id = $1 AND is_active = true) as total_packages,
         (SELECT COUNT(*) FROM hajj_bookings b

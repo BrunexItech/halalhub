@@ -3,10 +3,10 @@ module.exports = (api) => {
   return {
     presets: [
       ['babel-preset-expo', { worklets: false }],
-      // nativewind/babel removed to avoid worklets
     ],
     plugins: [
       'react-native-reanimated/plugin',
+      'module:react-native-dotenv',   // <-- ADD THIS LINE
     ],
   };
 };

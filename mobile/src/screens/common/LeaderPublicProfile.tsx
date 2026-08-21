@@ -13,6 +13,7 @@ import {
   Platform,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { pensionService } from '../../api/client';
 
 const LeaderPublicProfile = () => {
@@ -133,16 +134,8 @@ const LeaderPublicProfile = () => {
   };
 
   if (loading) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <ActivityIndicator size="large" color="#C9A44B" />
-          <Text style={{ color: '#6B7280', marginTop: 12, fontSize: 14 }}>Loading...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
+  return <LoadingSpinner message="Loading profile..." />;
+}
   if (!leader) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>

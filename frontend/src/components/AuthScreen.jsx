@@ -121,24 +121,141 @@ const CountrySelect = ({ value, onChange, disabled }) => {
 };
 
 // ============================================================
-// AuthScreen Component
+// PIN Popup Modal Component - UPDATED: 4 digits
+// ============================================================
+const PinPopup = ({ isOpen, onClose, onVerify, loading, error }) => {
+  const [pin, setPin] = useState(['', '', '', '']);
+  const inputRefs = useRef([]);
+
+  useEffect(() => {
+    if (isOpen && inputRefs.current[0]) {
+      setTimeout(() => inputRefs.current[0].focus(), 100);
+    }
+  }, [isOpen]);
+
+  const handleChange = (index, value) => {
+    if (!/^\d*$/.test(value)) return;
+    const newPin = [...pin];
+    newPin[index] = value.slice(0, 1);
+    setPin(newPin);
+    if (value && index < 3) {
+      inputRefs.current[index + 1].focus();
+    }
+  };
+
+  const handleKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !pin[index] && index > 0) {
+      inputRefs.current[index - 1].focus();
+    }
+    if (e.key === 'Enter') {
+      const pinString = pin.join('');
+      if (pinString.length === 4) {
+        onVerify(pinString);
+      }
+    }
+  };
+
+  const handleSubmit = () => {
+    const pinString = pin.join('');
+    if (pinString.length === 4) {
+      onVerify(pinString);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div 
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="bg-[#0B342B] rounded-3xl max-w-sm w-full p-6 border border-[#C9A44B]/30 shadow-2xl shadow-black/50">
+        <div className="text-center mb-6">
+          <div className="w-14 h-14 rounded-full bg-[#032A24] border border-[#C9A44B]/30 flex items-center justify-center mx-auto mb-3">
+            <svg className="w-7 h-7 text-[#C9A44B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-bold text-[#F7F6F1]">Enter Your PIN</h3>
+          <p className="text-sm text-[#B7C0BA] mt-1">Enter your 4-digit transaction PIN to continue</p>
+        </div>
+
+        <div className="flex gap-3 justify-center mb-4">
+          {pin.map((digit, index) => (
+            <input
+              key={index}
+              ref={(el) => inputRefs.current[index] = el}
+              type="text"
+              inputMode="numeric"
+              maxLength="1"
+              value={digit}
+              className="w-14 h-14 rounded-xl bg-[#032A24] border border-[#C9A44B]/30 text-center text-[#F7F6F1] text-xl font-semibold focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300"
+              onChange={(e) => handleChange(index, e.target.value)}
+              onKeyDown={(e) => handleKeyDown(index, e)}
+              autoFocus={index === 0}
+              required
+            />
+          ))}
+        </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-[#032A24] border border-[#DC2626]/30 rounded-xl text-xs text-[#DC2626] text-center">
+            {error}
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          <button
+            type="button"
+            className="flex-1 px-4 py-2.5 rounded-xl bg-[#032A24] text-[#B7C0BA] font-semibold text-sm hover:bg-[#12342D] transition-all duration-300"
+            onClick={onClose}
+            disabled={loading}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#C9A44B] to-[#E1C16B] text-[#032A24] font-semibold text-sm shadow-md shadow-[#C9A44B]/20 hover:shadow-lg hover:shadow-[#C9A44B]/30 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
+            onClick={handleSubmit}
+            disabled={loading || pin.join('').length < 4}
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Verifying...
+              </span>
+            ) : (
+              'Verify PIN'
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================
+// AuthScreen Component - Two-Step Login (4-Digit PIN)
 // ============================================================
 const AuthScreen = ({ onLogin }) => {
   const navigate = useNavigate();
   const [phone, setPhone] = useState('');
   const [selectedCountry, setSelectedCountry] = useState(null);
-  const [pin, setPin] = useState('');
-  const [showPin, setShowPin] = useState(false);
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [otpSent, setOtpSent] = useState(false);
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [resendTimer, setResendTimer] = useState(0);
-  const [otpCode, setOtpCode] = useState('');
-  const [otpExpirySeconds, setOtpExpirySeconds] = useState(0);
-  const otpTimerRef = useRef(null);
-  const inputRefs = useRef([]);
+
+  const [showPinPopup, setShowPinPopup] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState('');
+  const [tempUserData, setTempUserData] = useState(null);
 
   // Set default country to Kenya
   useEffect(() => {
@@ -161,7 +278,6 @@ const AuthScreen = ({ onLogin }) => {
     }
   }, [selectedCountry]);
 
-  // Get full phone number for backend
   const getFullPhoneNumber = () => {
     if (!selectedCountry) return phone;
     const cleanPhone = phone.replace(/\s/g, '');
@@ -171,7 +287,6 @@ const AuthScreen = ({ onLogin }) => {
     return `${selectedCountry.dialCode}${cleanPhone}`;
   };
 
-  // Validate phone has at least 6 digits after the country code
   const isValidPhone = (phoneStr) => {
     const clean = phoneStr.replace(/\s/g, '');
     let local = clean;
@@ -184,61 +299,8 @@ const AuthScreen = ({ onLogin }) => {
     return digits.length >= 6;
   };
 
-  // OTP handlers
-  useEffect(() => {
-    if (otpSent && inputRefs.current[0]) {
-      inputRefs.current[0].focus();
-    }
-  }, [otpSent]);
-
-  useEffect(() => {
-    if (resendTimer > 0) {
-      const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [resendTimer]);
-
-  useEffect(() => {
-    return () => {
-      if (otpTimerRef.current) {
-        clearInterval(otpTimerRef.current);
-      }
-    };
-  }, []);
-
-  const handleOtpChange = (index, value) => {
-    if (!/^\d*$/.test(value)) return;
-    const newOtp = [...otp];
-    newOtp[index] = value.slice(0, 1);
-    setOtp(newOtp);
-    if (value && index < 5) {
-      inputRefs.current[index + 1].focus();
-    }
-  };
-
-  const handleOtpKeyDown = (index, e) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      inputRefs.current[index - 1].focus();
-    }
-  };
-
-  const startOtpCountdown = () => {
-    setOtpExpirySeconds(30);
-    if (otpTimerRef.current) {
-      clearInterval(otpTimerRef.current);
-    }
-    otpTimerRef.current = setInterval(() => {
-      setOtpExpirySeconds((prev) => {
-        if (prev <= 1) {
-          clearInterval(otpTimerRef.current);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
-  const handleLogin = async (e) => {
+  // Step 1: Validate Phone + Password, then show PIN popup
+  const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -262,52 +324,69 @@ const AuthScreen = ({ onLogin }) => {
       return;
     }
 
+    if (!password || password.length < 8) {
+      setError('Password must be at least 8 characters.');
+      setLoading(false);
+      return;
+    }
+
     const fullPhone = getFullPhoneNumber();
 
     try {
-      if (!otpSent) {
-        const response = await authService.loginStep1(fullPhone);
-        setOtpSent(true);
-        setResendTimer(60);
-        setLoading(false);
-        const receivedOtp = response.data?.otp || response.data?.code || '123456';
-        setOtpCode(receivedOtp);
-        startOtpCountdown();
-        return;
-      }
+      const response = await authService.validatePassword({
+        phone: fullPhone,
+        password: password
+      });
 
-      const otpString = otp.join('');
-      if (otpString.length < 6) {
-        setError('Please enter all 6 digits');
-        setLoading(false);
-        return;
-      }
+      setTempUserData({
+        phone: fullPhone,
+        userData: response.data.user
+      });
+      setShowPinPopup(true);
+      setPinError('');
+      setLoading(false);
 
-      const response = await authService.loginStep2({ phone: fullPhone, pin, otp: otpString });
+    } catch (err) {
+      setError(err.response?.data?.error || 'Invalid password. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  // Step 2: Verify PIN and complete login
+  const handlePinVerify = async (pin) => {
+    setPinLoading(true);
+    setPinError('');
+
+    try {
+      const response = await authService.verifyPin({
+        phone: tempUserData.phone,
+        pin: pin
+      });
+
       const userData = response.data.user;
       localStorage.setItem('halalhub_role', userData.role || 'client');
 
       if (userData.role === 'vendor' && userData.vendorStatus === 'pending') {
-        setError('Your vendor application is pending admin approval.');
-        setLoading(false);
+        setPinError('Your vendor application is pending admin approval.');
+        setPinLoading(false);
         return;
       }
 
       if (userData.role === 'vendor' && userData.vendorStatus === 'rejected') {
-        setError('Your vendor application has been rejected.');
-        setLoading(false);
+        setPinError('Your vendor application has been rejected.');
+        setPinLoading(false);
         return;
       }
 
-      if (userData.role === 'imam' && userData.imamStatus === 'pending') {
-        setError('Your religious leader application is pending admin approval.');
-        setLoading(false);
+      if (userData.role === 'leader' && userData.leaderStatus === 'pending') {
+        setPinError('Your religious leader application is pending admin approval.');
+        setPinLoading(false);
         return;
       }
 
-      if (userData.role === 'imam' && userData.imamStatus === 'rejected') {
-        setError('Your religious leader application has been rejected.');
-        setLoading(false);
+      if (userData.role === 'leader' && userData.leaderStatus === 'rejected') {
+        setPinError('Your religious leader application has been rejected.');
+        setPinLoading(false);
         return;
       }
       
@@ -318,40 +397,24 @@ const AuthScreen = ({ onLogin }) => {
       if (userData.vendorType) {
         localStorage.setItem('halalhub_vendor_type', userData.vendorType);
       }
-      
+
+      setShowPinPopup(false);
+      setPinLoading(false);
       onLogin(userData, response.data.token);
+
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed');
-      setLoading(false);
+      setPinError(err.response?.data?.error || 'Invalid PIN. Please try again.');
+      setPinLoading(false);
     }
   };
 
-  const handleResendOtp = async () => {
-    if (resendTimer > 0) return;
-    setLoading(true);
-    try {
-      const fullPhone = getFullPhoneNumber();
-      const response = await authService.loginStep1(fullPhone);
-      setResendTimer(60);
-      const receivedOtp = response.data?.otp || response.data?.code || '123456';
-      setOtpCode(receivedOtp);
-      startOtpCountdown();
-      setSuccess('Code resent');
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (err) {
-      setError(err.response?.data?.error || 'Failed to resend');
-    }
-    setLoading(false);
+  const handlePinPopupClose = () => {
+    setShowPinPopup(false);
+    setPinError('');
+    setTempUserData(null);
   };
 
-  const togglePinVisibility = () => setShowPin(!showPin);
-  const formatTime = (seconds) => `${seconds}s`;
-
-  const LockIcon = () => (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-    </svg>
-  );
+  const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
   const EyeIcon = () => (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -417,7 +480,7 @@ const AuthScreen = ({ onLogin }) => {
               </div>
             )}
 
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handlePasswordSubmit} className="space-y-4">
               {/* Phone Number */}
               <div>
                 <label className="block text-[10px] font-semibold text-[#FFFFFF] uppercase tracking-wider mb-1.5">
@@ -445,117 +508,31 @@ const AuthScreen = ({ onLogin }) => {
                 </div>
               </div>
 
-              {/* PIN */}
+              {/* Password */}
               <div>
                 <label className="block text-[10px] font-semibold text-[#FFFFFF] uppercase tracking-wider mb-1.5">
-                  PIN
+                  Password
                 </label>
                 <div className="relative">
                   <input
-                    type={showPin ? 'text' : 'password'}
+                    type={showPassword ? 'text' : 'password'}
                     className="w-full px-3 sm:px-4 py-2 bg-[#032A24] border border-[#C9A44B]/30 rounded-xl text-[#F7F6F1] text-sm placeholder-[#B7C0BA]/50 focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300 h-[42px] pr-12"
-                    value={pin}
-                    onChange={(e) => setPin(e.target.value)}
-                    placeholder="••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
                     disabled={loading}
                     required
+                    minLength="8"
                   />
                   <button
                     type="button"
-                    onClick={togglePinVisibility}
+                    onClick={togglePasswordVisibility}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-[#B7C0BA]/60 hover:text-[#B7C0BA] transition"
                   >
-                    {showPin ? <EyeOffIcon /> : <EyeIcon />}
+                    {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                   </button>
                 </div>
               </div>
-
-              {/* OTP Section */}
-              {otpSent && (
-                <div className="space-y-3 pt-1">
-                  <div className="bg-[#032A24] rounded-xl p-3 border border-[#C9A44B]/30">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="text-[#C9A44B]">
-                          <LockIcon />
-                        </div>
-                        <div>
-                          <span className="text-[10px] font-medium text-[#C9A44B]">Your OTP Code</span>
-                          <div className="text-lg font-mono font-bold text-[#E1C16B] tracking-widest mt-0.5">
-                            {otpCode || '••••••'}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className={`text-xs font-semibold ${otpExpirySeconds <= 10 ? 'text-[#DC2626]' : 'text-[#C9A44B]'}`}>
-                          {otpExpirySeconds > 0 ? formatTime(otpExpirySeconds) : 'Expired'}
-                        </div>
-                        <div className="w-16 h-1 bg-[#032A24] rounded-full mt-1 overflow-hidden border border-[#C9A44B]/30">
-                          <div 
-                            className={`h-full rounded-full transition-all duration-1000 ${
-                              otpExpirySeconds <= 10 ? 'bg-[#DC2626]' : 'bg-gradient-to-r from-[#C9A44B] to-[#E1C16B]'
-                            }`}
-                            style={{ width: `${(otpExpirySeconds / 30) * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    {otpExpirySeconds === 0 && (
-                      <p className="text-[10px] text-[#DC2626] mt-1.5">OTP expired. Click "Resend Code" below.</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-semibold text-[#FFFFFF] uppercase tracking-wider mb-2">
-                      Enter Verification Code
-                    </label>
-                    <div className="flex gap-2 justify-center">
-                      {otp.map((digit, index) => (
-                        <input
-                          key={index}
-                          ref={(el) => inputRefs.current[index] = el}
-                          type="text"
-                          inputMode="numeric"
-                          maxLength="1"
-                          value={digit}
-                          className="w-10 h-12 rounded-xl text-[#F7F6F1] text-base font-semibold focus:outline-none focus:ring-2 focus:ring-[#C9A44B]/40 focus:border-[#C9A44B] transition-all duration-300"
-                          onChange={(e) => handleOtpChange(index, e.target.value)}
-                          onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                          required
-                          style={{
-                            backgroundColor: '#032A24',
-                            border: '1px solid rgba(201, 164, 75, 0.3)',
-                            textAlign: 'center',
-                            caretColor: '#C9A44B',
-                            padding: 0,
-                            margin: 0,
-                            textIndent: 0,
-                            lineHeight: '48px',
-                            height: '48px',
-                            width: '40px',
-                            display: 'inline-block',
-                            boxSizing: 'border-box',
-                            WebkitTextFillColor: '#F7F6F1',
-                            MozOsxFontSmoothing: 'grayscale',
-                            fontVariantNumeric: 'tabular-nums'
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center flex-wrap gap-2">
-                    <span className="text-[10px] text-[#B7C0BA]/60">Enter the 6-digit code above</span>
-                    <button
-                      type="button"
-                      className="text-[10px] font-semibold text-[#C9A44B] hover:text-[#E1C16B] transition disabled:opacity-50 disabled:cursor-not-allowed"
-                      onClick={handleResendOtp}
-                      disabled={resendTimer > 0 || loading}
-                    >
-                      {resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend Code'}
-                    </button>
-                  </div>
-                </div>
-              )}
 
               <button
                 type="submit"
@@ -565,13 +542,24 @@ const AuthScreen = ({ onLogin }) => {
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
                     <SpinnerIcon />
-                    Processing...
+                    Verifying...
                   </span>
                 ) : (
-                  otpSent ? 'Verify & Sign In' : 'Send Verification Code'
+                  'Continue'
                 )}
               </button>
             </form>
+
+            {/* Forgot Password Link */}
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                className="text-[11px] text-[#C9A44B]/60 hover:text-[#C9A44B] transition-colors duration-200"
+                onClick={() => navigate('/forgot-password')}
+              >
+                Forgot Password?
+              </button>
+            </div>
 
             <div className="mt-6 pt-5 border-t border-[#C9A44B]/20">
               <p className="text-center text-[9px] text-[#C9A44B]/40 tracking-wider">
@@ -581,6 +569,15 @@ const AuthScreen = ({ onLogin }) => {
           </div>
         </div>
       </div>
+
+      {/* PIN Popup */}
+      <PinPopup
+        isOpen={showPinPopup}
+        onClose={handlePinPopupClose}
+        onVerify={handlePinVerify}
+        loading={pinLoading}
+        error={pinError}
+      />
     </div>
   );
 };

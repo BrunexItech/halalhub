@@ -1,26 +1,22 @@
 const router = require('express').Router();
-const { v4: uuidv4 } = require('uuid');
-const { Client } = require('pg');
 const { authenticate } = require('../middleware/auth');
+const bcrypt = require('bcryptjs');
+const { Pool } = require('pg');
+const crypto = require('crypto');
 const virtualAccountService = require('../services/virtual-account.service');
 const bankClient = require('../services/bank-client');
-const feeService = require('../services/fee.service');
 
-let client;
-
-async function getClient() {
-  if (!client) {
-    client = new Client({
-      user: process.env.DB_USER || 'halalhub_user',
-      password: process.env.DB_PASSWORD || '@halalhub@#',
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT) || 5432,
-      database: process.env.DB_NAME || 'halalhub'
-    });
-    await client.connect();
-  }
-  return client;
-}
+// ============================================================
+// Database Connection Pool (removed hardcoded credentials)
+// ============================================================
+const dbPool = new Pool({
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT) || 5432,
+  database: process.env.DB_NAME,
+  max: 20,
+});
 
 // Pension Master Account (where contributions are held)
 const PENSION_MASTER_ACCOUNT = process.env.PENSION_MASTER_ACCOUNT || 'PENSION-MASTER-001';
@@ -30,31 +26,29 @@ const PENSION_MASTER_ACCOUNT = process.env.PENSION_MASTER_ACCOUNT || 'PENSION-MA
 // ============================================================
 router.get('/stats', async (req, res) => {
   try {
-    const db = await getClient();
-
-    const leadersResult = await db.query(
+    const leadersResult = await dbPool.query(
       'SELECT COUNT(*) as count FROM users WHERE role = $1 AND leader_status = $2',
       ['leader', 'approved']
     );
 
-    const leadersByType = await db.query(`
+    const leadersByType = await dbPool.query(`
       SELECT leader_type, COUNT(*) as count 
       FROM leaders 
       WHERE status = 'approved' 
       GROUP BY leader_type
     `);
 
-    const supportersResult = await db.query(
+    const supportersResult = await dbPool.query(
       'SELECT COUNT(DISTINCT user_id) as count FROM leader_supporters WHERE status = $1',
       ['active']
     );
 
-    const contributionsResult = await db.query(
+    const contributionsResult = await dbPool.query(
       'SELECT COALESCE(SUM(amount), 0) as total FROM leader_pension_contributions WHERE status = $1',
       ['approved']
     );
 
-    const pendingResult = await db.query(
+    const pendingResult = await dbPool.query(
       'SELECT COUNT(*) as count FROM leader_pension_contributions WHERE status = $1',
       ['pending']
     );
@@ -86,7 +80,6 @@ router.get('/stats', async (req, res) => {
 // ============================================================
 router.get('/leaders', async (req, res) => {
   try {
-    const db = await getClient();
     const { leader_type, search, limit = 50 } = req.query;
 
     let query = `
@@ -131,7 +124,7 @@ router.get('/leaders', async (req, res) => {
     query += ` ORDER BY lp.total_supporters DESC NULLS LAST, u.fullname ASC LIMIT $${paramIndex}`;
     params.push(parseInt(limit));
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
     res.json({
       success: true,
@@ -150,10 +143,9 @@ router.get('/leaders', async (req, res) => {
 // ============================================================
 router.get('/leaders/:identifier', async (req, res) => {
   try {
-    const db = await getClient();
     const identifier = req.params.identifier;
-
     const isShareLink = identifier.startsWith('leader-');
+    
     let query;
     let params;
 
@@ -215,7 +207,7 @@ router.get('/leaders/:identifier', async (req, res) => {
       params = [identifier];
     }
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Leader not found or not public' });
@@ -223,7 +215,7 @@ router.get('/leaders/:identifier', async (req, res) => {
 
     const leader = result.rows[0];
 
-    const supportersResult = await db.query(`
+    const supportersResult = await dbPool.query(`
       SELECT 
         u.fullname,
         u.profile_image,
@@ -272,14 +264,41 @@ router.get('/leaders/:identifier', async (req, res) => {
 });
 
 // ============================================================
-// 4. SUPPORT LEADER (Contribute to their pension) - INSTANT (No Admin Approval)
+// 4. SUPPORT LEADER (Contribute to their pension) - PIN REQUIRED
 // ============================================================
 router.post('/contribute', authenticate, async (req, res) => {
-  const db = await getClient();
-
   try {
     const userId = req.user.id;
-    const { leader_id, amount, frequency = 'once', payment_reference = null } = req.body;
+    const { leader_id, amount, frequency = 'once', payment_reference = null, pin } = req.body;
+
+    // Validate PIN is provided
+    if (!pin) {
+      return res.status(400).json({
+        success: false,
+        error: 'PIN is required to contribute'
+      });
+    }
+
+    // Verify PIN
+    const userResult = await dbPool.query(
+      'SELECT pinhash FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    const validPin = await bcrypt.compare(pin, userResult.rows[0].pinhash);
+    if (!validPin) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid PIN'
+      });
+    }
 
     if (!leader_id) {
       return res.status(400).json({ error: 'Leader ID is required' });
@@ -291,7 +310,7 @@ router.post('/contribute', authenticate, async (req, res) => {
 
     const contributionAmount = parseInt(amount);
 
-    const leaderCheck = await db.query(`
+    const leaderCheck = await dbPool.query(`
       SELECT l.id, l.user_id, u.fullname 
       FROM leaders l
       JOIN users u ON l.user_id = u.id
@@ -329,7 +348,6 @@ router.post('/contribute', authenticate, async (req, res) => {
       });
     }
 
-    // Get leader's virtual account
     const leaderAccount = await virtualAccountService.getUserAccount(leader.user_id);
 
     if (!leaderAccount) {
@@ -339,10 +357,9 @@ router.post('/contribute', authenticate, async (req, res) => {
       });
     }
 
-    await db.query('BEGIN');
+    await dbPool.query('BEGIN');
 
     try {
-      // 1. Transfer from user's virtual account to Pension Master account
       await virtualAccountService.processTransfer(
         userId,
         userAccount.account_number,
@@ -351,7 +368,6 @@ router.post('/contribute', authenticate, async (req, res) => {
         `Pension contribution for leader (${leader_id})`
       );
 
-      // 2. Transfer from Pension Master to Leader's virtual account (INSTANT - No Admin Approval)
       await virtualAccountService.processTransfer(
         'system',
         PENSION_MASTER_ACCOUNT,
@@ -360,41 +376,38 @@ router.post('/contribute', authenticate, async (req, res) => {
         `Pension distribution for leader (${leader_id})`
       );
 
-      // 3. Record contribution in leader_pension_contributions (INSTANT APPROVED)
-      const contributionId = 'pcont-' + Date.now().toString(36) + require('crypto').randomBytes(4).toString('hex');
-      await db.query(`
+      const contributionId = 'pcont-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
+      await dbPool.query(`
         INSERT INTO leader_pension_contributions (
           id, leader_id, user_id, amount, payment_method, payment_reference, status, contribution_date, is_self_contribution
         ) VALUES ($1, $2, $3, $4, 'wallet', $5, 'approved', NOW(), false)
       `, [contributionId, leader_id, userId, contributionAmount, payment_reference || null]);
 
-      // 4. Update leader_pension_balances
-      await db.query(`
+      await dbPool.query(`
         UPDATE leader_pension_balances 
         SET total_contributions = total_contributions + $1,
             updatedat = NOW()
         WHERE leader_id = $2
       `, [contributionAmount, leader_id]);
 
-      // 5. Add or update supporter
-      const existingSupporter = await db.query(
+      const existingSupporter = await dbPool.query(
         'SELECT id FROM leader_supporters WHERE leader_id = $1 AND user_id = $2',
         [leader_id, userId]
       );
 
       if (existingSupporter.rows.length > 0) {
-        await db.query(
+        await dbPool.query(
           'UPDATE leader_supporters SET amount = amount + $1, frequency = $2, updatedat = NOW() WHERE id = $3',
           [contributionAmount, frequency || 'once', existingSupporter.rows[0].id]
         );
       } else {
-        const supporterId = 'supp-' + Date.now().toString(36) + require('crypto').randomBytes(4).toString('hex');
-        await db.query(`
+        const supporterId = 'supp-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
+        await dbPool.query(`
           INSERT INTO leader_supporters (id, leader_id, user_id, amount, frequency, status, createdat, updatedat)
           VALUES ($1, $2, $3, $4, $5, 'active', NOW(), NOW())
         `, [supporterId, leader_id, userId, contributionAmount, frequency || 'once']);
 
-        await db.query(`
+        await dbPool.query(`
           UPDATE leader_pension_balances 
           SET total_supporters = total_supporters + 1,
               updatedat = NOW()
@@ -402,9 +415,8 @@ router.post('/contribute', authenticate, async (req, res) => {
         `, [leader_id]);
       }
 
-      // 6. Create notification for leader
-      const notificationId = 'notif-' + Date.now().toString(36) + require('crypto').randomBytes(4).toString('hex');
-      await db.query(`
+      const notificationId = 'notif-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
+      await dbPool.query(`
         INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
         VALUES ($1, $2, $3, $4, $5, $6, NOW())
       `, [
@@ -416,7 +428,7 @@ router.post('/contribute', authenticate, async (req, res) => {
         `/leader-pension`
       ]);
 
-      await db.query('COMMIT');
+      await dbPool.query('COMMIT');
 
       const updatedAccount = await virtualAccountService.getUserAccount(userId);
       const updatedLeaderAccount = await virtualAccountService.getUserAccount(leader.user_id);
@@ -433,7 +445,7 @@ router.post('/contribute', authenticate, async (req, res) => {
       });
 
     } catch (err) {
-      await db.query('ROLLBACK');
+      await dbPool.query('ROLLBACK');
       throw err;
     }
 
@@ -448,11 +460,10 @@ router.post('/contribute', authenticate, async (req, res) => {
 // ============================================================
 router.get('/contributions', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const { limit = 10 } = req.query;
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT 
         pc.*,
         u.fullname as leader_name,
@@ -493,10 +504,9 @@ router.get('/contributions', authenticate, async (req, res) => {
 // ============================================================
 router.get('/admin/pending', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
 
-    const userCheck = await db.query(
+    const userCheck = await dbPool.query(
       'SELECT isadmin FROM users WHERE id = $1',
       [userId]
     );
@@ -505,7 +515,7 @@ router.get('/admin/pending', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT 
         pc.id,
         pc.leader_id,
@@ -566,14 +576,12 @@ router.get('/admin/pending', authenticate, async (req, res) => {
 // 7. ADMIN - APPROVE CONTRIBUTION (Admin only - rarely used now)
 // ============================================================
 router.put('/admin/approve/:contributionId', authenticate, async (req, res) => {
-  const db = await getClient();
-
   try {
     const userId = req.user.id;
     const contributionId = req.params.contributionId;
     const { notes } = req.body;
 
-    const userCheck = await db.query(
+    const userCheck = await dbPool.query(
       'SELECT isadmin FROM users WHERE id = $1',
       [userId]
     );
@@ -582,7 +590,7 @@ router.put('/admin/approve/:contributionId', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
-    const contributionCheck = await db.query(`
+    const contributionCheck = await dbPool.query(`
       SELECT 
         pc.*,
         l.user_id as leader_user_id
@@ -622,27 +630,27 @@ router.put('/admin/approve/:contributionId', authenticate, async (req, res) => {
       });
     }
 
-    await db.query('BEGIN');
+    await dbPool.query('BEGIN');
 
     try {
-      await db.query(
+      await dbPool.query(
         `UPDATE virtual_accounts 
          SET balance = balance - $1, updatedat = NOW()
          WHERE account_number = $2`,
         [amount, PENSION_MASTER_ACCOUNT]
       );
 
-      await db.query(
+      await dbPool.query(
         `UPDATE virtual_accounts 
          SET balance = balance + $1, updatedat = NOW()
          WHERE account_number = $2`,
         [amount, leaderAccount.account_number]
       );
 
-      const txId = 'btxn-' + Date.now().toString(36) + require('crypto').randomBytes(4).toString('hex');
-      const ref = 'PEN-APPR-' + Date.now().toString(36).toUpperCase() + require('crypto').randomBytes(4).toString('hex').toUpperCase();
+      const txId = 'btxn-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
+      const ref = 'PEN-APPR-' + Date.now().toString(36).toUpperCase() + crypto.randomBytes(4).toString('hex').toUpperCase();
 
-      await db.query(`
+      await dbPool.query(`
         INSERT INTO bank_transactions (
           id, reference, from_account, to_account, amount, fee, type, status, description, completed_at, createdat, updatedat
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW(), NOW())
@@ -658,7 +666,7 @@ router.put('/admin/approve/:contributionId', authenticate, async (req, res) => {
         `Pension contribution approved - ${contributionId}`
       ]);
 
-      await db.query(`
+      await dbPool.query(`
         UPDATE leader_pension_contributions 
         SET status = 'approved',
             payment_reference = COALESCE($1, payment_reference),
@@ -666,8 +674,8 @@ router.put('/admin/approve/:contributionId', authenticate, async (req, res) => {
         WHERE id = $2
       `, [ref, contributionId]);
 
-      const userNotifId = 'notif-' + Date.now().toString(36) + require('crypto').randomBytes(4).toString('hex');
-      await db.query(`
+      const userNotifId = 'notif-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
+      await dbPool.query(`
         INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
         VALUES ($1, $2, $3, $4, $5, $6, NOW())
       `, [
@@ -679,8 +687,8 @@ router.put('/admin/approve/:contributionId', authenticate, async (req, res) => {
         `/pension/contributions`
       ]);
 
-      const leaderNotifId = 'notif-' + Date.now().toString(36) + require('crypto').randomBytes(4).toString('hex');
-      await db.query(`
+      const leaderNotifId = 'notif-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
+      await dbPool.query(`
         INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
         VALUES ($1, $2, $3, $4, $5, $6, NOW())
       `, [
@@ -692,7 +700,7 @@ router.put('/admin/approve/:contributionId', authenticate, async (req, res) => {
         `/leader-pension`
       ]);
 
-      await db.query('COMMIT');
+      await dbPool.query('COMMIT');
 
       res.json({
         success: true,
@@ -704,7 +712,7 @@ router.put('/admin/approve/:contributionId', authenticate, async (req, res) => {
       });
 
     } catch (err) {
-      await db.query('ROLLBACK');
+      await dbPool.query('ROLLBACK');
       throw err;
     }
 
@@ -718,14 +726,12 @@ router.put('/admin/approve/:contributionId', authenticate, async (req, res) => {
 // 8. ADMIN - REJECT CONTRIBUTION (Admin only - rarely used now)
 // ============================================================
 router.put('/admin/reject/:contributionId', authenticate, async (req, res) => {
-  const db = await getClient();
-
   try {
     const userId = req.user.id;
     const contributionId = req.params.contributionId;
     const { reason } = req.body;
 
-    const userCheck = await db.query(
+    const userCheck = await dbPool.query(
       'SELECT isadmin FROM users WHERE id = $1',
       [userId]
     );
@@ -734,7 +740,7 @@ router.put('/admin/reject/:contributionId', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
-    const contributionCheck = await db.query(`
+    const contributionCheck = await dbPool.query(`
       SELECT 
         pc.*,
         l.user_id as leader_user_id
@@ -766,27 +772,27 @@ router.put('/admin/reject/:contributionId', authenticate, async (req, res) => {
       });
     }
 
-    await db.query('BEGIN');
+    await dbPool.query('BEGIN');
 
     try {
-      await db.query(
+      await dbPool.query(
         `UPDATE virtual_accounts 
          SET balance = balance - $1, updatedat = NOW()
          WHERE account_number = $2`,
         [amount, PENSION_MASTER_ACCOUNT]
       );
 
-      await db.query(
+      await dbPool.query(
         `UPDATE virtual_accounts 
          SET balance = balance + $1, updatedat = NOW()
          WHERE account_number = $2`,
         [amount, userAccount.account_number]
       );
 
-      const txId = 'btxn-' + Date.now().toString(36) + require('crypto').randomBytes(4).toString('hex');
-      const ref = 'PEN-REJ-' + Date.now().toString(36).toUpperCase() + require('crypto').randomBytes(4).toString('hex').toUpperCase();
+      const txId = 'btxn-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
+      const ref = 'PEN-REJ-' + Date.now().toString(36).toUpperCase() + crypto.randomBytes(4).toString('hex').toUpperCase();
 
-      await db.query(`
+      await dbPool.query(`
         INSERT INTO bank_transactions (
           id, reference, from_account, to_account, amount, fee, type, status, description, completed_at, createdat, updatedat
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW(), NOW())
@@ -802,7 +808,7 @@ router.put('/admin/reject/:contributionId', authenticate, async (req, res) => {
         `Pension contribution rejected - ${contributionId}`
       ]);
 
-      await db.query(`
+      await dbPool.query(`
         UPDATE leader_pension_contributions 
         SET status = 'rejected',
             payment_reference = COALESCE($1, payment_reference),
@@ -810,8 +816,8 @@ router.put('/admin/reject/:contributionId', authenticate, async (req, res) => {
         WHERE id = $2
       `, [ref, contributionId]);
 
-      const userNotifId = 'notif-' + Date.now().toString(36) + require('crypto').randomBytes(4).toString('hex');
-      await db.query(`
+      const userNotifId = 'notif-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
+      await dbPool.query(`
         INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
         VALUES ($1, $2, $3, $4, $5, $6, NOW())
       `, [
@@ -823,7 +829,7 @@ router.put('/admin/reject/:contributionId', authenticate, async (req, res) => {
         `/pension/contributions`
       ]);
 
-      await db.query('COMMIT');
+      await dbPool.query('COMMIT');
 
       res.json({
         success: true,
@@ -834,7 +840,7 @@ router.put('/admin/reject/:contributionId', authenticate, async (req, res) => {
       });
 
     } catch (err) {
-      await db.query('ROLLBACK');
+      await dbPool.query('ROLLBACK');
       throw err;
     }
 
@@ -849,10 +855,9 @@ router.put('/admin/reject/:contributionId', authenticate, async (req, res) => {
 // ============================================================
 router.get('/admin/stats', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
 
-    const userCheck = await db.query(
+    const userCheck = await dbPool.query(
       'SELECT isadmin FROM users WHERE id = $1',
       [userId]
     );
@@ -861,7 +866,7 @@ router.get('/admin/stats', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT 
         COUNT(*) as total_contributions,
         SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_count,
@@ -901,10 +906,9 @@ router.get('/admin/stats', authenticate, async (req, res) => {
 // ============================================================
 router.get('/admin/withdrawals', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
 
-    const userCheck = await db.query(
+    const userCheck = await dbPool.query(
       'SELECT isadmin FROM users WHERE id = $1',
       [userId]
     );
@@ -941,7 +945,7 @@ router.get('/admin/withdrawals', authenticate, async (req, res) => {
     query += ` ORDER BY wr.requested_at ASC LIMIT $${paramIndex}`;
     params.push(parseInt(limit));
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
     res.json({
       success: true,
@@ -956,17 +960,15 @@ router.get('/admin/withdrawals', authenticate, async (req, res) => {
 });
 
 // ============================================================
-// 11. ADMIN - APPROVE WITHDRAWAL REQUEST (Admin only) - FIXED
+// 11. ADMIN - APPROVE WITHDRAWAL REQUEST (Admin only)
 // ============================================================
 router.put('/admin/withdrawals/:id/approve', authenticate, async (req, res) => {
-  const db = await getClient();
-
   try {
     const userId = req.user.id;
     const withdrawalId = req.params.id;
     const { notes } = req.body;
 
-    const userCheck = await db.query(
+    const userCheck = await dbPool.query(
       'SELECT isadmin FROM users WHERE id = $1',
       [userId]
     );
@@ -975,7 +977,7 @@ router.put('/admin/withdrawals/:id/approve', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
-    const withdrawalCheck = await db.query(`
+    const withdrawalCheck = await dbPool.query(`
       SELECT 
         wr.*,
         l.user_id as leader_user_id,
@@ -994,7 +996,6 @@ router.put('/admin/withdrawals/:id/approve', authenticate, async (req, res) => {
     const amount = parseInt(withdrawal.amount);
     const currentPensionBalance = parseInt(withdrawal.total_contributions) || 0;
 
-    // Check if leader has sufficient pension balance
     if (currentPensionBalance < amount) {
       return res.status(400).json({ 
         error: 'Insufficient pension balance',
@@ -1003,7 +1004,6 @@ router.put('/admin/withdrawals/:id/approve', authenticate, async (req, res) => {
       });
     }
 
-    // Get leader's virtual account (wallet)
     const leaderAccount = await virtualAccountService.getUserAccount(withdrawal.leader_user_id);
 
     if (!leaderAccount) {
@@ -1012,7 +1012,6 @@ router.put('/admin/withdrawals/:id/approve', authenticate, async (req, res) => {
       });
     }
 
-    // Get Pension Master Account
     const masterAccount = await virtualAccountService.getAccountByNumber(PENSION_MASTER_ACCOUNT);
 
     if (!masterAccount) {
@@ -1021,10 +1020,9 @@ router.put('/admin/withdrawals/:id/approve', authenticate, async (req, res) => {
       });
     }
 
-    await db.query('BEGIN');
+    await dbPool.query('BEGIN');
 
     try {
-      // 1. Transfer from Pension Master Account to leader's wallet
       await virtualAccountService.processTransfer(
         'system',
         PENSION_MASTER_ACCOUNT,
@@ -1033,19 +1031,17 @@ router.put('/admin/withdrawals/:id/approve', authenticate, async (req, res) => {
         `Pension withdrawal approved - ${withdrawalId}`
       );
 
-      // 2. DEDUCT from leader's pension balance (THIS WAS MISSING!)
-      await db.query(`
+      await dbPool.query(`
         UPDATE leader_pension_balances 
         SET total_contributions = total_contributions - $1,
             updatedat = NOW()
         WHERE leader_id = $2
       `, [amount, withdrawal.leader_id]);
 
-      // 3. Record the transaction
-      const txId = 'btxn-' + Date.now().toString(36) + require('crypto').randomBytes(4).toString('hex');
-      const ref = 'PEN-WTH-' + Date.now().toString(36).toUpperCase() + require('crypto').randomBytes(4).toString('hex').toUpperCase();
+      const txId = 'btxn-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
+      const ref = 'PEN-WTH-' + Date.now().toString(36).toUpperCase() + crypto.randomBytes(4).toString('hex').toUpperCase();
 
-      await db.query(`
+      await dbPool.query(`
         INSERT INTO bank_transactions (
           id, reference, from_account, to_account, amount, fee, type, status, description, completed_at, createdat, updatedat
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW(), NOW())
@@ -1061,8 +1057,7 @@ router.put('/admin/withdrawals/:id/approve', authenticate, async (req, res) => {
         `Pension withdrawal approved - ${withdrawalId}`
       ]);
 
-      // 4. Update the withdrawal request status
-      await db.query(`
+      await dbPool.query(`
         UPDATE leader_withdrawal_requests 
         SET status = 'approved',
             admin_notes = COALESCE($1, admin_notes),
@@ -1071,9 +1066,8 @@ router.put('/admin/withdrawals/:id/approve', authenticate, async (req, res) => {
         WHERE id = $2
       `, [notes || null, withdrawalId]);
 
-      // 5. Send notification to leader
-      const leaderNotifId = 'notif-' + Date.now().toString(36) + require('crypto').randomBytes(4).toString('hex');
-      await db.query(`
+      const leaderNotifId = 'notif-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
+      await dbPool.query(`
         INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
         VALUES ($1, $2, $3, $4, $5, $6, NOW())
       `, [
@@ -1085,7 +1079,7 @@ router.put('/admin/withdrawals/:id/approve', authenticate, async (req, res) => {
         `/leader-pension`
       ]);
 
-      await db.query('COMMIT');
+      await dbPool.query('COMMIT');
 
       const updatedAccount = await virtualAccountService.getUserAccount(withdrawal.leader_user_id);
       const newPensionBalance = Math.max(0, currentPensionBalance - amount);
@@ -1101,7 +1095,7 @@ router.put('/admin/withdrawals/:id/approve', authenticate, async (req, res) => {
       });
 
     } catch (err) {
-      await db.query('ROLLBACK');
+      await dbPool.query('ROLLBACK');
       throw err;
     }
 
@@ -1115,14 +1109,12 @@ router.put('/admin/withdrawals/:id/approve', authenticate, async (req, res) => {
 // 12. ADMIN - REJECT WITHDRAWAL REQUEST (Admin only)
 // ============================================================
 router.put('/admin/withdrawals/:id/reject', authenticate, async (req, res) => {
-  const db = await getClient();
-
   try {
     const userId = req.user.id;
     const withdrawalId = req.params.id;
     const { reason } = req.body;
 
-    const userCheck = await db.query(
+    const userCheck = await dbPool.query(
       'SELECT isadmin FROM users WHERE id = $1',
       [userId]
     );
@@ -1131,7 +1123,7 @@ router.put('/admin/withdrawals/:id/reject', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
-    const withdrawalCheck = await db.query(`
+    const withdrawalCheck = await dbPool.query(`
       SELECT 
         wr.*,
         l.user_id as leader_user_id
@@ -1147,10 +1139,10 @@ router.put('/admin/withdrawals/:id/reject', authenticate, async (req, res) => {
     const withdrawal = withdrawalCheck.rows[0];
     const amount = parseInt(withdrawal.amount);
 
-    await db.query('BEGIN');
+    await dbPool.query('BEGIN');
 
     try {
-      await db.query(`
+      await dbPool.query(`
         UPDATE leader_withdrawal_requests 
         SET status = 'rejected',
             admin_notes = COALESCE($1, admin_notes),
@@ -1159,8 +1151,8 @@ router.put('/admin/withdrawals/:id/reject', authenticate, async (req, res) => {
         WHERE id = $2
       `, [reason || null, withdrawalId]);
 
-      const leaderNotifId = 'notif-' + Date.now().toString(36) + require('crypto').randomBytes(4).toString('hex');
-      await db.query(`
+      const leaderNotifId = 'notif-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
+      await dbPool.query(`
         INSERT INTO notifications (id, user_id, title, message, type, link, createdat)
         VALUES ($1, $2, $3, $4, $5, $6, NOW())
       `, [
@@ -1172,7 +1164,7 @@ router.put('/admin/withdrawals/:id/reject', authenticate, async (req, res) => {
         `/leader-pension`
       ]);
 
-      await db.query('COMMIT');
+      await dbPool.query('COMMIT');
 
       res.json({
         success: true,
@@ -1181,7 +1173,7 @@ router.put('/admin/withdrawals/:id/reject', authenticate, async (req, res) => {
       });
 
     } catch (err) {
-      await db.query('ROLLBACK');
+      await dbPool.query('ROLLBACK');
       throw err;
     }
 
@@ -1198,8 +1190,7 @@ router.post('/sync', authenticate, async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const db = await getClient();
-    const userCheck = await db.query(
+    const userCheck = await dbPool.query(
       'SELECT isadmin FROM users WHERE id = $1',
       [userId]
     );

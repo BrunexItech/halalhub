@@ -18,6 +18,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { clientService, cartService } from '../../api/client';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 
 // Enable LayoutAnimation for Android
@@ -304,16 +305,9 @@ const Restaurants = () => {
     return formatCurrency(parseInt(range));
   };
 
-  if (loading) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <ActivityIndicator size="large" color="#032A24" />
-          <Text style={{ color: '#6B7280', marginTop: 16, fontSize: 14 }}>Loading restaurants...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+ if (loading) {
+  return <LoadingSpinner message="Loading restaurants..." />;
+}
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>

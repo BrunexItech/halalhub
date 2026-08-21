@@ -1,10 +1,12 @@
 const router = require('express').Router();
 const { v4: uuidv4 } = require('uuid');
-const { Client } = require('pg');
+const bcrypt = require('bcryptjs');
+const { Pool } = require('pg');
 const { authenticate, authorize } = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const virtualAccountService = require('../services/virtual-account.service');
 
 // Ensure uploads directory exists
 const uploadDir = path.join(__dirname, '../../uploads');
@@ -39,21 +41,17 @@ const upload = multer({
   fileFilter: fileFilter
 });
 
-let client;
-
-async function getClient() {
-  if (!client) {
-    client = new Client({
-      user: process.env.DB_USER || 'halalhub_user',
-      password: process.env.DB_PASSWORD || '@halalhub@#',
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT) || 5432,
-      database: process.env.DB_NAME || 'halalhub'
-    });
-    await client.connect();
-  }
-  return client;
-}
+// ============================================================
+// Database Connection Pool (removed hardcoded credentials)
+// ============================================================
+const dbPool = new Pool({
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT) || 5432,
+  database: process.env.DB_NAME,
+  max: 20,
+});
 
 // All vendor routes require authentication and vendor role
 router.use(authenticate);
@@ -88,10 +86,9 @@ router.post('/upload-image', upload.single('image'), async (req, res) => {
 // ============================================================
 router.get('/dashboard-stats', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
 
-    const vendorType = await db.query(`
+    const vendorType = await dbPool.query(`
       SELECT business_type FROM vendor_profiles WHERE user_id = $1
     `, [userId]);
 
@@ -132,7 +129,7 @@ router.get('/dashboard-stats', async (req, res) => {
       `;
     }
 
-    const stats = await db.query(statsQuery, [userId]);
+    const stats = await dbPool.query(statsQuery, [userId]);
 
     res.json({
       success: true,
@@ -163,10 +160,9 @@ router.get('/dashboard-stats', async (req, res) => {
 // ============================================================
 router.get('/profile', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT 
         u.id, u.fullname, u.phone, u.email, u.business_name, 
         u.kra_pin, u.business_reg_no, u.halal_declared, 
@@ -198,7 +194,6 @@ router.get('/profile', async (req, res) => {
 // ============================================================
 router.post('/profile', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const {
       business_type,
@@ -216,13 +211,13 @@ router.post('/profile', async (req, res) => {
       return res.status(400).json({ error: 'Business type and location are required' });
     }
 
-    const existing = await db.query(
+    const existing = await dbPool.query(
       'SELECT id FROM vendor_profiles WHERE user_id = $1',
       [userId]
     );
 
     if (existing.rows.length > 0) {
-      await db.query(`
+      await dbPool.query(`
         UPDATE vendor_profiles 
         SET business_type = $1, description = $2, location = $3, 
             county = $4, website = $5, logo_url = $6, cover_image = $7,
@@ -232,7 +227,7 @@ router.post('/profile', async (req, res) => {
       `, [business_type, description, location, county, website, logo_url, cover_image, is_active !== false, userId]);
 
       if (business_name) {
-        await db.query(
+        await dbPool.query(
           'UPDATE users SET business_name = $1 WHERE id = $2',
           [business_name, userId]
         );
@@ -242,7 +237,7 @@ router.post('/profile', async (req, res) => {
 
     } else {
       const id = uuidv4();
-      await db.query(`
+      await dbPool.query(`
         INSERT INTO vendor_profiles (
           id, user_id, business_type, description, location, 
           county, website, logo_url, cover_image, is_active, createdat
@@ -250,7 +245,7 @@ router.post('/profile', async (req, res) => {
       `, [id, userId, business_type, description, location, county, website, logo_url, cover_image, is_active !== false]);
 
       if (business_name) {
-        await db.query(
+        await dbPool.query(
           'UPDATE users SET business_name = $1 WHERE id = $2',
           [business_name, userId]
         );
@@ -270,11 +265,10 @@ router.post('/profile', async (req, res) => {
 // ============================================================
 router.put('/profile/toggle-status', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const { is_active } = req.body;
 
-    const result = await db.query(
+    const result = await dbPool.query(
       'UPDATE vendor_profiles SET is_active = $1, updatedat = NOW() WHERE user_id = $2 RETURNING is_active',
       [is_active, userId]
     );
@@ -300,11 +294,10 @@ router.put('/profile/toggle-status', async (req, res) => {
 // ============================================================
 router.get('/products', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const { limit = 100 } = req.query;
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT * FROM products 
       WHERE vendor_id = $1 
       ORDER BY createdat DESC
@@ -324,7 +317,6 @@ router.get('/products', async (req, res) => {
 // ============================================================
 router.post('/products', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const {
       name,
@@ -338,7 +330,6 @@ router.post('/products', async (req, res) => {
       tags,
       is_halal,
       is_active,
-      // Butchery fields
       meat_type,
       cut_type,
       price_per_kg,
@@ -349,8 +340,7 @@ router.post('/products', async (req, res) => {
       return res.status(400).json({ error: 'Name, category, and price are required' });
     }
 
-    // Get vendor business type
-    const vendorTypeResult = await db.query(`
+    const vendorTypeResult = await dbPool.query(`
       SELECT business_type FROM vendor_profiles WHERE user_id = $1
     `, [userId]);
     
@@ -358,9 +348,8 @@ router.post('/products', async (req, res) => {
 
     const id = uuidv4();
     
-    // If vendor is a butchery, use butchery fields
     if (businessType === 'halalbutchery') {
-      await db.query(`
+      await dbPool.query(`
         INSERT INTO products (
           id, vendor_id, name, description, category, price, 
           original_price, stock, unit, images, tags, 
@@ -370,8 +359,7 @@ router.post('/products', async (req, res) => {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW(), NOW())
       `, [id, userId, name, description, category, price, original_price || null, stock || 0, unit || 'piece', images || [], tags || [], is_halal !== false, is_active !== false, meat_type || 'beef', cut_type || 'whole', price_per_kg || 0, stock_kg || 0]);
     } else {
-      // Regular product for other vendors
-      await db.query(`
+      await dbPool.query(`
         INSERT INTO products (
           id, vendor_id, name, description, category, price, 
           original_price, stock, unit, images, tags, 
@@ -393,7 +381,6 @@ router.post('/products', async (req, res) => {
 // ============================================================
 router.put('/products/:productId', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const productId = req.params.productId;
     const {
@@ -408,14 +395,13 @@ router.put('/products/:productId', async (req, res) => {
       tags,
       is_halal,
       is_active,
-      // Butchery fields
       meat_type,
       cut_type,
       price_per_kg,
       stock_kg
     } = req.body;
 
-    const check = await db.query(
+    const check = await dbPool.query(
       'SELECT id, vendor_id FROM products WHERE id = $1 AND vendor_id = $2',
       [productId, userId]
     );
@@ -424,16 +410,14 @@ router.put('/products/:productId', async (req, res) => {
       return res.status(404).json({ error: 'Product not found' });
     }
 
-    // Get vendor business type
-    const vendorTypeResult = await db.query(`
+    const vendorTypeResult = await dbPool.query(`
       SELECT business_type FROM vendor_profiles WHERE user_id = $1
     `, [userId]);
     
     const businessType = vendorTypeResult.rows[0]?.business_type || '';
 
-    // If vendor is a butchery, include butchery fields
     if (businessType === 'halalbutchery') {
-      await db.query(`
+      await dbPool.query(`
         UPDATE products SET
           name = COALESCE($1, name),
           description = COALESCE($2, description),
@@ -454,8 +438,7 @@ router.put('/products/:productId', async (req, res) => {
         WHERE id = $16 AND vendor_id = $17
       `, [name, description, category, price, original_price, stock, unit, images, tags, is_halal, is_active, meat_type, cut_type, price_per_kg, stock_kg, productId, userId]);
     } else {
-      // Regular product update
-      await db.query(`
+      await dbPool.query(`
         UPDATE products SET
           name = COALESCE($1, name),
           description = COALESCE($2, description),
@@ -486,11 +469,10 @@ router.put('/products/:productId', async (req, res) => {
 // ============================================================
 router.delete('/products/:productId', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const productId = req.params.productId;
 
-    const result = await db.query(
+    const result = await dbPool.query(
       'DELETE FROM products WHERE id = $1 AND vendor_id = $2 RETURNING id',
       [productId, userId]
     );
@@ -512,11 +494,10 @@ router.delete('/products/:productId', async (req, res) => {
 // ============================================================
 router.get('/orders', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const { status, limit = 50 } = req.query;
 
-    const vendorType = await db.query(`
+    const vendorType = await dbPool.query(`
       SELECT business_type FROM vendor_profiles WHERE user_id = $1
     `, [userId]);
 
@@ -554,7 +535,7 @@ router.get('/orders', async (req, res) => {
 
       query += ` ORDER BY b.booking_date DESC LIMIT ${parseInt(limit)}`;
 
-      const result = await db.query(query, params);
+      const result = await dbPool.query(query, params);
 
       return res.json({ success: true, orders: result.rows });
     }
@@ -586,9 +567,8 @@ router.get('/orders', async (req, res) => {
 
     query += ` ORDER BY o.order_date DESC LIMIT ${parseInt(limit)}`;
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
-    // Format items to show item names
     const orders = result.rows.map(order => {
       let itemsDisplay = '';
       if (order.items) {
@@ -618,7 +598,6 @@ router.get('/orders', async (req, res) => {
 // ============================================================
 router.put('/orders/:orderId', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const orderId = req.params.orderId;
     const { status } = req.body;
@@ -630,7 +609,7 @@ router.put('/orders/:orderId', async (req, res) => {
     const isBooking = orderId.startsWith('book-');
 
     if (isBooking) {
-      const check = await db.query(
+      const check = await dbPool.query(
         'SELECT id, listing_id FROM bookings WHERE id = $1 AND vendor_id = $2',
         [orderId, userId]
       );
@@ -639,21 +618,21 @@ router.put('/orders/:orderId', async (req, res) => {
         return res.status(404).json({ error: 'Booking not found' });
       }
 
-      const oldStatus = await db.query(
+      const oldStatus = await dbPool.query(
         'SELECT status FROM bookings WHERE id = $1',
         [orderId]
       );
 
-      await db.query('BEGIN');
+      await dbPool.query('BEGIN');
 
       try {
-        await db.query(
+        await dbPool.query(
           'UPDATE bookings SET status = $1, updatedat = NOW() WHERE id = $2',
           [status, orderId]
         );
 
         if (status === 'cancelled' && oldStatus.rows[0].status !== 'cancelled') {
-          await db.query(`
+          await dbPool.query(`
             UPDATE listings 
             SET available_rooms = available_rooms + 1,
                 updatedat = NOW()
@@ -661,16 +640,16 @@ router.put('/orders/:orderId', async (req, res) => {
           `, [check.rows[0].listing_id]);
         }
 
-        await db.query('COMMIT');
+        await dbPool.query('COMMIT');
 
         return res.json({ success: true, message: 'Booking updated successfully' });
       } catch (err) {
-        await db.query('ROLLBACK');
+        await dbPool.query('ROLLBACK');
         throw err;
       }
     }
 
-    const check = await db.query(
+    const check = await dbPool.query(
       'SELECT id FROM orders WHERE id = $1 AND vendor_id = $2',
       [orderId, userId]
     );
@@ -679,7 +658,7 @@ router.put('/orders/:orderId', async (req, res) => {
       return res.status(404).json({ error: 'Order not found' });
     }
 
-    await db.query(
+    await dbPool.query(
       'UPDATE orders SET status = $1, updatedat = NOW() WHERE id = $2',
       [status, orderId]
     );
@@ -697,7 +676,6 @@ router.put('/orders/:orderId', async (req, res) => {
 // ============================================================
 router.get('/bookings', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const { status, limit = 50 } = req.query;
 
@@ -717,7 +695,7 @@ router.get('/bookings', async (req, res) => {
 
     query += ` ORDER BY b.booking_date DESC LIMIT ${parseInt(limit)}`;
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
     res.json({ success: true, bookings: result.rows });
 
@@ -732,7 +710,6 @@ router.get('/bookings', async (req, res) => {
 // ============================================================
 router.put('/bookings/:bookingId', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const bookingId = req.params.bookingId;
     const { status } = req.body;
@@ -741,7 +718,7 @@ router.put('/bookings/:bookingId', async (req, res) => {
       return res.status(400).json({ error: 'Status is required' });
     }
 
-    const check = await db.query(
+    const check = await dbPool.query(
       'SELECT id, listing_id FROM bookings WHERE id = $1 AND vendor_id = $2',
       [bookingId, userId]
     );
@@ -750,21 +727,21 @@ router.put('/bookings/:bookingId', async (req, res) => {
       return res.status(404).json({ error: 'Booking not found' });
     }
 
-    const oldStatus = await db.query(
+    const oldStatus = await dbPool.query(
       'SELECT status FROM bookings WHERE id = $1',
       [bookingId]
     );
 
-    await db.query('BEGIN');
+    await dbPool.query('BEGIN');
 
     try {
-      await db.query(
+      await dbPool.query(
         'UPDATE bookings SET status = $1, updatedat = NOW() WHERE id = $2',
         [status, bookingId]
       );
 
       if (status === 'cancelled' && oldStatus.rows[0].status !== 'cancelled') {
-        await db.query(`
+        await dbPool.query(`
           UPDATE listings 
           SET available_rooms = available_rooms + 1,
               updatedat = NOW()
@@ -772,12 +749,12 @@ router.put('/bookings/:bookingId', async (req, res) => {
         `, [check.rows[0].listing_id]);
       }
 
-      await db.query('COMMIT');
+      await dbPool.query('COMMIT');
 
       res.json({ success: true, message: 'Booking updated successfully' });
 
     } catch (err) {
-      await db.query('ROLLBACK');
+      await dbPool.query('ROLLBACK');
       throw err;
     }
 
@@ -792,10 +769,9 @@ router.put('/bookings/:bookingId', async (req, res) => {
 // ============================================================
 router.get('/listings', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT * FROM listings 
       WHERE vendor_id = $1 
       ORDER BY createdat DESC
@@ -814,7 +790,6 @@ router.get('/listings', async (req, res) => {
 // ============================================================
 router.post('/listings', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const {
       title,
@@ -846,7 +821,7 @@ router.post('/listings', async (req, res) => {
     const maxAdvance = max_advance_days || 90;
     const maxGuestsPerRoom = max_guests_per_room || 2;
 
-    await db.query(`
+    await dbPool.query(`
       INSERT INTO listings (
         id, vendor_id, title, description, type, location, county,
         price_per_night, bedrooms, bathrooms, max_guests,
@@ -870,7 +845,6 @@ router.post('/listings', async (req, res) => {
 // ============================================================
 router.put('/listings/:listingId', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const listingId = req.params.listingId;
     const {
@@ -893,7 +867,7 @@ router.put('/listings/:listingId', async (req, res) => {
       max_guests_per_room
     } = req.body;
 
-    const check = await db.query(
+    const check = await dbPool.query(
       'SELECT id FROM listings WHERE id = $1 AND vendor_id = $2',
       [listingId, userId]
     );
@@ -902,7 +876,7 @@ router.put('/listings/:listingId', async (req, res) => {
       return res.status(404).json({ error: 'Listing not found' });
     }
 
-    await db.query(`
+    await dbPool.query(`
       UPDATE listings SET
         title = COALESCE($1, title),
         description = COALESCE($2, description),
@@ -938,11 +912,10 @@ router.put('/listings/:listingId', async (req, res) => {
 // ============================================================
 router.delete('/listings/:listingId', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const listingId = req.params.listingId;
 
-    const result = await db.query(
+    const result = await dbPool.query(
       'DELETE FROM listings WHERE id = $1 AND vendor_id = $2 RETURNING id',
       [listingId, userId]
     );
@@ -964,10 +937,9 @@ router.delete('/listings/:listingId', async (req, res) => {
 // ============================================================
 router.get('/earnings', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
 
-    const vendorType = await db.query(`
+    const vendorType = await dbPool.query(`
       SELECT business_type FROM vendor_profiles WHERE user_id = $1
     `, [userId]);
 
@@ -997,7 +969,7 @@ router.get('/earnings', async (req, res) => {
       `;
     }
 
-    const result = await db.query(earningsQuery, [userId]);
+    const result = await dbPool.query(earningsQuery, [userId]);
 
     res.json({ success: true, earnings: result.rows[0] });
 
@@ -1012,10 +984,9 @@ router.get('/earnings', async (req, res) => {
 // ============================================================
 router.get('/reviews', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT r.*, u.fullname as reviewer_name, u.profile_image as reviewer_image
       FROM reviews r
       JOIN users u ON r.user_id = u.id
@@ -1036,10 +1007,9 @@ router.get('/reviews', async (req, res) => {
 // ============================================================
 router.get('/menu-items', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT * FROM menu_items 
       WHERE vendor_id = $1 
       ORDER BY createdat DESC
@@ -1058,7 +1028,6 @@ router.get('/menu-items', async (req, res) => {
 // ============================================================
 router.post('/menu-items', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const {
       name,
@@ -1074,7 +1043,7 @@ router.post('/menu-items', async (req, res) => {
     }
 
     const id = uuidv4();
-    await db.query(`
+    await dbPool.query(`
       INSERT INTO menu_items (
         id, vendor_id, name, description, category, price, is_available, image, createdat, updatedat
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
@@ -1093,7 +1062,6 @@ router.post('/menu-items', async (req, res) => {
 // ============================================================
 router.put('/menu-items/:menuItemId', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const menuItemId = req.params.menuItemId;
     const {
@@ -1105,7 +1073,7 @@ router.put('/menu-items/:menuItemId', async (req, res) => {
       image
     } = req.body;
 
-    const check = await db.query(
+    const check = await dbPool.query(
       'SELECT id FROM menu_items WHERE id = $1 AND vendor_id = $2',
       [menuItemId, userId]
     );
@@ -1114,7 +1082,7 @@ router.put('/menu-items/:menuItemId', async (req, res) => {
       return res.status(404).json({ error: 'Menu item not found' });
     }
 
-    await db.query(`
+    await dbPool.query(`
       UPDATE menu_items SET
         name = COALESCE($1, name),
         description = COALESCE($2, description),
@@ -1139,11 +1107,10 @@ router.put('/menu-items/:menuItemId', async (req, res) => {
 // ============================================================
 router.delete('/menu-items/:menuItemId', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const menuItemId = req.params.menuItemId;
 
-    const result = await db.query(
+    const result = await dbPool.query(
       'DELETE FROM menu_items WHERE id = $1 AND vendor_id = $2 RETURNING id',
       [menuItemId, userId]
     );
@@ -1161,16 +1128,15 @@ router.delete('/menu-items/:menuItemId', async (req, res) => {
 });
 
 // ============================================================
-// 23. VENDOR CANCEL BOOKING (Vendor only)
+// 23. VENDOR CANCEL BOOKING (Vendor only) - NO PIN REQUIRED
 // ============================================================
 router.put('/cancel-booking/:bookingId', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const bookingId = req.params.bookingId;
     const { reason } = req.body;
 
-    const check = await db.query(
+    const check = await dbPool.query(
       'SELECT id, listing_id, status FROM bookings WHERE id = $1 AND vendor_id = $2',
       [bookingId, userId]
     );
@@ -1187,10 +1153,10 @@ router.put('/cancel-booking/:bookingId', async (req, res) => {
       return res.status(400).json({ error: 'Cannot cancel a completed booking' });
     }
 
-    await db.query('BEGIN');
+    await dbPool.query('BEGIN');
 
     try {
-      await db.query(
+      await dbPool.query(
         `UPDATE bookings 
          SET status = 'cancelled', 
              special_requests = COALESCE(special_requests, '') || ' | Cancelled by vendor. Reason: ' || $1,
@@ -1199,14 +1165,14 @@ router.put('/cancel-booking/:bookingId', async (req, res) => {
         [reason || 'No reason provided', bookingId]
       );
 
-      await db.query(`
+      await dbPool.query(`
         UPDATE listings 
         SET available_rooms = available_rooms + 1,
             updatedat = NOW()
         WHERE id = $1
       `, [check.rows[0].listing_id]);
 
-      await db.query('COMMIT');
+      await dbPool.query('COMMIT');
 
       res.json({ 
         success: true, 
@@ -1214,7 +1180,7 @@ router.put('/cancel-booking/:bookingId', async (req, res) => {
       });
 
     } catch (err) {
-      await db.query('ROLLBACK');
+      await dbPool.query('ROLLBACK');
       throw err;
     }
 
@@ -1229,12 +1195,11 @@ router.put('/cancel-booking/:bookingId', async (req, res) => {
 // ============================================================
 router.put('/listings/:listingId/inventory', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const listingId = req.params.listingId;
     const { total_rooms, available_rooms, min_stay, max_advance_days } = req.body;
 
-    const check = await db.query(
+    const check = await dbPool.query(
       'SELECT id FROM listings WHERE id = $1 AND vendor_id = $2',
       [listingId, userId]
     );
@@ -1285,7 +1250,7 @@ router.put('/listings/:listingId/inventory', async (req, res) => {
       WHERE id = $${paramIndex} AND vendor_id = $${paramIndex + 1}
     `;
 
-    await db.query(query, params);
+    await dbPool.query(query, params);
 
     res.json({ 
       success: true, 
@@ -1303,7 +1268,6 @@ router.put('/listings/:listingId/inventory', async (req, res) => {
 // ============================================================
 router.post('/listings/:listingId/block-dates', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const listingId = req.params.listingId;
     const { dates, is_blocked } = req.body;
@@ -1312,7 +1276,7 @@ router.post('/listings/:listingId/block-dates', async (req, res) => {
       return res.status(400).json({ error: 'Dates array is required' });
     }
 
-    const check = await db.query(
+    const check = await dbPool.query(
       'SELECT id FROM listings WHERE id = $1 AND vendor_id = $2',
       [listingId, userId]
     );
@@ -1321,11 +1285,11 @@ router.post('/listings/:listingId/block-dates', async (req, res) => {
       return res.status(404).json({ error: 'Listing not found' });
     }
 
-    await db.query('BEGIN');
+    await dbPool.query('BEGIN');
 
     try {
       for (const date of dates) {
-        await db.query(`
+        await dbPool.query(`
           INSERT INTO listing_availability (id, listing_id, date, is_available)
           VALUES ($1, $2, $3, $4)
           ON CONFLICT (listing_id, date) 
@@ -1333,7 +1297,7 @@ router.post('/listings/:listingId/block-dates', async (req, res) => {
         `, [uuidv4(), listingId, date, is_blocked !== false]);
       }
 
-      await db.query('COMMIT');
+      await dbPool.query('COMMIT');
 
       res.json({ 
         success: true, 
@@ -1341,7 +1305,7 @@ router.post('/listings/:listingId/block-dates', async (req, res) => {
       });
 
     } catch (err) {
-      await db.query('ROLLBACK');
+      await dbPool.query('ROLLBACK');
       throw err;
     }
 
@@ -1356,12 +1320,11 @@ router.post('/listings/:listingId/block-dates', async (req, res) => {
 // ============================================================
 router.get('/listings/:listingId/blocked-dates', async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const listingId = req.params.listingId;
     const { start_date, end_date } = req.query;
 
-    const check = await db.query(
+    const check = await dbPool.query(
       'SELECT id FROM listings WHERE id = $1 AND vendor_id = $2',
       [listingId, userId]
     );
@@ -1386,7 +1349,7 @@ router.get('/listings/:listingId/blocked-dates', async (req, res) => {
 
     query += ` ORDER BY date`;
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
     res.json({ 
       success: true, 
@@ -1407,10 +1370,9 @@ router.get('/listings/:listingId/blocked-dates', async (req, res) => {
 // GET vendor's Hajj packages
 router.get('/hajj/packages', authenticate, authorize('vendor'), async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT 
         p.*,
         (SELECT COUNT(*) FROM hajj_bookings WHERE package_id = p.id) as total_bookings,
@@ -1436,7 +1398,6 @@ router.get('/hajj/packages', authenticate, authorize('vendor'), async (req, res)
 // CREATE Hajj package (Vendor only)
 router.post('/hajj/packages', authenticate, authorize('vendor'), async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const {
       name,
@@ -1462,8 +1423,7 @@ router.post('/hajj/packages', authenticate, authorize('vendor'), async (req, res
       return res.status(400).json({ error: 'Type must be "hajj" or "umrah"' });
     }
 
-    // Check if vendor is approved
-    const vendorCheck = await db.query(
+    const vendorCheck = await dbPool.query(
       'SELECT vendor_status FROM users WHERE id = $1',
       [userId]
     );
@@ -1474,7 +1434,7 @@ router.post('/hajj/packages', authenticate, authorize('vendor'), async (req, res
 
     const packageId = 'hajj-' + Date.now().toString(36) + uuidv4().slice(0, 8);
 
-    await db.query(`
+    await dbPool.query(`
       INSERT INTO hajj_packages (
         id, vendor_id, name, type, description, duration_days,
         price, includes, excludes, images, available_slots,
@@ -1511,7 +1471,6 @@ router.post('/hajj/packages', authenticate, authorize('vendor'), async (req, res
 // UPDATE Hajj package (Vendor only)
 router.put('/hajj/packages/:packageId', authenticate, authorize('vendor'), async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const packageId = req.params.packageId;
     const {
@@ -1528,7 +1487,7 @@ router.put('/hajj/packages/:packageId', authenticate, authorize('vendor'), async
       is_featured
     } = req.body;
 
-    const check = await db.query(
+    const check = await dbPool.query(
       'SELECT id FROM hajj_packages WHERE id = $1 AND vendor_id = $2',
       [packageId, userId]
     );
@@ -1541,7 +1500,7 @@ router.put('/hajj/packages/:packageId', authenticate, authorize('vendor'), async
       return res.status(400).json({ error: 'Type must be "hajj" or "umrah"' });
     }
 
-    await db.query(`
+    await dbPool.query(`
       UPDATE hajj_packages SET
         name = COALESCE($1, name),
         type = COALESCE($2, type),
@@ -1586,11 +1545,10 @@ router.put('/hajj/packages/:packageId', authenticate, authorize('vendor'), async
 // DELETE Hajj package (Vendor only)
 router.delete('/hajj/packages/:packageId', authenticate, authorize('vendor'), async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const packageId = req.params.packageId;
 
-    const result = await db.query(
+    const result = await dbPool.query(
       'DELETE FROM hajj_packages WHERE id = $1 AND vendor_id = $2 RETURNING id',
       [packageId, userId]
     );
@@ -1613,7 +1571,6 @@ router.delete('/hajj/packages/:packageId', authenticate, authorize('vendor'), as
 // GET vendor's Hajj bookings
 router.get('/hajj/bookings', authenticate, authorize('vendor'), async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const { status, limit = 100 } = req.query;
 
@@ -1642,7 +1599,7 @@ router.get('/hajj/bookings', authenticate, authorize('vendor'), async (req, res)
     query += ` ORDER BY b.booking_date DESC LIMIT $${paramIndex}`;
     params.push(parseInt(limit));
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
     res.json({
       success: true,
@@ -1659,10 +1616,9 @@ router.get('/hajj/bookings', authenticate, authorize('vendor'), async (req, res)
 // GET vendor's Hajj stats
 router.get('/hajj/stats', authenticate, authorize('vendor'), async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
 
-    const result = await db.query(`
+    const result = await dbPool.query(`
       SELECT 
         (SELECT COUNT(*) FROM hajj_packages WHERE vendor_id = $1 AND is_active = true) as total_packages,
         (SELECT COUNT(*) FROM hajj_bookings b

@@ -14,6 +14,7 @@ import {
   Linking,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { bookingService, livekitService } from '../../api/client';
 
 import {
@@ -376,22 +377,9 @@ const VideoCall = () => {
 
   // Loading / permissions state
   if (loading || !permissionsReady) {
-    return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <View style={styles.loadingContent}>
-          <ActivityIndicator size="large" color="#C9A44B" />
-          <Text style={styles.loadingText}>
-            {permissionsGranted ? 'Preparing consultation...' : 'Requesting permissions...'}
-          </Text>
-          <Text style={styles.loadingSubText}>
-            {permissionsGranted
-              ? 'Please wait while we connect you'
-              : 'Camera and microphone access required'}
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const message = permissionsGranted ? 'Preparing consultation...' : 'Requesting permissions...';
+  return <LoadingSpinner message={message} />;
+}
 
   if (error || !token) {
     return (

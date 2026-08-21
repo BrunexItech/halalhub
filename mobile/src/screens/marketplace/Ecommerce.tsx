@@ -19,6 +19,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { clientService, cartService } from '../../api/client';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 // Enable LayoutAnimation for Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -429,15 +430,8 @@ const Ecommerce = () => {
   };
 
   if (loading) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <ActivityIndicator size="large" color="#032A24" />
-          <Text style={{ color: '#6B7280', marginTop: 16, fontSize: 14 }}>Loading products...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  return <LoadingSpinner message="Loading products..." />;
+}
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>

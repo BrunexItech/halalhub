@@ -20,15 +20,12 @@ import LegalModal from '../../components/common/LegalModal';
 import TermsContent from '../../components/common/TermsContent';
 import PrivacyContent from '../../components/common/PrivacyContent';
 
-// Location API configuration
 const LOCATION_API_BASE = 'https://kenyaareadata.vercel.app/api/areas';
-const LOCATION_API_KEY = 'keyPub1569gsvndc123kg9sjhg';
 
-// Cache
-let cachedAreas: any = null;
-let countiesCache: any[] = [];
-let subCountiesCache: { [key: string]: any[] } = {};
-let wardsCache: { [key: string]: any[] } = {};
+let cachedAreas = null;
+let countiesCache = [];
+let subCountiesCache = {};
+let wardsCache = {};
 
 // ============================================================
 // Process countries data
@@ -197,22 +194,17 @@ const VendorRegister = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [otpExpirySeconds, setOtpExpirySeconds] = useState(0);
   const [resendTimer, setResendTimer] = useState(0);
-  const inputRefs = useRef<(TextInput | null)[]>([]);
-  const otpTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const inputRefs = useRef([]);
+  const otpTimerRef = useRef(null);
 
-  // Country selection state
   const [selectedCountry, setSelectedCountry] = useState(null);
-
-  // Terms and Conditions state
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [legalModal, setLegalModal] = useState({ visible: false, type: '' });
 
-  // Location states
-  const [counties, setCounties] = useState<any[]>([]);
-  const [subCounties, setSubCounties] = useState<any[]>([]);
-  const [wards, setWards] = useState<any[]>([]);
+  const [counties, setCounties] = useState([]);
+  const [subCounties, setSubCounties] = useState([]);
+  const [wards, setWards] = useState([]);
 
-  // Modal visibility states
   const [showCountyModal, setShowCountyModal] = useState(false);
   const [showSubCountyModal, setShowSubCountyModal] = useState(false);
   const [showWardModal, setShowWardModal] = useState(false);
@@ -235,6 +227,7 @@ const VendorRegister = () => {
     nationalId: '',
     kraPin: '',
     businessRegNo: '',
+    password: '',
     pin: '',
     region: '',
     regionName: '',
@@ -246,7 +239,6 @@ const VendorRegister = () => {
     termsAccepted: false,
   });
 
-  // Legal Modal Handlers
   const openLegalModal = (type: string) => {
     setLegalModal({ visible: true, type });
   };
@@ -255,7 +247,6 @@ const VendorRegister = () => {
     setLegalModal({ visible: false, type: '' });
   };
 
-  // Set default country to Kenya
   useEffect(() => {
     const allCountries = processCountriesData();
     const kenya = allCountries.find(c => c.alpha2 === 'KE');
@@ -274,7 +265,6 @@ const VendorRegister = () => {
     }
   }, []);
 
-  // Update phone when country changes
   const handleCountryChange = (country) => {
     setSelectedCountry(country);
     setFormData(prev => ({
@@ -283,7 +273,6 @@ const VendorRegister = () => {
     }));
   };
 
-  // Get full phone number for backend
   const getFullPhoneNumber = () => {
     if (!selectedCountry) return formData.phone;
     const cleanPhone = formData.phone.replace(/\s/g, '');
@@ -293,7 +282,6 @@ const VendorRegister = () => {
     return `${selectedCountry.dialCode}${cleanPhone}`;
   };
 
-  // Validate phone has at least 6 digits after the country code
   const isValidPhone = (phoneStr) => {
     const clean = phoneStr.replace(/\s/g, '');
     let local = clean;
@@ -361,7 +349,7 @@ const VendorRegister = () => {
     if (cachedAreas) return cachedAreas;
 
     try {
-      const response = await fetch(`${LOCATION_API_BASE}?apiKey=${LOCATION_API_KEY}`);
+      const response = await fetch(`${LOCATION_API_BASE}?apiKey=${process.env.LOCATION_API_KEY}`);
       if (!response.ok) throw new Error('Failed to fetch Kenya area data');
       const data = await response.json();
       cachedAreas = data;
@@ -469,7 +457,6 @@ const VendorRegister = () => {
   };
 
   const handlePhoneChange = (text: string) => {
-    // Ensure the dial code stays at the beginning
     if (selectedCountry && !text.startsWith(selectedCountry.dialCode)) {
       setFormData({ ...formData, phone: selectedCountry.dialCode });
     } else {
@@ -578,7 +565,6 @@ const VendorRegister = () => {
       setError('Please fill in all required fields');
       return;
     }
-    // Step 2 validation now checks the full phone number
     if (step === 2) {
       const fullPhone = getFullPhoneNumber();
       if (!fullPhone || fullPhone.length < 8) {
@@ -598,9 +584,15 @@ const VendorRegister = () => {
       setError('Please fill in all required fields');
       return;
     }
-    if (step === 4 && (!formData.pin || formData.pin.length < 4)) {
-      setError('Please enter a valid PIN (min 4 digits)');
-      return;
+    if (step === 4) {
+      if (!formData.password || formData.password.length < 8) {
+        setError('Password must be at least 8 characters');
+        return;
+      }
+      if (!formData.pin || formData.pin.length !== 4) {
+        setError('PIN must be exactly 4 digits');
+        return;
+      }
     }
     if (step === 5 && (!formData.halalDeclared || !formData.termsAccepted)) {
       setError('Please accept all declarations to continue');
@@ -647,6 +639,7 @@ const VendorRegister = () => {
         nationalId: formData.nationalId,
         kraPin: formData.kraPin,
         businessRegNo: formData.businessRegNo,
+        password: formData.password,
         pin: formData.pin,
         region: formData.regionName,
         subCounty: formData.subCountyName,
@@ -945,7 +938,6 @@ const VendorRegister = () => {
               <Text style={{ color: '#6B7280', fontSize: 12 }}>How can we reach you?</Text>
             </View>
 
-            {/* Phone Input with Country Select */}
             <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center', marginBottom: 12 }}>
               <View style={{ width: 55 }}>
                 <CountrySelect 
@@ -1067,7 +1059,7 @@ const VendorRegister = () => {
           <View style={{ marginTop: 4 }}>
             <View style={{ marginBottom: 12 }}>
               <Text style={{ color: '#F7F6F1', fontSize: 16, fontWeight: '700' }}>Security</Text>
-              <Text style={{ color: '#6B7280', fontSize: 12 }}>Create your account PIN</Text>
+              <Text style={{ color: '#6B7280', fontSize: 12 }}>Create your password and PIN</Text>
             </View>
 
             <TextInput
@@ -1080,17 +1072,40 @@ const VendorRegister = () => {
                 paddingVertical: 10,
                 color: '#F7F6F1',
                 fontSize: 14,
+                marginBottom: 12,
               }}
-              placeholder="Create PIN *"
+              placeholder="Create Password (min 8 characters) *"
               placeholderTextColor="rgba(183, 192, 186, 0.5)"
               secureTextEntry
-              maxLength={6}
+              value={formData.password}
+              onChangeText={(text) => handleChange('password', text)}
+              minLength={8}
+            />
+            <Text style={{ color: 'rgba(183, 192, 186, 0.6)', fontSize: 10, marginBottom: 12 }}>
+              Password must be at least 8 characters
+            </Text>
+
+            <TextInput
+              style={{
+                backgroundColor: '#032A24',
+                borderWidth: 1,
+                borderColor: 'rgba(201, 164, 75, 0.3)',
+                borderRadius: 12,
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+                color: '#F7F6F1',
+                fontSize: 14,
+              }}
+              placeholder="Create 4-digit PIN *"
+              placeholderTextColor="rgba(183, 192, 186, 0.5)"
+              secureTextEntry
+              maxLength={4}
               keyboardType="numeric"
               value={formData.pin}
               onChangeText={(text) => handleChange('pin', text)}
             />
             <Text style={{ color: 'rgba(183, 192, 186, 0.6)', fontSize: 10, marginTop: 6 }}>
-              PIN must be at least 4 digits
+              PIN must be exactly 4 digits
             </Text>
           </View>
         );

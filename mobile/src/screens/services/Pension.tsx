@@ -15,6 +15,7 @@ import {
 import Svg, { Path, Circle } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import { pensionService } from '../../api/client';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -171,19 +172,9 @@ const Pension = () => {
     return matchesType && matchesSearch;
   });
 
-  if (loading) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
-        <StatusBar barStyle="light-content" backgroundColor="#032A24" translucent={false} />
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <ActivityIndicator size="large" color="#C9A44B" />
-          <Text style={{ color: '#6B7280', marginTop: 16, fontSize: 13, fontWeight: '400' }}>
-            Loading pension program...
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+ if (loading) {
+  return <LoadingSpinner message="Loading pension program..." />;
+}
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>

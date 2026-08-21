@@ -1,25 +1,21 @@
 const router = require('express').Router();
 const { authenticate, authorize } = require('../middleware/auth');
-const { Client } = require('pg');
+const bcrypt = require('bcryptjs');
+const { Pool } = require('pg');
 const crypto = require('crypto');
 const virtualAccountService = require('../services/virtual-account.service');
 
-// Database connection
-let client;
-
-async function getClient() {
-  if (!client) {
-    client = new Client({
-      user: process.env.DB_USER || 'halalhub_user',
-      password: process.env.DB_PASSWORD || '@halalhub@#',
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT) || 5432,
-      database: process.env.DB_NAME || 'halalhub'
-    });
-    await client.connect();
-  }
-  return client;
-}
+// ============================================================
+// Database Connection Pool (removed hardcoded credentials)
+// ============================================================
+const dbPool = new Pool({
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT) || 5432,
+  database: process.env.DB_NAME,
+  max: 20,
+});
 
 const NISAB = { gold: 842500, silver: 71400 };
 const ZAKAT_RATE = 0.025;
@@ -75,10 +71,8 @@ router.post('/calculate', async (req, res) => {
 // ============================================================
 router.get('/due', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
 
-    // Get user's virtual account balance
     const account = await virtualAccountService.getUserAccount(userId);
 
     if (!account) {
@@ -89,14 +83,11 @@ router.get('/due', authenticate, async (req, res) => {
     }
 
     const balance = account.balance || 0;
-    
-    // Calculate Zakat due (2.5% of balance if above nisab)
     const nisabThreshold = NISAB.silver;
     const zakatDue = balance >= nisabThreshold ? Math.round(balance * ZAKAT_RATE) : 0;
 
-    // Get user's total Zakat paid this year
     const currentYear = new Date().getFullYear();
-    const paidResult = await db.query(
+    const paidResult = await dbPool.query(
       `SELECT COALESCE(SUM(amount), 0) as total_paid
        FROM zakat_payments
        WHERE user_id = $1 
@@ -128,7 +119,6 @@ router.get('/due', authenticate, async (req, res) => {
 // ============================================================
 router.get('/recipients', async (req, res) => {
   try {
-    const db = await getClient();
     const { category } = req.query;
 
     let query = `
@@ -153,7 +143,7 @@ router.get('/recipients', async (req, res) => {
 
     query += ` ORDER BY total_received ASC`;
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
     res.json({
       success: true,
@@ -169,16 +159,42 @@ router.get('/recipients', async (req, res) => {
 });
 
 // ============================================================
-// 4. PAY ZAKAT (Authenticated - User)
+// 4. PAY ZAKAT (Authenticated - User) - PIN REQUIRED
 // ============================================================
 router.post('/pay', authenticate, async (req, res) => {
-  const db = await getClient();
-
   try {
     const userId = req.user.id;
-    const { amount, recipientId, category, notes = '' } = req.body;
+    const { amount, recipientId, category, notes = '', pin } = req.body;
 
-    // Validate input
+    // Validate PIN is provided
+    if (!pin) {
+      return res.status(400).json({
+        success: false,
+        error: 'PIN is required to pay Zakat'
+      });
+    }
+
+    // Verify PIN
+    const userResult = await dbPool.query(
+      'SELECT pinhash FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    const validPin = await bcrypt.compare(pin, userResult.rows[0].pinhash);
+    if (!validPin) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid PIN'
+      });
+    }
+
     if (!amount || amount < 100) {
       return res.status(400).json({
         success: false,
@@ -193,8 +209,7 @@ router.post('/pay', authenticate, async (req, res) => {
       });
     }
 
-    // Check recipient exists and is verified
-    const recipientCheck = await db.query(
+    const recipientCheck = await dbPool.query(
       `SELECT id, name, category FROM zakat_recipients 
        WHERE id = $1 AND verified = true AND is_active = true`,
       [recipientId]
@@ -209,11 +224,6 @@ router.post('/pay', authenticate, async (req, res) => {
 
     const recipient = recipientCheck.rows[0];
 
-    // ============================================================
-    // VIRTUAL ACCOUNT FLOW - REPLACES OLD WALLET SYSTEM
-    // ============================================================
-
-    // 1. Get user's virtual account
     const userAccount = await virtualAccountService.getUserAccount(userId);
 
     if (!userAccount) {
@@ -223,7 +233,6 @@ router.post('/pay', authenticate, async (req, res) => {
       });
     }
 
-    // 2. Check if user has enough balance
     if (userAccount.balance < amount) {
       return res.status(400).json({
         success: false,
@@ -231,35 +240,30 @@ router.post('/pay', authenticate, async (req, res) => {
       });
     }
 
-    // Begin transaction
-    await db.query('BEGIN');
+    await dbPool.query('BEGIN');
 
     try {
-      // 3. Generate reference
       const ref = 'ZKT-' + Date.now().toString(36).toUpperCase() +
                   crypto.randomBytes(4).toString('hex').toUpperCase();
 
       const paymentId = 'zkt-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
 
-      // 4. DEDUCT FROM VIRTUAL ACCOUNT using virtualAccountService
       await virtualAccountService.processTransfer(
-        userId,                                    // User ID
-        userAccount.account_number,               // From account (user's virtual account)
-        ZAKAT_POOL_ACCOUNT,                       // To account (Zakat pool account)
-        amount,                                   // Amount
-        `Zakat payment - ${recipient.name}`       // Description
+        userId,
+        userAccount.account_number,
+        ZAKAT_POOL_ACCOUNT,
+        amount,
+        `Zakat payment - ${recipient.name}`
       );
 
-      // 5. Record Zakat payment
-      await db.query(
+      await dbPool.query(
         `INSERT INTO zakat_payments (
           id, user_id, recipient_id, amount, reference, category, notes, status, paid_at, createdat, updatedat
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'completed', NOW(), NOW(), NOW())`,
         [paymentId, userId, recipientId, amount, ref, category, notes]
       );
 
-      // 6. Update recipient stats
-      await db.query(
+      await dbPool.query(
         `UPDATE zakat_recipients 
          SET total_received = total_received + $1, 
              donor_count = donor_count + 1,
@@ -268,8 +272,7 @@ router.post('/pay', authenticate, async (req, res) => {
         [amount, recipientId]
       );
 
-      // 7. Credit community pool (Zakat fund)
-      await db.query(
+      await dbPool.query(
         `INSERT INTO community_pool (id, type, amount, source, reference, source_id, createdat)
          VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
         [
@@ -282,19 +285,17 @@ router.post('/pay', authenticate, async (req, res) => {
         ]
       );
 
-      // 8. Record in transactions table for history
       const txId = 'txn-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
-      await db.query(
+      await dbPool.query(
         `INSERT INTO transactions (id, user_id, type, amount, status, reference, description)
          VALUES ($1, $2, $3, $4, $5, $6, $7)`,
         [txId, userId, 'zakat', -amount, 'success', ref, `Zakat payment to ${recipient.name}`]
       );
 
-      // 9. Get new balance
       const updatedAccount = await virtualAccountService.getUserAccount(userId);
       const newBalance = updatedAccount?.balance || 0;
 
-      await db.query('COMMIT');
+      await dbPool.query('COMMIT');
 
       console.log(`[Zakat] ${ref} - KES ${amount} by user ${userId} to ${recipient.name} using virtual account ${userAccount.account_number}`);
 
@@ -314,12 +315,12 @@ router.post('/pay', authenticate, async (req, res) => {
       });
 
     } catch (err) {
-      await db.query('ROLLBACK');
+      await dbPool.query('ROLLBACK');
       throw err;
     }
 
   } catch (error) {
-    await db.query('ROLLBACK');
+    await dbPool.query('ROLLBACK');
     console.error('Zakat payment error:', error);
     res.status(500).json({
       success: false,
@@ -333,11 +334,10 @@ router.post('/pay', authenticate, async (req, res) => {
 // ============================================================
 router.get('/history', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
     const limit = parseInt(req.query.limit) || 20;
 
-    const result = await db.query(
+    const result = await dbPool.query(
       `SELECT 
         zp.id,
         zp.amount,
@@ -375,10 +375,9 @@ router.get('/history', authenticate, async (req, res) => {
 // ============================================================
 router.get('/summary', authenticate, async (req, res) => {
   try {
-    const db = await getClient();
     const userId = req.user.id;
 
-    const result = await db.query(
+    const result = await dbPool.query(
       `SELECT 
         COUNT(*) as total_payments,
         SUM(amount) as total_amount,
@@ -414,7 +413,6 @@ router.get('/summary', authenticate, async (req, res) => {
 // ============================================================
 router.get('/admin/payments', authenticate, authorize('admin'), async (req, res) => {
   try {
-    const db = await getClient();
     const { status, date_from, date_to, limit = 100 } = req.query;
 
     let query = `
@@ -454,10 +452,9 @@ router.get('/admin/payments', authenticate, authorize('admin'), async (req, res)
     query += ` ORDER BY zp.paid_at DESC LIMIT $${paramIndex}`;
     params.push(parseInt(limit));
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
-    // Get total stats
-    const statsResult = await db.query(
+    const statsResult = await dbPool.query(
       `SELECT 
         COUNT(*) as total,
         SUM(amount) as total_amount
@@ -487,7 +484,6 @@ router.get('/admin/payments', authenticate, authorize('admin'), async (req, res)
 // ============================================================
 router.get('/admin/recipients', authenticate, authorize('admin'), async (req, res) => {
   try {
-    const db = await getClient();
     const { status, category } = req.query;
 
     let query = `
@@ -529,7 +525,7 @@ router.get('/admin/recipients', authenticate, authorize('admin'), async (req, re
 
     query += ` ORDER BY createdat DESC`;
 
-    const result = await db.query(query, params);
+    const result = await dbPool.query(query, params);
 
     res.json({
       success: true,
@@ -545,11 +541,10 @@ router.get('/admin/recipients', authenticate, authorize('admin'), async (req, re
 });
 
 // ============================================================
-// 9. ADMIN - ADD ZAKAT RECIPIENT (FIXED)
+// 9. ADMIN - ADD ZAKAT RECIPIENT
 // ============================================================
 router.post('/admin/recipients', authenticate, authorize('admin'), async (req, res) => {
   try {
-    const db = await getClient();
     const {
       name,
       description,
@@ -572,15 +567,14 @@ router.post('/admin/recipients', authenticate, authorize('admin'), async (req, r
 
     const id = 'rcp-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
 
-    // FIXED: Added user_id column and null as second parameter
-    await db.query(
+    await dbPool.query(
       `INSERT INTO zakat_recipients (
         id, user_id, name, description, category, location, contact_name, contact_phone, contact_email,
         bank_name, bank_account, mpesa_number, verified, is_active, verified_at, createdat, updatedat
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, true, true, NOW(), NOW(), NOW())`,
       [
         id,
-        null, // user_id (can be null for admin-created recipients)
+        null,
         name,
         description || '',
         category,
@@ -613,7 +607,6 @@ router.post('/admin/recipients', authenticate, authorize('admin'), async (req, r
 // ============================================================
 router.put('/admin/recipients/:id', authenticate, authorize('admin'), async (req, res) => {
   try {
-    const db = await getClient();
     const recipientId = req.params.id;
     const {
       name,
@@ -630,7 +623,7 @@ router.put('/admin/recipients/:id', authenticate, authorize('admin'), async (req
       is_active
     } = req.body;
 
-    const check = await db.query(
+    const check = await dbPool.query(
       'SELECT id FROM zakat_recipients WHERE id = $1',
       [recipientId]
     );
@@ -642,7 +635,7 @@ router.put('/admin/recipients/:id', authenticate, authorize('admin'), async (req
       });
     }
 
-    await db.query(
+    await dbPool.query(
       `UPDATE zakat_recipients SET
         name = COALESCE($1, name),
         description = COALESCE($2, description),
@@ -684,18 +677,13 @@ router.put('/admin/recipients/:id', authenticate, authorize('admin'), async (req
 // ============================================================
 router.get('/admin/pool', authenticate, authorize('admin'), async (req, res) => {
   try {
-    const db = await getClient();
-
-    // Get pool balance from virtual accounts
     const zakatPool = await virtualAccountService.getAccountByNumber(ZAKAT_POOL_ACCOUNT);
     const zakatBalance = zakatPool?.balance || 0;
 
-    // Get Sadaqa pool balance if exists
     const sadaqaPool = await virtualAccountService.getAccountByNumber('SADAQA-POOL-001');
     const sadaqaBalance = sadaqaPool?.balance || 0;
 
-    // Get disbursed amount
-    const disbursedResult = await db.query(
+    const disbursedResult = await dbPool.query(
       `SELECT 
         SUM(amount) as total_disbursed
       FROM pool_disbursements
@@ -724,8 +712,6 @@ router.get('/admin/pool', authenticate, authorize('admin'), async (req, res) => 
 // 12. ADMIN - DISBURSE TO RECIPIENT
 // ============================================================
 router.post('/admin/disburse', authenticate, authorize('admin'), async (req, res) => {
-  const db = await getClient();
-
   try {
     const { recipientId, amount, type = 'zakat', notes = '' } = req.body;
 
@@ -736,8 +722,7 @@ router.post('/admin/disburse', authenticate, authorize('admin'), async (req, res
       });
     }
 
-    // Check recipient exists and is verified
-    const recipientCheck = await db.query(
+    const recipientCheck = await dbPool.query(
       `SELECT id, name FROM zakat_recipients WHERE id = $1 AND verified = true AND is_active = true`,
       [recipientId]
     );
@@ -750,11 +735,8 @@ router.post('/admin/disburse', authenticate, authorize('admin'), async (req, res
     }
 
     const recipient = recipientCheck.rows[0];
-
-    // Determine which pool account to use
     const poolAccount = type === 'zakat' ? ZAKAT_POOL_ACCOUNT : 'SADAQA-POOL-001';
     
-    // Check pool has enough balance
     const poolBalance = await virtualAccountService.getAccountByNumber(poolAccount);
 
     if (!poolBalance || poolBalance.balance < amount) {
@@ -764,10 +746,7 @@ router.post('/admin/disburse', authenticate, authorize('admin'), async (req, res
       });
     }
 
-    // Get recipient's virtual account (assuming they have one)
-    // For disbursement, we need to transfer to recipient's virtual account
-    // First, check if recipient has a user_id associated
-    const recipientUserCheck = await db.query(
+    const recipientUserCheck = await dbPool.query(
       `SELECT user_id FROM zakat_recipients WHERE id = $1`,
       [recipientId]
     );
@@ -782,11 +761,7 @@ router.post('/admin/disburse', authenticate, authorize('admin'), async (req, res
       }
     }
 
-    // If no virtual account found, we need to create one or use bank details
-    // For now, we'll record the disbursement and handle payment separately
-    // In a real scenario, you'd transfer to the recipient's bank or M-Pesa
-
-    await db.query('BEGIN');
+    await dbPool.query('BEGIN');
 
     try {
       const ref = 'DSB-' + Date.now().toString(36).toUpperCase() +
@@ -794,39 +769,33 @@ router.post('/admin/disburse', authenticate, authorize('admin'), async (req, res
 
       const disbursementId = 'dsb-' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
 
-      // If recipient has a virtual account, transfer directly
       if (recipientAccountNumber) {
-        // Transfer from pool to recipient's virtual account
         await virtualAccountService.processTransfer(
-          'system',  // System user (no actual user ID needed for pool transfers)
+          'system',
           poolAccount,
           recipientAccountNumber,
           amount,
           `Zakat disbursement to ${recipient.name}`
         );
       } else {
-        // No virtual account - just record the disbursement
-        // Actual payment would be done via bank transfer or M-Pesa
         console.log(`[Zakat] Disbursement to ${recipient.name} - No virtual account found. Manual payment required.`);
       }
 
-      // Record disbursement
-      await db.query(
+      await dbPool.query(
         `INSERT INTO pool_disbursements (
           id, recipient_id, amount, type, reference, notes, status, disbursed_at, createdat, updatedat
         ) VALUES ($1, $2, $3, $4, $5, $6, 'completed', NOW(), NOW(), NOW())`,
         [disbursementId, recipientId, amount, type, ref, notes]
       );
 
-      // Update recipient stats
-      await db.query(
+      await dbPool.query(
         `UPDATE zakat_recipients 
          SET total_received = total_received + $1
          WHERE id = $2`,
         [amount, recipientId]
       );
 
-      await db.query('COMMIT');
+      await dbPool.query('COMMIT');
 
       console.log(`[Zakat] Disbursement: ${ref} - KES ${amount} to ${recipient.name}`);
 
@@ -845,12 +814,12 @@ router.post('/admin/disburse', authenticate, authorize('admin'), async (req, res
       });
 
     } catch (err) {
-      await db.query('ROLLBACK');
+      await dbPool.query('ROLLBACK');
       throw err;
     }
 
   } catch (error) {
-    await db.query('ROLLBACK');
+    await dbPool.query('ROLLBACK');
     console.error('Disbursement error:', error);
     res.status(500).json({
       success: false,
