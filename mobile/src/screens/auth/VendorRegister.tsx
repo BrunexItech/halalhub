@@ -19,6 +19,8 @@ import countriesData from 'world-countries';
 import LegalModal from '../../components/common/LegalModal';
 import TermsContent from '../../components/common/TermsContent';
 import PrivacyContent from '../../components/common/PrivacyContent';
+import Constants from 'expo-constants';
+
 
 const LOCATION_API_BASE = 'https://kenyaareadata.vercel.app/api/areas';
 
@@ -349,7 +351,7 @@ const VendorRegister = () => {
     if (cachedAreas) return cachedAreas;
 
     try {
-      const response = await fetch(`${LOCATION_API_BASE}?apiKey=${process.env.LOCATION_API_KEY}`);
+      const response = await fetch(`${LOCATION_API_BASE}?apiKey=${Constants.expoConfig?.extra?.LOCATION_API_KEY}`);
       if (!response.ok) throw new Error('Failed to fetch Kenya area data');
       const data = await response.json();
       cachedAreas = data;

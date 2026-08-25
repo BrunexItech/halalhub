@@ -19,6 +19,7 @@ import { authService } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import countriesData from 'world-countries';
 import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Path, Circle, G, Defs, ClipPath } from 'react-native-svg';
 
 const { width, height } = Dimensions.get('window');
 
@@ -46,6 +47,54 @@ const processCountriesData = () => {
     return [];
   }
 };
+
+// ============================================================
+// Premium Eye Icons with Brand Colors
+// ============================================================
+const EyeIcon = () => (
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 5C6 5 2 12 2 12C2 12 6 19 12 19C18 19 22 12 22 12C22 12 18 5 12 5Z"
+      stroke="#C9A44B"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z"
+      stroke="#C9A44B"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const EyeOffIcon = () => (
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 5C6 5 2 12 2 12C2 12 6 19 12 19C18 19 22 12 22 12C22 12 18 5 12 5Z"
+      stroke="#6B7280"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z"
+      stroke="#6B7280"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M3 3L21 21"
+      stroke="#6B7280"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
 
 // ============================================================
 // CountrySelect Component
@@ -530,14 +579,6 @@ const AuthScreen = () => {
   };
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
-
-  const EyeIcon = () => (
-    <Text style={{ fontSize: 18, color: 'rgba(183, 192, 186, 0.6)' }}>👁️</Text>
-  );
-
-  const EyeOffIcon = () => (
-    <Text style={{ fontSize: 18, color: 'rgba(183, 192, 186, 0.6)' }}>👁️‍🗨️</Text>
-  );
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#032A24' }}>

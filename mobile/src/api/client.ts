@@ -1,12 +1,12 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_BASE, IMAGE_BASE } from '@env';
+import Constants from 'expo-constants';
 
 // ============================================================
-// API Configuration from .env
+// API Configuration from app.config.js
 // ============================================================
-// API_BASE and IMAGE_BASE are imported from @env
-// Location API key is NOT exposed here - it should only be used in location API calls
+const API_BASE = Constants.expoConfig?.extra?.API_BASE;
+const IMAGE_BASE = Constants.expoConfig?.extra?.IMAGE_BASE;
 // ============================================================
 
 const api = axios.create({

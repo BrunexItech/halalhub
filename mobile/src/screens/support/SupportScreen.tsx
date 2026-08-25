@@ -9,7 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Chase } from 'react-native-animated-spinkit';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 const SupportScreen = () => {
   const navigation = useNavigation();
@@ -114,12 +114,7 @@ const SupportScreen = () => {
         </View>
 
         {loading ? (
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 60 }}>
-            <Chase size={36} color="#C9A44B" />
-            <Text style={{ color: '#6B7280', marginTop: 12, fontSize: 14 }}>
-              Loading...
-            </Text>
-          </View>
+          <LoadingSpinner fullScreen={false} message="Loading support..." />
         ) : (
           <>
             {/* Contact Section */}

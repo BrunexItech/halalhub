@@ -20,6 +20,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { bookingService, walletService, clientService, getImageUrl } from '../../api/client';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import PinModal from '../../components/common/PinModal';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 
 // Enable LayoutAnimation for Android
@@ -159,6 +160,12 @@ const Kadhis = () => {
 
   const [selectedProfessional, setSelectedProfessional] = useState<any>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+
+  // PIN Modal states
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState('');
+  const [pendingBookingData, setPendingBookingData] = useState<any>(null);
 
   const LEADER_TYPE_LABELS: Record<string, string> = {
     islamic_scholar: 'Islamic Scholar',
@@ -356,22 +363,33 @@ const Kadhis = () => {
       return;
     }
 
-    setProcessing(true);
-    setError('');
+    // Show PIN modal instead of processing directly
+    setPendingBookingData({
+      leaderId: selectedProfessional.id,
+      bookingDate: bookingData.date,
+      bookingTime: bookingData.time,
+      type: 'video',
+      topic: bookingData.topic,
+      notes: bookingData.notes,
+      userName: user?.fullName || 'Guest',
+      userEmail: user?.email || '',
+    });
+    setShowPinModal(true);
+    setPinError('');
+  };
+
+  const handlePinVerify = async (pin: string) => {
+    setPinLoading(true);
+    setPinError('');
+
     try {
       const response = await bookingService.createBooking({
-        leader: selectedProfessional.id,
-        date: bookingData.date,
-        time: bookingData.time,
-        type: 'video',
-        topic: bookingData.topic,
-        notes: bookingData.notes,
-        user_name: user?.fullName || 'Guest',
-        user_email: user?.email || '',
+        ...pendingBookingData,
+        pin: pin,
       });
 
       if (response.data.success) {
-        setShowBookingModal(false);
+        setShowPinModal(false);
         setShowSuccessModal(true);
         await fetchBookings();
         await fetchProfessionals();
@@ -380,10 +398,9 @@ const Kadhis = () => {
         setTimeout(() => setSuccess(''), 5000);
       }
     } catch (err: any) {
-      const errorMsg = err.response?.data?.error || 'Failed to book. Please try again.';
-      setError(errorMsg);
+      setPinError(err.response?.data?.error || 'Invalid PIN. Please try again.');
     } finally {
-      setProcessing(false);
+      setPinLoading(false);
     }
   };
 
@@ -1721,6 +1738,24 @@ const Kadhis = () => {
           </TouchableOpacity>
         </View>
       ) : null}
+
+      {/* PIN Modal */}
+      <PinModal
+        visible={showPinModal}
+        onClose={() => {
+          setShowPinModal(false);
+          setPinError('');
+          setPendingBookingData(null);
+        }}
+        onVerify={handlePinVerify}
+        loading={pinLoading}
+        error={pinError}
+        title="Confirm Booking"
+        subtitle="Enter your 4-digit PIN to confirm this consultation booking"
+        amount={selectedProfessional?.fee || 0}
+        recipient={selectedProfessional?.name}
+        transactionType="consultation"
+      />
     </SafeAreaView>
   );
 };

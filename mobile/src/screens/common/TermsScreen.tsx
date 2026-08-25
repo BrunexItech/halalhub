@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import TermsContent from '../../components/common/TermsContent';
-import { Chase } from 'react-native-animated-spinkit';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 const TermsScreen = () => {
   const navigation = useNavigation();
@@ -61,12 +61,7 @@ const TermsScreen = () => {
 
       {/* Content with Loading State */}
       {loading ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <Chase size={36} color="#C9A44B" />
-          <Text style={{ color: '#6B7280', marginTop: 12, fontSize: 14 }}>
-            Loading...
-          </Text>
-        </View>
+        <LoadingSpinner fullScreen={false} message="Loading terms of service..." />
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}

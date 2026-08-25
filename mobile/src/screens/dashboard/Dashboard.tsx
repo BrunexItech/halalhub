@@ -17,6 +17,7 @@ import Svg, { Path, Circle, Defs, LinearGradient, Stop } from 'react-native-svg'
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { walletService, zakatService, mpesaService, sadaqaService } from '../../api/client';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -287,16 +288,8 @@ const Dashboard = () => {
   };
 
   if (loading) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>
-        <StatusBar barStyle="light-content" backgroundColor="#0B342B" translucent={false} />
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <ActivityIndicator size="large" color="#C9A44B" />
-          <Text style={{ color: '#6B7280', marginTop: 16, fontSize: 14 }}>Loading your dashboard...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  return <LoadingSpinner message="Loading your dashboard..." />;
+}
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAF7' }}>

@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, useRef, ReactNode } from 'react';
-import { AppState, AppStateStatus, InteractionManager } from 'react-native';
+import { AppState, AppStateStatus } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface User {
@@ -29,6 +29,7 @@ interface AuthContextType {
   updateUser: (userData: Partial<User>) => Promise<void>;
   getToken: () => Promise<string | null>;
   resetInactivityTimer: () => void;
+  setCriticalScreen: (isCritical: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,21 +38,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Last interaction timestamp (ref — no re-renders)
   const lastInteractionRef = useRef(Date.now());
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const INACTIVITY_TIMEOUT_MS = 60 * 1000; // 60 seconds
+  
+  // 5 minutes inactivity timeout (balance security + UX)
+  const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
-  // AppState for background/foreground detection
   const appState = useRef(AppState.currentState);
   const backgroundTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Critical screens (video call, payment, booking) - prevents logout
+  const isCriticalScreen = useRef(false);
 
-  // Reset inactivity timer (called on user interaction)
   const resetInactivityTimer = () => {
     lastInteractionRef.current = Date.now();
   };
 
-  // Clear background timer
   const clearBackgroundTimer = () => {
     if (backgroundTimerRef.current) {
       clearTimeout(backgroundTimerRef.current);
@@ -59,29 +61,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Start timer when app goes to background
   const startBackgroundTimer = () => {
     if (!user) return;
     clearBackgroundTimer();
+    // 2 minutes in background - financial app security
     backgroundTimerRef.current = setTimeout(() => {
       console.log('Background timeout: logging out user');
       logout();
-    }, INACTIVITY_TIMEOUT_MS);
+    }, 2 * 60 * 1000); // 2 minutes
   };
 
-  // Handle app state changes
   const handleAppStateChange = (nextAppState: AppStateStatus) => {
     if (appState.current === 'active' && nextAppState.match(/inactive|background/)) {
       startBackgroundTimer();
     } else if (appState.current?.match(/inactive|background/) && nextAppState === 'active') {
       clearBackgroundTimer();
+      // Reset timer when app comes back
+      lastInteractionRef.current = Date.now();
     }
     appState.current = nextAppState;
   };
 
-  // Check inactivity timer every second
   const checkInactivity = () => {
     if (!user) return;
+    // Don't logout if on critical screen (video call, payment, etc.)
+    if (isCriticalScreen.current) {
+      lastInteractionRef.current = Date.now();
+      return;
+    }
     const now = Date.now();
     const timeSinceLastInteraction = now - lastInteractionRef.current;
     if (timeSinceLastInteraction >= INACTIVITY_TIMEOUT_MS) {
@@ -90,12 +97,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Load stored auth on app start
+  const setCriticalScreen = (isCritical: boolean) => {
+    isCriticalScreen.current = isCritical;
+    if (isCritical) {
+      // Reset timer when entering critical screen
+      lastInteractionRef.current = Date.now();
+    }
+  };
+
   useEffect(() => {
     loadStoredAuth();
   }, []);
 
-  // AppState listener
   useEffect(() => {
     const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => {
@@ -104,7 +117,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [user]);
 
-  // Inactivity checker interval
   useEffect(() => {
     if (user) {
       lastInteractionRef.current = Date.now();
@@ -114,7 +126,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         timerIntervalRef.current = null;
       }
       
-      timerIntervalRef.current = setInterval(checkInactivity, 1000);
+      // Check every 5 seconds
+      timerIntervalRef.current = setInterval(checkInactivity, 5000);
     } else {
       if (timerIntervalRef.current) {
         clearInterval(timerIntervalRef.current);
@@ -130,7 +143,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [user]);
 
-  // Cleanup timers on unmount
   useEffect(() => {
     return () => {
       if (timerIntervalRef.current) {
@@ -185,6 +197,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     clearBackgroundTimer();
+    isCriticalScreen.current = false;
     try {
       await AsyncStorage.multiRemove([
         'itqaan_token',
@@ -223,6 +236,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         updateUser,
         getToken,
         resetInactivityTimer,
+        setCriticalScreen,
       }}
     >
       {children}

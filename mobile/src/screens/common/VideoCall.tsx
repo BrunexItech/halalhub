@@ -14,6 +14,7 @@ import {
   Linking,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useAuth } from '../../contexts/AuthContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { bookingService, livekitService } from '../../api/client';
 
@@ -236,6 +237,7 @@ const CallControls = ({
 const VideoCall = () => {
   const navigation = useNavigation();
   const route = useRoute();
+  const { setCriticalScreen } = useAuth();
   const bookingId = route.params?.bookingId;
 
   const [loading, setLoading] = useState(true);
@@ -253,6 +255,34 @@ const VideoCall = () => {
   const durationInterval = useRef<any | null>(null);
 
   const LIVEKIT_URL = 'wss://itqaan.co.ke';
+
+  // ============================================================
+  // CRITICAL SCREEN: Prevent auto-logout during video call
+  // ============================================================
+  useEffect(() => {
+    // Mark screen as critical to prevent auto-logout
+    setCriticalScreen(true);
+    
+    // Reset inactivity timer when entering video call
+    const { resetInactivityTimer } = useAuth();
+    resetInactivityTimer();
+
+    return () => {
+      setCriticalScreen(false);
+    };
+  }, []);
+
+  // Reset timer periodically during call
+  useEffect(() => {
+    if (!isConnected) return;
+    
+    const { resetInactivityTimer } = useAuth();
+    const interval = setInterval(() => {
+      resetInactivityTimer();
+    }, 30000); // Reset every 30 seconds during active call
+
+    return () => clearInterval(interval);
+  }, [isConnected]);
 
   // Request permissions
   const requestPermissions = async () => {
@@ -377,9 +407,9 @@ const VideoCall = () => {
 
   // Loading / permissions state
   if (loading || !permissionsReady) {
-  const message = permissionsGranted ? 'Preparing consultation...' : 'Requesting permissions...';
-  return <LoadingSpinner message={message} />;
-}
+    const message = permissionsGranted ? 'Preparing consultation...' : 'Requesting permissions...';
+    return <LoadingSpinner message={message} />;
+  }
 
   if (error || !token) {
     return (
