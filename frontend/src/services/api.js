@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const IMAGE_BASE = import.meta.env.VITE_IMAGE_URL || 'http://localhost:5000';
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -9,9 +10,6 @@ const api = axios.create({
   }
 });
 
-// ============================================================
-// REQUEST INTERCEPTOR — Add Token
-// ============================================================
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('halalhub_token');
   if (token) {
@@ -20,9 +18,9 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// ============================================================
-// RESPONSE INTERCEPTOR — Fix Image URLs (IP → Domain)
-// ============================================================
+// ========================================
+// RESPONSE INTERCEPTOR - FIX IMAGE URLs
+// ========================================
 api.interceptors.response.use(
   (response) => {
     const fixImageUrls = (data) => {
@@ -34,16 +32,17 @@ api.interceptors.response.use(
         const result = {};
         for (const key in data) {
           const value = data[key];
-          // Replace IP with domain in image URLs
-          if (typeof value === 'string' &&
-              (key.includes('image') || key.includes('photo') || key.includes('avatar') ||
-               key.includes('logo') || key.includes('url')) &&
+          // Check if it's an image URL
+          if (typeof value === 'string' && 
+              (key.includes('image') || key.includes('photo') || key.includes('avatar') || 
+               key.includes('logo') || key.includes('url') || key.includes('picture') ||
+               key.includes('thumbnail') || key.includes('banner')) &&
               value.includes('38.242.200.152')) {
-            result[key] = value.replace('38.242.200.152', 'itqaan.co.ke');
-          } else if (Array.isArray(value) && (key === 'images' || key === 'photos' || key === 'gallery')) {
-            result[key] = value.map(img =>
-              typeof img === 'string' && img.includes('38.242.200.152')
-                ? img.replace('38.242.200.152', 'itqaan.co.ke')
+            result[key] = value.replace('https://38.242.200.152', IMAGE_BASE);
+          } else if (Array.isArray(value) && (key === 'images' || key === 'photos' || key === 'gallery' || key === 'pictures')) {
+            result[key] = value.map((img) => 
+              typeof img === 'string' && img.includes('38.242.200.152') 
+                ? img.replace('https://38.242.200.152', IMAGE_BASE) 
                 : img
             );
           } else if (typeof value === 'object') {
@@ -62,71 +61,99 @@ api.interceptors.response.use(
     }
     return response;
   },
-  async (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('halalhub_token');
-      localStorage.removeItem('halalhub_user');
-      localStorage.removeItem('halalhub_role');
-      localStorage.removeItem('halalhub_subrole');
-      localStorage.removeItem('halalhub_vendor_type');
-      localStorage.removeItem('halalhub_leader_type');
-    }
+  (error) => {
     return Promise.reject(error);
   }
 );
 
+// Helper function to get full image URL
+export const getImageUrl = (path) => {
+  if (!path) return null;
+  // Replace IP with domain if present
+  let cleanPath = path.replace('https://38.242.200.152', '');
+  if (cleanPath.startsWith('http')) return cleanPath;
+  if (cleanPath.startsWith('/')) {
+    return `${IMAGE_BASE}${cleanPath}`;
+  }
+  return `${IMAGE_BASE}/uploads/${cleanPath}`;
+};
+
 // ========================================
-// AUTH SERVICE
+// AUTH SERVICE - UPDATED: Password + PIN login flow
 // ========================================
 export const authService = {
+  // Client Registration
   registerClient: (data) => api.post('/auth/register-client', {
     ...data,
     termsAccepted: data.termsAccepted || true,
     privacyAccepted: data.privacyAccepted || true
   }),
+  // Vendor Registration
   registerVendor: (data) => api.post('/auth/register-vendor', {
     ...data,
     termsAccepted: data.termsAccepted || true,
     privacyAccepted: data.privacyAccepted || true
   }),
+  // Leader Registration
   registerLeader: (data) => api.post('/auth/register-leader', {
     ...data,
     termsAccepted: data.termsAccepted || true,
     privacyAccepted: data.privacyAccepted || true
   }),
+  
+  // ==========================================
+  // UPDATED: New Login Flow (Password + PIN)
+  // ==========================================
+  
+  // Step 1: Validate password only
   validatePassword: (data) => api.post('/auth/validate-password', {
     phone: data.phone,
     password: data.password
   }),
+  
+  // Step 2: Verify PIN and complete login
   verifyPin: (data) => api.post('/auth/verify-pin', {
     phone: data.phone,
     pin: data.pin
   }),
+  
+  // Full login (combines both steps - used as fallback)
   login: (data) => api.post('/auth/login', {
     phone: data.phone,
     password: data.password,
     pin: data.pin
   }),
+  
+  // Registration OTP (kept - used during registration only)
   sendRegistrationOtp: (data) => api.post('/auth/send-registration-otp', data),
   verifyRegistrationOtp: (data) => api.post('/auth/verify-registration-otp', data),
+  
+  // Get current user
   getMe: () => api.get('/auth/me'),
 };
 
 // ========================================
-// LEADER SERVICE
+// LEADER SERVICE (NEW)
 // ========================================
 export const leaderService = {
+  // Dashboard
   getStats: () => api.get('/leader/dashboard-stats'),
   getProfile: () => api.get('/leader/profile'),
   updateProfile: (data) => api.post('/leader/profile', data),
+  // Pension
   getPension: () => api.get('/leader/pension'),
   getPensionHistory: (params) => api.get('/leader/pension/history', { params }),
+  // Supporters
   getSupporters: () => api.get('/leader/supporters'),
+  // Notifications
   getNotifications: (params) => api.get('/leader/notifications', { params }),
   getUnreadCount: () => api.get('/leader/notifications/unread-count'),
+  // Share Link
   shareLink: () => api.post('/leader/share'),
+  // Withdrawal Requests
   requestWithdrawal: (data) => api.post('/leader/pension/withdraw-request', data),
   getWithdrawals: () => api.get('/leader/pension/withdrawals'),
+  // Self Contribute
   selfContribute: (data) => api.post('/leader/pension/self-contribute', data),
 };
 
@@ -141,47 +168,58 @@ export const adminService = {
   updateUser: (id, data) => api.put(`/admin/users/${id}`, data),
   deleteUser: (id) => api.delete(`/admin/users/${id}`),
   updateKYC: (id, data) => api.put(`/admin/users/${id}/kyc`, data),
+  // Vendor management
   getPendingVendors: () => api.get('/admin/pending-vendors'),
   getVendors: (params) => api.get('/admin/vendors', { params }),
   verifyVendor: (id, data) => api.put(`/admin/vendors/${id}/verify`, data),
+  // Leader management
   getPendingLeaders: () => api.get('/admin/pending-leaders'),
   getLeaders: (params) => api.get('/admin/leaders', { params }),
   verifyLeader: (id, data) => api.put(`/admin/leaders/${id}/verify`, data),
+  // Transactions & Orders
   getTransactions: (params) => api.get('/admin/transactions', { params }),
   getOrders: (params) => api.get('/admin/orders', { params }),
   getBookings: (params) => api.get('/admin/bookings', { params }),
   getOverview: () => api.get('/admin/overview'),
+  // Mosques
   getMosques: (params) => api.get('/admin/mosques', { params }),
   createMosque: (data) => api.post('/admin/mosques', data),
   updateMosque: (id, data) => api.put(`/admin/mosques/${id}`, data),
   deleteMosque: (id) => api.delete(`/admin/mosques/${id}`),
   getMosqueStats: () => api.get('/admin/mosques/stats'),
+  // Consultations
   getConsultations: (params) => api.get('/admin/consultations', { params }),
   getConsultationStats: () => api.get('/admin/consultations/stats'),
+  // Hearse
   getHearseRequests: (params) => api.get('/admin/hearse/requests', { params }),
   getHearseProviders: (params) => api.get('/admin/hearse/providers', { params }),
   verifyHearseProvider: (id, data) => api.put(`/admin/hearse/providers/${id}/verify`, data),
   assignHearseRequest: (data) => api.post('/admin/hearse/assign', data),
+  // Butchery
   getButcheryVendors: (params) => api.get('/admin/butchery/vendors', { params }),
   getButcheryProducts: (params) => api.get('/admin/butchery/products', { params }),
   updateButcheryProductStatus: (id, data) => api.put(`/admin/butchery/products/${id}/status`, data),
   getButcheryStats: () => api.get('/admin/butchery/stats'),
+  // Hajj
   getHajjPackages: (params) => api.get('/admin/hajj/packages', { params }),
   getHajjBookings: (params) => api.get('/admin/hajj/bookings', { params }),
   updateHajjPackageStatus: (id, data) => api.put(`/admin/hajj/packages/${id}/status`, data),
   cancelHajjBooking: (id, data) => api.put(`/admin/hajj/bookings/${id}/cancel`, data),
   getHajjStats: () => api.get('/admin/hajj/stats'),
+  // Zakat
   getZakatPayments: (params) => api.get('/zakat/admin/payments', { params }),
   getZakatRecipients: (params) => api.get('/zakat/admin/recipients', { params }),
   createZakatRecipient: (data) => api.post('/zakat/admin/recipients', data),
   updateZakatRecipient: (id, data) => api.put(`/zakat/admin/recipients/${id}`, data),
   getZakatPool: () => api.get('/zakat/admin/pool'),
   disburseZakat: (data) => api.post('/zakat/admin/disburse', data),
+  // Sadaqa
   getSadaqaDonations: (params) => api.get('/sadaqa/admin/donations', { params }),
   createSadaqaCampaign: (data) => api.post('/sadaqa/admin/campaigns', data),
   updateSadaqaCampaign: (id, data) => api.put(`/sadaqa/admin/campaigns/${id}`, data),
   deleteSadaqaCampaign: (id) => api.delete(`/sadaqa/admin/campaigns/${id}`),
   getSadaqaPool: () => api.get('/sadaqa/admin/pool'),
+  // Pension Admin
   getPendingPensionContributions: () => api.get('/pension/admin/pending'),
   approvePensionContribution: (id, data) => api.put(`/pension/admin/approve/${id}`, data),
   rejectPensionContribution: (id, data) => api.put(`/pension/admin/reject/${id}`, data),
@@ -189,6 +227,7 @@ export const adminService = {
   getPensionWithdrawals: (params) => api.get('/pension/admin/withdrawals', { params }),
   approvePensionWithdrawal: (id, data) => api.put(`/pension/admin/withdrawals/${id}/approve`, data),
   rejectPensionWithdrawal: (id, data) => api.put(`/pension/admin/withdrawals/${id}/reject`, data),
+  // Takaful Admin
   getPendingTakafulClaims: () => api.get('/takaful/admin/claims/pending'),
   approveTakafulClaim: (id, data) => api.put(`/takaful/admin/claims/${id}/approve`, data),
   rejectTakafulClaim: (id, data) => api.put(`/takaful/admin/claims/${id}/reject`, data),
@@ -203,19 +242,24 @@ export const adminService = {
 // VENDOR SERVICE
 // ========================================
 export const vendorService = {
+  // Dashboard
   getStats: () => api.get('/vendor/dashboard-stats'),
   getProfile: () => api.get('/vendor/profile'),
   updateProfile: (data) => api.post('/vendor/profile', data),
   toggleStatus: (data) => api.put('/vendor/profile/toggle-status', data),
+  // Products
   getProducts: () => api.get('/vendor/products'),
   createProduct: (data) => api.post('/vendor/products', data),
   updateProduct: (id, data) => api.put(`/vendor/products/${id}`, data),
   deleteProduct: (id) => api.delete(`/vendor/products/${id}`),
+  // Orders
   getOrders: (params) => api.get('/vendor/orders', { params }),
   updateOrderStatus: (id, data) => api.put(`/vendor/orders/${id}`, data),
+  // Bookings (HalalStay)
   getBookings: (params) => api.get('/vendor/bookings', { params }),
   updateBookingStatus: (id, data) => api.put(`/vendor/bookings/${id}`, data),
   cancelBooking: (id, data) => api.put(`/vendor/cancel-booking/${id}`, data),
+  // Listings (HalalStay)
   getListings: () => api.get('/vendor/listings'),
   createListing: (data) => api.post('/vendor/listings', data),
   updateListing: (id, data) => api.put(`/vendor/listings/${id}`, data),
@@ -223,15 +267,20 @@ export const vendorService = {
   updateInventory: (id, data) => api.put(`/vendor/listings/${id}/inventory`, data),
   blockDates: (id, data) => api.post(`/vendor/listings/${id}/block-dates`, data),
   getBlockedDates: (id, params) => api.get(`/vendor/listings/${id}/blocked-dates`, { params }),
+  // Earnings
   getEarnings: () => api.get('/vendor/earnings'),
+  // Reviews
   getReviews: () => api.get('/vendor/reviews'),
+  // Menu Items
   getMenuItems: () => api.get('/vendor/menu-items'),
   createMenuItem: (data) => api.post('/vendor/menu-items', data),
   updateMenuItem: (id, data) => api.put(`/vendor/menu-items/${id}`, data),
   deleteMenuItem: (id) => api.delete(`/vendor/menu-items/${id}`),
+  // Upload Image
   uploadImage: (data) => api.post('/vendor/upload-image', data, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
+  // Hajj Package Management
   getHajjPackages: () => api.get('/vendor/hajj/packages'),
   createHajjPackage: (data) => api.post('/vendor/hajj/packages', data),
   updateHajjPackage: (id, data) => api.put(`/vendor/hajj/packages/${id}`, data),
@@ -242,7 +291,7 @@ export const vendorService = {
 };
 
 // ========================================
-// IMAM SERVICE (Deprecated)
+// IMAM SERVICE (Deprecated - kept for backward compatibility)
 // ========================================
 export const imamService = {
   getStats: () => api.get('/leader/dashboard-stats'),
@@ -260,25 +309,35 @@ export const imamService = {
 // CLIENT SERVICE
 // ========================================
 export const clientService = {
+  // Vendors
   getVendors: (params) => api.get('/client/vendors', { params }),
   getVendorById: (id) => api.get(`/client/vendors/${id}`),
+  // Products
   getProducts: (params) => api.get('/client/products', { params }),
   getProductById: (id) => api.get(`/client/products/${id}`),
+  // Listings (HalalStay)
   getListings: (params) => api.get('/client/listings', { params }),
   getListingById: (id) => api.get(`/client/listings/${id}`),
   getListingAvailability: (id, params) => api.get(`/client/listings/${id}/availability`, { params }),
+  // Bookings
   createBooking: (data) => api.post('/client/bookings', data),
   getBookings: () => api.get('/client/bookings'),
   cancelBooking: (id) => api.put(`/client/bookings/${id}/cancel`),
+  // Orders (Ecommerce)
   createOrder: (data) => api.post('/client/orders', data),
   getOrders: () => api.get('/client/orders'),
+  // Leaders (Pension Support)
   getLeaders: (params) => api.get('/client/leaders', { params }),
   getLeaderById: (id) => api.get(`/client/leaders/${id}`),
   supportLeader: (data) => api.post('/client/support-leader', data),
   getSupportedLeaders: () => api.get('/client/supported-leaders'),
+  // Consultation Leaders
   getConsultationLeaders: (params) => api.get('/client/consultation-leaders', { params }),
+  // Mosques
   getMosques: (params) => api.get('/client/mosques', { params }),
+  // Menu Items (Restaurants)
   getMenuItems: (params) => api.get('/client/menu-items', { params }),
+  // Hajj
   getHajjPackages: (params) => api.get('/client/hajj/packages', { params }),
   getHajjPackageById: (id) => api.get(`/client/hajj/packages/${id}`),
   createHajjBooking: (data) => api.post('/client/hajj/book', data),
@@ -368,22 +427,37 @@ export const p2pService = {
 };
 
 // ========================================
-// TAKAFUL SERVICE
+// TAKAFUL SERVICE (UPDATED)
 // ========================================
 export const takafulService = {
+  // Plans
   getPlans: () => api.get('/takaful/plans'),
   getPlanById: (id) => api.get(`/takaful/plans/${id}`),
   getCoverageOptions: (id) => api.get(`/takaful/plans/${id}/coverage`),
+  
+  // Quotes
   enquirePolicy: (data) => api.post('/takaful/enquire', data),
+  
+  // Policies
   getMyPolicies: () => api.get('/takaful/policies'),
   getPolicyById: (id) => api.get(`/takaful/policies/${id}`),
   purchasePolicy: (data) => api.post('/takaful/purchase', data),
+  
+  // Claims
   getUserClaims: () => api.get('/takaful/claims'),
   getClaimById: (id) => api.get(`/takaful/claims/${id}`),
   submitClaim: (data) => api.post('/takaful/claims', data),
+  
+  // Pool Stats
   getPoolStats: () => api.get('/takaful/pool-stats'),
+  
+  // Summary
   getSummary: () => api.get('/takaful/summary'),
+  
+  // Admin
   syncProducts: () => api.post('/takaful/admin/sync-products'),
+  
+  // Legacy support (kept for backward compatibility)
   getPolicy: () => api.get('/takaful/policy'),
   enroll: (data) => api.post('/takaful/enroll', data),
   getFamilyMembers: () => api.get('/takaful/family'),
@@ -491,7 +565,7 @@ export const willService = {
 };
 
 // ========================================
-// KADHI SERVICE (Deprecated)
+// KADHI SERVICE (Deprecated - kept for backward compatibility)
 // ========================================
 export const kadhiService = {
   getKadhis: (params) => api.get('/leader-consultation', { params }),
@@ -502,7 +576,7 @@ export const kadhiService = {
 };
 
 // ========================================
-// BOOKING SERVICE
+// BOOKING SERVICE (Consultation Bookings)
 // ========================================
 export const bookingService = {
   getBookings: (params) => api.get('/bookings', { params }),
@@ -516,7 +590,7 @@ export const bookingService = {
 };
 
 // ========================================
-// CART SERVICE
+// CART SERVICE (FIXED)
 // ========================================
 export const cartService = {
   getCart: () => api.get('/cart'),
@@ -567,7 +641,7 @@ export const prayerService = {
 };
 
 // ========================================
-// LEGACY SERVICES
+// LEGACY SERVICES (Keep for backward compatibility)
 // ========================================
 export const ecommerceService = {
   getProducts: () => api.get('/client/products'),
