@@ -14,7 +14,9 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import PinModal from '../../components/common/PinModal';
 import { pensionService } from '../../api/client';
+
 
 const LeaderPublicProfile = () => {
   const navigation = useNavigation();
@@ -32,6 +34,12 @@ const LeaderPublicProfile = () => {
   const [contributionType, setContributionType] = useState('one-time');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // ===== PIN MODAL STATE =====
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState('');
+  const [pendingContribution, setPendingContribution] = useState<any>(null);
 
   const quickAmounts = [100, 500, 1000, 2500, 5000];
 
@@ -72,19 +80,23 @@ const LeaderPublicProfile = () => {
     setShowConfirmModal(true);
   };
 
-  const confirmContribution = async () => {
-    setProcessing(true);
-    setError('');
+  // ===== PIN VERIFICATION =====
+  const handlePinVerify = async (pin: string) => {
+    setPinLoading(true);
+    setPinError('');
+
     try {
       const response = await pensionService.contribute({
         leader_id: leader.leader_id,
         amount: parseFloat(contributionAmount),
         frequency: contributionType,
+        pin: pin,
       });
 
       const paidAmount = parseFloat(contributionAmount) || 0;
       setSuccessAmount(paidAmount);
 
+      setShowPinModal(false);
       setShowConfirmModal(false);
       setShowSuccessModal(true);
 
@@ -93,10 +105,22 @@ const LeaderPublicProfile = () => {
       setSuccess(`Contribution of ${formatCurrency(paidAmount)} successful!`);
       setTimeout(() => setSuccess(''), 5000);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Contribution failed. Please try again.');
+      setPinError(err.response?.data?.error || 'Contribution failed. Please try again.');
     } finally {
-      setProcessing(false);
+      setPinLoading(false);
     }
+  };
+
+  const handlePinModalClose = () => {
+    setShowPinModal(false);
+    setPinError('');
+    setPendingContribution(null);
+  };
+
+  const confirmContribution = () => {
+    setShowConfirmModal(false);
+    setShowPinModal(true);
+    setPinError('');
   };
 
   const closeSuccessModal = () => {
@@ -677,6 +701,20 @@ const LeaderPublicProfile = () => {
           </View>
         </View>
       </Modal>
+
+      {/* ===== PIN MODAL ===== */}
+      <PinModal
+        visible={showPinModal}
+        onClose={handlePinModalClose}
+        onVerify={handlePinVerify}
+        loading={pinLoading}
+        error={pinError}
+        title="Confirm Contribution"
+        subtitle="Enter your 4-digit PIN to confirm this contribution"
+        amount={parseFloat(contributionAmount) || 0}
+        recipient={leader?.name}
+        transactionType="pension"
+      />
     </SafeAreaView>
   );
 };

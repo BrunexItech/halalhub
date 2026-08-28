@@ -72,8 +72,10 @@ const CountrySelect = ({ value, onChange, disabled }) => {
 
   const handleSelect = (country) => {
     onChange(country);
-    setIsOpen(false);
     setSearchTerm('');
+    setTimeout(() => {
+      setIsOpen(false);
+    }, 50);
   };
 
   if (allCountries.length === 0) {
@@ -123,6 +125,7 @@ const CountrySelect = ({ value, onChange, disabled }) => {
           style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}
           activeOpacity={1}
           onPress={() => setIsOpen(false)}
+          keyboardShouldPersistTaps="always"
         >
           <View style={{
             backgroundColor: '#0B342B',
@@ -150,13 +153,15 @@ const CountrySelect = ({ value, onChange, disabled }) => {
               placeholderTextColor="rgba(183, 192, 186, 0.5)"
               value={searchTerm}
               onChangeText={setSearchTerm}
-              autoFocus
+              focusable={false}
+              importantForAutofill="no"
             />
             <FlatList
               data={filteredCountries}
               keyExtractor={(item) => item.alpha2}
               showsVerticalScrollIndicator={true}
               style={{ maxHeight: 280 }}
+              keyboardShouldPersistTaps="handled"
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={{
@@ -347,12 +352,6 @@ const LeaderRegister = () => {
     }
   }, [resendTimer]);
 
-  useEffect(() => {
-    if (otpSent && inputRefs.current[0]) {
-      inputRefs.current[0]?.focus();
-    }
-  }, [otpSent]);
-
   // ================== LOCATION API FUNCTIONS ==================
   
   const getAreas = async () => {
@@ -529,12 +528,6 @@ const LeaderRegister = () => {
         startOtpCountdown();
         setSuccess('Verification code sent');
         setTimeout(() => setSuccess(''), 3000);
-
-        setTimeout(() => {
-          if (inputRefs.current[0]) {
-            inputRefs.current[0]?.focus();
-          }
-        }, 300);
       } else {
         setError('Failed to get OTP. Please try again.');
       }
@@ -1075,7 +1068,10 @@ const LeaderRegister = () => {
 
       case 3:
         return (
-          <View style={{ marginTop: 4 }}>
+          <View 
+            style={{ marginTop: 4 }}
+            onStartShouldSetResponder={() => true}
+          >
             <View style={{ marginBottom: 12 }}>
               <Text style={{ color: '#F7F6F1', fontSize: 16, fontWeight: '700' }}>ID & Security</Text>
               <Text style={{ color: '#6B7280', fontSize: 12 }}>Verify your identity</Text>
@@ -1118,6 +1114,8 @@ const LeaderRegister = () => {
               value={formData.password}
               onChangeText={(text) => handleChange('password', text)}
               minLength={8}
+              focusable={false}
+              importantForAutofill="no"
             />
             <Text style={{ color: 'rgba(183, 192, 186, 0.6)', fontSize: 10, marginBottom: 12 }}>
               Password must be at least 8 characters
@@ -1141,6 +1139,8 @@ const LeaderRegister = () => {
               keyboardType="numeric"
               value={formData.pin}
               onChangeText={(text) => handleChange('pin', text)}
+              focusable={false}
+              importantForAutofill="no"
             />
             <Text style={{ color: 'rgba(183, 192, 186, 0.6)', fontSize: 10, marginTop: 6 }}>
               PIN must be exactly 4 digits
@@ -1536,7 +1536,7 @@ const LeaderRegister = () => {
       >
         <ScrollView
           contentContainerStyle={{ flexGrow: 1, paddingTop: 40, paddingHorizontal: 24, paddingBottom: 40 }}
-          keyboardShouldPersistTaps="handled"
+          keyboardShouldPersistTaps="always"
         >
           <View style={{ maxWidth: 400, width: '100%', alignSelf: 'center' }}>
             <View style={{ alignItems: 'center', marginBottom: 24 }}>

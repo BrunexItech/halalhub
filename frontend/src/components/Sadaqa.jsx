@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sadaqaService, walletService } from '../services/api';
+import PinModal from './PinModal';
 
 const Sadaqa = () => {
   const navigate = useNavigate();
@@ -65,6 +66,12 @@ const Sadaqa = () => {
 
   // Quick amounts
   const quickAmounts = [100, 500, 1000, 2500, 5000, 10000];
+
+  // ===== PIN MODAL STATE =====
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState('');
+  const [pendingDonationData, setPendingDonationData] = useState(null);
 
   // Fetch data on mount
   useEffect(() => {
@@ -142,6 +149,7 @@ const Sadaqa = () => {
     }
   };
 
+  // ===== UPDATED: handleDonate now shows PIN modal =====
   const handleDonate = () => {
     if (!selectedCampaign) {
       setError('Please select a cause');
@@ -155,19 +163,28 @@ const Sadaqa = () => {
       setError(`Insufficient balance. Available: KES ${balance.toLocaleString()}`);
       return;
     }
-    setShowConfirmModal(true);
+    
+    // Store donation data and show PIN modal
+    setPendingDonationData({
+      campaignId: selectedCampaign.id,
+      amount: parseFloat(amount),
+      dedication: dedication,
+      isAnonymous: isAnonymous,
+      campaignName: selectedCampaign.name,
+      organization: selectedCampaign.organization
+    });
+    setShowPinModal(true);
+    setPinError('');
   };
 
-  const confirmDonation = async () => {
-    setProcessing(true);
-    setError('');
+  // ===== PIN VERIFICATION =====
+  const handlePinVerify = async (pin) => {
+    setPinLoading(true);
+    setPinError('');
     try {
       const response = await sadaqaService.donate({
-        campaignId: selectedCampaign.id,
-        amount: parseFloat(amount),
-        dedication: dedication,
-        isAnonymous: isAnonymous,
-        donorName: isAnonymous ? 'Anonymous' : ''
+        ...pendingDonationData,
+        pin: pin
       });
 
       if (response.data.success) {
@@ -181,11 +198,12 @@ const Sadaqa = () => {
           status: 'completed'
         });
         
-        setShowConfirmModal(false);
+        setShowPinModal(false);
         setShowReceiptModal(true);
         setAmount('');
         setDedication('');
         setIsAnonymous(false);
+        setPendingDonationData(null);
         
         await fetchBalance();
         await fetchCampaigns();
@@ -197,10 +215,16 @@ const Sadaqa = () => {
         setTimeout(() => setSuccess(''), 5000);
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Donation failed. Please try again.');
+      setPinError(err.response?.data?.error || 'Donation failed. Please try again.');
     } finally {
-      setProcessing(false);
+      setPinLoading(false);
     }
+  };
+
+  const handlePinModalClose = () => {
+    setShowPinModal(false);
+    setPinError('');
+    setPendingDonationData(null);
   };
 
   const handleQuickAmount = (val) => {
@@ -610,88 +634,8 @@ const Sadaqa = () => {
           </div>
         </div>
 
-        {/* ===== CONFIRMATION MODAL ===== */}
-        {showConfirmModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-              <div className="p-4 border-b border-[rgba(11,52,43,0.06)] flex justify-between items-center sticky top-0 bg-white rounded-t-xl z-10">
-                <h3 className="text-sm font-bold text-[#1F2937]">Confirm Sadaqa</h3>
-                <button className="text-[#6B7280] hover:text-[#1F2937] transition-colors" onClick={() => setShowConfirmModal(false)}>
-                  <CloseIcon />
-                </button>
-              </div>
-              
-              <div className="p-4 space-y-3">
-                <div className="bg-[#FAFAF7] rounded-lg p-3 text-center border border-[rgba(11,52,43,0.06)]">
-                  <div className="text-[10px] text-[#6B7280]">Amount</div>
-                  <div className="text-xl font-bold text-[#0B342B]">{formatCurrency(parseFloat(amount) || 0)}</div>
-                </div>
-
-                <div className="bg-[#FAFAF7] rounded-lg p-3 space-y-1.5 border border-[rgba(11,52,43,0.06)]">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-[#6B7280]">Cause</span>
-                    <span className="font-semibold text-[#1F2937]">{selectedCampaign?.name}</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-[#6B7280]">Organization</span>
-                    <span className="font-semibold text-[#1F2937]">{selectedCampaign?.organization}</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-[#6B7280]">Type</span>
-                    <span className="font-semibold text-[#0B342B]">Sadaqah Jariyah</span>
-                  </div>
-                  {dedication && (
-                    <div className="flex justify-between text-xs border-t border-[rgba(11,52,43,0.06)] pt-1.5">
-                      <span className="text-[#6B7280]">Dedication</span>
-                      <span className="font-semibold text-[#1F2937]">{dedication}</span>
-                    </div>
-                  )}
-                  {isAnonymous && (
-                    <div className="flex justify-between text-xs">
-                      <span className="text-[#6B7280]">Anonymous</span>
-                      <span className="font-semibold text-[#1F2937]">Yes</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-xs border-t border-[rgba(11,52,43,0.06)] pt-1.5">
-                    <span className="text-[#6B7280]">Balance After</span>
-                    <span className="font-semibold text-[#1F2937]">{formatCurrency(balance - parseFloat(amount))}</span>
-                  </div>
-                </div>
-
-                <div className="bg-[#3FAF73]/5 rounded-lg p-3 text-center border border-[#3FAF73]/10">
-                  <p className="text-xs text-[#0B342B] leading-relaxed">
-                    "The example of those who spend their wealth in the way of Allah is like a seed of grain which grows seven spikes..." — Quran 2:261
-                  </p>
-                </div>
-
-                {error && <p className="text-xs text-[#DC2626]">{error}</p>}
-              </div>
-              
-              <div className="p-4 border-t border-[rgba(11,52,43,0.06)] flex flex-col sm:flex-row gap-2.5">
-                <button 
-                  className="flex-1 px-4 py-2 bg-white text-[#6B7280] font-semibold text-sm rounded-lg border border-[rgba(11,52,43,0.12)] hover:bg-[#FAFAF7] transition-all duration-200"
-                  onClick={() => setShowConfirmModal(false)}
-                >
-                  Cancel
-                </button>
-                <button 
-                  className="flex-[2] px-4 py-2 bg-[#0B342B] text-[#F7F6F1] font-semibold text-sm rounded-lg hover:bg-[#12342D] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed shadow-md shadow-[#0B342B]/20"
-                  onClick={confirmDonation}
-                  disabled={processing}
-                >
-                  {processing ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <SpinnerIcon />
-                      Processing...
-                    </span>
-                  ) : (
-                    'Confirm Donation'
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* ===== CONFIRMATION MODAL (now replaced by PIN modal) ===== */}
+        {/* The confirmation modal is removed since PIN modal handles this now */}
 
         {/* ===== RECEIPT MODAL ===== */}
         {showReceiptModal && receiptData && (
@@ -763,6 +707,20 @@ const Sadaqa = () => {
             </div>
           </div>
         )}
+
+        {/* ===== PIN MODAL ===== */}
+        <PinModal
+          isOpen={showPinModal}
+          onClose={handlePinModalClose}
+          onVerify={handlePinVerify}
+          loading={pinLoading}
+          error={pinError}
+          title="Confirm Sadaqa Donation"
+          subtitle="Enter your 4-digit PIN to confirm this charitable donation"
+          amount={pendingDonationData?.amount || 0}
+          recipient={pendingDonationData?.campaignName || 'Cause'}
+          transactionType="sadaqa"
+        />
 
         {/* ===== SUCCESS TOAST ===== */}
         {success && (

@@ -140,22 +140,25 @@ const MosqueFinder = () => {
 
     const hasPermission = await requestLocationPermission();
     if (!hasPermission) {
-      setError('Location permission denied. Please enter your location manually.');
+      setError('Location permission denied. Please enter your location manually to find mosques.');
       setIsLocating(false);
       return;
     }
 
-    navigator.geolocation?.getCurrentPosition(
+    navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
         setIsLocating(false);
-        const url = `https://www.google.com/maps/search/mosque/@${latitude},${longitude},14z`;
+        // Open Google Maps with current location centered
+        const url = `https://www.google.com/maps/@${latitude},${longitude},14z`;
         Linking.openURL(url);
       },
       (error) => {
         console.log('Geolocation error:', error);
-        setError('Unable to get your location. Please enter your location manually.');
         setIsLocating(false);
+        // If GPS fails, still open Google Maps so user can type manually
+        const url = 'https://www.google.com/maps';
+        Linking.openURL(url);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );

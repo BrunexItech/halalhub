@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { takafulService } from '../services/api';
+import PinModal from './PinModal';
 
 // ========================================
 // PROFESSIONAL SVG ICONS WITH BRAND COLORS
@@ -19,7 +20,7 @@ const CarIcon = () => (
 // 2. Afya Takaful - Medical Cross
 const MedicalIcon = () => (
   <svg className="w-6 h-6 text-[#C9A44B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v6m-3-3h6m-6 0a9 9 0 1118 0 9 9 0 01-18 0z" />
+    <path strokeLinecap="round" strokelinejoin="round" strokeWidth="2" d="M12 9v6m-3-3h6m-6 0a9 9 0 1118 0 9 9 0 01-18 0z" />
   </svg>
 );
 
@@ -254,6 +255,12 @@ const Takaful = () => {
   const [quoteData, setQuoteData] = useState(null);
   const [modalData, setModalData] = useState(null);
 
+  // ===== PIN MODAL STATE =====
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState('');
+  const [pendingPurchaseData, setPendingPurchaseData] = useState(null);
+
   const hasActivePolicyForPlan = (planId) => {
     return myPolicies.some(p => p.plan_id === planId && p.status === 'active');
   };
@@ -460,45 +467,63 @@ const Takaful = () => {
     }
   };
 
-  // ============================================================
-  // TODO: Replace with real API when Takaful Kenya API is available
-  // Current: Mock purchase with simulated delay
-  // Future: const response = await takafulService.purchasePolicy({...})
-  // ============================================================
-  const handlePurchase = async () => {
+  // ===== UPDATED: handlePurchase now shows PIN modal =====
+  const handlePurchase = () => {
     if (!selectedPlan || !selectedCoverage || !quoteData) {
       return;
     }
 
-    setProcessing(true);
-    setError('');
-    
+    // Store purchase data and show PIN modal
+    setPendingPurchaseData({
+      planId: selectedPlan.id,
+      planName: selectedPlan.name,
+      coverage: selectedCoverage,
+      premium: quoteData.premium,
+      billingCycle: billingCycle,
+      sumAssured: sumAssured
+    });
+    setShowQuoteModal(false);
+    setShowPinModal(true);
+    setPinError('');
+  };
+
+  // ===== PIN VERIFICATION =====
+  const handlePinVerify = async (pin) => {
+    setPinLoading(true);
+    setPinError('');
     try {
       // MOCK PURCHASE - Replace with real API call when available
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       setModalData({
-        planName: selectedPlan.name,
-        coverage: selectedCoverage,
-        premium: quoteData.premium,
-        billingCycle: billingCycle,
+        planName: pendingPurchaseData.planName,
+        coverage: pendingPurchaseData.coverage,
+        premium: pendingPurchaseData.premium,
+        billingCycle: pendingPurchaseData.billingCycle,
         policyNumber: 'TKF-' + Date.now().toString(36).toUpperCase(),
         startDate: new Date(),
         expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
       });
 
-      setShowQuoteModal(false);
+      setShowPinModal(false);
       setShowSuccessModal(true);
+      setPendingPurchaseData(null);
 
       await fetchMyPolicies();
 
       setSuccess('Policy purchased successfully!');
       setTimeout(() => setSuccess(''), 5000);
     } catch (err) {
-      setError('Purchase failed. Please try again.');
+      setPinError('Purchase failed. Please try again.');
     } finally {
-      setProcessing(false);
+      setPinLoading(false);
     }
+  };
+
+  const handlePinModalClose = () => {
+    setShowPinModal(false);
+    setPinError('');
+    setPendingPurchaseData(null);
   };
 
   const handleSubmitClaim = async () => {
@@ -1082,6 +1107,20 @@ const Takaful = () => {
             </div>
           </div>
         )}
+
+        {/* ===== PIN MODAL ===== */}
+        <PinModal
+          isOpen={showPinModal}
+          onClose={handlePinModalClose}
+          onVerify={handlePinVerify}
+          loading={pinLoading}
+          error={pinError}
+          title="Confirm Takaful Purchase"
+          subtitle="Enter your 4-digit PIN to confirm your Takaful policy purchase"
+          amount={pendingPurchaseData?.premium || 0}
+          recipient={pendingPurchaseData?.planName || 'Takaful Plan'}
+          transactionType="takaful"
+        />
 
         {/* ===== SUCCESS TOAST ===== */}
         {success && (

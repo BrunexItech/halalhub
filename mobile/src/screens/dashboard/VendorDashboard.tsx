@@ -19,6 +19,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { vendorService } from '../../api/client';
+import * as ImagePicker from 'react-native-image-picker';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 
 // Enable LayoutAnimation for Android
@@ -146,12 +147,21 @@ const LocationIcon = ({ color = '#6B7280', size = 14 }) => (
   </Svg>
 );
 
+const ImageIcon = ({ color = '#6B7280', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Rect x="3" y="3" width="18" height="18" rx="2" stroke={color} strokeWidth="1.5"/>
+    <Circle cx="8.5" cy="8.5" r="1.5" stroke={color} strokeWidth="1.5"/>
+    <Path d="M21 15L16 10L5 21" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
 const VendorDashboard = () => {
   const navigation = useNavigation();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
@@ -448,6 +458,107 @@ const VendorDashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // ============================================================
+  // UPLOAD IMAGE HELPER - Uploads image to server and returns URL
+  // ============================================================
+  const uploadImageToServer = async (uri: string): Promise<string> => {
+    try {
+      const formData = new FormData();
+      const filename = uri.split('/').pop() || 'image.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : 'image/jpeg';
+
+      formData.append('image', {
+        uri: uri,
+        type: type,
+        name: filename,
+      } as any);
+
+      const response = await vendorService.uploadImage(formData);
+      return response.data.url || response.data.imageUrl || response.data.path;
+    } catch (error) {
+      console.error('Upload error:', error);
+      throw new Error('Failed to upload image to server');
+    }
+  };
+
+  // ============================================================
+  // IMAGE PICKER FUNCTIONS - Uploads images to server
+  // ============================================================
+  const pickImagesForProduct = async () => {
+    ImagePicker.launchImageLibrary(
+      { mediaType: 'photo', selectionLimit: 5 },
+      async (response) => {
+        if (!response.didCancel && response.assets) {
+          setUploadingImage(true);
+          setError('');
+          try {
+            const uploadedUrls = [];
+            for (const asset of response.assets) {
+              const url = await uploadImageToServer(asset.uri);
+              uploadedUrls.push(url);
+            }
+            setNewProduct({ ...newProduct, images: uploadedUrls });
+            setSuccess(`${uploadedUrls.length} image(s) uploaded successfully!`);
+            setTimeout(() => setSuccess(''), 3000);
+          } catch (err: any) {
+            setError(err.message || 'Failed to upload images');
+          } finally {
+            setUploadingImage(false);
+          }
+        }
+      }
+    );
+  };
+
+  const pickImagesForListing = async () => {
+    ImagePicker.launchImageLibrary(
+      { mediaType: 'photo', selectionLimit: 5 },
+      async (response) => {
+        if (!response.didCancel && response.assets) {
+          setUploadingImage(true);
+          setError('');
+          try {
+            const uploadedUrls = [];
+            for (const asset of response.assets) {
+              const url = await uploadImageToServer(asset.uri);
+              uploadedUrls.push(url);
+            }
+            setNewListing({ ...newListing, images: uploadedUrls });
+            setSuccess(`${uploadedUrls.length} image(s) uploaded successfully!`);
+            setTimeout(() => setSuccess(''), 3000);
+          } catch (err: any) {
+            setError(err.message || 'Failed to upload images');
+          } finally {
+            setUploadingImage(false);
+          }
+        }
+      }
+    );
+  };
+
+  const pickImageForMenuItem = async () => {
+    ImagePicker.launchImageLibrary(
+      { mediaType: 'photo', selectionLimit: 1 },
+      async (response) => {
+        if (!response.didCancel && response.assets) {
+          setUploadingImage(true);
+          setError('');
+          try {
+            const url = await uploadImageToServer(response.assets[0].uri);
+            setNewMenuItem({ ...newMenuItem, image: url });
+            setSuccess('Image uploaded successfully!');
+            setTimeout(() => setSuccess(''), 3000);
+          } catch (err: any) {
+            setError(err.message || 'Failed to upload image');
+          } finally {
+            setUploadingImage(false);
+          }
+        }
+      }
+    );
   };
 
   const handleAddProduct = async () => {
@@ -1760,7 +1871,8 @@ const VendorDashboard = () => {
         </View>
       </ScrollView>
 
-      {/* ===== MODALS (Preserved with premium styling) ===== */}
+      {/* ===== MODALS ===== */}
+
       {/* Edit Profile Modal */}
       <Modal visible={showEditProfile} transparent animationType="fade">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
@@ -1948,7 +2060,7 @@ const VendorDashboard = () => {
         </View>
       </Modal>
 
-      {/* Add Product Modal */}
+      {/* ===== ADD PRODUCT MODAL WITH IMAGE UPLOAD ===== */}
       <Modal visible={showAddProduct} transparent animationType="fade">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
@@ -2011,6 +2123,59 @@ const VendorDashboard = () => {
                   placeholder="Category"
                   placeholderTextColor="#9CA3AF"
                 />
+              </View>
+
+              {/* ===== IMAGE PICKER FOR PRODUCTS ===== */}
+              <View style={{ marginBottom: 12 }}>
+                <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                  Product Images
+                </Text>
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: '#FAFAF7',
+                    borderWidth: 1,
+                    borderColor: 'rgba(3, 42, 36, 0.06)',
+                    borderRadius: 10,
+                    padding: 14,
+                    alignItems: 'center',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    gap: 8,
+                  }}
+                  onPress={pickImagesForProduct}
+                  disabled={uploadingImage}
+                  activeOpacity={0.7}
+                >
+                  {uploadingImage ? (
+                    <ActivityIndicator size="small" color="#032A24" />
+                  ) : (
+                    <>
+                      <ImageIcon color="#6B7280" size={20} />
+                      <Text style={{ color: '#6B7280', fontSize: 13 }}>
+                        {newProduct.images.length > 0 ? `${newProduct.images.length} images uploaded` : 'Pick & Upload Images'}
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+                {newProduct.images.length > 0 && (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
+                    {newProduct.images.map((uri, index) => (
+                      <Image
+                        key={index}
+                        source={{ uri }}
+                        style={{
+                          width: 60,
+                          height: 60,
+                          borderRadius: 8,
+                          marginRight: 8,
+                          borderWidth: 1,
+                          borderColor: 'rgba(3, 42, 36, 0.06)',
+                        }}
+                        resizeMode="cover"
+                      />
+                    ))}
+                  </ScrollView>
+                )}
               </View>
 
               {isButchery ? (
@@ -2268,7 +2433,7 @@ const VendorDashboard = () => {
                 <TouchableOpacity
                   style={{ flex: 1, backgroundColor: '#032A24', paddingVertical: 12, borderRadius: 10, alignItems: 'center' }}
                   onPress={handleAddProduct}
-                  disabled={processing}
+                  disabled={processing || uploadingImage || newProduct.images.length === 0}
                   activeOpacity={0.7}
                 >
                   {processing ? (
@@ -2285,7 +2450,7 @@ const VendorDashboard = () => {
         </View>
       </Modal>
 
-      {/* Add Listing Modal */}
+      {/* ===== ADD LISTING MODAL WITH IMAGE UPLOAD ===== */}
       <Modal visible={showAddListing} transparent animationType="fade">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
@@ -2348,6 +2513,59 @@ const VendorDashboard = () => {
                   placeholder="City, County"
                   placeholderTextColor="#9CA3AF"
                 />
+              </View>
+
+              {/* ===== IMAGE PICKER FOR LISTINGS ===== */}
+              <View style={{ marginBottom: 12 }}>
+                <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                  Property Images
+                </Text>
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: '#FAFAF7',
+                    borderWidth: 1,
+                    borderColor: 'rgba(3, 42, 36, 0.06)',
+                    borderRadius: 10,
+                    padding: 14,
+                    alignItems: 'center',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    gap: 8,
+                  }}
+                  onPress={pickImagesForListing}
+                  disabled={uploadingImage}
+                  activeOpacity={0.7}
+                >
+                  {uploadingImage ? (
+                    <ActivityIndicator size="small" color="#032A24" />
+                  ) : (
+                    <>
+                      <ImageIcon color="#6B7280" size={20} />
+                      <Text style={{ color: '#6B7280', fontSize: 13 }}>
+                        {newListing.images.length > 0 ? `${newListing.images.length} images uploaded` : 'Pick & Upload Images'}
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+                {newListing.images.length > 0 && (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
+                    {newListing.images.map((uri, index) => (
+                      <Image
+                        key={index}
+                        source={{ uri }}
+                        style={{
+                          width: 60,
+                          height: 60,
+                          borderRadius: 8,
+                          marginRight: 8,
+                          borderWidth: 1,
+                          borderColor: 'rgba(3, 42, 36, 0.06)',
+                        }}
+                        resizeMode="cover"
+                      />
+                    ))}
+                  </ScrollView>
+                )}
               </View>
 
               <View style={{ marginBottom: 12 }}>
@@ -2550,7 +2768,7 @@ const VendorDashboard = () => {
                 <TouchableOpacity
                   style={{ flex: 1, backgroundColor: '#032A24', paddingVertical: 12, borderRadius: 10, alignItems: 'center' }}
                   onPress={handleAddListing}
-                  disabled={processing}
+                  disabled={processing || uploadingImage || newListing.images.length === 0}
                   activeOpacity={0.7}
                 >
                   {processing ? (
@@ -2565,7 +2783,7 @@ const VendorDashboard = () => {
         </View>
       </Modal>
 
-      {/* Add Menu Item Modal */}
+      {/* ===== ADD MENU ITEM MODAL WITH IMAGE UPLOAD ===== */}
       <Modal visible={showAddMenuItem} transparent animationType="fade">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{
@@ -2628,6 +2846,54 @@ const VendorDashboard = () => {
                   placeholder="e.g., Appetizer, Main, Dessert"
                   placeholderTextColor="#9CA3AF"
                 />
+              </View>
+
+              {/* ===== IMAGE PICKER FOR MENU ITEMS ===== */}
+              <View style={{ marginBottom: 12 }}>
+                <Text style={{ color: '#6B7280', fontSize: 11, fontWeight: '600', letterSpacing: 0.5, marginBottom: 4 }}>
+                  Item Image
+                </Text>
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: '#FAFAF7',
+                    borderWidth: 1,
+                    borderColor: 'rgba(3, 42, 36, 0.06)',
+                    borderRadius: 10,
+                    padding: 14,
+                    alignItems: 'center',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    gap: 8,
+                  }}
+                  onPress={pickImageForMenuItem}
+                  disabled={uploadingImage}
+                  activeOpacity={0.7}
+                >
+                  {uploadingImage ? (
+                    <ActivityIndicator size="small" color="#032A24" />
+                  ) : (
+                    <>
+                      <ImageIcon color="#6B7280" size={20} />
+                      <Text style={{ color: '#6B7280', fontSize: 13 }}>
+                        {newMenuItem.image ? 'Image uploaded' : 'Pick & Upload Image'}
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+                {newMenuItem.image ? (
+                  <Image
+                    source={{ uri: newMenuItem.image }}
+                    style={{
+                      width: 80,
+                      height: 80,
+                      borderRadius: 8,
+                      marginTop: 8,
+                      borderWidth: 1,
+                      borderColor: 'rgba(3, 42, 36, 0.06)',
+                    }}
+                    resizeMode="cover"
+                  />
+                ) : null}
               </View>
 
               <View style={{ marginBottom: 12 }}>
@@ -2695,7 +2961,7 @@ const VendorDashboard = () => {
                 <TouchableOpacity
                   style={{ flex: 1, backgroundColor: '#032A24', paddingVertical: 12, borderRadius: 10, alignItems: 'center' }}
                   onPress={handleAddMenuItem}
-                  disabled={processing}
+                  disabled={processing || uploadingImage || !newMenuItem.image}
                   activeOpacity={0.7}
                 >
                   {processing ? (

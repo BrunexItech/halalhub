@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import PinModal from './PinModal';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -45,6 +46,12 @@ const Hajj = () => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsScrollComplete, setTermsScrollComplete] = useState(false);
   const termsContentRef = useRef(null);
+  
+  // ===== PIN MODAL STATE =====
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState('');
+  const [pendingBookingData, setPendingBookingData] = useState(null);
   
   // ===== HELPER FUNCTIONS =====
   const formatCurrency = (amount) => {
@@ -203,7 +210,8 @@ const Hajj = () => {
     setBookingData({ ...bookingData, passport_numbers: newPassports });
   };
 
-  const confirmBooking = async () => {
+  // ===== UPDATED: confirmBooking now shows PIN modal =====
+  const confirmBooking = () => {
     if (!termsAccepted) {
       setError('Please accept the Terms & Conditions.');
       return;
@@ -217,24 +225,46 @@ const Hajj = () => {
       return;
     }
     
-    setProcessing(true);
-    setError('');
+    // Store booking data and show PIN modal
+    setPendingBookingData({
+      package_id: selectedPackage.id,
+      packageName: selectedPackage.name,
+      packagePrice: selectedPackage.price,
+      pilgrims: bookingData.pilgrims,
+      pilgrim_names: bookingData.pilgrim_names || [],
+      passport_numbers: bookingData.passport_numbers || [],
+      contact_phone: bookingData.contact_phone,
+      contact_email: bookingData.contact_email,
+      special_requests: bookingData.special_requests,
+      totalAmount: selectedPackage.price * (bookingData.pilgrims || 1)
+    });
+    setShowBookingModal(false);
+    setShowPinModal(true);
+    setPinError('');
+  };
+
+  // ===== PIN VERIFICATION =====
+  const handlePinVerify = async (pin) => {
+    setPinLoading(true);
+    setPinError('');
     try {
       const token = localStorage.getItem('halalhub_token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       
       const response = await axios.post(`${API_BASE}/client/hajj/book`, {
-        package_id: selectedPackage.id,
-        pilgrims: bookingData.pilgrims,
-        pilgrim_names: bookingData.pilgrim_names || [],
-        passport_numbers: bookingData.passport_numbers || [],
-        contact_phone: bookingData.contact_phone,
-        contact_email: bookingData.contact_email,
-        special_requests: bookingData.special_requests
+        package_id: pendingBookingData.package_id,
+        pilgrims: pendingBookingData.pilgrims,
+        pilgrim_names: pendingBookingData.pilgrim_names || [],
+        passport_numbers: pendingBookingData.passport_numbers || [],
+        contact_phone: pendingBookingData.contact_phone,
+        contact_email: pendingBookingData.contact_email,
+        special_requests: pendingBookingData.special_requests,
+        pin: pin
       }, config);
       
       if (response.data.success) {
-        setShowBookingModal(false);
+        setShowPinModal(false);
+        setPendingBookingData(null);
         setShowSuccessModal(true);
         setSuccess('Booking request submitted successfully!');
         
@@ -243,14 +273,20 @@ const Hajj = () => {
         
         setTimeout(() => setSuccess(''), 5000);
       } else {
-        setError(response.data.error || 'Failed to submit booking');
+        setPinError(response.data.error || 'Failed to submit booking');
       }
     } catch (err) {
       console.error('Booking error:', err);
-      setError(err.response?.data?.error || 'Failed to submit booking. Please try again.');
+      setPinError(err.response?.data?.error || 'Failed to submit booking. Please try again.');
     } finally {
-      setProcessing(false);
+      setPinLoading(false);
     }
+  };
+
+  const handlePinModalClose = () => {
+    setShowPinModal(false);
+    setPinError('');
+    setPendingBookingData(null);
   };
 
   // ===== RENDER =====
@@ -948,6 +984,20 @@ const Hajj = () => {
           </div>
         </div>
       )}
+
+      {/* ===== PIN MODAL ===== */}
+      <PinModal
+        isOpen={showPinModal}
+        onClose={handlePinModalClose}
+        onVerify={handlePinVerify}
+        loading={pinLoading}
+        error={pinError}
+        title="Confirm Hajj/Umrah Booking"
+        subtitle="Enter your 4-digit PIN to confirm your pilgrimage booking"
+        amount={pendingBookingData?.totalAmount || 0}
+        recipient={pendingBookingData?.packageName || 'Package'}
+        transactionType={selectedPackage?.type === 'hajj' ? 'hajj' : 'umrah'}
+      />
 
       {/* ===== SUCCESS TOAST ===== */}
       {success && (

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import Cart from './Cart';
+import PinModal from './PinModal';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -43,6 +43,12 @@ const Restaurants = () => {
     specialInstructions: '',
     phone: ''
   });
+  
+  // ===== PIN MODAL STATE =====
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState('');
+  const [pendingOrderData, setPendingOrderData] = useState(null);
   
   // Counties
   const counties = ['All', 'Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret', 'Garissa', 'Malindi'];
@@ -153,7 +159,8 @@ const Restaurants = () => {
     setShowOrderModal(true);
   };
 
-  const handlePlaceOrder = async () => {
+  // ===== UPDATED: handlePlaceOrder now shows PIN modal =====
+  const handlePlaceOrder = () => {
     if (cart.length === 0) {
       setError('Your cart is empty. Please add items before ordering.');
       return;
@@ -164,38 +171,58 @@ const Restaurants = () => {
       return;
     }
     
-    setProcessing(true);
-    setError('');
+    // Store order data and show PIN modal
+    setPendingOrderData({
+      vendor_id: selectedRestaurant.id,
+      restaurantName: selectedRestaurant.business_name || selectedRestaurant.fullname,
+      items: cart.map(item => ({
+        menu_item_id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity
+      })),
+      subtotal: getCartTotal(),
+      delivery_fee: selectedRestaurant.delivery_fee || 0,
+      delivery_address: orderData.deliveryAddress,
+      delivery_type: orderData.deliveryType,
+      special_instructions: orderData.specialInstructions
+    });
+    setShowOrderModal(false);
+    setShowPinModal(true);
+    setPinError('');
+  };
+
+  // ===== PIN VERIFICATION =====
+  const handlePinVerify = async (pin) => {
+    setPinLoading(true);
+    setPinError('');
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
       
       const orderPayload = {
-        vendor_id: selectedRestaurant.id,
-        items: cart.map(item => ({
-          menu_item_id: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity
-        })),
-        subtotal: getCartTotal(),
-        delivery_fee: selectedRestaurant.delivery_fee || 0,
-        delivery_address: orderData.deliveryAddress,
-        delivery_type: orderData.deliveryType,
-        special_instructions: orderData.specialInstructions
+        ...pendingOrderData,
+        pin: pin
       };
       
       await axios.post(`${API_BASE}/client/orders`, orderPayload, config);
       
-      setShowOrderModal(false);
+      setShowPinModal(false);
+      setPendingOrderData(null);
       setShowSuccessModal(true);
       setCart([]);
       setSuccess('Order placed successfully!');
       setTimeout(() => setSuccess(''), 5000);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to place order. Please try again.');
+      setPinError(err.response?.data?.error || 'Failed to place order. Please try again.');
     } finally {
-      setProcessing(false);
+      setPinLoading(false);
     }
+  };
+
+  const handlePinModalClose = () => {
+    setShowPinModal(false);
+    setPinError('');
+    setPendingOrderData(null);
   };
 
   // ===== HELPERS =====
@@ -431,11 +458,6 @@ const Restaurants = () => {
         )}
 
         {/* ======================================== */}
-        {/* ===== CART COMPONENT ===== */}
-        {/* ======================================== */}
-        <Cart />
-
-        {/* ======================================== */}
         {/* ===== MENU MODAL ===== */}
         {/* ======================================== */}
         {showMenuModal && selectedRestaurant && (
@@ -620,6 +642,20 @@ const Restaurants = () => {
             </div>
           </div>
         )}
+
+        {/* ===== PIN MODAL ===== */}
+        <PinModal
+          isOpen={showPinModal}
+          onClose={handlePinModalClose}
+          onVerify={handlePinVerify}
+          loading={pinLoading}
+          error={pinError}
+          title="Confirm Restaurant Order"
+          subtitle="Enter your 4-digit PIN to confirm your restaurant order"
+          amount={pendingOrderData?.subtotal + (pendingOrderData?.delivery_fee || 0) || 0}
+          recipient={pendingOrderData?.restaurantName || 'Restaurant'}
+          transactionType="restaurant"
+        />
 
         {/* ===== SUCCESS TOAST ===== */}
         {success && (

@@ -18,6 +18,7 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { clientService, cartService } from '../../api/client';
+import PinModal from '../../components/common/PinModal';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 
@@ -153,6 +154,12 @@ const Ecommerce = () => {
   const [vendors, setVendors] = useState<string[]>(['All']);
   const [isButcheryMode, setIsButcheryMode] = useState(category === 'butchery');
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+
+  // ===== PIN MODAL STATE =====
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState('');
+  const [pendingOrderData, setPendingOrderData] = useState<any>(null);
 
   const priceRanges = [
     { label: 'All', value: 'All' },
@@ -357,43 +364,56 @@ const Ecommerce = () => {
       setError('Your cart is empty!');
       return;
     }
-    setShowCheckoutModal(true);
+    // Set pending order data and show PIN modal
+    const totalAmount = getCartTotal() + 500; // including delivery fee
+    setPendingOrderData({
+      vendor_id: cart[0]?.vendor_id || cart[0]?.vendorId,
+      items: cart.map((item) => ({
+        product_id: item.product_id || item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+      })),
+      subtotal: getCartTotal(),
+      delivery_fee: 500,
+      delivery_address: 'Nairobi CBD',
+      totalAmount: totalAmount,
+    });
+    setShowPinModal(true);
+    setPinError('');
   };
 
-  const confirmOrder = async () => {
-    setProcessing(true);
-    setError('');
+  // ===== PIN VERIFICATION =====
+  const handlePinVerify = async (pin: string) => {
+    setPinLoading(true);
+    setPinError('');
+
     try {
-      const orderData = {
-        vendor_id: cart[0]?.vendor_id || cart[0]?.vendorId,
-        items: cart.map((item) => ({
-          product_id: item.product_id || item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-        })),
-        subtotal: getCartTotal(),
-        delivery_fee: 500,
-        delivery_address: 'Nairobi CBD',
-      };
+      const response = await clientService.createOrder({
+        ...pendingOrderData,
+        pin: pin,
+      });
 
-      await clientService.createOrder(orderData);
-
-      const newOrderNumber = 'HM' + Date.now().toString().slice(-8);
+      const newOrderNumber = response.data.orderId || 'HM' + Date.now().toString().slice(-8);
       setOrderNumber(newOrderNumber);
-      setShowCheckoutModal(false);
+      setShowPinModal(false);
       setShowSuccessModal(true);
-
       setCart([]);
       await fetchOrders();
 
       setSuccess('Order placed successfully!');
       setTimeout(() => setSuccess(''), 5000);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Payment failed. Please try again.');
+      setPinError(err.response?.data?.error || 'Payment failed. Please try again.');
     } finally {
-      setProcessing(false);
+      setPinLoading(false);
     }
+  };
+
+  const handlePinModalClose = () => {
+    setShowPinModal(false);
+    setPinError('');
+    setPendingOrderData(null);
   };
 
   const toggleWishlist = (productId: string) => {
@@ -1112,7 +1132,7 @@ const Ecommerce = () => {
         </View>
       </ScrollView>
 
-      {/* ===== MODALS (Preserved with premium styling) ===== */}
+      {/* ===== MODALS ===== */}
       {/* Product Detail Modal */}
       <Modal visible={showProductModal} transparent animationType="fade">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
@@ -1425,7 +1445,11 @@ const Ecommerce = () => {
                     alignItems: 'center',
                     opacity: processing ? 0.5 : 1,
                   }}
-                  onPress={confirmOrder}
+                  onPress={() => {
+                    // This now triggers the PIN modal flow
+                    handleCheckout();
+                    setShowCheckoutModal(false);
+                  }}
                   disabled={processing}
                   activeOpacity={0.7}
                 >
@@ -1519,6 +1543,20 @@ const Ecommerce = () => {
           </View>
         </View>
       </Modal>
+
+      {/* ===== PIN MODAL ===== */}
+      <PinModal
+        visible={showPinModal}
+        onClose={handlePinModalClose}
+        onVerify={handlePinVerify}
+        loading={pinLoading}
+        error={pinError}
+        title="Confirm Order"
+        subtitle="Enter your 4-digit PIN to confirm this order"
+        amount={pendingOrderData?.totalAmount || 0}
+        recipient="Order"
+        transactionType="order"
+      />
 
       {/* Success Toast */}
       {success ? (

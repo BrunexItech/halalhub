@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { zakatService, walletService } from '../services/api';
+import PinModal from './PinModal';
 
 const Zakat = () => {
   const navigate = useNavigate();
@@ -52,6 +53,12 @@ const Zakat = () => {
   const [selectedRecipient, setSelectedRecipient] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [notes, setNotes] = useState('');
+  
+  // ===== PIN MODAL STATE =====
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState('');
+  const [pendingZakatData, setPendingZakatData] = useState(null);
   
   // Categories for filtering
   const categories = [
@@ -174,6 +181,7 @@ const Zakat = () => {
     setLiabilities(preset.values.liabilities);
   };
 
+  // ===== UPDATED: handlePayZakat now shows PIN modal =====
   const handlePayZakat = () => {
     if (calculation.zakatDue <= 0) {
       setError('No Zakat due. Please check your calculations.');
@@ -183,31 +191,47 @@ const Zakat = () => {
       setError(`Insufficient balance. Available: KES ${balance.toLocaleString()}`);
       return;
     }
+    
+    // Show recipient selection modal first
     setSelectedRecipient('');
     setSelectedCategory('all');
     setNotes('');
     setShowConfirmModal(true);
   };
 
-  const confirmPayment = async () => {
+  // ===== UPDATED: confirmPayment now shows PIN modal =====
+  const confirmPayment = () => {
     if (!selectedRecipient) {
       setError('Please select a recipient for your Zakat.');
       return;
     }
     
-    setProcessing(true);
-    setError('');
+    // Store zakat data and show PIN modal
+    setPendingZakatData({
+      amount: calculation.zakatDue,
+      recipientId: selectedRecipient,
+      category: selectedCategory !== 'all' ? selectedCategory : 'general',
+      notes: notes
+    });
+    setShowConfirmModal(false);
+    setShowPinModal(true);
+    setPinError('');
+  };
+
+  // ===== PIN VERIFICATION =====
+  const handlePinVerify = async (pin) => {
+    setPinLoading(true);
+    setPinError('');
     try {
       const response = await zakatService.payZakat({
-        amount: calculation.zakatDue,
-        recipientId: selectedRecipient,
-        category: selectedCategory !== 'all' ? selectedCategory : 'general',
-        notes: notes
+        ...pendingZakatData,
+        pin: pin
       });
 
       if (response.data.success) {
-        setSuccess(`Zakat of KES ${calculation.zakatDue.toLocaleString()} paid successfully!`);
-        setShowConfirmModal(false);
+        setSuccess(`Zakat of KES ${pendingZakatData.amount.toLocaleString()} paid successfully!`);
+        setShowPinModal(false);
+        setPendingZakatData(null);
         await fetchBalance();
         await fetchZakatHistory();
         await fetchSummary();
@@ -215,10 +239,16 @@ const Zakat = () => {
         setTimeout(() => setSuccess(''), 5000);
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Payment failed. Please try again.');
+      setPinError(err.response?.data?.error || 'Payment failed. Please try again.');
     } finally {
-      setProcessing(false);
+      setPinLoading(false);
     }
+  };
+
+  const handlePinModalClose = () => {
+    setShowPinModal(false);
+    setPinError('');
+    setPendingZakatData(null);
   };
 
   const formatCurrency = (amount) => {
@@ -322,7 +352,7 @@ const Zakat = () => {
         </div>
 
         {/* ===== ERROR ===== */}
-        {error && !showConfirmModal && (
+        {error && !showConfirmModal && !showPinModal && (
           <div className="mb-4 p-3 bg-[#FEF2F2] border border-[#FECACA] rounded-xl flex flex-wrap items-center justify-between gap-3">
             <span className="text-xs text-[#DC2626]">{error}</span>
             <button 
@@ -578,12 +608,12 @@ const Zakat = () => {
           </div>
         </div>
 
-        {/* ===== CONFIRMATION MODAL ===== */}
+        {/* ===== CONFIRMATION MODAL (Recipient Selection) ===== */}
         {showConfirmModal && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
               <div className="p-4 border-b border-[rgba(11,52,43,0.06)] flex justify-between items-center sticky top-0 bg-white rounded-t-xl z-10">
-                <h3 className="text-sm font-bold text-[#1F2937]">Confirm Zakat Payment</h3>
+                <h3 className="text-sm font-bold text-[#1F2937]">Select Zakat Recipient</h3>
                 <button className="text-[#6B7280] hover:text-[#1F2937] transition-colors" onClick={() => setShowConfirmModal(false)}>
                   <CloseIcon />
                 </button>
@@ -685,8 +715,6 @@ const Zakat = () => {
                   />
                 </div>
 
-                {error && <p className="text-xs text-[#DC2626]">{error}</p>}
-
                 {/* Quranic Verse */}
                 <div className="bg-[#3FAF73]/5 rounded-lg p-3 text-center border border-[#3FAF73]/10">
                   <p className="text-xs text-[#0B342B] leading-relaxed">
@@ -713,13 +741,27 @@ const Zakat = () => {
                       Processing...
                     </span>
                   ) : (
-                    'Confirm Payment'
+                    'Confirm & Pay'
                   )}
                 </button>
               </div>
             </div>
           </div>
         )}
+
+        {/* ===== PIN MODAL ===== */}
+        <PinModal
+          isOpen={showPinModal}
+          onClose={handlePinModalClose}
+          onVerify={handlePinVerify}
+          loading={pinLoading}
+          error={pinError}
+          title="Confirm Zakat Payment"
+          subtitle="Enter your 4-digit PIN to confirm your Zakat payment"
+          amount={pendingZakatData?.amount || 0}
+          recipient="Zakat Recipient"
+          transactionType="zakat"
+        />
 
         {/* ===== SUCCESS TOAST ===== */}
         {success && (

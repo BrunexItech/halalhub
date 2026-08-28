@@ -18,6 +18,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import PinModal from '../../components/common/PinModal';
 import { clientService } from '../../api/client';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 
@@ -166,6 +167,12 @@ const HalalStay = () => {
   // Collapsible sections
   const [filtersExpanded, setFiltersExpanded] = useState(true);
   const [bookingsExpanded, setBookingsExpanded] = useState(false);
+
+  // ===== PIN MODAL STATE =====
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState('');
+  const [pendingBooking, setPendingBooking] = useState<any>(null);
 
   useEffect(() => {
     if (user) {
@@ -317,24 +324,33 @@ const HalalStay = () => {
       return;
     }
 
+    // Store booking data and show PIN modal instead of directly confirming
+    setPendingBooking({
+      listing_id: property.id,
+      check_in: checkIn,
+      check_out: checkOut,
+      guests: guests,
+      rooms: rooms,
+      special_requests: specialRequests,
+      property: property,
+    });
     setSelectedProperty(property);
-    setShowBookingModal(true);
+    setShowPinModal(true);
+    setPinError('');
   };
 
-  const confirmBooking = async () => {
-    setProcessing(true);
-    setError('');
+  // ===== PIN VERIFICATION =====
+  const handlePinVerify = async (pin: string) => {
+    setPinLoading(true);
+    setPinError('');
+
     try {
       const nights = calculateNights();
       const totalPrice = calculateTotal();
 
       const response = await clientService.createBooking({
-        listing_id: selectedProperty.id,
-        check_in: checkIn,
-        check_out: checkOut,
-        guests: guests,
-        rooms: rooms,
-        special_requests: specialRequests,
+        ...pendingBooking,
+        pin: pin,
       });
 
       const bookingRef = response.data.bookingId || `HS-${Date.now().toString().slice(-8)}`;
@@ -343,36 +359,43 @@ const HalalStay = () => {
         bookingRef,
         propertyName: selectedProperty.title,
         propertyLocation: selectedProperty.location || selectedProperty.county,
-        checkIn,
-        checkOut,
+        checkIn: pendingBooking.check_in,
+        checkOut: pendingBooking.check_out,
         nights,
-        guests,
-        rooms,
+        guests: pendingBooking.guests,
+        rooms: pendingBooking.rooms,
         total: totalPrice,
         property: selectedProperty,
         guestName,
         guestEmail,
         guestPhone,
-        specialRequests,
+        specialRequests: pendingBooking.special_requests,
         agreementAccepted: termsAccepted,
         status: 'confirmed',
         createdAt: new Date().toISOString(),
         roomsLeft: response.data.rooms_left,
       });
 
-      await fetchBookings();
-      await fetchProperties();
-
+      setShowPinModal(false);
       setShowBookingModal(false);
       setShowSuccessModal(true);
+
+      await fetchBookings();
+      await fetchProperties();
 
       setSuccess(`Booking confirmed for ${selectedProperty.title}!`);
       setTimeout(() => setSuccess(''), 5000);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Booking failed. Please try again.');
+      setPinError(err.response?.data?.error || 'Booking failed. Please try again.');
     } finally {
-      setProcessing(false);
+      setPinLoading(false);
     }
+  };
+
+  const handlePinModalClose = () => {
+    setShowPinModal(false);
+    setPinError('');
+    setPendingBooking(null);
   };
 
   const viewBookingDetails = (booking: any) => {
@@ -1405,7 +1428,11 @@ const HalalStay = () => {
                     alignItems: 'center',
                     opacity: (processing || !termsAccepted || !guestName || !guestEmail || !guestPhone) ? 0.5 : 1,
                   }}
-                  onPress={confirmBooking}
+                  onPress={() => {
+                    // This now triggers the PIN modal flow
+                    handleBookNow(selectedProperty);
+                    setShowBookingModal(false);
+                  }}
                   disabled={processing || !termsAccepted || !guestName || !guestEmail || !guestPhone}
                   activeOpacity={0.7}
                 >
@@ -1795,6 +1822,20 @@ const HalalStay = () => {
           </View>
         </View>
       </Modal>
+
+      {/* ===== PIN MODAL ===== */}
+      <PinModal
+        visible={showPinModal}
+        onClose={handlePinModalClose}
+        onVerify={handlePinVerify}
+        loading={pinLoading}
+        error={pinError}
+        title="Confirm Booking"
+        subtitle="Enter your 4-digit PIN to confirm this HalalStay booking"
+        amount={calculateTotal() || 0}
+        recipient={selectedProperty?.title || 'Property'}
+        transactionType="booking"
+      />
 
       {/* Success Toast */}
       {success ? (

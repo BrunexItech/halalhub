@@ -38,12 +38,7 @@ const PinModal: React.FC<PinModalProps> = ({
   const [pin, setPin] = useState(['', '', '', '']);
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
-  useEffect(() => {
-    if (visible && inputRefs.current[0]) {
-      setTimeout(() => inputRefs.current[0]?.focus(), 200);
-    }
-  }, [visible]);
-
+  // Reset PIN when modal closes
   useEffect(() => {
     if (!visible) {
       setPin(['', '', '', '']);

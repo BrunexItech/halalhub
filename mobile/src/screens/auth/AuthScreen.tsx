@@ -114,8 +114,11 @@ const CountrySelect = ({ value, onChange, disabled }) => {
 
   const handleSelect = (country) => {
     onChange(country);
-    setIsOpen(false);
     setSearchTerm('');
+    // Close modal after a small delay to ensure parent state updates
+    setTimeout(() => {
+      setIsOpen(false);
+    }, 50);
   };
 
   if (allCountries.length === 0) {
@@ -165,6 +168,7 @@ const CountrySelect = ({ value, onChange, disabled }) => {
           style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}
           activeOpacity={1}
           onPress={() => setIsOpen(false)}
+          keyboardShouldPersistTaps="always"
         >
           <View style={{
             backgroundColor: '#0B342B',
@@ -192,13 +196,13 @@ const CountrySelect = ({ value, onChange, disabled }) => {
               placeholderTextColor="rgba(183, 192, 186, 0.5)"
               value={searchTerm}
               onChangeText={setSearchTerm}
-              autoFocus
             />
             <FlatList
               data={filteredCountries}
               keyExtractor={(item) => item.alpha2}
               showsVerticalScrollIndicator={true}
               style={{ maxHeight: 280 }}
+              keyboardShouldPersistTaps="handled"
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={{
@@ -588,7 +592,7 @@ const AuthScreen = () => {
       >
         <ScrollView 
           contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}
-          keyboardShouldPersistTaps="handled"
+          keyboardShouldPersistTaps="always"
         >
           <View style={{ maxWidth: 400, width: '100%', alignSelf: 'center' }}>
             {/* Card */}

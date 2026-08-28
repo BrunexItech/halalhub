@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { pensionService } from '../services/api';
+import PinModal from './PinModal';
 
 const LeaderPublicProfile = () => {
   const navigate = useNavigate();
@@ -16,6 +17,12 @@ const LeaderPublicProfile = () => {
   const [contributionType, setContributionType] = useState('one-time');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // ===== PIN MODAL STATE =====
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState('');
+  const [pendingContributionData, setPendingContributionData] = useState(null);
 
   const quickAmounts = [100, 500, 1000, 2500, 5000];
 
@@ -37,39 +44,57 @@ const LeaderPublicProfile = () => {
     }
   };
 
+  // ===== UPDATED: handleContribute now shows PIN modal =====
   const handleContribute = () => {
     if (!contributionAmount || parseFloat(contributionAmount) < 10) {
       setError('Minimum amount is KES 10');
       return;
     }
-    setShowConfirmModal(true);
+    
+    // Store contribution data and show PIN modal
+    setPendingContributionData({
+      leader_id: leader.leader_id,
+      leaderName: leader.name,
+      leaderType: leader.leader_type,
+      amount: parseFloat(contributionAmount),
+      frequency: contributionType
+    });
+    setShowPinModal(true);
+    setPinError('');
   };
 
-  const confirmContribution = async () => {
-    setProcessing(true);
-    setError('');
+  // ===== PIN VERIFICATION =====
+  const handlePinVerify = async (pin) => {
+    setPinLoading(true);
+    setPinError('');
     try {
       const response = await pensionService.contribute({
-        leader_id: leader.leader_id,
-        amount: parseFloat(contributionAmount),
-        frequency: contributionType
+        ...pendingContributionData,
+        pin: pin
       });
 
-      const paidAmount = parseFloat(contributionAmount) || 0;
+      const paidAmount = pendingContributionData.amount;
       setSuccessAmount(paidAmount);
 
-      setShowConfirmModal(false);
+      setShowPinModal(false);
       setShowSuccessModal(true);
+      setPendingContributionData(null);
 
       await fetchLeaderProfile();
 
       setSuccess(`Contribution of ${formatCurrency(paidAmount)} successful!`);
       setTimeout(() => setSuccess(''), 5000);
     } catch (err) {
-      setError(err.response?.data?.error || 'Contribution failed. Please try again.');
+      setPinError(err.response?.data?.error || 'Contribution failed. Please try again.');
     } finally {
-      setProcessing(false);
+      setPinLoading(false);
     }
+  };
+
+  const handlePinModalClose = () => {
+    setShowPinModal(false);
+    setPinError('');
+    setPendingContributionData(null);
   };
 
   const closeSuccessModal = () => {
@@ -305,70 +330,10 @@ const LeaderPublicProfile = () => {
         </div>
       </div>
 
-      {/* Confirmation Modal */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-fadeIn">
-            <div className="p-6 border-b border-[#F4F5F1] flex justify-between items-center sticky top-0 bg-white rounded-t-2xl z-10">
-              <h3 className="text-[22px] font-semibold text-[#1F2937]">Confirm Contribution</h3>
-              <button className="text-[#6B7280] hover:text-[#1F2937] transition-colors" onClick={() => setShowConfirmModal(false)}>
-                ✕
-              </button>
-            </div>
+      {/* ===== CONFIRMATION MODAL (REMOVED - replaced by PIN modal) ===== */}
+      {/* The confirmation modal is removed since PIN modal handles this now */}
 
-            <div className="p-6 space-y-4">
-              <div className="text-center">
-                <div className="text-[15px] text-[#6B7280]">You are contributing to</div>
-                <div className="text-[17px] font-bold text-[#1F2937]">{leader.name}</div>
-                <div className="text-[15px] text-[#6B7280]">{getLeaderTypeLabel(leader.leader_type)}</div>
-              </div>
-
-              <div className="bg-[#FAFAF7] rounded-xl p-4 space-y-2 border border-[#E8EEF4]">
-                <div className="flex justify-between text-[15px]">
-                  <span className="text-[#6B7280]">Amount</span>
-                  <span className="font-semibold text-[#0B342B]">{formatCurrency(parseFloat(contributionAmount) || 0)}</span>
-                </div>
-                <div className="flex justify-between text-[15px]">
-                  <span className="text-[#6B7280]">Type</span>
-                  <span className="font-semibold text-[#1F2937] capitalize">{contributionType}</span>
-                </div>
-              </div>
-
-              <div className="bg-[#FAFAF7] rounded-xl p-4 text-center border border-[#E8EEF4]">
-                <p className="text-[15px] text-[#6B7280] leading-relaxed">
-                  This contribution supports the long-term welfare of {leader.name}. 
-                  May Allah accept your generous contribution.
-                </p>
-              </div>
-            </div>
-
-            <div className="p-6 border-t border-[#F4F5F1] flex gap-3 sticky bottom-0 bg-white rounded-b-2xl">
-              <button 
-                className="flex-1 px-6 py-3 bg-white text-[#6B7280] font-medium rounded-xl border border-[#E8EEF4] hover:bg-[#FAFAF7] transition-all duration-200"
-                onClick={() => setShowConfirmModal(false)}
-              >
-                Cancel
-              </button>
-              <button 
-                className="flex-[2] px-6 py-3 bg-[#0B342B] text-white font-medium rounded-xl hover:bg-[#032A24] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed shadow-md shadow-[#0B342B]/20"
-                onClick={confirmContribution}
-                disabled={processing}
-              >
-                {processing ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Processing...
-                  </span>
-                ) : (
-                  'Confirm Contribution'
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Success Modal */}
+      {/* ===== SUCCESS MODAL ===== */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-fadeIn">
@@ -412,6 +377,20 @@ const LeaderPublicProfile = () => {
           </div>
         </div>
       )}
+
+      {/* ===== PIN MODAL ===== */}
+      <PinModal
+        isOpen={showPinModal}
+        onClose={handlePinModalClose}
+        onVerify={handlePinVerify}
+        loading={pinLoading}
+        error={pinError}
+        title="Confirm Pension Contribution"
+        subtitle="Enter your 4-digit PIN to support this leader"
+        amount={pendingContributionData?.amount || 0}
+        recipient={pendingContributionData?.leaderName || 'Leader'}
+        transactionType="pension"
+      />
     </div>
   );
 };

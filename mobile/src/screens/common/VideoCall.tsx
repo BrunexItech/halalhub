@@ -116,18 +116,12 @@ const VideoGrid = ({
         </View>
       )}
 
-      {/* Local Video - PiP - ALWAYS rendered when connected, key changes when remote changes */}
-      {isConnected && (
+      {/* Local Video - PiP - ONLY rendered when connected AND localVideoTrack exists */}
+      {isConnected && localVideoTrack && (
         <View style={styles.localVideoContainer}>
           <VideoTrack
             key={`local-${localRenderKey}-${localTrackSid}`}
-            trackRef={
-              localVideoTrack ?? {
-                participant: localParticipant,
-                publication: localCameraPublication,
-                source: Track.Source.Camera,
-              }
-            }
+            trackRef={localVideoTrack}
             style={styles.localVideo}
             mirror={true}
           />
@@ -237,7 +231,7 @@ const CallControls = ({
 const VideoCall = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { setCriticalScreen } = useAuth();
+  const { setCriticalScreen, resetInactivityTimer } = useAuth();
   const bookingId = route.params?.bookingId;
 
   const [loading, setLoading] = useState(true);
@@ -264,7 +258,6 @@ const VideoCall = () => {
     setCriticalScreen(true);
     
     // Reset inactivity timer when entering video call
-    const { resetInactivityTimer } = useAuth();
     resetInactivityTimer();
 
     return () => {
@@ -276,7 +269,6 @@ const VideoCall = () => {
   useEffect(() => {
     if (!isConnected) return;
     
-    const { resetInactivityTimer } = useAuth();
     const interval = setInterval(() => {
       resetInactivityTimer();
     }, 30000); // Reset every 30 seconds during active call
@@ -288,26 +280,39 @@ const VideoCall = () => {
   const requestPermissions = async () => {
     if (Platform.OS === 'android') {
       try {
-        const granted = await PermissionsAndroid.requestMultiple([
+        const cameraGranted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.CAMERA,
-          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
-        ]);
-        const allGranted = Object.values(granted).every(
-          (result) => result === PermissionsAndroid.RESULTS.GRANTED
+          {
+            title: 'Camera Permission',
+            message: 'Itqaan needs camera access to conduct video consultations with religious leaders.',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          }
         );
-        if (allGranted) {
+        
+        const audioGranted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+          {
+            title: 'Microphone Permission',
+            message: 'Itqaan needs microphone access for audio during video consultations.',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          }
+        );
+
+        if (cameraGranted === PermissionsAndroid.RESULTS.GRANTED &&
+            audioGranted === PermissionsAndroid.RESULTS.GRANTED) {
           setPermissionsGranted(true);
           setPermissionsReady(true);
         } else {
           Alert.alert(
             'Permissions Required',
-            'Camera and microphone permissions are required for video calls.',
+            'Camera and microphone access are required to join video consultations. Please grant permissions in settings.',
             [
               { text: 'Cancel', onPress: () => navigation.goBack() },
-              {
-                text: 'Open Settings',
-                onPress: () => Linking.openSettings(),
-              },
+              { text: 'Open Settings', onPress: () => Linking.openSettings() },
             ]
           );
           setPermissionsGranted(false);
@@ -320,6 +325,7 @@ const VideoCall = () => {
         setPermissionsReady(false);
       }
     } else {
+      // iOS permissions are handled via Info.plist
       setPermissionsGranted(true);
       setPermissionsReady(true);
     }

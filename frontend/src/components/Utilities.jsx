@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import PinModal from './PinModal';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -37,6 +38,12 @@ const Utilities = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState(null);
+  
+  // ===== PIN MODAL STATE =====
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState('');
+  const [pendingPaymentData, setPendingPaymentData] = useState(null);
   
   // Quick amounts
   const quickAmounts = [100, 200, 500, 1000, 2000, 5000];
@@ -139,6 +146,7 @@ const Utilities = () => {
     }
   };
 
+  // ===== UPDATED: handlePayment now shows PIN modal =====
   const handlePayment = (e) => {
     e.preventDefault();
     setValidationError('');
@@ -160,19 +168,30 @@ const Utilities = () => {
       return;
     }
     
-    setShowConfirmModal(true);
+    // Store payment data and show PIN modal
+    setPendingPaymentData({
+      providerId: selectedUtility.id,
+      providerName: selectedUtility.name,
+      paybill: selectedUtility.paybill,
+      accountNumber: accountNumberInput,
+      amount: parseFloat(amount)
+    });
+    setShowPinModal(true);
+    setPinError('');
   };
 
-  const confirmPayment = async () => {
-    setProcessing(true);
-    setError('');
+  // ===== PIN VERIFICATION =====
+  const handlePinVerify = async (pin) => {
+    setPinLoading(true);
+    setPinError('');
     try {
       const token = localStorage.getItem('halalhub_token');
       const response = await axios.post(`${API_BASE}/utilities/pay`, {
-        providerId: selectedUtility.id,
-        accountNumber: accountNumberInput,
-        amount: parseFloat(amount),
-        paymentMethod: 'wallet'
+        providerId: pendingPaymentData.providerId,
+        accountNumber: pendingPaymentData.accountNumber,
+        amount: pendingPaymentData.amount,
+        paymentMethod: 'wallet',
+        pin: pin
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -180,10 +199,10 @@ const Utilities = () => {
       if (response.data.success) {
         const data = response.data.data;
         setPaymentStatus({
-          utility: selectedUtility.name,
-          account: accountNumberInput,
-          amount: parseFloat(amount),
-          paybill: selectedUtility.paybill,
+          utility: pendingPaymentData.providerName,
+          account: pendingPaymentData.accountNumber,
+          amount: pendingPaymentData.amount,
+          paybill: pendingPaymentData.paybill,
           date: new Date().toLocaleString(),
           ref: data.transactionRef,
           status: 'completed',
@@ -193,21 +212,27 @@ const Utilities = () => {
         });
         
         setBalance(data.balance || 0);
-        setShowConfirmModal(false);
+        setShowPinModal(false);
         setShowReceiptModal(true);
+        setPendingPaymentData(null);
         await fetchPaymentHistory();
         await fetchSavedServices();
         
-        setSuccess(`Payment of KES ${parseFloat(amount).toLocaleString()} to ${selectedUtility.name} successful`);
+        setSuccess(`Payment of KES ${pendingPaymentData.amount.toLocaleString()} to ${pendingPaymentData.providerName} successful`);
         setTimeout(() => setSuccess(''), 5000);
       }
     } catch (err) {
       console.error('Payment error:', err);
-      setError(err.response?.data?.error || 'Payment failed. Please try again.');
-      setShowConfirmModal(false);
+      setPinError(err.response?.data?.error || 'Payment failed. Please try again.');
     } finally {
-      setProcessing(false);
+      setPinLoading(false);
     }
+  };
+
+  const handlePinModalClose = () => {
+    setShowPinModal(false);
+    setPinError('');
+    setPendingPaymentData(null);
   };
 
   const closeReceipt = () => {
@@ -770,75 +795,8 @@ const Utilities = () => {
         </div>
       </div>
 
-      {/* ===== CONFIRMATION MODAL ===== */}
-      {showConfirmModal && selectedUtility && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="p-6 border-b border-[rgba(11,52,43,0.06)] flex justify-between items-center">
-              <h3 className="text-lg font-bold text-[#1F2937]">Confirm Payment</h3>
-              <button 
-                className="text-[#6B7280] hover:text-[#1F2937] transition-colors"
-                onClick={() => setShowConfirmModal(false)}
-              >
-                <CloseIcon />
-              </button>
-            </div>
-            
-            <div className="p-6 space-y-4">
-              <div className="text-center">
-                <div className="font-bold text-[#1F2937]">{selectedUtility.name}</div>
-                <div className="text-sm text-[#6B7280]">Paybill: {selectedUtility.paybill}</div>
-              </div>
-
-              <div className="bg-[#FAFAF7] rounded-xl p-4 space-y-2 border border-[rgba(11,52,43,0.06)]">
-                <div className="flex justify-between text-sm">
-                  <span className="text-[#6B7280]">Account</span>
-                  <span className="font-semibold text-[#1F2937]">{accountNumberInput}</span>
-                </div>
-                <div className="flex justify-between text-sm pt-2 border-t border-[rgba(11,52,43,0.08)]">
-                  <span className="text-[#1F2937] font-semibold">Amount</span>
-                  <span className="text-[#0B342B] font-bold">{formatCurrency(parseFloat(amount) || 0)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-[#6B7280]">Wallet Balance After</span>
-                  <span className="font-semibold text-[#3FAF73]">{formatCurrency(balance - parseFloat(amount))}</span>
-                </div>
-              </div>
-
-              <div className="bg-[#3FAF73]/5 rounded-xl p-4 text-center border border-[#3FAF73]/10">
-                <p className="text-sm text-[#0B342B] leading-relaxed">
-                  This payment will be deducted from your HalalHub wallet balance.
-                </p>
-              </div>
-
-              {error && <p className="text-sm text-[#DC2626]">{error}</p>}
-            </div>
-            
-            <div className="p-6 border-t border-[rgba(11,52,43,0.06)] flex flex-col sm:flex-row gap-3">
-              <button 
-                className="flex-1 px-6 py-3 bg-white text-[#6B7280] font-semibold rounded-xl border border-[rgba(11,52,43,0.12)] hover:bg-[#FAFAF7] transition-all duration-200"
-                onClick={() => setShowConfirmModal(false)}
-              >
-                Cancel
-              </button>
-              <button 
-                className="flex-[2] px-6 py-3 bg-[#0B342B] text-[#F7F6F1] font-semibold rounded-xl hover:bg-[#12342D] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed shadow-md shadow-[#0B342B]/20"
-                onClick={confirmPayment}
-                disabled={processing}
-              >
-                {processing ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <SpinnerIcon />
-                    Processing...
-                  </span>
-                ) : (
-                  'Confirm Payment'
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ===== CONFIRMATION MODAL (REMOVED - replaced by PIN modal) ===== */}
+      {/* The confirmation modal is removed since PIN modal handles this now */}
 
       {/* ===== RECEIPT MODAL ===== */}
       {showReceiptModal && paymentStatus && (
@@ -926,6 +884,20 @@ const Utilities = () => {
           </div>
         </div>
       )}
+
+      {/* ===== PIN MODAL ===== */}
+      <PinModal
+        isOpen={showPinModal}
+        onClose={handlePinModalClose}
+        onVerify={handlePinVerify}
+        loading={pinLoading}
+        error={pinError}
+        title="Confirm Utility Payment"
+        subtitle="Enter your 4-digit PIN to confirm this utility payment"
+        amount={pendingPaymentData?.amount || 0}
+        recipient={pendingPaymentData?.providerName || 'Utility'}
+        transactionType="utility"
+      />
 
       {/* ===== SUCCESS TOAST ===== */}
       {success && (

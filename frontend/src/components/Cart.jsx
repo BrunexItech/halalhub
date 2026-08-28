@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { cartService } from '../services/api';
+import PinModal from './PinModal';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -32,6 +33,12 @@ const Cart = ({
     total: 0
   });
 
+  // ===== PIN MODAL STATE =====
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState('');
+  const [pendingOrderData, setPendingOrderData] = useState(null);
+
   const getTotal = () => {
     return getCartTotal();
   };
@@ -44,48 +51,63 @@ const Cart = ({
     setShowCheckoutModal(true);
   };
 
-  const confirmOrder = async () => {
+  // ===== UPDATED: confirmOrder now shows PIN modal =====
+  const confirmOrder = () => {
     if (cart.length === 0) {
       setError('Your cart is empty. Please add items before ordering.');
       return;
     }
 
-    setLocalProcessing(true);
-    setError('');
+    // Get vendor_id from first cart item
+    const vendorId = cart[0]?.vendor_id || cart[0]?.vendorId || cart[0]?.vendor?.id;
+    
+    // Build items array correctly for backend
+    const orderItems = cart.map(item => ({
+      product_id: item.product_id || item.id,
+      name: item.name || item.product_name || 'Product',
+      price: item.price || 0,
+      quantity: item.quantity || 1
+    }));
+
+    const subtotal = getCartTotal();
+    const total = getTotal();
+
+    // Store order data and show PIN modal
+    setPendingOrderData({
+      vendor_id: vendorId,
+      items: orderItems,
+      subtotal: subtotal,
+      delivery_fee: 0,
+      total_amount: total,
+      delivery_address: 'Nairobi CBD',
+      delivery_type: 'delivery',
+      special_instructions: '',
+      itemCount: getCartItemCount()
+    });
+
+    // Store order summary before clearing cart
+    setOrderSummary({
+      itemCount: getCartItemCount(),
+      subtotal: subtotal,
+      total: total
+    });
+
+    setShowCheckoutModal(false);
+    setShowPinModal(true);
+    setPinError('');
+  };
+
+  // ===== PIN VERIFICATION =====
+  const handlePinVerify = async (pin) => {
+    setPinLoading(true);
+    setPinError('');
     try {
       const token = localStorage.getItem('halalhub_token');
       
-      // Get vendor_id from first cart item
-      const vendorId = cart[0]?.vendor_id || cart[0]?.vendorId || cart[0]?.vendor?.id;
-      
-      // Build items array correctly for backend
-      const orderItems = cart.map(item => ({
-        product_id: item.product_id || item.id,
-        name: item.name || item.product_name || 'Product',
-        price: item.price || 0,
-        quantity: item.quantity || 1
-      }));
-
-      const subtotal = getCartTotal();
-      const total = getTotal();
-
       const orderData = {
-        vendor_id: vendorId,
-        items: orderItems,
-        subtotal: subtotal,
-        delivery_fee: 0,
-        total_amount: total,
-        delivery_address: 'Nairobi CBD',
-        delivery_type: 'delivery',
-        special_instructions: ''
+        ...pendingOrderData,
+        pin: pin
       };
-
-      // Store order summary before clearing cart
-      setOrderSummary({
-        itemCount: getCartItemCount(),
-        subtotal: subtotal,
-        total: total
-      });
 
       const response = await fetch(`${API_BASE}/client/orders`, {
         method: 'POST',
@@ -114,17 +136,24 @@ const Cart = ({
       // Clear cart from localStorage
       localStorage.removeItem('halalhub_cart');
 
-      setShowCheckoutModal(false);
+      setShowPinModal(false);
+      setPendingOrderData(null);
       setShowSuccessModal(true);
       
       setSuccess('Order placed successfully!');
       setTimeout(() => setSuccess(''), 5000);
     } catch (err) {
       console.error('Order error:', err);
-      setError(err.response?.data?.error || err.message || 'Order failed. Please try again.');
+      setPinError(err.response?.data?.error || err.message || 'Order failed. Please try again.');
     } finally {
-      setLocalProcessing(false);
+      setPinLoading(false);
     }
+  };
+
+  const handlePinModalClose = () => {
+    setShowPinModal(false);
+    setPinError('');
+    setPendingOrderData(null);
   };
 
   const continueShopping = () => {
@@ -500,6 +529,20 @@ const Cart = ({
           </div>
         </div>
       )}
+
+      {/* ===== PIN MODAL ===== */}
+      <PinModal
+        isOpen={showPinModal}
+        onClose={handlePinModalClose}
+        onVerify={handlePinVerify}
+        loading={pinLoading}
+        error={pinError}
+        title="Confirm Order"
+        subtitle="Enter your 4-digit PIN to confirm your order"
+        amount={pendingOrderData?.total_amount || 0}
+        recipient="Order"
+        transactionType="order"
+      />
     </>
   );
 };

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import PinModal from './PinModal';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -39,6 +40,12 @@ const Kadhis = () => {
     notes: '',
     topic: ''
   });
+
+  // ===== PIN MODAL STATE =====
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState('');
+  const [pendingBookingData, setPendingBookingData] = useState(null);
 
   const LEADER_TYPE_LABELS = {
     'islamic_scholar': 'Islamic Scholar',
@@ -222,6 +229,9 @@ const Kadhis = () => {
     setError('');
   };
 
+  // ============================================================
+  // UPDATED: confirmBooking now shows PIN modal instead of direct booking
+  // ============================================================
   const confirmBooking = async () => {
     if (!bookingData.date || !bookingData.time) {
       setError('Please select a date and time');
@@ -241,25 +251,39 @@ const Kadhis = () => {
       return;
     }
     
-    setProcessing(true);
-    setError('');
+    // Store booking data and show PIN modal
+    setPendingBookingData({
+      leaderId: selectedProfessional.id,
+      bookingDate: bookingData.date,
+      bookingTime: bookingData.time,
+      type: bookingData.type || 'video',
+      topic: bookingData.topic,
+      notes: bookingData.notes,
+      userName: user?.fullName || 'Guest',
+      userEmail: user?.email || ''
+    });
+    setShowBookingModal(false);
+    setShowPinModal(true);
+    setPinError('');
+  };
+
+  // ============================================================
+  // PIN VERIFICATION
+  // ============================================================
+  const handlePinVerify = async (pin) => {
+    setPinLoading(true);
+    setPinError('');
     try {
       const token = localStorage.getItem('halalhub_token');
       const response = await axios.post(`${API_BASE}/bookings`, {
-        leaderId: selectedProfessional.id,
-        bookingDate: bookingData.date,
-        bookingTime: bookingData.time,
-        type: 'video',
-        topic: bookingData.topic,
-        notes: bookingData.notes,
-        userName: user?.fullName || 'Guest',
-        userEmail: user?.email || ''
+        ...pendingBookingData,
+        pin: pin
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       if (response.data.success) {
-        setShowBookingModal(false);
+        setShowPinModal(false);
         setShowSuccessModal(true);
         // Refresh bookings and balance after successful booking
         await fetchBookings();
@@ -270,10 +294,16 @@ const Kadhis = () => {
       }
     } catch (err) {
       const errorMsg = err.response?.data?.error || 'Failed to book. Please try again.';
-      setError(errorMsg);
+      setPinError(errorMsg);
     } finally {
-      setProcessing(false);
+      setPinLoading(false);
     }
+  };
+
+  const handlePinModalClose = () => {
+    setShowPinModal(false);
+    setPinError('');
+    setPendingBookingData(null);
   };
 
   const handleViewProfile = (professional) => {
@@ -951,6 +981,20 @@ const Kadhis = () => {
           </div>
         </div>
       )}
+
+      {/* ===== PIN MODAL ===== */}
+      <PinModal
+        isOpen={showPinModal}
+        onClose={handlePinModalClose}
+        onVerify={handlePinVerify}
+        loading={pinLoading}
+        error={pinError}
+        title="Confirm Consultation"
+        subtitle="Enter your 4-digit PIN to confirm this consultation booking"
+        amount={selectedProfessional?.fee || 0}
+        recipient={selectedProfessional?.name}
+        transactionType="consultation"
+      />
 
       {/* Success Toast */}
       {success && (

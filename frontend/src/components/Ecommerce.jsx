@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import Cart from './Cart';
+import PinModal from './PinModal';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -56,6 +57,12 @@ const Ecommerce = ({ category = 'all' }) => {
   
   // ===== BUTCHERY MODE =====
   const [isButcheryMode, setIsButcheryMode] = useState(category === 'butchery');
+
+  // ===== PIN MODAL STATE =====
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState('');
+  const [pendingOrderData, setPendingOrderData] = useState(null);
   
   const priceRanges = [
     { label: 'All', value: 'All' },
@@ -342,32 +349,38 @@ const Ecommerce = ({ category = 'all' }) => {
       setError('Your cart is empty!');
       return;
     }
+    // Store order data and show PIN modal
+    const orderData = {
+      vendor_id: cart[0]?.vendor_id || cart[0]?.vendorId,
+      items: cart.map(item => ({
+        product_id: item.product_id || item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity
+      })),
+      subtotal: getCartTotal(),
+      delivery_fee: 500,
+      delivery_address: 'Nairobi CBD'
+    };
+    setPendingOrderData(orderData);
     setShowCheckoutModal(true);
   };
 
-  const confirmOrder = async () => {
-    setProcessing(true);
-    setError('');
+  // ===== PIN VERIFICATION =====
+  const handlePinVerify = async (pin) => {
+    setPinLoading(true);
+    setPinError('');
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
       
-      const orderData = {
-        vendor_id: cart[0]?.vendor_id || cart[0]?.vendorId,
-        items: cart.map(item => ({
-          product_id: item.product_id || item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity
-        })),
-        subtotal: getCartTotal(),
-        delivery_fee: 500,
-        delivery_address: 'Nairobi CBD'
-      };
+      const response = await axios.post(`${API_BASE}/client/orders`, {
+        ...pendingOrderData,
+        pin: pin
+      }, config);
       
-      await axios.post(`${API_BASE}/client/orders`, orderData, config);
-      
-      const newOrderNumber = 'HM' + Date.now().toString().slice(-8);
+      const newOrderNumber = response.data.orderId || 'HM' + Date.now().toString().slice(-8);
       setOrderNumber(newOrderNumber);
+      setShowPinModal(false);
       setShowCheckoutModal(false);
       setShowSuccessModal(true);
       
@@ -379,10 +392,23 @@ const Ecommerce = ({ category = 'all' }) => {
       setSuccess('Order placed successfully!');
       setTimeout(() => setSuccess(''), 5000);
     } catch (err) {
-      setError(err.response?.data?.error || 'Payment failed. Please try again.');
+      setPinError(err.response?.data?.error || 'Payment failed. Please try again.');
     } finally {
-      setProcessing(false);
+      setPinLoading(false);
     }
+  };
+
+  const handlePinModalClose = () => {
+    setShowPinModal(false);
+    setPinError('');
+    setPendingOrderData(null);
+  };
+
+  const handleConfirmOrder = () => {
+    // Show PIN modal instead of directly placing order
+    setShowCheckoutModal(false);
+    setShowPinModal(true);
+    setPinError('');
   };
 
   const toggleWishlist = (productId) => {
@@ -845,7 +871,9 @@ const Ecommerce = ({ category = 'all' }) => {
               </div>
               <div className="p-6 border-t border-[#F4F5F1] flex gap-3">
                 <button className="flex-1 px-6 py-3 rounded-xl bg-[#FAFAF7] text-[#6B7280] font-medium text-[15px] hover:bg-[#F4F5F1] transition" onClick={() => setShowCheckoutModal(false)}>Cancel</button>
-                <button className="flex-1 px-6 py-3 rounded-xl bg-[#0B342B] text-white font-medium text-[15px] shadow-md shadow-[#0B342B]/20 hover:bg-[#032A24] transition disabled:opacity-50" onClick={confirmOrder} disabled={processing}>{processing ? 'Processing...' : 'Place Order'}</button>
+                <button className="flex-1 px-6 py-3 rounded-xl bg-[#0B342B] text-white font-medium text-[15px] shadow-md shadow-[#0B342B]/20 hover:bg-[#032A24] transition disabled:opacity-50" onClick={handleConfirmOrder} disabled={processing}>
+                  {processing ? 'Processing...' : 'Place Order'}
+                </button>
               </div>
             </div>
           </div>
@@ -872,6 +900,20 @@ const Ecommerce = ({ category = 'all' }) => {
             </div>
           </div>
         )}
+
+        {/* ===== PIN MODAL ===== */}
+        <PinModal
+          isOpen={showPinModal}
+          onClose={handlePinModalClose}
+          onVerify={handlePinVerify}
+          loading={pinLoading}
+          error={pinError}
+          title="Confirm Order"
+          subtitle="Enter your 4-digit PIN to confirm this order"
+          amount={getCartTotal() + 500}
+          recipient="Order"
+          transactionType="order"
+        />
 
         {/* SUCCESS TOAST */}
         {success && (

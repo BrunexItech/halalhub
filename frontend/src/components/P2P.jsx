@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import PinModal from './PinModal';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -23,6 +24,12 @@ const P2P = () => {
   const [errors, setErrors] = useState({});
   const [showSearch, setShowSearch] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  
+  // ===== PIN MODAL STATE =====
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState('');
+  const [pendingTransferData, setPendingTransferData] = useState(null);
   
   // ===== REFS =====
   const topRef = useRef(null);
@@ -159,16 +166,45 @@ const P2P = () => {
     }
   };
 
+  // ===== UPDATED: handleConfirm now shows PIN modal =====
   const handleConfirm = async () => {
-    setIsProcessing(true);
-    setErrors({});
+    // Validate one more time
+    if (!recipient) {
+      setErrors({ confirm: 'Please select a recipient.' });
+      return;
+    }
+    if (!amount || parseFloat(amount) <= 0) {
+      setErrors({ confirm: 'Please enter a valid amount.' });
+      return;
+    }
+    if (parseFloat(amount) < 50) {
+      setErrors({ confirm: 'Minimum transfer amount is KES 50.' });
+      return;
+    }
+    if (parseFloat(amount) > availableBalance) {
+      setErrors({ confirm: 'Insufficient balance.' });
+      return;
+    }
 
+    // Store transfer data and show PIN modal
+    setPendingTransferData({
+      recipient_id: recipient.id,
+      amount: parseFloat(amount),
+      note: note || ''
+    });
+    setShowPinModal(true);
+    setPinError('');
+  };
+
+  // ===== PIN VERIFICATION =====
+  const handlePinVerify = async (pin) => {
+    setPinLoading(true);
+    setPinError('');
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
       const response = await axios.post(`${API_BASE}/p2p/transfer`, {
-        recipient_id: recipient.id,
-        amount: parseFloat(amount),
-        note: note || ''
+        ...pendingTransferData,
+        pin: pin
       }, config);
 
       if (response.data.success) {
@@ -176,14 +212,22 @@ const P2P = () => {
         setAvailableBalance(response.data.new_balance);
         setTransferComplete(true);
         setCurrentStep(5);
+        setShowPinModal(false);
+        setPendingTransferData(null);
       } else {
-        setErrors({ confirm: response.data.error || 'Transfer failed. Please try again.' });
+        setPinError(response.data.error || 'Transfer failed. Please try again.');
       }
     } catch (err) {
-      setErrors({ confirm: err.response?.data?.error || 'Transfer failed. Please try again.' });
+      setPinError(err.response?.data?.error || 'Transfer failed. Please try again.');
     } finally {
-      setIsProcessing(false);
+      setPinLoading(false);
     }
+  };
+
+  const handlePinModalClose = () => {
+    setShowPinModal(false);
+    setPinError('');
+    setPendingTransferData(null);
   };
 
   const resetTransfer = () => {
@@ -767,7 +811,7 @@ const P2P = () => {
               <button
                 className="flex-[2] px-5 py-2 bg-gradient-to-r from-[#0B342B] to-[#12342D] text-[#F7F6F1] font-semibold text-sm rounded-lg hover:shadow-lg hover:shadow-[#0B342B]/30 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
                 onClick={handleConfirm}
-                disabled={isProcessing}
+                disabled={isProcessing || !recipient || !amount || parseFloat(amount) <= 0 || parseFloat(amount) > availableBalance}
               >
                 {isProcessing ? (
                   <span className="flex items-center justify-center gap-2">
@@ -789,6 +833,20 @@ const P2P = () => {
           </p>
         </div>
       </div>
+
+      {/* ===== PIN MODAL ===== */}
+      <PinModal
+        isOpen={showPinModal}
+        onClose={handlePinModalClose}
+        onVerify={handlePinVerify}
+        loading={pinLoading}
+        error={pinError}
+        title="Confirm P2P Transfer"
+        subtitle="Enter your 4-digit PIN to send money to the recipient"
+        amount={pendingTransferData?.amount || 0}
+        recipient={recipient?.name || 'Recipient'}
+        transactionType="transfer"
+      />
     </div>
   );
 };

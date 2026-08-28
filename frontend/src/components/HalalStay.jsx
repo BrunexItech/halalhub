@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import PinModal from './PinModal';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -63,6 +64,12 @@ const HalalStay = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
   const [bookingData, setBookingData] = useState(null);
+
+  // ===== PIN MODAL STATE =====
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState('');
+  const [pendingBookingData, setPendingBookingData] = useState(null);
 
   // ===== DYNAMIC CALCULATION =====
   const calculateNights = () => {
@@ -261,25 +268,32 @@ const HalalStay = () => {
       return;
     }
     
+    // Store booking data and show PIN modal
+    setPendingBookingData({
+      listing_id: property.id,
+      check_in: checkIn,
+      check_out: checkOut,
+      guests: guests,
+      rooms: rooms,
+      special_requests: specialRequests,
+    });
     setSelectedProperty(property);
-    setShowBookingModal(true);
+    setShowPinModal(true);
+    setPinError('');
   };
 
-  const confirmBooking = async () => {
-    setProcessing(true);
-    setError('');
+  // ===== PIN VERIFICATION =====
+  const handlePinVerify = async (pin) => {
+    setPinLoading(true);
+    setPinError('');
     try {
       const nights = getNights();
       const totalPrice = getTotalPrice();
       
       const config = { headers: { Authorization: `Bearer ${token}` } };
       const response = await axios.post(`${API_BASE}/client/bookings`, {
-        listing_id: selectedProperty.id,
-        check_in: checkIn,
-        check_out: checkOut,
-        guests: guests,
-        rooms: rooms,
-        special_requests: specialRequests
+        ...pendingBookingData,
+        pin: pin
       }, config);
       
       const bookingRef = response.data.bookingId || `HS-${Date.now().toString().slice(-8)}`;
@@ -288,36 +302,42 @@ const HalalStay = () => {
         bookingRef,
         propertyName: selectedProperty.title,
         propertyLocation: selectedProperty.location || selectedProperty.county,
-        checkIn,
-        checkOut,
+        checkIn: pendingBookingData.check_in,
+        checkOut: pendingBookingData.check_out,
         nights,
-        guests,
-        rooms,
+        guests: pendingBookingData.guests,
+        rooms: pendingBookingData.rooms,
         total: totalPrice,
         property: selectedProperty,
         guestName,
         guestEmail,
         guestPhone,
-        specialRequests,
+        specialRequests: pendingBookingData.special_requests,
         agreementAccepted: termsAccepted,
         status: 'confirmed',
         createdAt: new Date().toISOString(),
         roomsLeft: response.data.rooms_left
       });
       
+      setShowPinModal(false);
+      setShowSuccessModal(true);
+      
       await fetchBookings();
       await fetchProperties();
-      
-      setShowBookingModal(false);
-      setShowSuccessModal(true);
       
       setSuccess(`Booking confirmed for ${selectedProperty.title}!`);
       setTimeout(() => setSuccess(''), 5000);
     } catch (err) {
-      setError(err.response?.data?.error || 'Booking failed. Please try again.');
+      setPinError(err.response?.data?.error || 'Booking failed. Please try again.');
     } finally {
-      setProcessing(false);
+      setPinLoading(false);
     }
+  };
+
+  const handlePinModalClose = () => {
+    setShowPinModal(false);
+    setPinError('');
+    setPendingBookingData(null);
   };
 
   const viewBookingDetails = (booking) => {
@@ -938,7 +958,10 @@ const HalalStay = () => {
               </button>
               <button 
                 className="flex-[2] px-6 py-3 bg-[#0B342B] text-white font-medium rounded-xl hover:bg-[#032A24] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed shadow-md shadow-[#0B342B]/20"
-                onClick={confirmBooking}
+                onClick={() => {
+                  // This now triggers the PIN modal flow
+                  setShowBookingModal(false);
+                }}
                 disabled={processing || !termsAccepted || !guestName || !guestEmail || !guestPhone}
               >
                 {processing ? (
@@ -1185,6 +1208,20 @@ const HalalStay = () => {
           </div>
         </div>
       )}
+
+      {/* ===== PIN MODAL ===== */}
+      <PinModal
+        isOpen={showPinModal}
+        onClose={handlePinModalClose}
+        onVerify={handlePinVerify}
+        loading={pinLoading}
+        error={pinError}
+        title="Confirm Booking"
+        subtitle="Enter your 4-digit PIN to confirm this HalalStay booking"
+        amount={getTotalPrice() || 0}
+        recipient={selectedProperty?.title || 'Property'}
+        transactionType="booking"
+      />
 
       {/* ===== SUCCESS TOAST ===== */}
       {success && (

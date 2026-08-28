@@ -271,6 +271,9 @@ export const vendorService = {
   createMenuItem: (data) => api.post('/vendor/menu-items', data),
   updateMenuItem: (id, data) => api.put(`/vendor/menu-items/${id}`, data),
   deleteMenuItem: (id) => api.delete(`/vendor/menu-items/${id}`),
+  // ============================================================
+  // UPLOAD IMAGE - Added for business profile images
+  // ============================================================
   uploadImage: (data) => api.post('/vendor/upload-image', data, {
     headers: { 'Content-Type': 'multipart/form-data' },
   }),
